@@ -13,6 +13,8 @@ namespace WebOne
 		static void Main(string[] args)
 		{
 			int Port = 80;
+			try { Port = Convert.ToInt32(args[0]); } catch { }
+
 			Console.WriteLine("WebOne HTTP Proxy Server {0}.\n(C) 2019 Alexander Tauenis.\nhttps://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
 			Console.Title = "WebOne @ " + Port;
 
