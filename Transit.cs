@@ -14,6 +14,8 @@ namespace WebOne
 	/// </summary>
 	class Transit
 	{
+		public static string LastURL = "http://999.999.999.999/CON";//dirty workaround for phantom.sannata.org and similar sites
+
 		//Based on https://habr.com/ru/post/120157/
 		//Probably the class name needs to be changed
 
@@ -37,6 +39,7 @@ namespace WebOne
 					// End parsing the request on a "\r\n\r\n" sequency or at 10th megabyte.
 					if (Request.IndexOf("\r\n\r\n") >= 0 || Request.Length > 1024 * 1024 * 10)
 					{
+						//todo: add separating headers from body!
 						break;
 					}
 				}
@@ -58,13 +61,33 @@ namespace WebOne
 				return;
 			}
 
+			string RefererUri = "";
+			Match ReqMatch2 = Regex.Match(Request, @"Referer\: .*"); //todo: add separating headers from body!
+			if (ReqMatch2 == Match.Empty)
+			{
+				//Console.WriteLine("No referer;");
+			}
+			else {
+				//Console.Write("(Ref={0})", ReqMatch2.Value.Substring(9).TrimEnd('\r'));
+				RefererUri = ReqMatch2.Value.Substring(9).TrimEnd('\r');
+			}
+
 			string RequestUri = ReqMatch.Groups[1].Value;
-			if (RequestUri.StartsWith("/")) RequestUri = RequestUri.Substring(1);
+			
+			if (RequestUri.StartsWith("/")) RequestUri = RequestUri.Substring(1); //debug mode: http://localhost:80/http://example.com/indexr.shtml
+
+			//dirty workarounds for HTTP>HTTPS redirection bugs
+			if ((RequestUri == RefererUri || RequestUri == LastURL) && RequestUri != "")
+			{
+				Console.Write("Carousel");
+				RequestUri = "https" + RequestUri.Substring(4);
+			}
 
 			// Приводим ее к изначальному виду, преобразуя экранированные символы
 			// Например, "%20" -> " "
 			//RequestUri = Uri.UnescapeDataString(RequestUri);
 			Console.Write(" " + RequestUri + " ");
+			LastURL = RequestUri;
 
 
 			//SendError(Client, 200);
@@ -92,7 +115,7 @@ namespace WebOne
 				else
 					Html = response.Content;
 			} catch (WebException wex) {
-				Html = "Cannot load this page: " + wex.Status.ToString() + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i>";
+				Html = "Cannot load this page: " + wex.Status.ToString() + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><hr>WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
 				Console.WriteLine("Failed.");
 			}
 			catch (UriFormatException)
@@ -137,7 +160,7 @@ namespace WebOne
 		/// <param name="Text">Error description for user</param>
 		private void SendError(TcpClient Client, int Code, string Text = "")
 		{
-			Text += "<hr>WebOne Proxy Server<br>on " + Environment.OSVersion.VersionString;
+			Text += "<hr>WebOne Proxy Server " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version + "<br>on " + Environment.OSVersion.VersionString;
 			string CodeStr = Code.ToString() + " " + ((HttpStatusCode)Code).ToString();
 			string Html = "<html><body><h1>" + CodeStr + "</h1>"+Text+"</body></html>";
 			string Str = "HTTP/1.0 " + CodeStr + "\nContent-type: text/html\nContent-Length:" + Html.Length.ToString() + "\n\n" + Html;
