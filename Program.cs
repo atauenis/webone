@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,7 +13,7 @@ namespace WebOne
 		static void Main(string[] args)
 		{
 			int Port = 80;
-			Console.WriteLine("WebOne HTTP Proxy Server.\n(C) 2015 Alexander Tauenis.\n");
+			Console.WriteLine("WebOne HTTP Proxy Server {0}.\n(C) 2019 Alexander Tauenis.\nhttps://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
 			Console.Title = "WebOne @ " + Port;
 
 			/*string host = "https://mozilla.org";
