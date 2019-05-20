@@ -85,6 +85,7 @@ namespace WebOne
 				Console.Write(response.StatusCode);
 				Console.Write("...");
 				var body = response.Content;
+				ContentType = response.ContentType;
 				Console.WriteLine("Body {0}K of {1}", body.Length / 1024, ContentType);
 				if (response.ContentType.StartsWith("text"))
 					Html = ProcessBody(response.Content);
@@ -106,7 +107,7 @@ namespace WebOne
 				if (!StWrong)
 				{
 					string Str = "HTTP/1.0 200\nContent-type: " + ContentType + "\nContent-Length:" + Html.Length.ToString() + "\n\n" + Html;
-					byte[] RespBuffer = Encoding.UTF8.GetBytes(Str);
+					byte[] RespBuffer = Encoding.Default.GetBytes(Str);
 					Client.GetStream().Write(RespBuffer, 0, RespBuffer.Length);
 					Client.Close();
 				}
@@ -124,7 +125,7 @@ namespace WebOne
 		/// <returns>The fixed body, compatible with old browsers</returns>
 		private string ProcessBody(string Body) {
 			Body = Body.Replace("https", "http");
-			//Body = Encoding.Convert(Encoding.UTF8, Encoding.GetEncoding(1251), Encoding.UTF8.GetBytes(Body)).ToString();
+			Body = Encoding.Default.GetString(Encoding.Convert(Encoding.UTF8, Encoding.GetEncoding(1251), Encoding.UTF8.GetBytes(Body)));
 			return Body;
 		}
 
