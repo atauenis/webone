@@ -18,12 +18,21 @@ namespace WebOne
 		//based on http://www.cyberforum.ru/post8143282.html
 
 		private const string UA_Mozilla = "Mozilla/5.0 (Windows NT 4.0; WOW64; rv:99.0) Gecko/20100101 Firefox/99.0";
+		private string[] HeaderBanList = { "Proxy-Connection", "User-Agent", "Host", "Accept", "Referer", "Connection", "Content-type", "Content-length" };
+
 
 		public HTTPC()
 		{
 
 		}
 
+		/// <summary>
+		/// Perform a GET request
+		/// </summary>
+		/// <param name="host">URL</param>
+		/// <param name="cc">Cookie container</param>
+		/// <param name="headers">HTTP headers</param>
+		/// <returns>Server's response.</returns>
 		public HttpResponse GET(string host, CookieContainer cc, WebHeaderCollection headers)
 		{
 			HttpWebResponse webResponse = null;
@@ -35,7 +44,6 @@ namespace WebOne
 				string Referer = headers["Referer"];
 				//undone: add other headers that cannot be passed directly to the webRequest.Headers
 
-				string[] HeaderBanList = { "Proxy-Connection", "User-Agent", "Host", "Accept", "Referer", "Connection", "Content-type", "Content-length" };
 				foreach (string str in HeaderBanList) { headers.Remove(str); }
 				webRequest.Headers = headers;
 
@@ -68,30 +76,41 @@ namespace WebOne
 			}
 
 		}
-
-		public HttpResponse POST(string host, CookieContainer cc, NameValueCollection param)
+		
+		/// <summary>
+		/// Perform a POST request
+		/// </summary>
+		/// <param name="host">URL</param>
+		/// <param name="cc">Cookie Container</param>
+		/// <param name="data">Raw post data</param>
+		/// <param name="headers">HTTP headers</param>
+		/// <returns></returns>
+		//public HttpResponse POST(string host, CookieContainer cc, NameValueCollection param)
+		public HttpResponse POST(string host, CookieContainer cc, string data, WebHeaderCollection headers)
 		{
 			HttpWebResponse webResponse = null;
 
 			try
 			{
-				if (param.Count == 0)
-					throw new ArgumentNullException();
-
-				List<string> parametersList = param.AllKeys.Select(key => String.Format("{0}={1}", key, param[key])).ToList();
-				string parameters = String.Join("&", parametersList);
-
 				HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(host);
-				webRequest.Headers = GetHeader();
-				webRequest.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
-				webRequest.UserAgent = UA_Mozilla;
+				string UA = headers["User-Agent"] + " WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+				string Accept = headers["Accept"];
+				string Referer = headers["Referer"];
+				//undone: add other headers that cannot be passed directly to the webRequest.Headers
+
+				foreach (string str in HeaderBanList) { headers.Remove(str); }
+				webRequest.Headers = headers;
+
+				webRequest.Accept = Accept;
+				webRequest.UserAgent = UA;
+				webRequest.Referer = Referer;
 				webRequest.Method = "POST";
 				webRequest.AllowAutoRedirect = true;
 				webRequest.CookieContainer = cc;
-				webRequest.ProtocolVersion = HttpVersion.Version11;
+				webRequest.ProtocolVersion = HttpVersion.Version10;
 				webRequest.KeepAlive = true;
 				webRequest.ContentType = "application/x-www-form-urlencoded";
-				webRequest.ContentLength = parameters.Length;
+				webRequest.ContentLength = data.Length;
 				webRequest.ServicePoint.Expect100Continue = false;
 #if !NET40
 				webRequest.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(AcceptAllCertifications);
@@ -99,7 +118,7 @@ namespace WebOne
 
 				using (var requestStream = new StreamWriter(webRequest.GetRequestStream()))
 				{
-					requestStream.Write(parameters);
+					requestStream.Write(data);
 				}
 
 				webResponse = (HttpWebResponse)webRequest.GetResponse();

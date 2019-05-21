@@ -100,7 +100,8 @@ namespace WebOne
 			//SendError(Client, 200);
 			
 			HTTPC https = new HTTPC();
-			string Html = ":(";
+			string ResponseHeaders = "HTTP/1.0 200\n";
+			string ResponseBody = ":(";
 			string ContentType = "text/html";
 
 			bool StWrong = false; //break operation if something is wrong.
@@ -108,22 +109,54 @@ namespace WebOne
 
 			try
 			{
-				if (RequestMethod != "GET") { SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method."); Console.WriteLine(" Wrong method."); return; }
+				HttpResponse response;
+				switch (RequestMethod) {
+					case "GET":
+						//try to get...
+						response = https.GET(RequestUri, new CookieContainer(), RequestHeaderCollection);
+						Console.Write("...");
+						Console.Write(response.StatusCode);
+						Console.Write("...");
+						ResponseBody = response.Content;
+						ContentType = response.ContentType;
+						Console.WriteLine("Body {0}K of {1}", ResponseBody.Length / 1024, ContentType);
+						if (response.ContentType.StartsWith("text"))
+							ResponseBody = ProcessBody(ResponseBody);
+						break;
+					case "POST":
+						//try to post...
+						response = https.POST(RequestUri, new CookieContainer(), RequestBody, RequestHeaderCollection);
+						Console.Write("...");
+						Console.Write(response.StatusCode);
+						Console.Write("...");
+						ResponseBody = response.Content;
+						
+						ContentType = response.ContentType;
+						Console.WriteLine("Body {0}K of {1}", ResponseBody.Length / 1024, ContentType);
+						if (response.ContentType.StartsWith("text"))
+							ResponseBody = ProcessBody(ResponseBody);
+						break;
+					default:
+						SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method.");
+						Console.WriteLine(" Wrong method.");
+						return;
+				}
 
-				//try to get...
-				HttpResponse response = https.GET(RequestUri, new CookieContainer(), RequestHeaderCollection);
-				Console.Write("...");
-				Console.Write(response.StatusCode);
-				Console.Write("...");
-				var body = response.Content;
-				ContentType = response.ContentType;
-				Console.WriteLine("Body {0}K of {1}", body.Length / 1024, ContentType);
-				if (response.ContentType.StartsWith("text"))
-					Html = ProcessBody(response.Content);
-				else
-					Html = response.Content;
+				//ResponseHeaders = "HTTP/1.0 200\n";
+				for (int i = 0; i < response.Headers.Count; ++i)
+				{
+					string header = response.Headers.GetKey(i);
+					foreach (string value in response.Headers.GetValues(i))
+					{
+						if(header != "Content-Length")
+						ResponseHeaders += (header + ": " + value + "\n");
+						//Console.WriteLine(header + ": " + value);
+					}
+				}
+				
+
 			} catch (WebException wex) {
-				Html = "Cannot load this page: " + wex.Status.ToString() + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestUri + Program.GetInfoString();
+				ResponseBody = "Cannot load this page: " + wex.Status.ToString() + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestUri + Program.GetInfoString();
 				Console.WriteLine("Failed.");
 			}
 			catch (UriFormatException)
@@ -137,8 +170,9 @@ namespace WebOne
 				//try to return...
 				if (!StWrong)
 				{
-					string Str = "HTTP/1.0 200\nContent-type: " + ContentType + "\nContent-Length:" + Html.Length.ToString() + "\n\n" + Html;
-					byte[] RespBuffer = Encoding.Default.GetBytes(Str);
+					ResponseHeaders = "HTTP/1.0 200\nContent-type: " + ContentType + "\nContent-Length:" + ResponseBody.Length.ToString() + ResponseHeaders;
+					string Response = ResponseHeaders + "\n\n" + ResponseBody;
+					byte[] RespBuffer = Encoding.Default.GetBytes(Response);
 					Client.GetStream().Write(RespBuffer, 0, RespBuffer.Length);
 					Client.Close();
 				}
