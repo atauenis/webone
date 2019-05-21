@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -28,22 +29,36 @@ namespace WebOne
 			Console.Write("\n>");
 
 			string Request = "";
-			byte[] Buffer = new byte[1024];
+			byte[] Buffer = new byte[10485760]; //todo: adjust for real request size
 
-			int Count;
+			string RequestHeaders = "";
+			string RequestBody = "";
+			int RequestHeadersEnd;
+
+
+			int Count = 0;
 			try
 			{
-				while ((Count = Client.GetStream().Read(Buffer, 0, Buffer.Length)) > 0)
+				NetworkStream ClientStream = Client.GetStream();
+
+				while(ClientStream.DataAvailable)
 				{
-					Request += Encoding.ASCII.GetString(Buffer, 0, Count);
-					// End parsing the request on a "\r\n\r\n" sequency or at 10th megabyte.
-					if (Request.IndexOf("\r\n\r\n") >= 0 || Request.Length > 1024 * 1024 * 10)
-					{
-						//todo: add separating headers from body!
-						break;
-					}
+					ClientStream.Read(Buffer, Count, 1);
+					Count++;
+
 				}
-			}catch(System.IO.IOException ioe) {
+				Request += Encoding.ASCII.GetString(Buffer).Trim('\0'); //cut empty 10 megabytes
+
+				if (Request.Length == 0) { SendError(Client, 400); return; }
+
+				RequestHeadersEnd = Request.IndexOf("\r\n\r\n");
+				RequestHeaders = Request.Substring(0, RequestHeadersEnd);
+				RequestBody = Request.Substring(RequestHeadersEnd+4);
+
+				/*Console.Write("-{0} of {1}-", Request.IndexOf("\r\n\r\n"), Request.Length);
+				Console.Write("-POST body={0}-", Request.Substring(Request.IndexOf("\r\n\r\n")).Trim("\r\n\r\n".ToCharArray()));*/
+			}
+			catch(System.IO.IOException ioe) {
 				Console.WriteLine("Can't read from client: " + ioe.ToString());
 				SendError(Client,500);
 				return;
@@ -62,7 +77,7 @@ namespace WebOne
 			}
 
 			string RefererUri = "";
-			Match ReqMatch2 = Regex.Match(Request, @"Referer\: .*"); //todo: add separating headers from body!
+			Match ReqMatch2 = Regex.Match(RequestHeaders, @"Referer\: .*");
 			if (ReqMatch2 == Match.Empty)
 			{
 				//Console.WriteLine("No referer;");
