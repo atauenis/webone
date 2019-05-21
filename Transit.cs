@@ -156,7 +156,7 @@ namespace WebOne
 		/// <returns>The fixed body, compatible with old browsers</returns>
 		private string ProcessBody(string Body) {
 			Body = Body.Replace("https", "http");
-			Body = Encoding.Default.GetString(Encoding.Convert(Encoding.UTF8, Encoding.GetEncoding(1251), Encoding.UTF8.GetBytes(Body)));
+			Body = Encoding.Default.GetString(Encoding.Convert(Encoding.UTF8, Encoding.Default, Encoding.UTF8.GetBytes(Body)));
 			return Body;
 		}
 

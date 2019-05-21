@@ -187,7 +187,7 @@ namespace WebOne
 			if (this.Instance == null)
 				return null;
 
-			StreamReader reader = new StreamReader(Decompress(this.Instance), Encoding.GetEncoding(1251));
+			StreamReader reader = new StreamReader(Decompress(this.Instance), Encoding.UTF8);
 			return reader.ReadToEnd();
 		}
 
