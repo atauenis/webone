@@ -115,7 +115,7 @@ namespace WebOne
 				else
 					Html = response.Content;
 			} catch (WebException wex) {
-				Html = "Cannot load this page: " + wex.Status.ToString() + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><hr>WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+				Html = "Cannot load this page: " + wex.Status.ToString() + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i>" + Program.GetInfoString();
 				Console.WriteLine("Failed.");
 			}
 			catch (UriFormatException)
@@ -160,7 +160,7 @@ namespace WebOne
 		/// <param name="Text">Error description for user</param>
 		private void SendError(TcpClient Client, int Code, string Text = "")
 		{
-			Text += "<hr>WebOne Proxy Server " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version + "<br>on " + Environment.OSVersion.VersionString;
+			Text += Program.GetInfoString();
 			string CodeStr = Code.ToString() + " " + ((HttpStatusCode)Code).ToString();
 			string Html = "<html><body><h1>" + CodeStr + "</h1>"+Text+"</body></html>";
 			string Str = "HTTP/1.0 " + CodeStr + "\nContent-type: text/html\nContent-Length:" + Html.Length.ToString() + "\n\n" + Html;

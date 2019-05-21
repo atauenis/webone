@@ -8,15 +8,22 @@ using System.Threading.Tasks;
 
 namespace WebOne
 {
-	class Program
+	public static class Program
 	{
+
+
 		static void Main(string[] args)
 		{
+
 			int Port = 80;
 			try { Port = Convert.ToInt32(args[0]); } catch { }
 
 			Console.WriteLine("WebOne HTTP Proxy Server {0}.\n(C) 2019 Alexander Tauenis.\nhttps://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
 			Console.Title = "WebOne @ " + Port;
+#if NET40
+			Console.WriteLine("Warning: this build is compiled for .NET Framework 4.0 from 2010.\n");
+#endif
+
 
 			/*string host = "https://mozilla.org";
 			HTTPC https = new HTTPC();
@@ -37,6 +44,14 @@ namespace WebOne
 			HTTPServer Server = new HTTPServer(Port);
 
 			Console.WriteLine("That's all. Closing.");
+		}
+
+		public static string GetInfoString() {
+			string OnNet40 = "";
+#if NET40
+			OnNet40 = " / .NET FW 4.0";
+#endif
+			return "<hr>WebOne Proxy Server " + Assembly.GetExecutingAssembly().GetName().Version + "<br>on " + Environment.OSVersion.VersionString + OnNet40;
 		}
 	}
 }
