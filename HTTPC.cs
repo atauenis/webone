@@ -18,7 +18,7 @@ namespace WebOne
 		//based on http://www.cyberforum.ru/post8143282.html
 
 		private const string UA_Mozilla = "Mozilla/5.0 (Windows NT 4.0; WOW64; rv:99.0) Gecko/20100101 Firefox/99.0";
-		private string[] HeaderBanList = { "Proxy-Connection", "User-Agent", "Host", "Accept", "Referer", "Connection", "Content-type", "Content-length" };
+		private string[] HeaderBanList = { "Proxy-Connection", "User-Agent", "Host", "Accept", "Referer", "Connection", "Content-type", "Content-length", "If-Modified-Since" };
 
 
 		public HTTPC()
