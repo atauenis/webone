@@ -28,13 +28,11 @@ namespace WebOne
 		{
 			Console.Write("\n>");
 
-			string Request = "";
 			byte[] Buffer = new byte[10485760]; //todo: adjust for real request size
-
+			string Request = "";
 			string RequestHeaders = "";
 			string RequestBody = "";
 			int RequestHeadersEnd;
-
 
 			int Count = 0;
 			try
@@ -64,11 +62,7 @@ namespace WebOne
 				return;
 			}
 
-			// Парсим строку запроса с использованием регулярных выражений
-			// При этом отсекаем все переменные GET-запроса
-			//Match ReqMatch = Regex.Match(Request, @"^\w+\s+([^\s\?]+)[^\s]*\s+HTTP/.*|");
 			Match ReqMatch = Regex.Match(Request, @"^\w+\s+([^\s]+)[^\s]*\s+HTTP/.*|");
-
 			if (ReqMatch == Match.Empty)
 			{
 				//If the request seems to be invalid, raise HTTP 400 error.
@@ -76,19 +70,21 @@ namespace WebOne
 				return;
 			}
 
-			string RefererUri = "";
-			Match ReqMatch2 = Regex.Match(RequestHeaders, @"Referer\: .*");
-			if (ReqMatch2 == Match.Empty)
+			string RequestMethod = "";
+			string[] Headers = RequestHeaders.Split('\n');
+			RequestMethod = Headers[0].Substring(0, Headers[0].IndexOf(" "));
+
+			WebHeaderCollection RequestHeaderCollection = new WebHeaderCollection();
+			foreach (string hdr in Headers)
 			{
-				//Console.WriteLine("No referer;");
-			}
-			else {
-				//Console.Write("(Ref={0})", ReqMatch2.Value.Substring(9).TrimEnd('\r'));
-				RefererUri = ReqMatch2.Value.Substring(9).TrimEnd('\r');
+				if (hdr.Contains(": ")) //exclude method & URL
+				{
+					RequestHeaderCollection.Add(hdr);
+				}
 			}
 
+			string RefererUri = RequestHeaderCollection["Referer"];
 			string RequestUri = ReqMatch.Groups[1].Value;
-			
 			if (RequestUri.StartsWith("/")) RequestUri = RequestUri.Substring(1); //debug mode: http://localhost:80/http://example.com/indexr.shtml
 
 			//dirty workarounds for HTTP>HTTPS redirection bugs
@@ -98,27 +94,24 @@ namespace WebOne
 				RequestUri = "https" + RequestUri.Substring(4);
 			}
 
-			// Приводим ее к изначальному виду, преобразуя экранированные символы
-			// Например, "%20" -> " "
-			//RequestUri = Uri.UnescapeDataString(RequestUri);
 			Console.Write(" " + RequestUri + " ");
 			LastURL = RequestUri;
-
-
+			
 			//SendError(Client, 200);
-
-
+			
 			HTTPC https = new HTTPC();
 			string Html = ":(";
 			string ContentType = "text/html";
 
 			bool StWrong = false; //break operation if something is wrong.
-			Console.Write("Try to get");
-			
+			Console.Write("Try to " + RequestMethod.ToLower());
+
 			try
 			{
+				if (RequestMethod != "GET") { SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method."); Console.WriteLine(" Wrong method."); return; }
+
 				//try to get...
-				HttpResponse response = https.GET(RequestUri, new CookieContainer());
+				HttpResponse response = https.GET(RequestUri, new CookieContainer(), RequestHeaderCollection);
 				Console.Write("...");
 				Console.Write(response.StatusCode);
 				Console.Write("...");
@@ -130,7 +123,7 @@ namespace WebOne
 				else
 					Html = response.Content;
 			} catch (WebException wex) {
-				Html = "Cannot load this page: " + wex.Status.ToString() + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i>" + Program.GetInfoString();
+				Html = "Cannot load this page: " + wex.Status.ToString() + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestUri + Program.GetInfoString();
 				Console.WriteLine("Failed.");
 			}
 			catch (UriFormatException)

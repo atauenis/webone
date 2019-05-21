@@ -24,15 +24,24 @@ namespace WebOne
 
 		}
 
-		public HttpResponse GET(string host, CookieContainer cc)
+		public HttpResponse GET(string host, CookieContainer cc, WebHeaderCollection headers)
 		{
 			HttpWebResponse webResponse = null;
 			try
 			{
 				HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(host);
-				webRequest.Headers = GetHeader();
-				webRequest.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
-				webRequest.UserAgent = UA_Mozilla;
+				string UA = headers["User-Agent"] + " WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+				string Accept = headers["Accept"];
+				string Referer = headers["Referer"];
+				//undone: add other headers that cannot be passed directly to the webRequest.Headers
+
+				string[] HeaderBanList = { "Proxy-Connection", "User-Agent", "Host", "Accept", "Referer", "Connection", "Content-type", "Content-length" };
+				foreach (string str in HeaderBanList) { headers.Remove(str); }
+				webRequest.Headers = headers;
+
+				webRequest.Accept = Accept;
+				webRequest.UserAgent = UA;
+				webRequest.Referer = Referer;
 				webRequest.Method = "GET";
 				webRequest.AllowAutoRedirect = true;
 				webRequest.CookieContainer = cc;
@@ -108,7 +117,12 @@ namespace WebOne
 			}
 		}
 
-		private WebHeaderCollection GetHeader()
+		/// <summary>
+		/// Get default headers
+		/// </summary>
+		/// <returns>Accept-Language: ru-RU,ru;
+		/// Accept-Encoding: gzip, deflate</returns>
+		public static WebHeaderCollection GetHeader()
 		{
 			WebHeaderCollection Headers = new WebHeaderCollection();
 			Headers = new WebHeaderCollection();
