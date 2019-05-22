@@ -93,7 +93,31 @@ namespace WebOne
 			//fix "carousels"
 			string RefererUri = RequestHeaderCollection["Referer"];
 			string RequestUri = ReqMatch.Groups[1].Value;
-			if (RequestUri.StartsWith("/")) RequestUri = RequestUri.Substring(1); //debug mode: http://localhost:80/http://example.com/indexr.shtml
+
+			if (RequestUri.StartsWith("/"))
+			{
+				if (RequestUri.StartsWith("/http:") || RequestUri.StartsWith("/https:"))
+					RequestUri = RequestUri.Substring(1); //debug mode: http://localhost:80/http://example.com/indexr.shtml
+				else {
+					//bad debug mode, try to use last used host: http://localhost:80/favicon.ico
+					List<int> includes = new List<int>();
+
+					int i = LastURL.IndexOf("/", 0);
+					while (i > -1)
+					{
+						includes.Add(i);
+						i = LastURL.IndexOf("/", i + 1);
+					}
+					if (includes.Count < 3) 
+					{
+						Console.Write("Bad direct URL ''",RequestUri);
+						SendError(Client, 400, "Bad direct URL: " + RequestUri + "\n<br>Expected something like " + LastURL);
+						return;
+					}
+					RequestUri = "http://" + LastURL.Substring(includes[0] + 2, includes[2] - includes[0] - 2) + RequestUri;
+				}
+					
+			}
 
 			//dirty workarounds for HTTP>HTTPS redirection bugs
 			if ((RequestUri == RefererUri || RequestUri == LastURL) && RequestUri != "")
@@ -186,6 +210,7 @@ namespace WebOne
 			ResponseBuffer = Encoding.Default.GetBytes(ResponseBody);
 			ContentType = response.ContentType;
 			Console.Write("Body {0}K of {1}", ResponseBody.Length / 1024, ContentType);
+			if (ContentType.Contains("utf-8")) ContentType = ContentType.Substring(0, ContentType.IndexOf(';'));
 			if (response.ContentType.StartsWith("text"))
 			{
 				//если сервер вернул текст, сделать правки, иначе прогнать как есть дальше

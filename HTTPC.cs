@@ -63,9 +63,7 @@ namespace WebOne
 			{
 				if(ex is WebException) {
 					WebException wex = (WebException)ex;
-					Console.WriteLine("WEB EXCEPTION! " + wex.Status.ToString());
-					
-					throw;
+					Console.Write("WEB EXCEPTION=" + wex.Status.ToString() + "!");
 				}
 				throw;
 			}
@@ -215,7 +213,8 @@ namespace WebOne
 
 			//StreamReader reader = new StreamReader(Decompress(this.Instance), Encoding.UTF8);
 			//return reader.ReadToEnd();
-			return Encoding.UTF8.GetString(RawContent);
+			if(ContentType.Contains("utf-8")) return Encoding.UTF8.GetString(RawContent);
+			else return Encoding.Default.GetString(RawContent);
 		}
 
 		private static byte[] ReadFully(Stream input)
