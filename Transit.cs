@@ -45,7 +45,7 @@ namespace WebOne
 				//get request
 				NetworkStream ClientStream = Client.GetStream();
 
-				while(ClientStream.DataAvailable)
+				while (ClientStream.DataAvailable)
 				{
 					ClientStream.Read(Buffer, Count, 1);
 					Count++;
@@ -57,14 +57,14 @@ namespace WebOne
 
 				RequestHeadersEnd = Request.IndexOf("\r\n\r\n");
 				RequestHeaders = Request.Substring(0, RequestHeadersEnd);
-				RequestBody = Request.Substring(RequestHeadersEnd+4);
+				RequestBody = Request.Substring(RequestHeadersEnd + 4);
 
 				/*Console.Write("-{0} of {1}-", Request.IndexOf("\r\n\r\n"), Request.Length);
 				Console.Write("-POST body={0}-", Request.Substring(Request.IndexOf("\r\n\r\n")).Trim("\r\n\r\n".ToCharArray()));*/
 			}
-			catch(System.IO.IOException ioe) {
+			catch (System.IO.IOException ioe) {
 				Console.WriteLine("Can't read from client: " + ioe.ToString());
-				SendError(Client,500);
+				SendError(Client, 500);
 				return;
 			}
 
@@ -108,15 +108,15 @@ namespace WebOne
 						includes.Add(i);
 						i = LastURL.IndexOf("/", i + 1);
 					}
-					if (includes.Count < 3) 
+					if (includes.Count < 3)
 					{
-						Console.Write("Bad direct URL ''",RequestUri);
+						Console.Write("Bad direct URL ''", RequestUri);
 						SendError(Client, 400, "Bad direct URL: " + RequestUri + "\n<br>Expected something like " + LastURL);
 						return;
 					}
 					RequestUri = "http://" + LastURL.Substring(includes[0] + 2, includes[2] - includes[0] - 2) + RequestUri;
 				}
-					
+
 			}
 
 			//dirty workarounds for HTTP>HTTPS redirection bugs
@@ -128,13 +128,16 @@ namespace WebOne
 
 			Console.Write(" " + RequestUri + " ");
 			LastURL = RequestUri;
-			
+
 			//make reply
 			//SendError(Client, 200);
-			
+
 			HTTPC https = new HTTPC();
 			bool StWrong = false; //break operation if something is wrong.
 			Console.Write("Try to " + RequestMethod.ToLower());
+
+			if (RequestUri.Contains("??")) { StWrong = true; SendError(Client, 400, "Too many questions."); }
+			if (RequestUri.Length == 0) { StWrong = true; SendError(Client, 400, "Empty URL."); }
 
 			try
 			{
@@ -178,6 +181,11 @@ namespace WebOne
 				StWrong = true;
 				SendError(Client, 400, "The URL <b>" + RequestUri + "</b> is not valid.");
 			}
+			catch(Exception ex) {
+				StWrong = true;
+				Console.WriteLine("============GURU MEDITATION:\n{0}\nOn URL '{1}', Method '{2}'. Returning 500.============", ex.ToString(), RequestUri, RequestMethod);
+				SendError(Client, 500, "Guru meditaion at URL " + RequestUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace + "</i>" + Program.GetInfoString());
+			}
 
 			try
 			{
@@ -211,7 +219,11 @@ namespace WebOne
 			ContentType = response.ContentType;
 			Console.Write("Body {0}K of {1}", ResponseBody.Length / 1024, ContentType);
 			if (ContentType.Contains("utf-8")) ContentType = ContentType.Substring(0, ContentType.IndexOf(';'));
-			if (response.ContentType.StartsWith("text"))
+			if (response.ContentType.StartsWith("text") ||
+			response.ContentType.Contains("javascript") || 
+			response.ContentType.Contains("json") ||
+			response.ContentType.Contains("cdf") ||
+			response.ContentType.Contains("xml"))
 			{
 				//если сервер вернул текст, сделать правки, иначе прогнать как есть дальше
 				ResponseBody = ProcessBody(ResponseBody);
