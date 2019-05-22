@@ -26,6 +26,7 @@ namespace WebOne
 		string ResponseHeaders = "HTTP/1.0 200\n";
 		string ResponseBody = ":(";
 		byte[] ResponseBuffer;
+		Stream TransitStream = null;
 		string ContentType = "text/html";
 
 		//Based on https://habr.com/ru/post/120157/
@@ -40,10 +41,11 @@ namespace WebOne
 			Console.Write("\n>");
 
 			int Count = 0;
+			NetworkStream ClientStream;
 			try
 			{
 				//get request
-				NetworkStream ClientStream = Client.GetStream();
+				ClientStream = Client.GetStream();
 
 				while (ClientStream.DataAvailable)
 				{
@@ -189,13 +191,22 @@ namespace WebOne
 
 			try
 			{
-				//try to return...
+			//try to return...
 				if (!StWrong)
 				{
 					ResponseHeaders = "HTTP/1.0 200\nContent-type: " + ContentType + "\nContent-Length:" + ResponseBody.Length.ToString() + ResponseHeaders;
 					byte[] RespBuffer = Encoding.Default.GetBytes(ResponseHeaders + "\n");
-					RespBuffer = RespBuffer.Concat(ResponseBuffer ?? Encoding.Default.GetBytes(ResponseBody)).ToArray();
-					Client.GetStream().Write(RespBuffer, 0, RespBuffer.Length);
+					if (TransitStream == null)
+					{
+						RespBuffer = RespBuffer.Concat(ResponseBuffer ?? Encoding.Default.GetBytes(ResponseBody)).ToArray();
+						ClientStream.Write(RespBuffer, 0, RespBuffer.Length);
+					}
+					else
+					{
+						RespBuffer = ResponseBuffer;// RespBuffer.Concat(ResponseBuffer ?? Encoding.Default.GetBytes(ResponseBody)).ToArray();
+						ClientStream.Write(RespBuffer, 0, RespBuffer.Length);
+						TransitStream.CopyTo(ClientStream);
+					}
 					Client.Close();
 				}
 			}catch (Exception ex) {
@@ -228,9 +239,12 @@ namespace WebOne
 				//если сервер вернул текст, сделать правки, иначе прогнать как есть дальше
 				ResponseBody = ProcessBody(ResponseBody);
 				ResponseBuffer = Encoding.Default.GetBytes(ResponseBody);
-			}else {
+			}
+			else
+			{
 				Console.Write("[Binary]");
-				ResponseBuffer = response.RawContent;
+				//ResponseBuffer = response.RawContent;
+				TransitStream = response.Stream;
 			}
 			Console.WriteLine(".");
 			return ResponseBuffer;
@@ -267,6 +281,20 @@ namespace WebOne
 			}
 			catch {
 				Console.WriteLine("Cannot return HTTP error " + Code);
+			}
+		}
+
+		/// <summary>
+		/// Read a Stream as byte array
+		/// </summary>
+		/// <param name="input">The stream to be read</param>
+		/// <returns></returns>
+		private byte[] ReadFully(Stream input)
+		{
+			using (MemoryStream ms = new MemoryStream())
+			{
+				input.CopyTo(ms);
+				return ms.ToArray();
 			}
 		}
 	}

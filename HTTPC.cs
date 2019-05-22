@@ -11,19 +11,24 @@ using System.Threading.Tasks;
 namespace WebOne
 {
 /// <summary>
-/// Modern HTTP(S) client
+/// Modern HTTP(S) client.
 /// </summary>
 	class HTTPC
 	{
 		//based on http://www.cyberforum.ru/post8143282.html
 
 		private const string UA_Mozilla = "Mozilla/5.0 (Windows NT 4.0; WOW64; rv:99.0) Gecko/20100101 Firefox/99.0";
-		private string[] HeaderBanList = { "Proxy-Connection", "User-Agent", "Host", "Accept", "Referer", "Connection", "Content-type", "Content-length", "If-Modified-Since" };
+		private string[] HeaderBanList = { "Proxy-Connection", "User-Agent", "Host", "Accept", "Referer", "Connection", "Content-type", "Content-length", "If-Modified-Since", "Accept-Encoding", "Accept-Charset" };
+		HttpWebResponse webResponse = null;
 
 
 		public HTTPC()
 		{
 
+		}
+
+		~HTTPC() {
+			if (webResponse != null) webResponse.Close();
 		}
 
 		/// <summary>
@@ -35,7 +40,6 @@ namespace WebOne
 		/// <returns>Server's response.</returns>
 		public HttpResponse GET(string host, CookieContainer cc, WebHeaderCollection headers)
 		{
-			HttpWebResponse webResponse = null;
 			try
 			{
 				foreach(string badhost in ConfigFile.ForceHttps)
@@ -76,11 +80,11 @@ namespace WebOne
 				}
 				throw;
 			}
-			finally
+			/*finally
 			{
 				if (webResponse != null)
 					webResponse.Close();
-			}
+			}*/
 
 		}
 		
@@ -95,8 +99,6 @@ namespace WebOne
 		//public HttpResponse POST(string host, CookieContainer cc, NameValueCollection param)
 		public HttpResponse POST(string host, CookieContainer cc, string data, WebHeaderCollection headers)
 		{
-			HttpWebResponse webResponse = null;
-
 			try
 			{
 				foreach (string badhost in ConfigFile.ForceHttps)
@@ -145,11 +147,11 @@ namespace WebOne
 			{
 				throw;
 			}
-			finally
+			/*finally
 			{
 				if (webResponse != null)
 					webResponse.Close();
-			}
+			}*/
 		}
 
 		/// <summary>
@@ -184,6 +186,7 @@ namespace WebOne
 			this.ContentType = webResponse.ContentType;
 			this.Cookies = webResponse.Cookies;
 			this.Headers = webResponse.Headers;
+			if (this.Headers["Content-Encoding"] != null) this.Headers["Content-Encoding"] = "identity";
 			this.IsMutuallyAuthenticated = webResponse.IsMutuallyAuthenticated;
 			this.LastModified = webResponse.LastModified;
 			this.Method = webResponse.Method;
@@ -196,6 +199,7 @@ namespace WebOne
 			this.SupportsHeaders = webResponse.SupportsHeaders;
 			#endif
 			this.Instance = webResponse;
+			this.Stream = GetStream();
 			this.RawContent = GetRawContent();
 			this.Content = GetBody();
 		}
@@ -218,10 +222,15 @@ namespace WebOne
 		public HttpWebResponse Instance { get; private set; }
 		public string Content { get; private set; }
 		public byte[] RawContent { get; private set; }
+		public Stream Stream { get; private set; }
+
+		private Stream GetStream() {
+			return Decompress(this.Instance);
+		}
 
 		private byte[] GetRawContent()
 		{
-			return ReadFully(Decompress(this.Instance));
+			return ReadFully(Stream);
 		}
 
 		private string GetBody()
