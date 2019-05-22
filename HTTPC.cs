@@ -137,6 +137,7 @@ namespace WebOne
 				using (var requestStream = new StreamWriter(webRequest.GetRequestStream()))
 				{
 					requestStream.Write(data);
+					requestStream.Close();
 				}
 
 				webResponse = (HttpWebResponse)webRequest.GetResponse();
