@@ -38,6 +38,15 @@ namespace WebOne
 			HttpWebResponse webResponse = null;
 			try
 			{
+				foreach(string badhost in ConfigFile.ForceHttps)
+				{
+					if (host.Substring(7).StartsWith(badhost))
+					{
+						host = "https" + host.Substring(4);
+						Console.Write(" secure");
+					}
+				}
+
 				HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(host);
 				string UA = headers["User-Agent"] + " WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 				string Accept = headers["Accept"];
@@ -90,6 +99,15 @@ namespace WebOne
 
 			try
 			{
+				foreach (string badhost in ConfigFile.ForceHttps)
+				{
+					if (host.Substring(7).StartsWith(badhost))
+					{
+						host = "https" + host.Substring(4);
+						Console.Write(" secure");
+					}
+				}
+
 				HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(host);
 				string UA = headers["User-Agent"] + " WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 				string Accept = headers["Accept"];
@@ -213,7 +231,7 @@ namespace WebOne
 
 			//StreamReader reader = new StreamReader(Decompress(this.Instance), Encoding.UTF8);
 			//return reader.ReadToEnd();
-			if(ContentType.Contains("utf-8")) return Encoding.UTF8.GetString(RawContent);
+			if(ContentType.ToLower().Contains("utf-8")) return Encoding.UTF8.GetString(RawContent);
 			else return Encoding.Default.GetString(RawContent);
 		}
 

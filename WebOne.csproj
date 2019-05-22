@@ -49,6 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConfigFile.cs" />
     <Compile Include="HTTPC.cs" />
     <Compile Include="HTTPServer.cs" />
     <Compile Include="Program.cs" />
