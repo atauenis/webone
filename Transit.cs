@@ -17,6 +17,17 @@ namespace WebOne
 	{
 		public static string LastURL = "http://999.999.999.999/CON";//dirty workaround for phantom.sannata.org and similar sites
 
+		byte[] Buffer = new byte[10485760]; //todo: adjust for real request size
+		string Request = "";
+		string RequestHeaders = "";
+		string RequestBody = "";
+		int RequestHeadersEnd;
+
+		string ResponseHeaders = "HTTP/1.0 200\n";
+		string ResponseBody = ":(";
+		byte[] ResponseBuffer;
+		string ContentType = "text/html";
+
 		//Based on https://habr.com/ru/post/120157/
 		//Probably the class name needs to be changed
 
@@ -28,15 +39,10 @@ namespace WebOne
 		{
 			Console.Write("\n>");
 
-			byte[] Buffer = new byte[10485760]; //todo: adjust for real request size
-			string Request = "";
-			string RequestHeaders = "";
-			string RequestBody = "";
-			int RequestHeadersEnd;
-
 			int Count = 0;
 			try
 			{
+				//get request
 				NetworkStream ClientStream = Client.GetStream();
 
 				while(ClientStream.DataAvailable)
@@ -62,6 +68,7 @@ namespace WebOne
 				return;
 			}
 
+			//find URL, method and headers
 			Match ReqMatch = Regex.Match(Request, @"^\w+\s+([^\s]+)[^\s]*\s+HTTP/.*|");
 			if (ReqMatch == Match.Empty)
 			{
@@ -83,6 +90,7 @@ namespace WebOne
 				}
 			}
 
+			//fix "carousels"
 			string RefererUri = RequestHeaderCollection["Referer"];
 			string RequestUri = ReqMatch.Groups[1].Value;
 			if (RequestUri.StartsWith("/")) RequestUri = RequestUri.Substring(1); //debug mode: http://localhost:80/http://example.com/indexr.shtml
@@ -97,13 +105,10 @@ namespace WebOne
 			Console.Write(" " + RequestUri + " ");
 			LastURL = RequestUri;
 			
+			//make reply
 			//SendError(Client, 200);
 			
 			HTTPC https = new HTTPC();
-			string ResponseHeaders = "HTTP/1.0 200\n";
-			string ResponseBody = ":(";
-			string ContentType = "text/html";
-
 			bool StWrong = false; //break operation if something is wrong.
 			Console.Write("Try to " + RequestMethod.ToLower());
 
@@ -114,27 +119,12 @@ namespace WebOne
 					case "GET":
 						//try to get...
 						response = https.GET(RequestUri, new CookieContainer(), RequestHeaderCollection);
-						Console.Write("...");
-						Console.Write(response.StatusCode);
-						Console.Write("...");
-						ResponseBody = response.Content;
-						ContentType = response.ContentType;
-						Console.WriteLine("Body {0}K of {1}", ResponseBody.Length / 1024, ContentType);
-						if (response.ContentType.StartsWith("text"))
-							ResponseBody = ProcessBody(ResponseBody);
+						MakeOutput(response);
 						break;
 					case "POST":
 						//try to post...
 						response = https.POST(RequestUri, new CookieContainer(), RequestBody, RequestHeaderCollection);
-						Console.Write("...");
-						Console.Write(response.StatusCode);
-						Console.Write("...");
-						ResponseBody = response.Content;
-						
-						ContentType = response.ContentType;
-						Console.WriteLine("Body {0}K of {1}", ResponseBody.Length / 1024, ContentType);
-						if (response.ContentType.StartsWith("text"))
-							ResponseBody = ProcessBody(ResponseBody);
+						MakeOutput(response);
 						break;
 					default:
 						SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method.");
@@ -171,8 +161,8 @@ namespace WebOne
 				if (!StWrong)
 				{
 					ResponseHeaders = "HTTP/1.0 200\nContent-type: " + ContentType + "\nContent-Length:" + ResponseBody.Length.ToString() + ResponseHeaders;
-					string Response = ResponseHeaders + "\n\n" + ResponseBody;
-					byte[] RespBuffer = Encoding.Default.GetBytes(Response);
+					byte[] RespBuffer = Encoding.Default.GetBytes(ResponseHeaders + "\n");
+					RespBuffer = RespBuffer.Concat(ResponseBuffer ?? Encoding.Default.GetBytes(ResponseBody)).ToArray();
 					Client.GetStream().Write(RespBuffer, 0, RespBuffer.Length);
 					Client.Close();
 				}
@@ -181,6 +171,32 @@ namespace WebOne
 			}
 
 			Console.WriteLine("The client is served.");
+		}
+
+		/// <summary>
+		/// Make reply's body as byte array
+		/// </summary>
+		/// <param name="response">The HTTP Response</param>
+		/// <returns>Array of bytes (the body)</returns>
+		private byte[] MakeOutput(HttpResponse response) {
+			Console.Write("...");
+			Console.Write(response.StatusCode);
+			Console.Write("...");
+			ResponseBody = response.Content;
+			ResponseBuffer = Encoding.Default.GetBytes(ResponseBody);
+			ContentType = response.ContentType;
+			Console.Write("Body {0}K of {1}", ResponseBody.Length / 1024, ContentType);
+			if (response.ContentType.StartsWith("text"))
+			{
+				//если сервер вернул текст, сделать правки, иначе прогнать как есть дальше
+				ResponseBody = ProcessBody(ResponseBody);
+				ResponseBuffer = Encoding.Default.GetBytes(ResponseBody);
+			}else {
+				Console.Write("[Binary]");
+				ResponseBuffer = response.RawContent;
+			}
+			Console.WriteLine(".");
+			return ResponseBuffer;
 		}
 
 		/// <summary>

@@ -47,9 +47,9 @@ namespace WebOne
 				foreach (string str in HeaderBanList) { headers.Remove(str); }
 				webRequest.Headers = headers;
 
-				webRequest.Accept = Accept;
-				webRequest.UserAgent = UA;
-				webRequest.Referer = Referer;
+				webRequest.Accept = Accept ?? "*/*";
+				webRequest.UserAgent = UA ?? UA_Mozilla;
+				if(Referer != null) webRequest.Referer = Referer;
 				webRequest.Method = "GET";
 				webRequest.AllowAutoRedirect = true;
 				webRequest.CookieContainer = cc;
@@ -180,6 +180,7 @@ namespace WebOne
 			this.SupportsHeaders = webResponse.SupportsHeaders;
 			#endif
 			this.Instance = webResponse;
+			this.RawContent = GetRawContent();
 			this.Content = GetBody();
 		}
 
@@ -200,14 +201,30 @@ namespace WebOne
 		public bool SupportsHeaders { get; private set; }
 		public HttpWebResponse Instance { get; private set; }
 		public string Content { get; private set; }
+		public byte[] RawContent { get; private set; }
+
+		private byte[] GetRawContent()
+		{
+			return ReadFully(Decompress(this.Instance));
+		}
 
 		private string GetBody()
 		{
 			if (this.Instance == null)
 				return null;
 
-			StreamReader reader = new StreamReader(Decompress(this.Instance), Encoding.UTF8);
-			return reader.ReadToEnd();
+			//StreamReader reader = new StreamReader(Decompress(this.Instance), Encoding.UTF8);
+			//return reader.ReadToEnd();
+			return Encoding.UTF8.GetString(RawContent);
+		}
+
+		private static byte[] ReadFully(Stream input)
+		{
+			using (MemoryStream ms = new MemoryStream())
+			{
+				input.CopyTo(ms);
+				return ms.ToArray();
+			}
 		}
 
 		private Stream Decompress(HttpWebResponse webResponse)
