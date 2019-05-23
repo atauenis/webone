@@ -332,6 +332,6 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
-/EXE/IE6.png
-/EXE/IE6v1.png
-/EXE/IE6v018.png
+/EXE/*.png
+/EXE/*.JPG
+/Screenshots

@@ -296,7 +296,9 @@ namespace WebOne
 			Console.Write("["+Code+"]");
 			Text += Program.GetInfoString();
 			string CodeStr = Code.ToString() + " " + ((HttpStatusCode)Code).ToString();
-			string Html = "<html><body><h1>" + CodeStr + "</h1>"+Text+"</body></html>";
+			string Refresh = "<META HTTP-EQUIV=REFRESH CONTENT=0>";
+			if (Code != 302 || ExtraHeaders.StartsWith("Refresh:")) Refresh = "";
+			string Html = "<html>" + Refresh + "<body><h1>" + CodeStr + "</h1>"+Text+"</body></html>";
 			string Str = "HTTP/1.0 " + CodeStr + "\nContent-type: text/html\nContent-Length:" + Html.Length.ToString() + ExtraHeaders + "\n\n" + Html;
 			byte[] Buffer = Encoding.ASCII.GetBytes(Str);
 			try
