@@ -48,6 +48,8 @@ namespace WebOne
 				//get request
 				ClientStream = Client.GetStream();
 
+				for(int i = 0; i < 1000; i++) { Console.CursorLeft = Console.CursorLeft; } //wait for slow clients
+
 				while (ClientStream.DataAvailable)
 				{
 					ClientStream.Read(Buffer, Count, 1);
@@ -56,7 +58,7 @@ namespace WebOne
 				}
 				Request += Encoding.ASCII.GetString(Buffer).Trim('\0'); //cut empty 10 megabytes
 
-				if (Request.Length == 0) { SendError(Client, 400); return; }
+				if (Request.Length == 0) { Console.Write("[Empty]"); SendError(Client, 400); return; }
 
 				RequestHeadersEnd = Request.IndexOf("\r\n\r\n");
 				RequestHeaders = Request.Substring(0, RequestHeadersEnd);
@@ -76,6 +78,7 @@ namespace WebOne
 			if (ReqMatch == Match.Empty)
 			{
 				//If the request seems to be invalid, raise HTTP 400 error.
+				Console.WriteLine("[Invalid request]");
 				SendError(Client, 400);
 				return;
 			}
