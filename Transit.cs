@@ -15,7 +15,8 @@ namespace WebOne
 	/// </summary>
 	class Transit
 	{
-		public static string LastURL = "http://999.999.999.999/CON";//dirty workaround for phantom.sannata.org and similar sites
+		static string LastURL = "http://999.999.999.999/CON";//dirty workaround for phantom.sannata.org and similar sites
+		byte[] UTF8BOM = Encoding.UTF8.GetPreamble();
 
 		byte[] Buffer = new byte[10485760]; //todo: adjust for real request size
 		string Request = "";
@@ -90,6 +91,7 @@ namespace WebOne
 				{
 					RequestHeaderCollection.Add(hdr);
 				}
+				//if (hdr.Contains("ookie")) Console.WriteLine("Sent cookie: " + hdr);
 			}
 
 			//fix "carousels"
@@ -125,7 +127,10 @@ namespace WebOne
 			if ((RequestUri == RefererUri || RequestUri == LastURL) && RequestUri != "")
 			{
 				Console.Write("Carousel");
-				RequestUri = "https" + RequestUri.Substring(4);
+				if(!LastURL.StartsWith("https") && !RequestUri.StartsWith("https")) //if http is gone, try https
+					RequestUri = "https" + RequestUri.Substring(4);
+				if (LastURL.StartsWith("https")) //if can't use https, try again http
+					RequestUri = "http" + RequestUri.Substring(4);
 			}
 
 			Console.Write(" " + RequestUri + " ");
@@ -167,9 +172,12 @@ namespace WebOne
 					string header = response.Headers.GetKey(i);
 					foreach (string value in response.Headers.GetValues(i))
 					{
-						if(header != "Content-Length")
-						ResponseHeaders += (header + ": " + value + "\n");
-						//Console.WriteLine(header + ": " + value);
+						if (header != "Content-Length")
+						{
+							ResponseHeaders += (header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", "") + "\n");
+							//Console.WriteLine(header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
+							//if (header.Contains("ookie")) Console.WriteLine("Got cookie: " + value);
+						}
 					}
 				}
 				
@@ -229,14 +237,15 @@ namespace WebOne
 			ResponseBuffer = Encoding.Default.GetBytes(ResponseBody);
 			ContentType = response.ContentType;
 			Console.Write("Body {0}K of {1}", ResponseBody.Length / 1024, ContentType);
-			if (ContentType.Contains("utf-8")) ContentType = ContentType.Substring(0, ContentType.IndexOf(';'));
-			if (response.ContentType.StartsWith("text") ||
-			response.ContentType.Contains("javascript") || 
-			response.ContentType.Contains("json") ||
-			response.ContentType.Contains("cdf") ||
-			response.ContentType.Contains("xml"))
+			if (ContentType.ToLower().Contains("utf-8")) ContentType = ContentType.Substring(0, ContentType.IndexOf(';'));
+			if (ContentType.StartsWith("text") ||
+			ContentType.Contains("javascript") || 
+			ContentType.Contains("json") ||
+			ContentType.Contains("cdf") ||
+			ContentType.Contains("xml"))
 			{
 				//если сервер вернул текст, сделать правки, иначе прогнать как есть дальше
+				//ContentType = ContentType.ToLower().Replace("utf-8","windows-"+Encoding.Default.CodePage);
 				ResponseBody = ProcessBody(ResponseBody);
 				ResponseBuffer = Encoding.Default.GetBytes(ResponseBody);
 			}
@@ -257,6 +266,12 @@ namespace WebOne
 		/// <returns>The fixed body, compatible with old browsers</returns>
 		private string ProcessBody(string Body) {
 			Body = Body.Replace("https", "http");
+			Body = Body.Replace("harset=\"utf-8\"", "harset=\"" + Encoding.Default.WebName + "\"");
+			Body = Body.Replace("harset=\"UTF-8\"", "harset=\"" + Encoding.Default.WebName + "\"");
+			Body = Body.Replace("harset=utf-8", "harset=" + Encoding.Default.WebName);
+			Body = Body.Replace("harset=UTF-8", "harset=" + Encoding.Default.WebName);
+			Body = Body.Replace("CHARSET=UTF-8", "CHARSET=" + Encoding.Default.WebName);
+			Body = Body.Replace(Encoding.Default.GetString(UTF8BOM), "BOM");
 			Body = Encoding.Default.GetString(Encoding.Convert(Encoding.UTF8, Encoding.Default, Encoding.UTF8.GetBytes(Body)));
 			return Body;
 		}
