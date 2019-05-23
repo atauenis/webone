@@ -24,7 +24,8 @@ namespace WebOne
 		string RequestBody = "";
 		int RequestHeadersEnd;
 
-		string ResponseHeaders = "HTTP/1.0 200\n";
+		HttpResponse response;
+		string ResponseHeaders;
 		string ResponseBody = ":(";
 		byte[] ResponseBuffer;
 		Stream TransitStream = null;
@@ -151,7 +152,6 @@ namespace WebOne
 
 			try
 			{
-				HttpResponse response;
 				switch (RequestMethod) {
 					case "GET":
 						//try to get...
@@ -175,7 +175,7 @@ namespace WebOne
 					string header = response.Headers.GetKey(i);
 					foreach (string value in response.Headers.GetValues(i))
 					{
-						if (header != "Content-Length")
+						if (!header.StartsWith("Content-"))
 						{
 							ResponseHeaders += (header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", "") + "\n");
 							//Console.WriteLine(header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
@@ -205,8 +205,8 @@ namespace WebOne
 			//try to return...
 				if (!StWrong)
 				{
-					ResponseHeaders = "HTTP/1.0 200\nContent-type: " + ContentType + "\nContent-Length:" + ResponseBody.Length.ToString() + ResponseHeaders;
-					byte[] RespBuffer = Encoding.Default.GetBytes(ResponseHeaders + "\n");
+					ResponseHeaders = "HTTP/1.0 200\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + ResponseBody.Length;
+					byte[] RespBuffer = Encoding.Default.GetBytes(ResponseHeaders + "\n\n");
 					if (TransitStream == null)
 					{
 						RespBuffer = RespBuffer.Concat(ResponseBuffer ?? Encoding.Default.GetBytes(ResponseBody)).ToArray();
