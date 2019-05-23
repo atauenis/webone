@@ -23,6 +23,7 @@ namespace WebOne
 		string RequestHeaders = "";
 		string RequestBody = "";
 		int RequestHeadersEnd;
+		bool LocalMode = false;
 
 		HttpResponse response;
 		string ResponseHeaders;
@@ -59,7 +60,8 @@ namespace WebOne
 				}
 				Request += Encoding.ASCII.GetString(Buffer).Trim('\0'); //cut empty 10 megabytes
 
-				if (Request.Length == 0) { Console.Write("[Empty]"); SendError(Client, 400); return; }
+				//check if the request is empty and report to try again.
+				if (Request.Length == 0) { Console.Write(" Empty request."); SendError(Client, 302, "The request wasn't heard. Please try again.","\nLocation: "); return; }
 
 				RequestHeadersEnd = Request.IndexOf("\r\n\r\n");
 				RequestHeaders = Request.Substring(0, RequestHeadersEnd);
@@ -79,8 +81,8 @@ namespace WebOne
 			if (ReqMatch == Match.Empty)
 			{
 				//If the request seems to be invalid, raise HTTP 400 error.
-				Console.WriteLine("[Invalid request]");
-				SendError(Client, 400);
+				Console.WriteLine(" Invalid request");
+				SendError(Client, 400, "Invalid request");
 				return;
 			}
 
@@ -104,6 +106,8 @@ namespace WebOne
 
 			if (RequestUri.StartsWith("/"))
 			{
+				Console.Write("Local:");
+				LocalMode = true;
 				if (RequestUri.StartsWith("/http:") || RequestUri.StartsWith("/https:"))
 					RequestUri = RequestUri.Substring(1); //debug mode: http://localhost:80/http://example.com/indexr.shtml
 				else {
@@ -269,6 +273,7 @@ namespace WebOne
 		/// <returns>The fixed body, compatible with old browsers</returns>
 		private string ProcessBody(string Body) {
 			Body = Body.Replace("https", "http");
+			if(LocalMode) Body = Body.Replace("http://", "http://localhost/http://");//replace with real hostname
 			Body = Body.Replace("harset=\"utf-8\"", "harset=\"" + Encoding.Default.WebName + "\"");
 			Body = Body.Replace("harset=\"UTF-8\"", "harset=\"" + Encoding.Default.WebName + "\"");
 			Body = Body.Replace("harset=utf-8", "harset=" + Encoding.Default.WebName);
@@ -285,12 +290,14 @@ namespace WebOne
 		/// <param name="Client">TcpListener client</param>
 		/// <param name="Code">Error code number</param>
 		/// <param name="Text">Error description for user</param>
-		private void SendError(TcpClient Client, int Code, string Text = "")
+		/// <param name="ExtraHeaders">Additional headers (like "Location: filename.ext" for 302 or "Refresh: 10; filename.ext" for 200)</param>
+		private void SendError(TcpClient Client, int Code, string Text = "", string ExtraHeaders = "")
 		{
+			Console.Write("["+Code+"]");
 			Text += Program.GetInfoString();
 			string CodeStr = Code.ToString() + " " + ((HttpStatusCode)Code).ToString();
 			string Html = "<html><body><h1>" + CodeStr + "</h1>"+Text+"</body></html>";
-			string Str = "HTTP/1.0 " + CodeStr + "\nContent-type: text/html\nContent-Length:" + Html.Length.ToString() + "\n\n" + Html;
+			string Str = "HTTP/1.0 " + CodeStr + "\nContent-type: text/html\nContent-Length:" + Html.Length.ToString() + ExtraHeaders + "\n\n" + Html;
 			byte[] Buffer = Encoding.ASCII.GetBytes(Str);
 			try
 			{
