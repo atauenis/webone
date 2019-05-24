@@ -14,16 +14,15 @@ namespace WebOne
 
 		static void Main(string[] args)
 		{
-
-			int Port = 80;
-			try { Port = Convert.ToInt32(args[0]); } catch { }
-
+			Console.Title = "WebOne";
 			Console.WriteLine("WebOne HTTP Proxy Server {0}.\n(C) 2019 Alexander Tauenis.\nhttps://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
-			Console.Title = "WebOne @ " + Port;
 #if NET40
 			Console.WriteLine("Warning: this build is compiled for .NET Framework 4.0 from 2010.\n");
 #endif
 
+			int Port = ConfigFile.Port;
+			try { Port = Convert.ToInt32(args[0]); } catch { }
+			Console.Title = "WebOne @ " + Environment.MachineName + ":" + Port;
 
 			/*string host = "https://mozilla.org";
 			HTTPC https = new HTTPC();
@@ -52,6 +51,16 @@ namespace WebOne
 			OnNet40 = " / .NET FW 4.0";
 #endif
 			return "<hr>WebOne Proxy Server " + Assembly.GetExecutingAssembly().GetName().Version + "<br>on " + Environment.OSVersion.VersionString + OnNet40;
+		}
+
+		/// <summary>
+		/// Check a string for containing a something from list of patterns
+		/// </summary>
+		/// <param name="What">What string should be checked</param>
+		/// <param name="For">Pattern to find</param>
+		public static bool CheckString(string What, string[] For) {
+			foreach (string str in For) { if (What.Contains(str)) return true; }
+			return false;
 		}
 	}
 }

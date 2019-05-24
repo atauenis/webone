@@ -18,7 +18,7 @@ namespace WebOne
 		static string LastURL = "http://999.999.999.999/CON";//dirty workaround for phantom.sannata.org and similar sites
 		byte[] UTF8BOM = Encoding.UTF8.GetPreamble();
 
-		byte[] Buffer = new byte[10485760]; //todo: adjust for real request size
+		byte[] Buffer = new byte[ConfigFile.RequestBufferSize]; //todo: adjust for real request size
 		string Request = "";
 		string RequestHeaders = "";
 		string RequestBody = "";
@@ -50,7 +50,7 @@ namespace WebOne
 				//get request
 				ClientStream = Client.GetStream();
 
-				for(int i = 0; i < 1000; i++) { Console.CursorLeft = Console.CursorLeft; } //wait for slow clients
+				for(int i = 0; i < ConfigFile.SlowClientHack; i++) { Console.CursorLeft = Console.CursorLeft; } //wait for slow clients
 
 				while (ClientStream.DataAvailable)
 				{
@@ -210,15 +210,15 @@ namespace WebOne
 				if (!StWrong)
 				{
 					ResponseHeaders = "HTTP/1.0 200\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + ResponseBody.Length;
-					byte[] RespBuffer = Encoding.Default.GetBytes(ResponseHeaders + "\n\n");
+					byte[] RespBuffer = ConfigFile.OutputEncoding.GetBytes(ResponseHeaders + "\n\n");
 					if (TransitStream == null)
 					{
-						RespBuffer = RespBuffer.Concat(ResponseBuffer ?? Encoding.Default.GetBytes(ResponseBody)).ToArray();
+						RespBuffer = RespBuffer.Concat(ResponseBuffer ?? ConfigFile.OutputEncoding.GetBytes(ResponseBody)).ToArray();
 						ClientStream.Write(RespBuffer, 0, RespBuffer.Length);
 					}
 					else
 					{
-						RespBuffer = ResponseBuffer;// RespBuffer.Concat(ResponseBuffer ?? Encoding.Default.GetBytes(ResponseBody)).ToArray();
+						RespBuffer = ResponseBuffer;
 						ClientStream.Write(RespBuffer, 0, RespBuffer.Length);
 						TransitStream.CopyTo(ClientStream);
 					}
@@ -241,20 +241,16 @@ namespace WebOne
 			Console.Write(response.StatusCode);
 			Console.Write("...");
 			ResponseBody = response.Content;
-			ResponseBuffer = Encoding.Default.GetBytes(ResponseBody);
+			ResponseBuffer = ConfigFile.OutputEncoding.GetBytes(ResponseBody);
 			ContentType = response.ContentType;
 			Console.Write("Body {0}K of {1}", ResponseBody.Length / 1024, ContentType);
 			if (ContentType.ToLower().Contains("utf-8")) ContentType = ContentType.Substring(0, ContentType.IndexOf(';'));
-			if (ContentType.StartsWith("text") ||
-			ContentType.Contains("javascript") || 
-			ContentType.Contains("json") ||
-			ContentType.Contains("cdf") ||
-			ContentType.Contains("xml"))
+			if (Program.CheckString(ContentType, ConfigFile.TextTypes))
 			{
 				//если сервер вернул текст, сделать правки, иначе прогнать как есть дальше
-				//ContentType = ContentType.ToLower().Replace("utf-8","windows-"+Encoding.Default.CodePage);
+				//ContentType = ContentType.ToLower().Replace("utf-8","windows-"+ConfigFile.OutputEncoding.CodePage);
 				ResponseBody = ProcessBody(ResponseBody);
-				ResponseBuffer = Encoding.Default.GetBytes(ResponseBody);
+				ResponseBuffer = ConfigFile.OutputEncoding.GetBytes(ResponseBody);
 			}
 			else
 			{
@@ -274,13 +270,13 @@ namespace WebOne
 		private string ProcessBody(string Body) {
 			Body = Body.Replace("https", "http");
 			if(LocalMode) Body = Body.Replace("http://", "http://localhost/http://");//replace with real hostname
-			Body = Body.Replace("harset=\"utf-8\"", "harset=\"" + Encoding.Default.WebName + "\"");
-			Body = Body.Replace("harset=\"UTF-8\"", "harset=\"" + Encoding.Default.WebName + "\"");
-			Body = Body.Replace("harset=utf-8", "harset=" + Encoding.Default.WebName);
-			Body = Body.Replace("harset=UTF-8", "harset=" + Encoding.Default.WebName);
-			Body = Body.Replace("CHARSET=UTF-8", "CHARSET=" + Encoding.Default.WebName);
-			Body = Body.Replace(Encoding.Default.GetString(UTF8BOM), "BOM");
-			Body = Encoding.Default.GetString(Encoding.Convert(Encoding.UTF8, Encoding.Default, Encoding.UTF8.GetBytes(Body)));
+			Body = Body.Replace("harset=\"utf-8\"", "harset=\"" + ConfigFile.OutputEncoding.WebName + "\"");
+			Body = Body.Replace("harset=\"UTF-8\"", "harset=\"" + ConfigFile.OutputEncoding.WebName + "\"");
+			Body = Body.Replace("harset=utf-8", "harset=" + ConfigFile.OutputEncoding.WebName);
+			Body = Body.Replace("harset=UTF-8", "harset=" + ConfigFile.OutputEncoding.WebName);
+			Body = Body.Replace("CHARSET=UTF-8", "CHARSET=" + ConfigFile.OutputEncoding.WebName);
+			Body = Body.Replace(ConfigFile.OutputEncoding.GetString(UTF8BOM), "BOM");
+			Body = ConfigFile.OutputEncoding.GetString(Encoding.Convert(Encoding.UTF8, ConfigFile.OutputEncoding, Encoding.UTF8.GetBytes(Body)));
 			return Body;
 		}
 
