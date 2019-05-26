@@ -12,6 +12,8 @@ namespace WebOne
 	/// </summary>
 	static class ConfigFile
 	{
+		static List<string> StringListConstructor = new List<string>();
+
 		static string ConfigFileName = "/dev/ceiling"; //с потолка
 		static string[] SpecialSections = { "ForceHttps", "TextTypes", "UA:", "URL:" }; //like "UA:Mozilla/3.*"
 
@@ -34,12 +36,12 @@ namespace WebOne
 		/// <summary>
 		/// List of domains that should be open only using HTTPS
 		/// </summary>
-		public static string[] ForceHttps = { "phantom.sannata.org", "www.phantom.sannata.org", "vogons.org" };
+		public static string[] ForceHttps = { "www.phantom.sannata.org" };
 
 		/// <summary>
 		/// List of parts of Content-Types that describing text files
 		/// </summary>
-		public static string[] TextTypes = { "text/", "javascript", "json", "cdf", "xml"};
+		public static string[] TextTypes = { "text/", "javascript"};
 
 		/// <summary>
 		/// Encoding to be used in output content
@@ -59,20 +61,37 @@ namespace WebOne
 				if (CfgFile[i].StartsWith("[")) //section
 				{
 					Section = CfgFile[i].Substring(1, CfgFile[i].Length - 2);
+					StringListConstructor.Clear();
 					continue;
 				}
 				if(i > 1 && CfgFile[i] == "" && CfgFile[i-1] == "") //section separator
 				{
+					//doesn't work, needs to be investigated!
 					Section = "";
+					StringListConstructor.Clear();
 					continue;
 				}
 
-				/*Console.WriteLine(Section);
+				//Console.WriteLine(Section);
 				if(Program.CheckString(Section, SpecialSections)) //special sections (patterns, lists, etc)
 				{
-					Console.WriteLine("Special: " + Section);
+					//Console.WriteLine("{0}+={1}", Section, CfgFile[i]);
+					switch(Section) {
+						case "ForceHttps":
+							StringListConstructor.Add(CfgFile[i]);
+							ForceHttps = StringListConstructor.ToArray();
+							continue;
+						case "TextTypes":
+							StringListConstructor.Add(CfgFile[i]);
+							TextTypes = StringListConstructor.ToArray();
+							continue;
+						default:
+							Console.WriteLine("The special section {0} is not implemented in this build.", Section);
+							//тут будут обрабатываться сложные параметрные группы
+							continue;
+					}
 					continue;
-				}*/
+				}
 				
 				int BeginValue = CfgFile[i].IndexOf("=");//regular sections
 				if (BeginValue == 0) continue; //bad line
@@ -86,13 +105,19 @@ namespace WebOne
 							case "Port":
 								Port = Convert.ToInt32(ParamValue);
 								break;
+							case "RequestBufferSize":
+								RequestBufferSize = Convert.ToInt32(ParamValue);
+								break;
+							case "SlowClientHack":
+								SlowClientHack = Convert.ToInt32(ParamValue);
+								break;
 							default:
 								Console.WriteLine("Unknown server option: " + ParamName);
 								break;
 						}
 						break;
 					default:
-						Console.WriteLine("Unknown section: " + ParamName);
+						Console.WriteLine("Unknown section: " + Section);
 						break;
 				}
 
