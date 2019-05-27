@@ -104,14 +104,37 @@ namespace WebOne
 			string RefererUri = RequestHeaderCollection["Referer"];
 			string RequestUri = ReqMatch.Groups[1].Value;
 
+			//check for local or internal URL
 			if (RequestUri.StartsWith("/"))
 			{
+				if(RequestUri.StartsWith("/!")) {
+					//internal URLs
+					Console.Write("Internal: " + RequestUri);
+					switch(RequestUri.Substring(2,RequestUri.Length - 3)) {
+						case "codepages":
+							string codepages = "The following codepages are available: <br>\n" +
+							                   "<table><tr><td><b>Name</b></td><td><b>#</b></td><td><b>Description</b></td></tr>\n";
+							foreach(EncodingInfo cp in Encoding.GetEncodings()) {
+								if(Encoding.Default.EncodingName.Contains(" ") && cp.DisplayName.Contains(Encoding.Default.EncodingName.Substring(0, Encoding.Default.EncodingName.IndexOf(" "))))
+								codepages += "<tr><td><b><u>" + cp.Name + "</u></b></td><td><u>" + cp.CodePage + "</u></td><td><u>" + cp.DisplayName + (cp.CodePage == Encoding.Default.CodePage ? "</u> (<i>system default</i>)" : "</u>") + "</td></tr>\n";
+								else
+								codepages += "<tr><td><b>" + cp.Name + "</b></td><td>" + cp.CodePage + "</td><td>" + cp.DisplayName + "</td></tr>\n";
+							}
+							codepages += "</table><br>Use any of these. Underlined are for your locale.";
+							SendError(Client, 200, codepages);
+							break;
+						default:
+							SendError(Client, 200, "Unknown internal URL: " + RequestUri.Substring(2,RequestUri.Length - 3));
+							break;
+					}
+					return;
+				}
 				Console.Write("Local:");
 				LocalMode = true;
 				if (RequestUri.StartsWith("/http:") || RequestUri.StartsWith("/https:"))
-					RequestUri = RequestUri.Substring(1); //debug mode: http://localhost:80/http://example.com/indexr.shtml
+					RequestUri = RequestUri.Substring(1); //local mode: http://localhost:80/http://example.com/indexr.shtml
 				else {
-					//bad debug mode, try to use last used host: http://localhost:80/favicon.ico
+					//bad local mode, try to use last used host: http://localhost:80/favicon.ico
 					List<int> includes = new List<int>();
 
 					int i = LastURL.IndexOf("/", 0);
@@ -296,7 +319,7 @@ namespace WebOne
 			if (Code != 302 || ExtraHeaders.StartsWith("Refresh:")) Refresh = "";
 			string Html = "<html>" + Refresh + "<body><h1>" + CodeStr + "</h1>"+Text+"</body></html>";
 			string Str = "HTTP/1.0 " + CodeStr + "\nContent-type: text/html\nContent-Length:" + Html.Length.ToString() + ExtraHeaders + "\n\n" + Html;
-			byte[] Buffer = Encoding.ASCII.GetBytes(Str);
+			byte[] Buffer = Encoding.Default.GetBytes(Str);
 			try
 			{
 				Client.GetStream().Write(Buffer, 0, Buffer.Length);

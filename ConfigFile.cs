@@ -48,79 +48,105 @@ namespace WebOne
 		/// </summary>
 		public static Encoding OutputEncoding = Encoding.Default;
 
-		static ConfigFile() {
+		static ConfigFile()
+		{
 			ConfigFileName = "webone.conf";
 			Console.WriteLine("Using configuration file {0}.", ConfigFileName);
 
 			if (!File.Exists(ConfigFileName)) return;
-			string[] CfgFile = System.IO.File.ReadAllLines(ConfigFileName);
-			string Section = "";
-			for(int i = 0; i<CfgFile.Count(); i++) {
-				if (CfgFile[i] == "") continue; //empty lines
-				if (CfgFile[i].StartsWith(";")) continue; //comments
-				if (CfgFile[i].StartsWith("[")) //section
-				{
-					Section = CfgFile[i].Substring(1, CfgFile[i].Length - 2);
-					StringListConstructor.Clear();
-					continue;
-				}
-				if(i > 1 && CfgFile[i] == "" && CfgFile[i-1] == "") //section separator
-				{
-					//doesn't work, needs to be investigated!
-					Section = "";
-					StringListConstructor.Clear();
-					continue;
-				}
 
-				//Console.WriteLine(Section);
-				if(Program.CheckString(Section, SpecialSections)) //special sections (patterns, lists, etc)
+			try
+			{
+				string[] CfgFile = System.IO.File.ReadAllLines(ConfigFileName);
+				string Section = "";
+				for (int i = 0; i < CfgFile.Count(); i++)
 				{
-					//Console.WriteLine("{0}+={1}", Section, CfgFile[i]);
-					switch(Section) {
-						case "ForceHttps":
-							StringListConstructor.Add(CfgFile[i]);
-							ForceHttps = StringListConstructor.ToArray();
-							continue;
-						case "TextTypes":
-							StringListConstructor.Add(CfgFile[i]);
-							TextTypes = StringListConstructor.ToArray();
-							continue;
-						default:
-							Console.WriteLine("The special section {0} is not implemented in this build.", Section);
-							//тут будут обрабатываться сложные параметрные группы
-							continue;
+					if (CfgFile[i] == "") continue; //empty lines
+					if (CfgFile[i].StartsWith(";")) continue; //comments
+					if (CfgFile[i].StartsWith("[")) //section
+					{
+						Section = CfgFile[i].Substring(1, CfgFile[i].Length - 2);
+						StringListConstructor.Clear();
+						continue;
 					}
-					continue;
-				}
-				
-				int BeginValue = CfgFile[i].IndexOf("=");//regular sections
-				if (BeginValue == 0) continue; //bad line
-				string ParamName = CfgFile[i].Substring(0, BeginValue);
-				string ParamValue = CfgFile[i].Substring(BeginValue + 1);
-				//Console.WriteLine("{0}.{1}={2}", Section, ParamName, ParamValue);
+					if (i > 1 && CfgFile[i] == "" && CfgFile[i - 1] == "") //section separator
+					{
+						//doesn't work, needs to be investigated!
+						Section = "";
+						StringListConstructor.Clear();
+						continue;
+					}
 
-				switch (Section) {
-					case "Server":
-						switch(ParamName) {
-							case "Port":
-								Port = Convert.ToInt32(ParamValue);
-								break;
-							case "RequestBufferSize":
-								RequestBufferSize = Convert.ToInt32(ParamValue);
-								break;
-							case "SlowClientHack":
-								SlowClientHack = Convert.ToInt32(ParamValue);
-								break;
+					//Console.WriteLine(Section);
+					if (Program.CheckString(Section, SpecialSections)) //special sections (patterns, lists, etc)
+					{
+						//Console.WriteLine("{0}+={1}", Section, CfgFile[i]);
+						switch (Section)
+						{
+							case "ForceHttps":
+								StringListConstructor.Add(CfgFile[i]);
+								ForceHttps = StringListConstructor.ToArray();
+								continue;
+							case "TextTypes":
+								StringListConstructor.Add(CfgFile[i]);
+								TextTypes = StringListConstructor.ToArray();
+								continue;
 							default:
-								Console.WriteLine("Unknown server option: " + ParamName);
-								break;
+								Console.WriteLine("The special section {0} is not implemented in this build.", Section);
+								//тут будут обрабатываться сложные параметрные группы
+								continue;
 						}
-						break;
-					default:
-						Console.WriteLine("Unknown section: " + Section);
-						break;
-				}
+						continue;
+					}
 
+					int BeginValue = CfgFile[i].IndexOf("=");//regular sections
+					if (BeginValue == 0) continue; //bad line
+					string ParamName = CfgFile[i].Substring(0, BeginValue);
+					string ParamValue = CfgFile[i].Substring(BeginValue + 1);
+					//Console.WriteLine("{0}.{1}={2}", Section, ParamName, ParamValue);
+
+					switch (Section)
+					{
+						case "Server":
+							switch (ParamName)
+							{
+								case "Port":
+									Port = Convert.ToInt32(ParamValue);
+									break;
+								case "RequestBufferSize":
+									RequestBufferSize = Convert.ToInt32(ParamValue);
+									break;
+								case "SlowClientHack":
+									SlowClientHack = Convert.ToInt32(ParamValue);
+									break;
+								case "OutputEncoding":
+									if (CfgFile[i] == "0" || CfgFile[i] == "Windows")
+									{
+										OutputEncoding = Encoding.Default;
+									}
+									else
+									{
+										try { OutputEncoding = Encoding.GetEncoding(ParamValue); }
+										catch (ArgumentException) { Console.WriteLine("Warning: Bad codepage {0}, using {1}. Get list of available encodings at http://{2}:{3}/!codepages/.", ParamValue, OutputEncoding.EncodingName, Environment.MachineName, Port); }
+									}
+									continue;
+								default:
+									Console.WriteLine("Unknown server option: " + ParamName);
+									break;
+							}
+							break;
+						default:
+							Console.WriteLine("Unknown section: " + Section);
+							break;
+					}
+
+				}
+			}
+			catch(Exception ex) {
+				Console.WriteLine("Config parser error: {0}.",ex.ToString());
+				#if DEBUG
+				throw;
+				#endif
 			}
 			Console.WriteLine("{0} load complete.", ConfigFileName);
 		}
