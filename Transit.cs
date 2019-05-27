@@ -224,7 +224,7 @@ namespace WebOne
 			catch(Exception ex) {
 				StWrong = true;
 				Console.WriteLine("============GURU MEDITATION:\n{0}\nOn URL '{1}', Method '{2}'. Returning 500.============", ex.ToString(), RequestUri, RequestMethod);
-				SendError(Client, 500, "Guru meditaion at URL " + RequestUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace + "</i>" + Program.GetInfoString());
+				SendError(Client, 500, "Guru meditaion at URL " + RequestUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace + "</i>");
 			}
 
 			try

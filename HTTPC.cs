@@ -130,9 +130,11 @@ namespace WebOne
 				webRequest.ContentType = "application/x-www-form-urlencoded";
 				webRequest.ContentLength = data.Length;
 				webRequest.ServicePoint.Expect100Continue = false;
-#if !NET40
-				webRequest.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(AcceptAllCertifications);
-#endif
+				/*try
+				{
+					webRequest.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(AcceptAllCertifications);
+				}
+				catch (MissingMethodException) { }*/
 
 				using (var requestStream = new StreamWriter(webRequest.GetRequestStream()))
 				{
@@ -196,9 +198,11 @@ namespace WebOne
 			this.Server = webResponse.Server;
 			this.StatusCode = webResponse.StatusCode;
 			this.StatusDescription = webResponse.StatusDescription;
-			#if !NET40
-			this.SupportsHeaders = webResponse.SupportsHeaders;
-			#endif
+			/*try
+			{
+				this.SupportsHeaders = webResponse.SupportsHeaders;
+			}
+			catch (MissingMethodException) { }*/
 			this.Instance = webResponse;
 			this.Stream = GetStream();
 			this.RawContent = GetRawContent();
