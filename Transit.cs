@@ -30,7 +30,7 @@ namespace WebOne
 		string ResponseBody = ":(";
 		byte[] ResponseBuffer;
 		Stream TransitStream = null;
-		string ContentType = "text/html";
+		string ContentType = "";
 
 		//Based on https://habr.com/ru/post/120157/
 		//Probably the class name needs to be changed
@@ -202,7 +202,7 @@ namespace WebOne
 					string header = response.Headers.GetKey(i);
 					foreach (string value in response.Headers.GetValues(i))
 					{
-						if (!header.StartsWith("Content-"))
+						if (!header.StartsWith("Content-") && !header.StartsWith("If-Modified-Since"))
 						{
 							ResponseHeaders += (header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", "") + "\n");
 							//Console.WriteLine(header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
@@ -213,7 +213,9 @@ namespace WebOne
 				
 
 			} catch (WebException wex) {
-				ResponseBody = "Cannot load this page: " + wex.Status.ToString() + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestUri + Program.GetInfoString();
+				string err = (wex.Response as HttpWebResponse)?.StatusCode.ToString()
+							  ?? wex.Status.ToString();
+				ResponseBody = "Cannot load this page: " + err+ "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestUri + Program.GetInfoString();
 				Console.WriteLine("Failed.");
 			}
 			catch (UriFormatException)
@@ -298,7 +300,7 @@ namespace WebOne
 			Body = Body.Replace("harset=utf-8", "harset=" + ConfigFile.OutputEncoding.WebName);
 			Body = Body.Replace("harset=UTF-8", "harset=" + ConfigFile.OutputEncoding.WebName);
 			Body = Body.Replace("CHARSET=UTF-8", "CHARSET=" + ConfigFile.OutputEncoding.WebName);
-			Body = Body.Replace(ConfigFile.OutputEncoding.GetString(UTF8BOM), "BOM");
+			Body = Body.Replace(ConfigFile.OutputEncoding.GetString(UTF8BOM), "");
 			Body = ConfigFile.OutputEncoding.GetString(Encoding.Convert(Encoding.UTF8, ConfigFile.OutputEncoding, Encoding.UTF8.GetBytes(Body)));
 			return Body;
 		}
