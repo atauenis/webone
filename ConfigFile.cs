@@ -15,7 +15,7 @@ namespace WebOne
 		static List<string> StringListConstructor = new List<string>();
 
 		static string ConfigFileName = "/dev/ceiling"; //с потолка
-		static string[] SpecialSections = { "ForceHttps", "TextTypes", "UA:", "URL:" }; //like "UA:Mozilla/3.*"
+		static string[] SpecialSections = { "ForceHttps", "TextTypes"/*, "UA:", "URL:" */}; //like "UA:Mozilla/3.*"
 
 		/// <summary>
 		/// TCP port that should be used by the Proxy Server
@@ -48,9 +48,15 @@ namespace WebOne
 		/// </summary>
 		public static Encoding OutputEncoding = Encoding.Default;
 
-		//temporary; for development purposes
-		public static string JQueryPatch = "0";
-		public static string BootstrapPatch = "0";
+		/// <summary>
+		/// List of URLs that should be always 302ed
+		/// </summary>
+		public static List<string> FixableURLs = new List<string>();
+
+		/// <summary>
+		/// Dictionary of URLs that should be always 302ed if they're looks like too new JS frameworks
+		/// </summary>
+		public static Dictionary<string, Dictionary<string, string>> FixableUrlActions =  new Dictionary<string, Dictionary<string, string>>();
 
 		static ConfigFile()
 		{
@@ -71,6 +77,13 @@ namespace WebOne
 					{
 						Section = CfgFile[i].Substring(1, CfgFile[i].Length - 2);
 						StringListConstructor.Clear();
+
+						if (Section.StartsWith("FixableURL:")) 
+						{
+							FixableURLs.Add(Section.Substring(11));
+							FixableUrlActions.Add(Section.Substring(11), new Dictionary<string, string>());
+						}
+
 						continue;
 					}
 					if (i > 1 && CfgFile[i] == "" && CfgFile[i - 1] == "") //section separator
@@ -109,6 +122,13 @@ namespace WebOne
 					string ParamValue = CfgFile[i].Substring(BeginValue + 1);
 					//Console.WriteLine("{0}.{1}={2}", Section, ParamName, ParamValue);
 
+					if (Section.StartsWith("FixableURL"))
+					{
+						//Console.WriteLine("URL Fix rule: {0}/{1} = {2}",Section.Substring(11),ParamName,ParamValue);
+						FixableUrlActions[Section.Substring(11)].Add(ParamName, ParamValue);
+						continue;
+					}
+
 					switch (Section)
 					{
 						case "Server":
@@ -133,12 +153,6 @@ namespace WebOne
 										try { OutputEncoding = Encoding.GetEncoding(ParamValue); }
 										catch (ArgumentException) { Console.WriteLine("Warning: Bad codepage {0}, using {1}. Get list of available encodings at http://{2}:{3}/!codepages/.", ParamValue, OutputEncoding.EncodingName, Environment.MachineName, Port); }
 									}
-									continue;
-								case "JQueryPatch":
-									JQueryPatch = ParamValue;
-									continue;
-								case "BootstrapPatch":
-									BootstrapPatch = ParamValue;
 									continue;
 								default:
 									Console.WriteLine("Unknown server option: " + ParamName);

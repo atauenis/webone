@@ -168,22 +168,24 @@ namespace WebOne
 			LastURL = RequestUri;
 
 			//check for too new frameworks & replace with older versions
-			//далее поменяю на более универсальный код, работающий с масками
-			if(Regex.Match(RequestUri,@"jquery.min.js").Success) {
-				if(ConfigFile.JQueryPatch != "0" && !RequestUri.Contains(ConfigFile.JQueryPatch)) {
-					Console.Write("jQuery patch!");
-					SendError(Client, 302, "jQuery patched", "\nLocation: http://ajax.googleapis.com/ajax/libs/jquery/"+ConfigFile.JQueryPatch+ "/jquery.min.js");
-					return;
-				}
-			}
-
-			if (Regex.Match(RequestUri, @"bootstrap.min.js").Success)
+			foreach (string str in ConfigFile.FixableURLs)
 			{
-				if (ConfigFile.BootstrapPatch != "0" && !RequestUri.Contains(ConfigFile.BootstrapPatch))
+				if (Regex.Match(RequestUri, str).Success)
 				{
-					Console.Write("Bootstrap patch!");
-					SendError(Client, 302, "Bootstrap patched", "\nLocation: http://maxcdn.bootstrapcdn.com/bootstrap/" + ConfigFile.BootstrapPatch + "/js/bootstrap.min.js");
-					return;
+					try
+					{
+						if (!RequestUri.Contains(ConfigFile.FixableUrlActions[str]["ValidMask"]))
+						{
+							Console.Write("Fix to {1} bcos not {2}", RequestUri, ConfigFile.FixableUrlActions[str]["Redirect"], ConfigFile.FixableUrlActions[str]["ValidMask"]);
+							SendError(Client, 302, "Брось каку!", "\nLocation: " + ConfigFile.FixableUrlActions[str]["Redirect"]);
+							return;
+						}
+					}
+					catch (Exception rex)
+					{
+						Console.Write("Cannot redirect! " + rex.Message);
+						SendError(Client, 200, rex.ToString().Replace("\n", "\n<br>"));
+					}
 				}
 			}
 
