@@ -167,6 +167,26 @@ namespace WebOne
 			Console.Write(" " + RequestUri + " ");
 			LastURL = RequestUri;
 
+			//check for too new frameworks & replace with older versions
+			//далее поменяю на более универсальный код, работающий с масками
+			if(Regex.Match(RequestUri,@"jquery.min.js").Success) {
+				if(ConfigFile.JQueryPatch != "0" && !RequestUri.Contains(ConfigFile.JQueryPatch)) {
+					Console.Write("jQuery patch!");
+					SendError(Client, 302, "jQuery patched", "\nLocation: http://ajax.googleapis.com/ajax/libs/jquery/"+ConfigFile.JQueryPatch+ "/jquery.min.js");
+					return;
+				}
+			}
+
+			if (Regex.Match(RequestUri, @"bootstrap.min.js").Success)
+			{
+				if (ConfigFile.BootstrapPatch != "0" && !RequestUri.Contains(ConfigFile.BootstrapPatch))
+				{
+					Console.Write("Bootstrap patch!");
+					SendError(Client, 302, "Bootstrap patched", "\nLocation: http://maxcdn.bootstrapcdn.com/bootstrap/" + ConfigFile.BootstrapPatch + "/js/bootstrap.min.js");
+					return;
+				}
+			}
+
 			//make reply
 			//SendError(Client, 200);
 
@@ -202,7 +222,7 @@ namespace WebOne
 					string header = response.Headers.GetKey(i);
 					foreach (string value in response.Headers.GetValues(i))
 					{
-						if (!header.StartsWith("Content-") && !header.StartsWith("If-Modified-Since"))
+						if (!header.StartsWith("Content-"))
 						{
 							ResponseHeaders += (header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", "") + "\n");
 							//Console.WriteLine(header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
@@ -318,7 +338,7 @@ namespace WebOne
 			Text += Program.GetInfoString();
 			string CodeStr = Code.ToString() + " " + ((HttpStatusCode)Code).ToString();
 			string Refresh = "<META HTTP-EQUIV=REFRESH CONTENT=0>";
-			if (Code != 302 || ExtraHeaders.StartsWith("Refresh:")) Refresh = "";
+			if (Code != 302 || ExtraHeaders.StartsWith("Refresh:") || ExtraHeaders.StartsWith("Location:")) Refresh = "";
 			string Html = "<html>" + Refresh + "<body><h1>" + CodeStr + "</h1>"+Text+"</body></html>";
 			string Str = "HTTP/1.0 " + CodeStr + "\nContent-type: text/html\nContent-Length:" + Html.Length.ToString() + ExtraHeaders + "\n\n" + Html;
 			byte[] Buffer = Encoding.Default.GetBytes(Str);

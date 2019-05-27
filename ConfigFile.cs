@@ -48,6 +48,10 @@ namespace WebOne
 		/// </summary>
 		public static Encoding OutputEncoding = Encoding.Default;
 
+		//temporary; for development purposes
+		public static string JQueryPatch = "0";
+		public static string BootstrapPatch = "0";
+
 		static ConfigFile()
 		{
 			ConfigFileName = "webone.conf";
@@ -129,6 +133,12 @@ namespace WebOne
 										try { OutputEncoding = Encoding.GetEncoding(ParamValue); }
 										catch (ArgumentException) { Console.WriteLine("Warning: Bad codepage {0}, using {1}. Get list of available encodings at http://{2}:{3}/!codepages/.", ParamValue, OutputEncoding.EncodingName, Environment.MachineName, Port); }
 									}
+									continue;
+								case "JQueryPatch":
+									JQueryPatch = ParamValue;
+									continue;
+								case "BootstrapPatch":
+									BootstrapPatch = ParamValue;
 									continue;
 								default:
 									Console.WriteLine("Unknown server option: " + ParamName);
