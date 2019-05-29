@@ -224,7 +224,7 @@ namespace WebOne
 					string header = response.Headers.GetKey(i);
 					foreach (string value in response.Headers.GetValues(i))
 					{
-						if (!header.StartsWith("Content-"))
+						if (!header.StartsWith("Content-") && !header.StartsWith("Connection") && !header.StartsWith("Transfer-Encoding"))
 						{
 							ResponseHeaders += (header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", "") + "\n");
 							//Console.WriteLine(header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
@@ -235,9 +235,29 @@ namespace WebOne
 				
 
 			} catch (WebException wex) {
-				string err = (wex.Response as HttpWebResponse)?.StatusCode.ToString()
-							  ?? wex.Status.ToString();
-				ResponseBody = "Cannot load this page: " + err+ "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestUri + Program.GetInfoString();
+				string err = ": " + wex.Status.ToString();
+				if(wex.Response != null)
+				{
+					err = " because HTTP status code is not okay: " + (wex.Response as HttpWebResponse).StatusCode.ToString();
+					
+					switch((wex.Response as HttpWebResponse).StatusCode) {
+						case HttpStatusCode.NotModified:
+							SendError(Client, 304, "Not modified, see in cache.");
+							StWrong = true;
+							break;
+						case HttpStatusCode.NotFound:
+							SendError(Client, 404, "The requested document is not found on server.");
+							StWrong = true;
+							break;
+						case HttpStatusCode.Forbidden:
+							SendError(Client, 403, "You're not welcome here.");
+							StWrong = true;
+							break;
+						default:
+							break;
+					}
+				}
+				ResponseBody = "Cannot load this page" + err + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestUri + Program.GetInfoString();
 				Console.WriteLine("Failed.");
 			}
 			catch (UriFormatException)
@@ -322,6 +342,11 @@ namespace WebOne
 			Body = Body.Replace("harset=utf-8", "harset=" + ConfigFile.OutputEncoding.WebName);
 			Body = Body.Replace("harset=UTF-8", "harset=" + ConfigFile.OutputEncoding.WebName);
 			Body = Body.Replace("CHARSET=UTF-8", "CHARSET=" + ConfigFile.OutputEncoding.WebName);
+			Body = Body.Replace("ncoding=\"utf-8\"", "ncoding=\"" + ConfigFile.OutputEncoding.WebName + "\"");
+			Body = Body.Replace("ncoding=\"UTF-8\"", "ncoding=\"" + ConfigFile.OutputEncoding.WebName + "\"");
+			Body = Body.Replace("ncoding=utf-8", "ncoding=" + ConfigFile.OutputEncoding.WebName);
+			Body = Body.Replace("ncoding=UTF-8", "ncoding=" + ConfigFile.OutputEncoding.WebName);
+			Body = Body.Replace("ENCODING=UTF-8", "ENCODING=" + ConfigFile.OutputEncoding.WebName);
 			Body = Body.Replace(ConfigFile.OutputEncoding.GetString(UTF8BOM), "");
 			Body = ConfigFile.OutputEncoding.GetString(Encoding.Convert(Encoding.UTF8, ConfigFile.OutputEncoding, Encoding.UTF8.GetBytes(Body)));
 			return Body;

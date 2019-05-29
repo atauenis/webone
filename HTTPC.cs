@@ -244,9 +244,10 @@ namespace WebOne
 				return null;
 
 			//StreamReader reader = new StreamReader(Decompress(this.Instance), Encoding.UTF8);
-			//return reader.ReadToEnd();
-			if(ContentType.ToLower().Contains("utf-8")) return Encoding.UTF8.GetString(RawContent);
+			//return reader.ReadToEnd();			
+			if(ContentType.ToLower().Contains("utf-8") || RawContent[0] == Encoding.UTF8.GetPreamble()[0] ) return Encoding.UTF8.GetString(RawContent);
 			else return Encoding.Default.GetString(RawContent);
+			//todo: add another code page auto detection algorythm to prevent UTF8 corruption
 		}
 
 		private static byte[] ReadFully(Stream input)
