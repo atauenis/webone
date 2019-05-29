@@ -174,10 +174,17 @@ namespace WebOne
 				{
 					try
 					{
-						if (!RequestUri.Contains(ConfigFile.FixableUrlActions[str]["ValidMask"]))
+						string ValidMask = "";
+						if (ConfigFile.FixableUrlActions[str].ContainsKey("ValidMask")) ValidMask = ConfigFile.FixableUrlActions[str]["ValidMask"];
+
+						string Redirect = "about:mozilla";
+						if (ConfigFile.FixableUrlActions[str].ContainsKey("Redirect")) Redirect = ConfigFile.FixableUrlActions[str]["Redirect"];
+
+						if (ValidMask == "" || !Regex.Match(RequestUri, ValidMask).Success/*!RequestUri.Contains(ConfigFile.FixableUrlActions[str]["ValidMask"])*/)
 						{
-							Console.Write("Fix to {1} bcos not {2}", RequestUri, ConfigFile.FixableUrlActions[str]["Redirect"], ConfigFile.FixableUrlActions[str]["ValidMask"]);
-							SendError(Client, 302, "Брось каку!", "\nLocation: " + ConfigFile.FixableUrlActions[str]["Redirect"]);
+							string NewURL = Redirect.Replace("%URL%",RequestUri);
+							Console.Write("Fix to {1}", RequestUri, NewURL, ValidMask);
+							SendError(Client, 302, "Брось каку!", "\nLocation: " + NewURL);
 							return;
 						}
 					}
