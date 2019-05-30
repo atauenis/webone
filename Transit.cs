@@ -267,8 +267,7 @@ namespace WebOne
 #if DEBUG
 				ResponseBody = "<html><body>Cannot load this page" + err + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestUri + Program.GetInfoString() + "</body></html>";
 #else
-				ResponseBody = "<html><body>Cannot load this page" + err + "<br>URL: " + RequestUri + Program.GetInfoString() + "</body></html>";
-
+				ResponseBody = "<html><body>Cannot load this page" + err + " (<i>" + wex.Message + "</i>)<br>URL: " + RequestUri + Program.GetInfoString() + "</body></html>";
 #endif
 				Console.WriteLine("Failed.");
 			}
