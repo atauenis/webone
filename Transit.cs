@@ -252,19 +252,24 @@ namespace WebOne
 							SendError(Client, 304, "Not modified, see in cache.");
 							StWrong = true;
 							break;
-						case HttpStatusCode.NotFound:
+						/*case HttpStatusCode.NotFound:
 							SendError(Client, 404, "The requested document is not found on server.");
 							StWrong = true;
 							break;
 						case HttpStatusCode.Forbidden:
 							SendError(Client, 403, "You're not welcome here.");
 							StWrong = true;
-							break;
+							break;*/
 						default:
 							break;
 					}
 				}
-				ResponseBody = "Cannot load this page" + err + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestUri + Program.GetInfoString();
+#if DEBUG
+				ResponseBody = "<html><body>Cannot load this page" + err + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestUri + Program.GetInfoString() + "</body></html>";
+#else
+				ResponseBody = "<html><body>Cannot load this page" + err + "<br>URL: " + RequestUri + Program.GetInfoString() + "</body></html>";
+
+#endif
 				Console.WriteLine("Failed.");
 			}
 			catch (UriFormatException)

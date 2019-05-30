@@ -190,7 +190,7 @@ namespace WebOne
 			this.Cookies = webResponse.Cookies;
 			this.Headers = webResponse.Headers;
 			if (this.Headers["Content-Encoding"] != null) this.Headers["Content-Encoding"] = "identity";
-			this.IsMutuallyAuthenticated = webResponse.IsMutuallyAuthenticated;
+			//this.IsMutuallyAuthenticated = webResponse.IsMutuallyAuthenticated;
 			this.LastModified = webResponse.LastModified;
 			this.Method = webResponse.Method;
 			this.ProtocolVersion = webResponse.ProtocolVersion;
@@ -215,7 +215,7 @@ namespace WebOne
 		public string ContentType { get; private set; }
 		public CookieCollection Cookies { get; private set; }
 		public WebHeaderCollection Headers { get; private set; }
-		public bool IsMutuallyAuthenticated { get; private set; }
+		//public bool IsMutuallyAuthenticated { get; private set; }
 		public DateTime LastModified { get; private set; }
 		public string Method { get; private set; }
 		public Version ProtocolVersion { get; private set; }
@@ -223,7 +223,7 @@ namespace WebOne
 		public string Server { get; private set; }
 		public HttpStatusCode StatusCode { get; private set; }
 		public string StatusDescription { get; private set; }
-		public bool SupportsHeaders { get; private set; }
+		//public bool SupportsHeaders { get; private set; }
 		public HttpWebResponse Instance { get; private set; }
 		public string Content { get; private set; }
 		public byte[] RawContent { get; private set; }

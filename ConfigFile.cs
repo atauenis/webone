@@ -63,10 +63,10 @@ namespace WebOne
 			ConfigFileName = "webone.conf";
 			Console.WriteLine("Using configuration file {0}.", ConfigFileName);
 
-			if (!File.Exists(ConfigFileName)) return;
-
 			try
 			{
+				if (!File.Exists(ConfigFileName)) return;
+				
 				string[] CfgFile = System.IO.File.ReadAllLines(ConfigFileName);
 				string Section = "";
 				for (int i = 0; i < CfgFile.Count(); i++)
