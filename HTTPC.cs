@@ -205,8 +205,6 @@ namespace WebOne
 			catch (MissingMethodException) { }*/
 			this.Instance = webResponse;
 			this.Stream = GetStream();
-			this.RawContent = GetRawContent();
-			this.Content = GetBody();
 		}
 
 		public string CharacterSet { get; private set; }
@@ -225,33 +223,30 @@ namespace WebOne
 		public string StatusDescription { get; private set; }
 		//public bool SupportsHeaders { get; private set; }
 		public HttpWebResponse Instance { get; private set; }
-		public string Content { get; private set; }
-		public byte[] RawContent { get; private set; }
+		private byte[] rawContent;
+		public byte[] RawContent
+		{
+			get 
+			{
+				if (rawContent == null) rawContent = ReadFully(Stream);
+				return rawContent;
+			}
+			set
+			{
+				rawContent = value;
+			} 
+		}
 		public Stream Stream { get; private set; }
+
 
 		private Stream GetStream() {
 			return Decompress(this.Instance);
 		}
 
-		private byte[] GetRawContent()
-		{
-			return ReadFully(Stream);
-		}
-
-		private string GetBody()
-		{
-			if (this.Instance == null)
-				return null;
-
-			//StreamReader reader = new StreamReader(Decompress(this.Instance), Encoding.UTF8);
-			//return reader.ReadToEnd();			
-			if(ContentType.ToLower().Contains("utf-8") || RawContent[0] == Encoding.UTF8.GetPreamble()[0] ) return Encoding.UTF8.GetString(RawContent);
-			else return Encoding.Default.GetString(RawContent);
-			//todo: add another code page auto detection algorythm to prevent UTF8 corruption
-		}
-
 		private static byte[] ReadFully(Stream input)
 		{
+			//can be called only once per session because NetworkStreams cannot seek or re-read again
+			//Console.Write("Reading response...");
 			using (MemoryStream ms = new MemoryStream())
 			{
 				input.CopyTo(ms);

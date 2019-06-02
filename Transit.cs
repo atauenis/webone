@@ -288,7 +288,11 @@ namespace WebOne
 			//try to return...
 				if (!StWrong)
 				{
-					ResponseHeaders = "HTTP/1.0 200\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + ResponseBody.Length;
+					if(Program.CheckString(ContentType, ConfigFile.TextTypes) || ContentType == "")
+						ResponseHeaders = "HTTP/1.0 200\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + ResponseBody.Length;
+					else
+						ResponseHeaders = "HTTP/1.0 200\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + response.ContentLength;
+
 					byte[] RespBuffer = ConfigFile.OutputEncoding.GetBytes(ResponseHeaders + "\n\n");
 					if (TransitStream == null)
 					{
@@ -297,14 +301,13 @@ namespace WebOne
 					}
 					else
 					{
-						RespBuffer = ResponseBuffer;
 						ClientStream.Write(RespBuffer, 0, RespBuffer.Length);
 						TransitStream.CopyTo(ClientStream);
 					}
 					Client.Close();
 				}
 			}catch (Exception ex) {
-				Console.WriteLine("Cannot return reply to the client. " + ex.Message);
+				Console.WriteLine("Cannot return reply to the client. " + ex.Message + ex.StackTrace);
 			}
 
 			Console.WriteLine("The client is served.");
@@ -314,40 +317,41 @@ namespace WebOne
 		/// Make reply's body as byte array
 		/// </summary>
 		/// <param name="response">The HTTP Response</param>
-		/// <returns>Array of bytes (the body)</returns>
-		private byte[] MakeOutput(HttpResponse response) {
+		/// <returns>ResponseBuffer+ResponseBody for texts or TransitStream for binaries</returns>
+		private void MakeOutput(HttpResponse response) {
 			Console.Write("...");
 			Console.Write(response.StatusCode);
-			Console.Write("...");
-
-			bool ForceUTF8 = ContentType.ToLower().Contains("utf-8");
-			if(!ForceUTF8 && response.RawContent.Length > 0) ForceUTF8 = response.RawContent[0] == Encoding.UTF8.GetPreamble()[0];
-			foreach (string utf8url in ConfigFile.ForceUtf8) { if (Regex.IsMatch(RequestUri, utf8url)) ForceUTF8 = true; }
-
-			if (ForceUTF8) ResponseBody = Encoding.UTF8.GetString(response.RawContent);
-			else ResponseBody = Encoding.Default.GetString(response.RawContent);
-
-			if (Regex.IsMatch(ResponseBody, @"<meta.*UTF-8.*>", RegexOptions.IgnoreCase)) { ResponseBody = Encoding.UTF8.GetString(response.RawContent); }
-			//ResponseBody = response.Content;
-			ResponseBuffer = ConfigFile.OutputEncoding.GetBytes(ResponseBody);
 			ContentType = response.ContentType;
-			Console.Write("Body {0}K of {1}", ResponseBody.Length / 1024, ContentType);
-			if (ContentType.ToLower().Contains("utf-8")) ContentType = ContentType.Substring(0, ContentType.IndexOf(';'));
+			Console.Write("...Body {0}K of {1}.", response.ContentLength / 1024, ContentType);
+
 			if (Program.CheckString(ContentType, ConfigFile.TextTypes))
 			{
 				//если сервер вернул текст, сделать правки, иначе прогнать как есть дальше
+				Console.Write("[Text]");
+				bool ForceUTF8 = ContentType.ToLower().Contains("utf-8");
+				if(!ForceUTF8 && response.RawContent.Length > 0) ForceUTF8 = response.RawContent[0] == Encoding.UTF8.GetPreamble()[0];
+				foreach (string utf8url in ConfigFile.ForceUtf8) { if (Regex.IsMatch(RequestUri, utf8url)) ForceUTF8 = true; }
+
+				if (ForceUTF8) ResponseBody = Encoding.UTF8.GetString(response.RawContent);
+				else ResponseBody = Encoding.Default.GetString(response.RawContent);
+
+				if (Regex.IsMatch(ResponseBody, @"<meta.*UTF-8.*>", RegexOptions.IgnoreCase)) { ResponseBody = Encoding.UTF8.GetString(response.RawContent); }
+				//ResponseBody = response.Content;
+				ResponseBuffer = ConfigFile.OutputEncoding.GetBytes(ResponseBody);
+
+				if (ContentType.ToLower().Contains("utf-8")) ContentType = ContentType.Substring(0, ContentType.IndexOf(';'));
 				//ContentType = ContentType.ToLower().Replace("utf-8","windows-"+ConfigFile.OutputEncoding.CodePage);
+
 				ResponseBody = ProcessBody(ResponseBody);
 				ResponseBuffer = ConfigFile.OutputEncoding.GetBytes(ResponseBody);
 			}
 			else
 			{
 				Console.Write("[Binary]");
-				//ResponseBuffer = response.RawContent;
 				TransitStream = response.Stream;
 			}
 			Console.WriteLine(".");
-			return ResponseBuffer;
+			return;
 		}
 
 		/// <summary>
