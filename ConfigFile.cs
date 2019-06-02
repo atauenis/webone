@@ -15,7 +15,7 @@ namespace WebOne
 		static List<string> StringListConstructor = new List<string>();
 
 		static string ConfigFileName = "/dev/ceiling"; //с потолка
-		static string[] SpecialSections = { "ForceHttps", "TextTypes"/*, "UA:", "URL:" */}; //like "UA:Mozilla/3.*"
+		static string[] SpecialSections = { "ForceHttps", "TextTypes", "ForceUtf8"/*, "UA:", "URL:" */}; //like "UA:Mozilla/3.*"
 
 		/// <summary>
 		/// TCP port that should be used by the Proxy Server
@@ -37,6 +37,11 @@ namespace WebOne
 		/// List of domains that should be open only using HTTPS
 		/// </summary>
 		public static string[] ForceHttps = { "www.phantom.sannata.org" };
+
+		/// <summary>
+		/// List of URLs that should be always downloaded as UTF-8
+		/// </summary>
+		public static string[] ForceUtf8 = { "unicode.biz.ua" };
 
 		/// <summary>
 		/// List of parts of Content-Types that describing text files
@@ -107,6 +112,10 @@ namespace WebOne
 							case "TextTypes":
 								StringListConstructor.Add(CfgFile[i]);
 								TextTypes = StringListConstructor.ToArray();
+								continue;
+							case "ForceUtf8":
+								StringListConstructor.Add(CfgFile[i]);
+								ForceUtf8 = StringListConstructor.ToArray();
 								continue;
 							default:
 								Console.WriteLine("The special section {0} is not implemented in this build.", Section);

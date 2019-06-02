@@ -23,6 +23,7 @@ namespace WebOne
 		string RequestHeaders = "";
 		string RequestBody = "";
 		int RequestHeadersEnd;
+		string RequestUri = "about:blank";
 		bool LocalMode = false;
 
 		HttpResponse response;
@@ -102,7 +103,7 @@ namespace WebOne
 
 			//fix "carousels"
 			string RefererUri = RequestHeaderCollection["Referer"];
-			string RequestUri = ReqMatch.Groups[1].Value;
+			RequestUri = ReqMatch.Groups[1].Value;
 
 			//check for local or internal URL
 			if (RequestUri.StartsWith("/"))
@@ -279,7 +280,7 @@ namespace WebOne
 			catch(Exception ex) {
 				StWrong = true;
 				Console.WriteLine("============GURU MEDITATION:\n{0}\nOn URL '{1}', Method '{2}'. Returning 500.============", ex.ToString(), RequestUri, RequestMethod);
-				SendError(Client, 500, "Guru meditaion at URL " + RequestUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace + "</i>");
+				SendError(Client, 500, "Guru meditaion at URL " + RequestUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace.Replace("\n","\n<br>") + "</i>");
 			}
 
 			try
@@ -318,7 +319,16 @@ namespace WebOne
 			Console.Write("...");
 			Console.Write(response.StatusCode);
 			Console.Write("...");
-			ResponseBody = response.Content;
+
+			bool ForceUTF8 = ContentType.ToLower().Contains("utf-8");
+			if(!ForceUTF8 && response.RawContent.Length > 0) ForceUTF8 = response.RawContent[0] == Encoding.UTF8.GetPreamble()[0];
+			foreach (string utf8url in ConfigFile.ForceUtf8) { if (Regex.IsMatch(RequestUri, utf8url)) ForceUTF8 = true; }
+
+			if (ForceUTF8) ResponseBody = Encoding.UTF8.GetString(response.RawContent);
+			else ResponseBody = Encoding.Default.GetString(response.RawContent);
+
+			if (Regex.IsMatch(ResponseBody, @"<meta.*UTF-8.*>", RegexOptions.IgnoreCase)) { ResponseBody = Encoding.UTF8.GetString(response.RawContent); }
+			//ResponseBody = response.Content;
 			ResponseBuffer = ConfigFile.OutputEncoding.GetBytes(ResponseBody);
 			ContentType = response.ContentType;
 			Console.Write("Body {0}K of {1}", ResponseBody.Length / 1024, ContentType);
@@ -347,7 +357,7 @@ namespace WebOne
 		/// <returns>The fixed body, compatible with old browsers</returns>
 		private string ProcessBody(string Body) {
 			Body = Body.Replace("https", "http");
-			if(LocalMode) Body = Body.Replace("http://", "http://localhost/http://");//replace with real hostname
+			if(LocalMode) Body = Body.Replace("http://", "http://" + Environment.MachineName + "/http://");//replace with real hostname
 			Body = Body.Replace("harset=\"utf-8\"", "harset=\"" + ConfigFile.OutputEncoding.WebName + "\"");
 			Body = Body.Replace("harset=\"UTF-8\"", "harset=\"" + ConfigFile.OutputEncoding.WebName + "\"");
 			Body = Body.Replace("harset=utf-8", "harset=" + ConfigFile.OutputEncoding.WebName);
