@@ -153,9 +153,15 @@ namespace WebOne
 									SlowClientHack = Convert.ToInt32(ParamValue);
 									break;
 								case "OutputEncoding":
-									if (CfgFile[i] == "0" || CfgFile[i] == "Windows")
+									if (ParamValue == "Windows" || ParamValue == "Win" || ParamValue == "ANSI")
 									{
 										OutputEncoding = Encoding.Default;
+										continue;
+									}
+									else if (ParamValue == "0" || ParamValue == "AsIs")
+									{
+										OutputEncoding = null;
+										continue;
 									}
 									else
 									{
