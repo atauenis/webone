@@ -102,6 +102,24 @@ namespace WebOne
 				//if (hdr.Contains("ookie")) Console.WriteLine("Sent cookie: " + hdr);
 			}
 
+			if (ConfigFile.Authenticate != "")
+			{
+				if (RequestHeaderCollection["Proxy-Authorization"] == null || RequestHeaderCollection["Proxy-Authorization"] == "")
+				{
+					SendError(Client, 407, "Hello! This Web 2.0-to-1.0 proxy server is private. Please enter your credentials.", "\n" + @"Proxy-Authenticate: Basic realm=""Log in to WebOne""");
+					return;
+				}
+				else
+				{
+					string auth = Encoding.Default.GetString(Convert.FromBase64String(RequestHeaderCollection["Proxy-Authorization"].Substring(6)));
+					if (auth != ConfigFile.Authenticate)
+					{
+						SendError(Client, 407, "Your password is not correct. Please try again.", "\n" + @"Proxy-Authenticate: Basic realm=""WebOne " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version + @"""");
+						return;
+					}
+				}
+			}
+
 			//fix "carousels"
 			string RefererUri = RequestHeaderCollection["Referer"];
 			RequestUri = ReqMatch.Groups[1].Value;

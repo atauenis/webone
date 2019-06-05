@@ -54,6 +54,11 @@ namespace WebOne
 		public static Encoding OutputEncoding = Encoding.Default;
 
 		/// <summary>
+		/// Credentials for proxy authentication
+		/// </summary>
+		public static string Authenticate = "";
+
+		/// <summary>
 		/// List of URLs that should be always 302ed
 		/// </summary>
 		public static List<string> FixableURLs = new List<string>();
@@ -168,6 +173,9 @@ namespace WebOne
 										try { OutputEncoding = Encoding.GetEncoding(ParamValue); }
 										catch (ArgumentException) { Console.WriteLine("Warning: Bad codepage {0}, using {1}. Get list of available encodings at http://{2}:{3}/!codepages/.", ParamValue, OutputEncoding.EncodingName, Environment.MachineName, Port); }
 									}
+									continue;
+								case "Authenticate":
+									Authenticate = ParamValue;
 									continue;
 								default:
 									Console.WriteLine("Unknown server option: " + ParamName);
