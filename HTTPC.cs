@@ -72,12 +72,8 @@ namespace WebOne
 				webResponse = (HttpWebResponse)webRequest.GetResponse();
 				return new HttpResponse(webResponse);
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
-				if(ex is WebException) {
-					WebException wex = (WebException)ex;
-					Console.Write("WEB EXCEPTION=" + wex.Status.ToString() + "!");
-				}
 				throw;
 			}
 			/*finally

@@ -27,6 +27,7 @@ namespace WebOne
 		bool LocalMode = false;
 
 		HttpResponse response;
+		int ResponseCode = 502;
 		string ResponseHeaders;
 		string ResponseBody = ":(";
 		byte[] ResponseBuffer;
@@ -227,7 +228,8 @@ namespace WebOne
 						return;
 				}
 
-				//ResponseHeaders = "HTTP/1.0 200\n";
+				ResponseCode = (int)response.StatusCode;
+
 				for (int i = 0; i < response.Headers.Count; ++i)
 				{
 					string header = response.Headers.GetKey(i);
@@ -244,8 +246,13 @@ namespace WebOne
 				
 
 			} catch (WebException wex) {
+				if (wex.Response == null) ResponseCode = 502;
+				else ResponseCode = (int)(wex.Response as HttpWebResponse).StatusCode;
+				Console.Write("...WEB EXCEPTION=");
+				if (ResponseCode == 502) Console.Write(wex.Status); else Console.Write(ResponseCode + " " + (wex.Response as HttpWebResponse).StatusCode);
+
 				string err = ": " + wex.Status.ToString();
-				if(wex.Response != null)
+				/*if(wex.Response != null)
 				{
 					err = " because HTTP status code is not okay: " + (wex.Response as HttpWebResponse).StatusCode.ToString();
 					
@@ -254,24 +261,44 @@ namespace WebOne
 							SendError(Client, 304, "Not modified, see in cache.");
 							StWrong = true;
 							break;
-						/*case HttpStatusCode.NotFound:
+						case HttpStatusCode.NotFound:
 							SendError(Client, 404, "The requested document is not found on server.");
 							StWrong = true;
 							break;
 						case HttpStatusCode.Forbidden:
 							SendError(Client, 403, "You're not welcome here.");
 							StWrong = true;
-							break;*/
+							break;
 						default:
 							break;
 					}
-				}
+				}*/
 #if DEBUG
 				ResponseBody = "<html><body>Cannot load this page" + err + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestUri + Program.GetInfoString() + "</body></html>";
 #else
 				ResponseBody = "<html><body>Cannot load this page" + err + " (<i>" + wex.Message + "</i>)<br>URL: " + RequestUri + Program.GetInfoString() + "</body></html>";
 #endif
-				Console.WriteLine("Failed.");
+
+				if (wex.Response != null)
+				{
+					for (int i = 0; i < wex.Response.Headers.Count; ++i)
+					{
+						string header = wex.Response.Headers.GetKey(i);
+						foreach (string value in wex.Response.Headers.GetValues(i))
+						{
+							if (!header.StartsWith("Connection") && !header.StartsWith("Transfer-Encoding"))
+							{
+								ResponseHeaders += (header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", "") + "\n");
+							}
+						}
+					}
+					ContentType = wex.Response.ContentType;
+					ResponseBody = new StreamReader(wex.Response.GetResponseStream()).ReadToEnd();
+					//ResponseBody = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(new StreamReader(wex.Response.GetResponseStream()).ReadToEnd()));
+					//todo: add correct returning of error pages through MakeOutput subprogram.
+				}
+
+				Console.WriteLine(".Failed[{0}].", ResponseCode);
 			}
 			catch (UriFormatException)
 			{ 
@@ -290,9 +317,9 @@ namespace WebOne
 				if (!StWrong)
 				{
 					if(Program.CheckString(ContentType, ConfigFile.TextTypes) || ContentType == "")
-						ResponseHeaders = "HTTP/1.0 200\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + ResponseBody.Length;
+						ResponseHeaders = "HTTP/1.0 " + ResponseCode +  "\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + ResponseBody.Length;
 					else
-						ResponseHeaders = "HTTP/1.0 200\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + response.ContentLength;
+						ResponseHeaders = "HTTP/1.0 " + ResponseCode +  "\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + response.ContentLength;
 
 					byte[] RespBuffer = (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(ResponseHeaders + "\n\n");
 					if (TransitStream == null)
