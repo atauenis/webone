@@ -114,7 +114,7 @@ namespace WebOne
 					string auth = Encoding.Default.GetString(Convert.FromBase64String(RequestHeaderCollection["Proxy-Authorization"].Substring(6)));
 					if (auth != ConfigFile.Authenticate)
 					{
-						SendError(Client, 407, "Your password is not correct. Please try again.", "\n" + @"Proxy-Authenticate: Basic realm=""WebOne " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version + @"""");
+						SendError(Client, 407, "Your password is not correct. Please try again.", "\n" + @"Proxy-Authenticate: Basic realm=""Your WebOne credentials are incorrect""");
 						return;
 					}
 				}

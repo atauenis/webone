@@ -10,6 +10,7 @@ namespace WebOne
 {
 	public static class Program
 	{
+		public static string ConfigFileName = "webone.conf";
 
 
 		static void Main(string[] args)
@@ -20,8 +21,9 @@ namespace WebOne
 			Console.WriteLine("Warning: this build is compiled for .NET Framework 4.0 from 2010.\n");
 #endif
 
-			int Port = ConfigFile.Port;
-			try { Port = Convert.ToInt32(args[0]); } catch { }
+			int Port = -1;
+			try { Port = Convert.ToInt32(args[0]); } catch { if(args.Length > 0) ConfigFileName = args[0]; }
+			if(Port < 1) Port = ConfigFile.Port;
 			Console.Title = "WebOne @ " + Environment.MachineName + ":" + Port;
 
 			/*string host = "https://mozilla.org";

@@ -12,9 +12,9 @@ namespace WebOne
 	/// </summary>
 	static class ConfigFile
 	{
+		static string ConfigFileName = Program.ConfigFileName;
 		static List<string> StringListConstructor = new List<string>();
 
-		static string ConfigFileName = "/dev/ceiling"; //с потолка
 		static string[] SpecialSections = { "ForceHttps", "TextTypes", "ForceUtf8"/*, "UA:", "URL:" */}; //like "UA:Mozilla/3.*"
 
 		/// <summary>
@@ -70,12 +70,12 @@ namespace WebOne
 
 		static ConfigFile()
 		{
-			ConfigFileName = "webone.conf";
+			//ConfigFileName = "webone.conf";
 			Console.WriteLine("Using configuration file {0}.", ConfigFileName);
 
 			try
 			{
-				if (!File.Exists(ConfigFileName)) return;
+				if (!File.Exists(ConfigFileName)) { Console.WriteLine("{0}: no such config file. Using defaults.", ConfigFileName); return; };
 				
 				string[] CfgFile = System.IO.File.ReadAllLines(ConfigFileName);
 				string Section = "";
