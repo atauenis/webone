@@ -231,6 +231,7 @@ namespace WebOne
 			try
 			{
 				switch (RequestMethod) {
+					case "OPTIONS":
 					case "GET":
 						//try to get...
 						response = https.GET(RequestUri, new CookieContainer(), RequestHeaderCollection);
@@ -241,10 +242,6 @@ namespace WebOne
 						response = https.POST(RequestUri, new CookieContainer(), RequestBody, RequestHeaderCollection);
 						MakeOutput(response);
 						break;
-					case "OPTIONS":
-						SendError(Client, 405, "Not implemented yet, wait some time.");
-						Console.WriteLine(" Wrong method.");
-						return;
 					default:
 						SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method.");
 						Console.WriteLine(" Wrong method.");
@@ -258,7 +255,7 @@ namespace WebOne
 					string header = response.Headers.GetKey(i);
 					foreach (string value in response.Headers.GetValues(i))
 					{
-						if (!header.StartsWith("Content-") && !header.StartsWith("Connection") && !header.StartsWith("Transfer-Encoding"))
+						if (!header.StartsWith("Content-") && !header.StartsWith("Connection") && !header.StartsWith("Transfer-Encoding") && !header.StartsWith("Access-Control-Allow-Methods"))
 						{
 							ResponseHeaders += (header + ": " + value.Replace("; secure", "") + "\n");
 							//Console.WriteLine(header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
@@ -266,7 +263,12 @@ namespace WebOne
 						}
 					}
 				}
-				
+
+				if (RequestMethod=="OPTIONS")
+				{
+					ResponseHeaders += "Access-Control-Allow-Methods: POST, GET, OPTIONS\n";
+				}
+
 
 			} catch (WebException wex) {
 				if (wex.Response == null) ResponseCode = 502;
@@ -340,6 +342,7 @@ namespace WebOne
 				if (!StWrong)
 				{
 					ResponseHeaders += "Via: HTTP/1.0 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version + "\n";
+					ResponseHeaders += "Connection: close\n";
 					//ResponseHeaders += "Warning: 214 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version + @" ""Patched for old browser""" + "\n";
 
 					if (Program.CheckString(ContentType, ConfigFile.TextTypes) || ContentType == "")
