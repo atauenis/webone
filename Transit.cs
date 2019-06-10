@@ -102,6 +102,7 @@ namespace WebOne
 				//if (hdr.Contains("ookie")) Console.WriteLine("Sent cookie: " + hdr);
 			}
 
+			//check for login to proxy if need
 			if (ConfigFile.Authenticate != "")
 			{
 				if (RequestHeaderCollection["Proxy-Authorization"] == null || RequestHeaderCollection["Proxy-Authorization"] == "")
@@ -176,7 +177,7 @@ namespace WebOne
 			}
 
 			//dirty workarounds for HTTP>HTTPS redirection bugs
-			if ((RequestUri == RefererUri || RequestUri == LastURL) && RequestUri != "")
+			if ((RequestUri == RefererUri || RequestUri == LastURL) && RequestUri != "" && RequestMethod != "POST")
 			{
 				Console.Write("Carousel");
 				if(!LastURL.StartsWith("https") && !RequestUri.StartsWith("https")) //if http is gone, try https
@@ -203,7 +204,7 @@ namespace WebOne
 
 						if (ValidMask == "" || !Regex.Match(RequestUri, ValidMask).Success/*!RequestUri.Contains(ConfigFile.FixableUrlActions[str]["ValidMask"])*/)
 						{
-							string NewURL = Redirect.Replace("%URL%",RequestUri);
+							string NewURL = Redirect.Replace("%URL%",RequestUri).Replace("%UrlNoDomain%", RequestUri.Substring(RequestUri.IndexOf("/") + 2).Substring((RequestUri.Substring(RequestUri.IndexOf("/") + 2)).IndexOf("/") + 1));
 							Console.Write("Fix to {1}", RequestUri, NewURL, ValidMask);
 							SendError(Client, 302, "Брось каку!", "\nLocation: " + NewURL);
 							return;
@@ -240,6 +241,10 @@ namespace WebOne
 						response = https.POST(RequestUri, new CookieContainer(), RequestBody, RequestHeaderCollection);
 						MakeOutput(response);
 						break;
+					case "OPTIONS":
+						SendError(Client, 405, "Not implemented yet, wait some time.");
+						Console.WriteLine(" Wrong method.");
+						return;
 					default:
 						SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method.");
 						Console.WriteLine(" Wrong method.");
@@ -255,7 +260,7 @@ namespace WebOne
 					{
 						if (!header.StartsWith("Content-") && !header.StartsWith("Connection") && !header.StartsWith("Transfer-Encoding"))
 						{
-							ResponseHeaders += (header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", "") + "\n");
+							ResponseHeaders += (header + ": " + value.Replace("; secure", "") + "\n");
 							//Console.WriteLine(header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
 							//if (header.Contains("ookie")) Console.WriteLine("Got cookie: " + value);
 						}
@@ -334,7 +339,10 @@ namespace WebOne
 			//try to return...
 				if (!StWrong)
 				{
-					if(Program.CheckString(ContentType, ConfigFile.TextTypes) || ContentType == "")
+					ResponseHeaders += "Via: HTTP/1.0 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version + "\n";
+					//ResponseHeaders += "Warning: 214 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version + @" ""Patched for old browser""" + "\n";
+
+					if (Program.CheckString(ContentType, ConfigFile.TextTypes) || ContentType == "")
 						ResponseHeaders = "HTTP/1.0 " + ResponseCode +  "\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + ResponseBody.Length;
 					else
 						ResponseHeaders = "HTTP/1.0 " + ResponseCode +  "\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + response.ContentLength;
