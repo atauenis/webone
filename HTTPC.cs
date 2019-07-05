@@ -32,13 +32,14 @@ namespace WebOne
 		}
 
 		/// <summary>
-		/// Perform a GET request
+		/// Perform a GET-like request
 		/// </summary>
 		/// <param name="host">URL</param>
 		/// <param name="cc">Cookie container</param>
 		/// <param name="headers">HTTP headers</param>
+		/// <param name="method">HTTP method (GET by default)</param>
 		/// <returns>Server's response.</returns>
-		public HttpResponse GET(string host, CookieContainer cc, WebHeaderCollection headers)
+		public HttpResponse GET(string host, CookieContainer cc, WebHeaderCollection headers, string method = "GET")
 		{
 			try
 			{
@@ -63,7 +64,7 @@ namespace WebOne
 				webRequest.Accept = Accept ?? "*/*";
 				webRequest.UserAgent = UA ?? UA_Mozilla;
 				if(Referer != null) webRequest.Referer = Referer;
-				webRequest.Method = "GET";
+				webRequest.Method = method;
 				webRequest.AllowAutoRedirect = true;
 				webRequest.CookieContainer = cc;
 				webRequest.ProtocolVersion = HttpVersion.Version11;
@@ -85,15 +86,16 @@ namespace WebOne
 		}
 		
 		/// <summary>
-		/// Perform a POST request
+		/// Perform a POST or POST-like request (content upload)
 		/// </summary>
 		/// <param name="host">URL</param>
 		/// <param name="cc">Cookie Container</param>
 		/// <param name="data">Raw post data</param>
 		/// <param name="headers">HTTP headers</param>
+		/// <param name="method">HTTP method (POST by default)</param>
 		/// <returns></returns>
 		//public HttpResponse POST(string host, CookieContainer cc, NameValueCollection param)
-		public HttpResponse POST(string host, CookieContainer cc, string data, WebHeaderCollection headers)
+		public HttpResponse POST(string host, CookieContainer cc, string data, WebHeaderCollection headers, string method = "POST")
 		{
 			try
 			{
@@ -118,7 +120,7 @@ namespace WebOne
 				webRequest.Accept = Accept;
 				webRequest.UserAgent = UA;
 				webRequest.Referer = Referer;
-				webRequest.Method = "POST";
+				webRequest.Method = method;
 				webRequest.AllowAutoRedirect = true;
 				webRequest.CookieContainer = cc;
 				webRequest.ProtocolVersion = HttpVersion.Version10;

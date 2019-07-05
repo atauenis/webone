@@ -231,7 +231,6 @@ namespace WebOne
 			try
 			{
 				switch (RequestMethod) {
-					case "OPTIONS":
 					case "GET":
 						//try to get...
 						response = https.GET(RequestUri, new CookieContainer(), RequestHeaderCollection);
@@ -243,9 +242,24 @@ namespace WebOne
 						MakeOutput(response);
 						break;
 					default:
-						SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method.");
+						if(RequestHeaderCollection["Content-Length"] == null)
+						{
+							//try to download (HEAD, WebDAV download, etc)
+							response = https.GET(RequestUri, new CookieContainer(), RequestHeaderCollection, RequestMethod);
+							MakeOutput(response);
+							break;
+						}
+						else
+						{
+							Console.Write(" CL={0}K", Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024);
+							//try to upload (PUT, WebDAV, etc)
+							response = https.POST(RequestUri, new CookieContainer(), RequestBody, RequestHeaderCollection, RequestMethod);
+							MakeOutput(response);
+							break;
+						}
+						/*SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method.");
 						Console.WriteLine(" Wrong method.");
-						return;
+						return;*/
 				}
 
 				ResponseCode = (int)response.StatusCode;
@@ -264,10 +278,10 @@ namespace WebOne
 					}
 				}
 
-				if (RequestMethod=="OPTIONS")
+				/*if (RequestMethod=="OPTIONS")
 				{
 					ResponseHeaders += "Access-Control-Allow-Methods: POST, GET, OPTIONS\n";
-				}
+				}*/
 
 
 			} catch (WebException wex) {
