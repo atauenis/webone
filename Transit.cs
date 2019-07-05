@@ -176,6 +176,17 @@ namespace WebOne
 
 			}
 
+			//check for HTTP-to-FTP requests
+			//https://support.microsoft.com/en-us/help/166961/how-to-ftp-with-cern-based-proxy-using-wininet-api
+			string ProtocolName = RequestUri.Substring(0, RequestUri.IndexOf(":"));
+			string[] BadProtocols = { "ftp", "gopher", "wais"};
+			if (Program.CheckString(ProtocolName, BadProtocols))
+			{
+				Console.Write(" " + RequestUri + " is a CERN Proxy request.");
+				SendError(Client, 101, "Cannot work with " + ProtocolName.ToUpper() + " protocol. Please connect directly bypassing the proxy.", "\nUpgrade: " + ProtocolName.ToUpper());
+				return;
+			}
+
 			//dirty workarounds for HTTP>HTTPS redirection bugs
 			if ((RequestUri == RefererUri || RequestUri == LastURL) && RequestUri != "" && RequestMethod != "POST")
 			{
