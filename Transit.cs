@@ -339,6 +339,7 @@ namespace WebOne
 							if (!header.StartsWith("Connection") && !header.StartsWith("Transfer-Encoding"))
 							{
 								ResponseHeaders += (header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", "") + "\n");
+								if (RequestMethod == "OPTIONS" && header == "Allow") Console.Write("[Options allowed: {0}]", value);
 							}
 						}
 					}
@@ -468,6 +469,12 @@ namespace WebOne
 				Body = Body.Replace(ConfigFile.OutputEncoding.GetString(UTF8BOM), "");
 				Body = ConfigFile.OutputEncoding.GetString(Encoding.Convert(Encoding.UTF8, ConfigFile.OutputEncoding, Encoding.UTF8.GetBytes(Body)));
 			}
+			
+			/*if(true) {
+				//content patching
+				Body = Regex.Replace(Body, @"<script(.|\n)*\/script>", "<!-- WebOne-JS $& /WebOne-JS -->", RegexOptions.Multiline);
+				Body = Regex.Replace(Body, @"<style(.|\n)*\/style>", "<!-- WebOne-CSS $& /WebOne-CSS -->", RegexOptions.Multiline);
+			}*/
 			return Body;
 		}
 
