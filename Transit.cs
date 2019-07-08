@@ -371,6 +371,12 @@ namespace WebOne
 					ResponseHeaders += "Connection: close\n";
 					//ResponseHeaders += "Warning: 214 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version + @" ""Patched for old browser""" + "\n";
 
+					/*if (ResponseCode == 301 && RequestUri == response.Headers["Location"].Replace("https:","http:")) 
+					{
+						SendError(Client, 302, "Please try again to enter a carousel to HTTPS.", "\nLocation: ");
+						return;
+					}*/
+
 					if (Program.CheckString(ContentType, ConfigFile.TextTypes) || ContentType == "")
 						ResponseHeaders = "HTTP/1.0 " + ResponseCode +  "\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + ResponseBody.Length;
 					else
