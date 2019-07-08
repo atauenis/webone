@@ -282,7 +282,7 @@ namespace WebOne
 					{
 						if (!header.StartsWith("Content-") && !header.StartsWith("Connection") && !header.StartsWith("Transfer-Encoding") && !header.StartsWith("Access-Control-Allow-Methods"))
 						{
-							ResponseHeaders += (header + ": " + value.Replace("; secure", "") + "\n");
+							ResponseHeaders += (header + ": " + value.Replace("; secure", "") + "\n").Replace("https://","http://");
 							//Console.WriteLine(header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
 							//if (header.Contains("ookie")) Console.WriteLine("Got cookie: " + value);
 						}
