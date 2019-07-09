@@ -281,7 +281,14 @@ namespace WebOne
 					string header = response.Headers.GetKey(i);
 					foreach (string value in response.Headers.GetValues(i))
 					{
-						if (!header.StartsWith("Content-") && !header.StartsWith("Connection") && !header.StartsWith("Transfer-Encoding") && !header.StartsWith("Access-Control-Allow-Methods"))
+						if (!header.StartsWith("Content-") &&
+						!header.StartsWith("Connection") &&
+						!header.StartsWith("Transfer-Encoding") &&
+						!header.StartsWith("Access-Control-Allow-Methods") &&
+						!header.StartsWith("Strict-Transport-Security") &&
+						!header.StartsWith("Content-Security-Policy") &&
+						!header.StartsWith("Upgrade-Insecure-Requests") &&
+						!(header.StartsWith("Vary") && value.Contains("Upgrade-Insecure-Requests")))
 						{
 							ResponseHeaders += (header + ": " + value.Replace("; secure", "") + "\n").Replace("https://","http://");
 							//Console.WriteLine(header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));

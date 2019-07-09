@@ -15,7 +15,7 @@ namespace WebOne
 		static string ConfigFileName = Program.ConfigFileName;
 		static List<string> StringListConstructor = new List<string>();
 
-		static string[] SpecialSections = { "ForceHttps", "TextTypes", "ForceUtf8"/*, "UA:", "URL:" */}; //like "UA:Mozilla/3.*"
+		static string[] SpecialSections = { "ForceHttps", "TextTypes", "ForceUtf8", "UseOldRedirect"/*, "UA:", "URL:" */}; //like "UA:Mozilla/3.*"
 
 		/// <summary>
 		/// TCP port that should be used by the Proxy Server
@@ -67,6 +67,11 @@ namespace WebOne
 		/// Dictionary of URLs that should be always 302ed if they're looks like too new JS frameworks
 		/// </summary>
 		public static Dictionary<string, Dictionary<string, string>> FixableUrlActions =  new Dictionary<string, Dictionary<string, string>>();
+
+		/// <summary>
+		/// List of domains where 302 redirections should be passed through .NET FW
+		/// </summary>
+		public static string[] UseOldRedirect = { "flickr.com", "www.flickr.com"};
 
 		static ConfigFile()
 		{
@@ -121,6 +126,10 @@ namespace WebOne
 							case "ForceUtf8":
 								StringListConstructor.Add(CfgFile[i]);
 								ForceUtf8 = StringListConstructor.ToArray();
+								continue;
+							case "UseOldRedirect":
+								StringListConstructor.Add(CfgFile[i]);
+								UseOldRedirect = StringListConstructor.ToArray();
 								continue;
 							default:
 								Console.WriteLine("The special section {0} is not implemented in this build.", Section);
