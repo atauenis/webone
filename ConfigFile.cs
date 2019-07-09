@@ -29,9 +29,9 @@ namespace WebOne
 		public static long RequestBufferSize = 10485760;
 
 		/// <summary>
-		/// For fast clients set less than 10, for slow set more than 9000.
+		/// Timeout for connections. For fast clients set less than 10, for slow set more than 9000.
 		/// </summary>
-		public static long SlowClientHack = 1000;
+		public static long ClientTimeout = 1000;
 
 		/// <summary>
 		/// List of domains that should be open only using HTTPS
@@ -72,14 +72,14 @@ namespace WebOne
 		{
 			//ConfigFileName = "webone.conf";
 			Console.WriteLine("Using configuration file {0}.", ConfigFileName);
-
+			int i = 0;
 			try
 			{
 				if (!File.Exists(ConfigFileName)) { Console.WriteLine("{0}: no such config file. Using defaults.", ConfigFileName); return; };
 				
 				string[] CfgFile = System.IO.File.ReadAllLines(ConfigFileName);
 				string Section = "";
-				for (int i = 0; i < CfgFile.Count(); i++)
+				for (i = 0; i < CfgFile.Count(); i++)
 				{
 					if (CfgFile[i] == "") continue; //empty lines
 					if (CfgFile[i].StartsWith(";")) continue; //comments
@@ -154,8 +154,8 @@ namespace WebOne
 								case "RequestBufferSize":
 									RequestBufferSize = Convert.ToInt32(ParamValue);
 									break;
-								case "SlowClientHack":
-									SlowClientHack = Convert.ToInt32(ParamValue);
+								case "ClientTimeout":
+									ClientTimeout = Convert.ToInt32(ParamValue);
 									break;
 								case "OutputEncoding":
 									if (ParamValue == "Windows" || ParamValue == "Win" || ParamValue == "ANSI")
@@ -190,9 +190,11 @@ namespace WebOne
 				}
 			}
 			catch(Exception ex) {
-				Console.WriteLine("Config parser error: {0}.",ex.ToString());
 				#if DEBUG
+				Console.WriteLine("Error on line {1}: {0}.",ex.ToString(), i);
 				throw;
+				#else
+				Console.WriteLine("Error on line {1}: {0}.\nAll next lines are ignored.",ex.Message, i);
 				#endif
 			}
 			Console.WriteLine("{0} load complete.", ConfigFileName);

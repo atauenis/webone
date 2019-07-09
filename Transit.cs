@@ -52,13 +52,13 @@ namespace WebOne
 				//get request
 				ClientStream = Client.GetStream();
 
-				for(int i = 0; i < ConfigFile.SlowClientHack; i++) { Console.CursorLeft = Console.CursorLeft; } //wait for slow clients
-
+				for(int i = 0; i < ConfigFile.ClientTimeout; i++) { Console.CursorLeft = Console.CursorLeft; if (ClientStream.DataAvailable) break; } //wait for slow clients
+				//while (true) { if (ClientStream.DataAvailable) break; }
+				
 				while (ClientStream.DataAvailable)
 				{
 					ClientStream.Read(Buffer, Count, 1);
 					Count++;
-
 				}
 				Request += Encoding.ASCII.GetString(Buffer).Trim('\0'); //cut empty 10 megabytes
 
@@ -252,6 +252,10 @@ namespace WebOne
 						response = https.POST(RequestUri, new CookieContainer(), RequestBody, RequestHeaderCollection);
 						MakeOutput(response);
 						break;
+					case "CONNECT":
+						SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method.<BR>Please use HTTP, not HTTPS.");
+						Console.WriteLine(" Wrong method.");
+						return;
 					default:
 						if(RequestHeaderCollection["Content-Length"] == null)
 						{
@@ -268,9 +272,6 @@ namespace WebOne
 							MakeOutput(response);
 							break;
 						}
-						/*SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method.");
-						Console.WriteLine(" Wrong method.");
-						return;*/
 				}
 
 				ResponseCode = (int)response.StatusCode;
@@ -373,8 +374,10 @@ namespace WebOne
 
 					/*if (ResponseCode == 301 && RequestUri == response.Headers["Location"].Replace("https:","http:")) 
 					{
-						SendError(Client, 302, "Please try again to enter a carousel to HTTPS.", "\nLocation: ");
-						return;
+						/*SendError(Client, 302, "Please try again to enter a carousel to HTTPS.", "\nLocation: \nRefresh: 0\n");
+						return;*//*
+						ResponseHeaders += "Refresh: 0;" + RequestUri + "\n";
+						Console.Write("Redirect to reload. ");
 					}*/
 
 					if (Program.CheckString(ContentType, ConfigFile.TextTypes) || ContentType == "")
