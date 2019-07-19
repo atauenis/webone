@@ -427,6 +427,13 @@ namespace WebOne
 					RequestUri = RequestUri.Replace("http://", "https://");
 					SendRequest(https, RequestMethod, RequestHeaderCollection, Content_Length, Client);
 					ResponseHeaders += "X-Redirected: Make-Https\n";
+					
+					List<string> ForceHttpsList = ConfigFile.ForceHttps.ToList<string>();
+					string SecureHost = new Uri(RequestUri).Host;
+					if(!ForceHttpsList.Contains(SecureHost))
+					ForceHttpsList.Add(SecureHost);
+					ConfigFile.ForceHttps = ForceHttpsList.ToArray();
+
 					return;
 				}
 			}
