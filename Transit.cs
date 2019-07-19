@@ -76,7 +76,8 @@ namespace WebOne
 				}
 				catch (System.IO.IOException ioe)
 				{
-					Console.WriteLine("Can't read from client: " + ioe.ToString());
+					if (!ConfigFile.HideClientErrors)
+						Console.WriteLine("Can't read from client: " + ioe.ToString());
 					SendError(Client, 500);
 					return;
 				}
@@ -252,69 +253,8 @@ namespace WebOne
 					int CL = 0;
 					if (RequestHeaderCollection["Content-Length"] != null) CL = Int32.Parse(RequestHeaderCollection["Content-Length"]);
 
-					switch (RequestMethod)
-					{
-						case "GET":
-							//try to get...
-							response = https.GET(RequestUri, new CookieContainer(), RequestHeaderCollection);
-							MakeOutput(response);
-							break;
-						case "POST":
-							//try to post...
-							response = https.POST(RequestUri, new CookieContainer(), RequestBody, RequestHeaderCollection);
-							MakeOutput(response);
-							break;
-						case "CONNECT":
-							SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method.<BR>Please use HTTP, not HTTPS.");
-							Console.WriteLine(" Wrong method.");
-							return;
-						default:
-							if (CL == 0)
-							{
-								//try to download (HEAD, WebDAV download, etc)
-								response = https.GET(RequestUri, new CookieContainer(), RequestHeaderCollection, RequestMethod);
-								MakeOutput(response);
-								break;
-							}
-							else 
-							{
-								//try to upload (PUT, WebDAV, etc)
-								Console.Write(" CL={0}K", Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024);
-								response = https.POST(RequestUri, new CookieContainer(), RequestBody, RequestHeaderCollection, RequestMethod);
-								MakeOutput(response);
-								break;
-							}
-					}
-
-					ResponseCode = (int)response.StatusCode;
-
-					for (int i = 0; i < response.Headers.Count; ++i)
-					{
-						string header = response.Headers.GetKey(i);
-						foreach (string value in response.Headers.GetValues(i))
-						{
-							if (!header.StartsWith("Content-") &&
-							!header.StartsWith("Connection") &&
-							!header.StartsWith("Transfer-Encoding") &&
-							!header.StartsWith("Access-Control-Allow-Methods") &&
-							!header.StartsWith("Strict-Transport-Security") &&
-							!header.StartsWith("Content-Security-Policy") &&
-							!header.StartsWith("Upgrade-Insecure-Requests") &&
-							!(header.StartsWith("Vary") && value.Contains("Upgrade-Insecure-Requests")))
-							{
-								ResponseHeaders += (header + ": " + value.Replace("; secure", "") + "\n").Replace("https://", "http://");
-								//Console.WriteLine(header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
-								//if (header.Contains("ookie")) Console.WriteLine("Got cookie: " + value);
-							}
-						}
-					}
-
-					/*if (RequestMethod=="OPTIONS")
-					{
-						ResponseHeaders += "Access-Control-Allow-Methods: POST, GET, OPTIONS\n";
-					}*/
-
-
+					//send HTTPS request to destination server
+					SendRequest(https, RequestMethod, RequestHeaderCollection, CL, Client);
 				}
 				catch (WebException wex)
 				{
@@ -394,14 +334,6 @@ namespace WebOne
 						ResponseHeaders += "Connection: close\n";
 						//ResponseHeaders += "Warning: 214 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version + @" ""Patched for old browser""" + "\n";
 
-						/*if (ResponseCode == 301 && RequestUri == response.Headers["Location"].Replace("https:","http:")) 
-						{
-							/*SendError(Client, 302, "Please try again to enter a carousel to HTTPS.", "\nLocation: \nRefresh: 0\n");
-							return;*//*
-							ResponseHeaders += "Refresh: 0;" + RequestUri + "\n";
-							Console.Write("Redirect to reload. ");
-						}*/
-
 						if (Program.CheckString(ContentType, ConfigFile.TextTypes) || ContentType == "")
 							ResponseHeaders = "HTTP/1.0 " + ResponseCode + "\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + ResponseBody.Length;
 						else
@@ -423,6 +355,7 @@ namespace WebOne
 				}
 				catch (Exception ex)
 				{
+					if(!ConfigFile.HideClientErrors)
 					Console.WriteLine("Cannot return reply to the client. " + ex.Message + ex.StackTrace);
 				}
 
@@ -433,7 +366,96 @@ namespace WebOne
 				SendError(Client, 500, "WTF?! " + ex.ToString().Replace("\n", "\n<BR>"));
 				return;
 			}
-			Console.WriteLine("The client is served.");
+			Console.WriteLine("\nThe client is served.");
+		}
+
+		/// <summary>
+		/// Send a HTTPS request and put the response to shared variable "response"
+		/// </summary>
+		/// <param name="https">HTTPS client</param>
+		/// <param name="RequestMethod">Request method</param>
+		/// <param name="RequestHeaderCollection">Request headers</param>
+		/// <param name="Content_Length">Content length</param>
+		/// <param name="Client">TCP client</param>
+		/// <returns>Response status code (and the Response in shared variable)</returns>
+		private void SendRequest(HTTPC https, string RequestMethod, WebHeaderCollection RequestHeaderCollection, int Content_Length, TcpClient Client)
+		{
+			//moved from constructor as is on july 19, 2019
+			//probably needs to be cleaned up and rewritten
+			switch (RequestMethod)
+			{
+				case "GET":
+					//try to get...
+					response = https.GET(RequestUri, new CookieContainer(), RequestHeaderCollection);
+					MakeOutput(response);
+					break;
+				case "POST":
+					//try to post...
+					response = https.POST(RequestUri, new CookieContainer(), RequestBody, RequestHeaderCollection);
+					MakeOutput(response);
+					break;
+				case "CONNECT":
+					SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method.<BR>Please use HTTP, not HTTPS.");
+					Console.WriteLine(" Wrong method.");
+					return;
+				default:
+					if (Content_Length == 0)
+					{
+						//try to download (HEAD, WebDAV download, etc)
+						response = https.GET(RequestUri, new CookieContainer(), RequestHeaderCollection, RequestMethod);
+						MakeOutput(response);
+						break;
+					}
+					else
+					{
+						//try to upload (PUT, WebDAV, etc)
+						Console.Write(" CL={0}K", Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024);
+						response = https.POST(RequestUri, new CookieContainer(), RequestBody, RequestHeaderCollection, RequestMethod);
+						MakeOutput(response);
+						break;
+					}
+			}
+
+			ResponseCode = (int)response.StatusCode;
+
+			//check for security upgrade
+			if (ResponseCode == 301 || ResponseCode == 302 || ResponseCode == 308)
+			{
+				if (RequestUri == (response.Headers["Location"] ?? "nowhere").Replace("https://", "http://") && !Program.CheckString(RequestUri, ConfigFile.UseOldRedirect))
+				{
+					Console.Write("\n> Reload secure");
+					RequestUri = RequestUri.Replace("http://", "https://");
+					SendRequest(https, RequestMethod, RequestHeaderCollection, Content_Length, Client);
+					ResponseHeaders += "X-Redirected: Make-Https\n";
+					return;
+				}
+			}
+
+			for (int i = 0; i < response.Headers.Count; ++i)
+			{
+				string header = response.Headers.GetKey(i);
+				foreach (string value in response.Headers.GetValues(i))
+				{
+					if (!header.StartsWith("Content-") &&
+					!header.StartsWith("Connection") &&
+					!header.StartsWith("Transfer-Encoding") &&
+					!header.StartsWith("Access-Control-Allow-Methods") &&
+					!header.StartsWith("Strict-Transport-Security") &&
+					!header.StartsWith("Content-Security-Policy") &&
+					!header.StartsWith("Upgrade-Insecure-Requests") &&
+					!(header.StartsWith("Vary") && value.Contains("Upgrade-Insecure-Requests")))
+					{
+						ResponseHeaders += (header + ": " + value.Replace("; secure", "") + "\n").Replace("https://", "http://");
+						//Console.WriteLine(header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
+						//if (header.Contains("ookie")) Console.WriteLine("Got cookie: " + value);
+					}
+				}
+			}
+
+			/*if (RequestMethod=="OPTIONS")
+			{
+				ResponseHeaders += "Access-Control-Allow-Methods: POST, GET, OPTIONS\n";
+			}*/
 		}
 
 		/// <summary>
@@ -482,7 +504,7 @@ namespace WebOne
 				Console.Write("[Binary]");
 				TransitStream = response.Stream;
 			}
-			Console.WriteLine(".");
+			Console.Write(".");
 			return;
 		}
 

@@ -36,12 +36,12 @@ namespace WebOne
 		/// <summary>
 		/// List of domains that should be open only using HTTPS
 		/// </summary>
-		public static string[] ForceHttps = { "www.phantom.sannata.org" };
+		public static string[] ForceHttps = { "www.phantom.sannata.org.example" };
 
 		/// <summary>
 		/// List of URLs that should be always downloaded as UTF-8
 		/// </summary>
-		public static string[] ForceUtf8 = { "unicode.biz.ua" };
+		public static string[] ForceUtf8 = { "yandex.ru.example" };
 
 		/// <summary>
 		/// List of parts of Content-Types that describing text files
@@ -72,6 +72,11 @@ namespace WebOne
 		/// List of domains where 302 redirections should be passed through .NET FW
 		/// </summary>
 		public static string[] UseOldRedirect = { "flickr.com", "www.flickr.com"};
+
+		/// <summary>
+		/// Hide "Can't read from client" and "Cannot return reply to the client" error messages in log
+		/// </summary>
+		public static bool HideClientErrors = false;
 
 		static ConfigFile()
 		{
@@ -140,7 +145,7 @@ namespace WebOne
 					}
 
 					int BeginValue = CfgFile[i].IndexOf("=");//regular sections
-					if (BeginValue == 0) continue; //bad line
+					if (BeginValue < 1) continue; //bad line
 					string ParamName = CfgFile[i].Substring(0, BeginValue);
 					string ParamValue = CfgFile[i].Substring(BeginValue + 1);
 					//Console.WriteLine("{0}.{1}={2}", Section, ParamName, ParamValue);
@@ -186,6 +191,9 @@ namespace WebOne
 								case "Authenticate":
 									Authenticate = ParamValue;
 									continue;
+								case "HideClientErrors":
+									HideClientErrors = ToBoolean(ParamValue);
+									continue;
 								default:
 									Console.WriteLine("Unknown server option: " + ParamName);
 									break;
@@ -207,6 +215,24 @@ namespace WebOne
 				#endif
 			}
 			Console.WriteLine("{0} load complete.", ConfigFileName);
+		}
+
+		public static bool ToBoolean(this string s)
+		{
+			//from https://stackoverflow.com/posts/21864625/revisions
+			string[] trueStrings = { "1", "y", "yes", "on", "enable", "true" };
+			string[] falseStrings = { "0", "n", "no", "off", "disable", "false" };
+
+
+			if (trueStrings.Contains(s, StringComparer.OrdinalIgnoreCase))
+				return true;
+			if (falseStrings.Contains(s, StringComparer.OrdinalIgnoreCase))
+				return false;
+
+			throw new InvalidCastException("only the following are supported for converting strings to boolean: "
+				+ string.Join(",", trueStrings)
+				+ " and "
+				+ string.Join(",", falseStrings));
 		}
 	}
 }
