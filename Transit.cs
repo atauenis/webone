@@ -375,7 +375,7 @@ namespace WebOne
 		/// <param name="https">HTTPS client</param>
 		/// <param name="RequestMethod">Request method</param>
 		/// <param name="RequestHeaderCollection">Request headers</param>
-		/// <param name="Content_Length">Content length</param>
+		/// <param name="Content_Length">Request content length</param>
 		/// <param name="Client">TCP client</param>
 		/// <returns>Response status code (and the Response in shared variable)</returns>
 		private void SendRequest(HTTPC https, string RequestMethod, WebHeaderCollection RequestHeaderCollection, int Content_Length, TcpClient Client)
@@ -421,13 +421,16 @@ namespace WebOne
 			//check for security upgrade
 			if (ResponseCode == 301 || ResponseCode == 302 || ResponseCode == 308)
 			{
-				if (RequestUri == (response.Headers["Location"] ?? "nowhere").Replace("https://", "http://") && !Program.CheckString(RequestUri, ConfigFile.UseOldRedirect))
+				if (RequestUri == (response.Headers["Location"] ?? "nowhere").Replace("https://", "http://")
+					&& !Program.CheckString(RequestUri, ConfigFile.UseOldRedirect))
 				{
 					Console.Write("\n> Reload secure");
 					RequestUri = RequestUri.Replace("http://", "https://");
+					TransitStream = null;
 					SendRequest(https, RequestMethod, RequestHeaderCollection, Content_Length, Client);
 					ResponseHeaders += "X-Redirected: Make-Https\n";
-					
+
+					//add to ForceHttp list
 					List<string> ForceHttpsList = ConfigFile.ForceHttps.ToList<string>();
 					string SecureHost = new Uri(RequestUri).Host;
 					if(!ForceHttpsList.Contains(SecureHost))
