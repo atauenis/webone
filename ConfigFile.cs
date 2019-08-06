@@ -78,6 +78,11 @@ namespace WebOne
 		/// </summary>
 		public static bool HideClientErrors = false;
 
+		/// <summary>
+		/// Search for copies of removed sites in web.archive.org
+		/// </summary>
+		public static bool SearchInArchive = false;
+
 		static ConfigFile()
 		{
 			//ConfigFileName = "webone.conf";
@@ -192,6 +197,9 @@ namespace WebOne
 									continue;
 								case "HideClientErrors":
 									HideClientErrors = ToBoolean(ParamValue);
+									continue;
+								case "SearchInArchive":
+									SearchInArchive = ToBoolean(ParamValue);
 									continue;
 								default:
 									Console.WriteLine("Unknown server option: " + ParamName);

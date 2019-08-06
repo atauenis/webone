@@ -248,6 +248,7 @@ namespace WebOne
 
 				if (RequestUri.Contains("??")) { StWrong = true; SendError(Client, 400, "Too many questions."); }
 				if (RequestUri.Length == 0) { StWrong = true; SendError(Client, 400, "Empty URL."); }
+				if (RequestUri == "") return;
 
 				try
 				{
@@ -287,11 +288,59 @@ namespace WebOne
 						}
 					}*/
 #if DEBUG
-				ResponseBody = "<html><body>Cannot load this page" + err + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestUri + Program.GetInfoString() + "</body></html>";
+					ResponseBody = "<html><body>Cannot load this page" + err + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestUri + Program.GetInfoString() + "</body></html>";
 #else
 					ResponseBody = "<html><body>Cannot load this page" + err + " (<i>" + wex.Message + "</i>)<br>URL: " + RequestUri + Program.GetInfoString() + "</body></html>";
 #endif
 
+					//check if archived copy can be retreived instead
+					bool Archived = false;
+					if (ConfigFile.SearchInArchive)
+					if ((wex.Status == WebExceptionStatus.NameResolutionFailure) ||
+						(wex.Response != null && (wex.Response as HttpWebResponse).StatusCode == HttpStatusCode.NotFound))
+					{
+						try
+						{
+							Console.Write(". Look in Archive.org...");
+							HttpWebRequest ArchiveRequest = (HttpWebRequest)WebRequest.Create("https://archive.org/wayback/available?url=" + RequestUri);
+							ArchiveRequest.UserAgent = "WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+							ArchiveRequest.Method = "GET";
+							string ArchiveResponse = "";
+							MemoryStream ms = new MemoryStream();
+							ArchiveRequest.GetResponse().GetResponseStream().CopyTo(ms);
+							ArchiveResponse = Encoding.UTF8.GetString(ms.ToArray());
+							string ArchiveURL = "";
+
+							//parse archive.org json reply
+							if (ArchiveResponse.Contains(@"""available"": true"))
+							{
+								Console.Write("Available ");
+								Archived = true;
+								Match ArchiveMatch = Regex.Match(ArchiveResponse, @"""url"": ""http://web.archive.org/.*"","); ;
+								if (ArchiveMatch.Success)
+								{
+									ArchiveURL = ArchiveMatch.Value.Substring(8, ArchiveMatch.Value.Length - 10);
+									ResponseBody = "<html><body><h1>Server not found</h2>But there is a <a href=" + ArchiveURL + ">archived copy!</a></body></html>";
+									SendError(Client, 302, "Redirect to archived copy: " + ArchiveURL, "\nLocation: " + ArchiveURL);
+								}
+								else
+								{
+									Archived = false;
+									Console.Write(" but somewhere");
+								}
+							}
+							else
+							{
+								Console.Write("No snapshots");
+							}
+						}
+						catch (Exception ArchiveException)
+						{
+							ResponseBody = "<html><body>Server not found and Web Archive error occured!</body></html>";
+						}
+					}
+
+					//check if there are any response and the error isn't fatal
 					if (wex.Response != null)
 					{
 						for (int i = 0; i < wex.Response.Headers.Count; ++i)
@@ -312,6 +361,7 @@ namespace WebOne
 						//todo: add correct returning of error pages through MakeOutput subprogram.
 					}
 
+					if (!Archived)
 					Console.WriteLine(".Failed[{0}].", ResponseCode);
 				}
 				catch (UriFormatException)
