@@ -602,12 +602,22 @@ namespace WebOne
 				Body = Body.Replace(ConfigFile.OutputEncoding.GetString(UTF8BOM), "");
 				Body = ConfigFile.OutputEncoding.GetString(Encoding.Convert(Encoding.UTF8, ConfigFile.OutputEncoding, Encoding.UTF8.GetBytes(Body)));
 			}
-			
-			/*if(true) {
-				//content patching
-				Body = Regex.Replace(Body, @"<script(.|\n)*\/script>", "<!-- WebOne-JS $& /WebOne-JS -->", RegexOptions.Multiline);
-				Body = Regex.Replace(Body, @"<style(.|\n)*\/style>", "<!-- WebOne-CSS $& /WebOne-CSS -->", RegexOptions.Multiline);
-			}*/
+
+			//content patching
+			foreach (string str in ConfigFile.ContentPatchFind)
+			{
+				if (Regex.Match(Body, str).Success)
+				{
+					try
+					{
+						Body = Regex.Replace(Body, str, ConfigFile.ContentPatchReplace[str], RegexOptions.Multiline);
+					}
+					catch (Exception rex)
+					{
+						Console.Write("Cannot make edit! " + rex.Message);
+					}
+				}
+			}
 			return Body;
 		}
 

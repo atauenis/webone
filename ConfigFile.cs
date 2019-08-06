@@ -68,6 +68,10 @@ namespace WebOne
 		/// </summary>
 		public static Dictionary<string, Dictionary<string, string>> FixableUrlActions =  new Dictionary<string, Dictionary<string, string>>();
 
+		//UNDONE!!! сделай описания!
+		public static List<string> ContentPatchFind = new List<string>();
+		public static Dictionary<string, string> ContentPatchReplace = new Dictionary<string, string>();
+
 		/// <summary>
 		/// List of domains where 302 redirections should be passed through .NET FW
 		/// </summary>
@@ -114,6 +118,13 @@ namespace WebOne
 							FixableUrlActions.Add(Section.Substring(11), new Dictionary<string, string>());
 						}
 
+						if (Section.StartsWith("ContentPatchFind:"))
+						{
+							//UNDONE!!! работает через жопу
+							ContentPatchFind.Add(Section.Substring(17));
+							ContentPatchReplace.Add(Section.Substring(17), CfgFile[i+1]); //удалить i+1 т.к. должно заполняться ниже, но не хочет!
+						}
+
 						continue;
 					}
 					/*if (i > 1 && CfgFile[i] == "" && CfgFile[i - 1] == "") //section separator
@@ -158,13 +169,24 @@ namespace WebOne
 					string ParamName = CfgFile[i].Substring(0, BeginValue);
 					string ParamValue = CfgFile[i].Substring(BeginValue + 1);
 					//Console.WriteLine("{0}.{1}={2}", Section, ParamName, ParamValue);
-
+					
+					//Console.WriteLine(Section);
 					if (Section.StartsWith("FixableURL"))
 					{
 						//Console.WriteLine("URL Fix rule: {0}/{1} = {2}",Section.Substring(11),ParamName,ParamValue);
 						FixableUrlActions[Section.Substring(11)].Add(ParamName, ParamValue);
 						continue;
 					}
+					
+					if (Section.StartsWith("ContentPatchFind"))
+					{
+						//UNDONE!!! не работает, выяснить почему!
+						//doesn't work, check why!!!
+						Console.WriteLine("Patch rule: {0}/{1} = {2}",Section.Substring(17),ParamName,ParamValue);
+						ContentPatchReplace[Section.Substring(11)] += ParamValue;
+						continue;
+					}
+					
 
 					switch (Section)
 					{
