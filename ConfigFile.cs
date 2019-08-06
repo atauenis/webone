@@ -83,6 +83,11 @@ namespace WebOne
 		/// </summary>
 		public static bool SearchInArchive = false;
 
+		/// <summary>
+		/// Make Web.Archive.Org error messages laconic (for retro browsers)
+		/// </summary>
+		public static bool ShortenArchiveErrors = false;
+
 		static ConfigFile()
 		{
 			//ConfigFileName = "webone.conf";
@@ -200,6 +205,9 @@ namespace WebOne
 									continue;
 								case "SearchInArchive":
 									SearchInArchive = ToBoolean(ParamValue);
+									continue;
+								case "ShortenArchiveErrors":
+									ShortenArchiveErrors = ToBoolean(ParamValue);
 									continue;
 								default:
 									Console.WriteLine("Unknown server option: " + ParamName);

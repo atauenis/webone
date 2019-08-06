@@ -332,11 +332,21 @@ namespace WebOne
 							else
 							{
 								Console.Write("No snapshots");
+								if (RequestUri.StartsWith("http://web.archive.org/web/") && ConfigFile.ShortenArchiveErrors)
+								{
+										string ErrMsg =
+										"<p><b>The Wayback Machine has not archived that URL.</b></p>" +
+										"<p>This page is not available on the web because page does not exist<br>" + 
+										"Try to slightly change the URL.</p>" +
+										"<small><i>You see this message because ShortenArchiveErrors option is enabled.</i></small>";
+										SendError(Client, 404, ErrMsg);
+										Archived = true;
+								}
 							}
 						}
 						catch (Exception ArchiveException)
 						{
-							ResponseBody = "<html><body>Server not found and Web Archive error occured!</body></html>";
+							ResponseBody = String.Format("<html><body><b>Server not found and a Web Archive error occured.</b><br>{0}</body></html>", ArchiveException.Message.Replace("\n","<br>"));
 						}
 					}
 
