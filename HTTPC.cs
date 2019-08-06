@@ -69,7 +69,7 @@ namespace WebOne
 				webRequest.CookieContainer = cc;
 				webRequest.ProtocolVersion = HttpVersion.Version11;
 				webRequest.KeepAlive = true;
-				webRequest.AllowAutoRedirect = Program.CheckString(host, ConfigFile.UseOldRedirect);
+				webRequest.AllowAutoRedirect = Program.CheckString(host, ConfigFile.InternalRedirectOn);
 
 				webResponse = (HttpWebResponse)webRequest.GetResponse();
 				return new HttpResponse(webResponse);
@@ -134,7 +134,7 @@ namespace WebOne
 					webRequest.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(AcceptAllCertifications);
 				}
 				catch (MissingMethodException) { }*/
-				webRequest.AllowAutoRedirect = Program.CheckString(host, ConfigFile.UseOldRedirect);
+				webRequest.AllowAutoRedirect = Program.CheckString(host, ConfigFile.InternalRedirectOn);
 
 				using (var requestStream = new StreamWriter(webRequest.GetRequestStream()))
 				{

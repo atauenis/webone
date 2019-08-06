@@ -15,7 +15,7 @@ namespace WebOne
 		static string ConfigFileName = Program.ConfigFileName;
 		static List<string> StringListConstructor = new List<string>();
 
-		static string[] SpecialSections = { "ForceHttps", "TextTypes", "ForceUtf8", "UseOldRedirect"/*, "UA:", "URL:" */}; //like "UA:Mozilla/3.*"
+		static string[] SpecialSections = { "ForceHttps", "TextTypes", "ForceUtf8", "InternalRedirectOn"/*, "UA:", "URL:" */}; //like "UA:Mozilla/3.*"
 
 		/// <summary>
 		/// TCP port that should be used by the Proxy Server
@@ -71,7 +71,7 @@ namespace WebOne
 		/// <summary>
 		/// List of domains where 302 redirections should be passed through .NET FW
 		/// </summary>
-		public static string[] UseOldRedirect = { "flickr.com", "www.flickr.com"};
+		public static string[] InternalRedirectOn = { "flickr.com.example", "www.flickr.com.example"};
 
 		/// <summary>
 		/// Hide "Can't read from client" and "Cannot return reply to the client" error messages in log
@@ -106,13 +106,13 @@ namespace WebOne
 
 						continue;
 					}
-					if (i > 1 && CfgFile[i] == "" && CfgFile[i - 1] == "") //section separator
+					/*if (i > 1 && CfgFile[i] == "" && CfgFile[i - 1] == "") //section separator
 					{
 						//doesn't work, needs to be investigated!
 						Section = "";
 						StringListConstructor.Clear();
 						continue;
-					}
+					}*/
 
 					//Console.WriteLine(Section);
 					if (Program.CheckString(Section, SpecialSections)) //special sections (patterns, lists, etc)
@@ -132,13 +132,12 @@ namespace WebOne
 								StringListConstructor.Add(CfgFile[i]);
 								ForceUtf8 = StringListConstructor.ToArray();
 								continue;
-							case "UseOldRedirect":
+							case "InternalRedirectOn":
 								StringListConstructor.Add(CfgFile[i]);
-								UseOldRedirect = StringListConstructor.ToArray();
+								InternalRedirectOn = StringListConstructor.ToArray();
 								continue;
 							default:
 								Console.WriteLine("The special section {0} is not implemented in this build.", Section);
-								//тут будут обрабатываться сложные параметрные группы
 								continue;
 						}
 						continue;

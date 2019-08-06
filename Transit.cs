@@ -187,7 +187,8 @@ namespace WebOne
 
 				//check for HTTP-to-FTP requests
 				//https://support.microsoft.com/en-us/help/166961/how-to-ftp-with-cern-based-proxy-using-wininet-api
-				string ProtocolName = RequestUri.Substring(0, RequestUri.IndexOf(":"));
+				string ProtocolName = "";
+				if(RequestUri.IndexOf(":")>1) ProtocolName = RequestUri.Substring(0, RequestUri.IndexOf(":"));
 				string[] BadProtocols = { "ftp", "gopher", "wais" };
 				if (Program.CheckString(ProtocolName, BadProtocols))
 				{
@@ -395,7 +396,7 @@ namespace WebOne
 					MakeOutput(response);
 					break;
 				case "CONNECT":
-					SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method.<BR>Please use HTTP, not HTTPS.");
+					SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method.<BR>Please use HTTP, not HTTPS.<BR>HSTS must be disabled.");
 					Console.WriteLine(" Wrong method.");
 					return;
 				default:
@@ -422,13 +423,13 @@ namespace WebOne
 			if (ResponseCode == 301 || ResponseCode == 302 || ResponseCode == 308)
 			{
 				if (RequestUri == (response.Headers["Location"] ?? "nowhere").Replace("https://", "http://")
-					&& !Program.CheckString(RequestUri, ConfigFile.UseOldRedirect))
+					&& !Program.CheckString(RequestUri, ConfigFile.InternalRedirectOn))
 				{
 					Console.Write("\n> Reload secure");
 					RequestUri = RequestUri.Replace("http://", "https://");
 					TransitStream = null;
 					SendRequest(https, RequestMethod, RequestHeaderCollection, Content_Length, Client);
-					ResponseHeaders += "X-Redirected: Make-Https\n";
+					//ResponseHeaders += "X-Redirected: Make-Https\n";
 
 					//add to ForceHttp list
 					List<string> ForceHttpsList = ConfigFile.ForceHttps.ToList<string>();
