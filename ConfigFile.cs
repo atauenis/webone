@@ -68,8 +68,14 @@ namespace WebOne
 		/// </summary>
 		public static Dictionary<string, Dictionary<string, string>> FixableUrlActions =  new Dictionary<string, Dictionary<string, string>>();
 
-		//UNDONE!!! сделай описания!
+		/// <summary>
+		/// List of content patching masks
+		/// </summary>
 		public static List<string> ContentPatchFind = new List<string>();
+
+		/// <summary>
+		/// Content patching replacements
+		/// </summary>
 		public static Dictionary<string, string> ContentPatchReplace = new Dictionary<string, string>();
 
 		/// <summary>
@@ -120,9 +126,8 @@ namespace WebOne
 
 						if (Section.StartsWith("ContentPatchFind:"))
 						{
-							//UNDONE!!! работает через жопу
 							ContentPatchFind.Add(Section.Substring(17));
-							ContentPatchReplace.Add(Section.Substring(17), CfgFile[i+1]); //удалить i+1 т.к. должно заполняться ниже, но не хочет!
+							ContentPatchReplace.Add(Section.Substring(17), CfgFile[i+1]); //remove i+1 after fix for section parsing!
 						}
 
 						continue;
@@ -180,9 +185,8 @@ namespace WebOne
 					
 					if (Section.StartsWith("ContentPatchFind"))
 					{
-						//UNDONE!!! не работает, выяснить почему!
-						//doesn't work, check why!!!
-						Console.WriteLine("Patch rule: {0}/{1} = {2}",Section.Substring(17),ParamName,ParamValue);
+						//BUG: doesn't work, check why!!!
+						Console.WriteLine("Patch rule: {0}/{1} = {2} [If you see this, pls report to author]",Section.Substring(17),ParamName,ParamValue);
 						ContentPatchReplace[Section.Substring(11)] += ParamValue;
 						continue;
 					}

@@ -198,7 +198,7 @@ namespace WebOne
 				}
 
 				//dirty workarounds for HTTP>HTTPS redirection bugs
-				if ((RequestUri == RefererUri || RequestUri == LastURL) && RequestUri != "" && RequestMethod != "POST")
+				if ((RequestUri == RefererUri || RequestUri == LastURL) && RequestUri != "" && RequestMethod != "POST" && RequestMethod != "CONNECT")
 				{
 					Console.Write("Carousel");
 					if (!LastURL.StartsWith("https") && !RequestUri.StartsWith("https")) //if http is gone, try https
@@ -320,8 +320,8 @@ namespace WebOne
 								if (ArchiveMatch.Success)
 								{
 									ArchiveURL = ArchiveMatch.Value.Substring(8, ArchiveMatch.Value.Length - 10);
-									ResponseBody = "<html><body><h1>Server not found</h2>But there is a <a href=" + ArchiveURL + ">archived copy!</a></body></html>";
-									SendError(Client, 302, "Redirect to archived copy: " + ArchiveURL, "\nLocation: " + ArchiveURL);
+									ResponseBody = "<html><body><h1>Server not found</h2>But an <a href=" + ArchiveURL + ">archived copy</a> is available! Redirecting to it...</body></html>";
+									SendError(Client, 302, ResponseBody, "\nLocation: " + ArchiveURL);
 								}
 								else
 								{
@@ -456,7 +456,8 @@ namespace WebOne
 					MakeOutput(response);
 					break;
 				case "CONNECT":
-					SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method.<BR>Please use HTTP, not HTTPS.<BR>HSTS must be disabled.");
+					string ProtocolReplacerJS = "<script>if (window.location.protocol != 'http:') { window.location.protocol = 'http:'; window.location.reload(); }</script>";
+					SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method.<BR>Please use HTTP, not HTTPS.<BR>HSTS must be disabled." + ProtocolReplacerJS);
 					Console.WriteLine(" Wrong method.");
 					return;
 				default:
@@ -614,7 +615,7 @@ namespace WebOne
 					}
 					catch (Exception rex)
 					{
-						Console.Write("Cannot make edit! " + rex.Message);
+						Console.Write("Cannot make edit: " + rex.Message + "!");
 					}
 				}
 			}
