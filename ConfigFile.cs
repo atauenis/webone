@@ -15,7 +15,7 @@ namespace WebOne
 		static string ConfigFileName = Program.ConfigFileName;
 		static List<string> StringListConstructor = new List<string>();
 
-		static string[] SpecialSections = { "ForceHttps", "TextTypes", "ForceUtf8", "InternalRedirectOn"/*, "UA:", "URL:" */}; //like "UA:Mozilla/3.*"
+		static string[] SpecialSections = { "ForceHttps", "TextTypes", "ForceUtf8", "InternalRedirectOn" };
 
 		/// <summary>
 		/// TCP port that should be used by the Proxy Server
@@ -69,14 +69,14 @@ namespace WebOne
 		public static Dictionary<string, Dictionary<string, string>> FixableUrlActions =  new Dictionary<string, Dictionary<string, string>>();
 
 		/// <summary>
-		/// List of content patching masks
+		/// List of possible content patches
 		/// </summary>
-		public static List<string> ContentPatchFind = new List<string>();
+		public static List<string> ContentPatches = new List<string>();
 
 		/// <summary>
-		/// Content patching replacements
+		/// Dictionary of possible content patches
 		/// </summary>
-		public static Dictionary<string, string> ContentPatchReplace = new Dictionary<string, string>();
+		public static Dictionary<string, Dictionary<string, string>> ContentPatchActions = new Dictionary<string, Dictionary<string, string>>();
 
 		/// <summary>
 		/// List of domains where 302 redirections should be passed through .NET FW
@@ -124,21 +124,20 @@ namespace WebOne
 							FixableUrlActions.Add(Section.Substring(11), new Dictionary<string, string>());
 						}
 
+						if (Section.StartsWith("ContentPatch:"))
+						{
+							ContentPatches.Add(Section.Substring(13));
+							ContentPatchActions.Add(Section.Substring(13), new Dictionary<string, string>());
+						}
+
 						if (Section.StartsWith("ContentPatchFind:"))
 						{
-							ContentPatchFind.Add(Section.Substring(17));
-							ContentPatchReplace.Add(Section.Substring(17), CfgFile[i+1]); //remove i+1 after fix for section parsing!
+							Console.WriteLine("Warning: ContentPatchFind sections are no longer supported. See wiki.");
 						}
 
 						continue;
 					}
-					/*if (i > 1 && CfgFile[i] == "" && CfgFile[i - 1] == "") //section separator
-					{
-						//doesn't work, needs to be investigated!
-						Section = "";
-						StringListConstructor.Clear();
-						continue;
-					}*/
+
 
 					//Console.WriteLine(Section);
 					if (Program.CheckString(Section, SpecialSections)) //special sections (patterns, lists, etc)
@@ -163,7 +162,7 @@ namespace WebOne
 								InternalRedirectOn = StringListConstructor.ToArray();
 								continue;
 							default:
-								Console.WriteLine("The special section {0} is not implemented in this build.", Section);
+								Console.WriteLine("Warning: The special section {0} is not implemented in this build.", Section);
 								continue;
 						}
 						continue;
@@ -182,15 +181,14 @@ namespace WebOne
 						FixableUrlActions[Section.Substring(11)].Add(ParamName, ParamValue);
 						continue;
 					}
-					
-					if (Section.StartsWith("ContentPatchFind"))
+
+					if (Section.StartsWith("ContentPatch:"))
 					{
-						//BUG: doesn't work, check why!!!
-						Console.WriteLine("Patch rule: {0}/{1} = {2} [If you see this, pls report to author]",Section.Substring(17),ParamName,ParamValue);
-						ContentPatchReplace[Section.Substring(11)] += ParamValue;
+						if (!ContentPatches.Contains(Section.Substring(13))) ContentPatches.Add(Section.Substring(13));
+						ContentPatchActions[Section.Substring(13)].Add(ParamName, ParamValue);
 						continue;
 					}
-					
+
 
 					switch (Section)
 					{
@@ -236,12 +234,12 @@ namespace WebOne
 									ShortenArchiveErrors = ToBoolean(ParamValue);
 									continue;
 								default:
-									Console.WriteLine("Unknown server option: " + ParamName);
+									Console.WriteLine("Warning: Unknown server option: " + ParamName);
 									break;
 							}
 							break;
 						default:
-							Console.WriteLine("Unknown section: " + Section);
+							Console.WriteLine("Warning: Unknown section: " + Section);
 							break;
 					}
 
@@ -249,12 +247,13 @@ namespace WebOne
 			}
 			catch(Exception ex) {
 				#if DEBUG
-				Console.WriteLine("Error on line {1}: {0}.",ex.ToString(), i);
+				Console.WriteLine("Error on line {1}: {0}.\nGo to debugger.",ex.ToString(), i);
 				throw;
 				#else
-				Console.WriteLine("Error on line {1}: {0}.\nAll next lines are ignored.",ex.Message, i);
+				Console.WriteLine("Error on line {1}: {0}.\nAll next lines are ignored.", ex.Message, i);
 				#endif
 			}
+			if (i < 1) Console.WriteLine("Warning: curiously short file. Probably line endings are not valid for this OS.");
 			Console.WriteLine("{0} load complete.", ConfigFileName);
 		}
 

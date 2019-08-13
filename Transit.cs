@@ -605,20 +605,36 @@ namespace WebOne
 			}
 
 			//content patching
-			foreach (string str in ConfigFile.ContentPatchFind)
+			int patched = 0;
+			foreach (string mask in ConfigFile.ContentPatches)
 			{
-				if (Regex.Match(Body, str).Success)
+				string IfURL = ".*";
+				if(ConfigFile.ContentPatchActions[mask].ContainsKey("IfURL"))
+					IfURL = ConfigFile.ContentPatchActions[mask]["IfURL"];
+				
+				string IfType = "";
+				if(ConfigFile.ContentPatchActions[mask].ContainsKey("IfType"))
+					IfType = ConfigFile.ContentPatchActions[mask]["IfType"];
+
+				string Replace = "<!--Removed by WebOne:$&End-->";
+				if (ConfigFile.ContentPatchActions[mask].ContainsKey("Replace"))
+					Replace = ConfigFile.ContentPatchActions[mask]["Replace"];
+
+				if(Regex.IsMatch(RequestUri,IfURL) && Regex.IsMatch(ContentType, IfType))
 				{
 					try
 					{
-						Body = Regex.Replace(Body, str, ConfigFile.ContentPatchReplace[str], RegexOptions.Multiline);
+						Body = Regex.Replace(Body, mask, Replace, RegexOptions.Multiline);
+						patched++;
 					}
 					catch (Exception rex)
 					{
-						Console.Write("Cannot make edit: " + rex.Message + "!");
+						Console.Write(" Cannot make edit: '" + rex.Message + "'!");
 					}
 				}
 			}
+
+			if (patched > 0) Console.Write(" {0} patches applied", patched);
 			return Body;
 		}
 
