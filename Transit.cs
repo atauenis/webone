@@ -643,7 +643,7 @@ namespace WebOne
 				if(ConfigFile.ContentPatchActions[mask].ContainsKey("IfURL"))
 					IfURL = ConfigFile.ContentPatchActions[mask]["IfURL"];
 				
-				string IfType = "";
+				string IfType = ".*";
 				if(ConfigFile.ContentPatchActions[mask].ContainsKey("IfType"))
 					IfType = ConfigFile.ContentPatchActions[mask]["IfType"];
 
@@ -655,7 +655,7 @@ namespace WebOne
 				{
 					try
 					{
-						Body = Regex.Replace(Body, mask, Replace, RegexOptions.Multiline);
+						Body = Regex.Replace(Body, mask, Replace, RegexOptions.Singleline);
 						patched++;
 					}
 					catch (Exception rex)
