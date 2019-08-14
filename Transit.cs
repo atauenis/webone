@@ -25,6 +25,7 @@ namespace WebOne
 		int RequestHeadersEnd;
 		string RequestUri = "about:blank";
 		bool LocalMode = false;
+		bool ShouldRedirectInNETFW = false;
 
 		HttpResponse response;
 		int ResponseCode = 502;
@@ -43,6 +44,7 @@ namespace WebOne
 		/// <param name="Client">TcpListener client</param>
 		public Transit(TcpClient Client)
 		{
+			ShouldRedirectInNETFW = false;
 			Console.Write("\n>");
 			try
 			{
@@ -198,7 +200,7 @@ namespace WebOne
 				}
 
 				//dirty workarounds for HTTP>HTTPS redirection bugs
-				if ((RequestUri == RefererUri || RequestUri == LastURL) && RequestUri != "" && RequestMethod != "POST" && RequestMethod != "CONNECT")
+				if ((RequestUri == RefererUri || RequestUri == LastURL) && RequestUri != "" && RequestMethod != "POST" && RequestMethod != "CONNECT" && !Program.CheckString(RequestUri, ConfigFile.ForceHttps))
 				{
 					Console.Write("Carousel");
 					if (!LastURL.StartsWith("https") && !RequestUri.StartsWith("https")) //if http is gone, try https
@@ -223,12 +225,39 @@ namespace WebOne
 							string Redirect = "about:mozilla";
 							if (ConfigFile.FixableUrlActions[str].ContainsKey("Redirect")) Redirect = ConfigFile.FixableUrlActions[str]["Redirect"];
 
+							string InternalRedirect = "no";
+							if (ConfigFile.FixableUrlActions[str].ContainsKey("Internal")) InternalRedirect = ConfigFile.FixableUrlActions[str]["Internal"];
+
 							if (ValidMask == "" || !Regex.Match(RequestUri, ValidMask).Success/*!RequestUri.Contains(ConfigFile.FixableUrlActions[str]["ValidMask"])*/)
 							{
 								string NewURL = Redirect.Replace("%URL%", RequestUri).Replace("%UrlNoDomain%", RequestUri.Substring(RequestUri.IndexOf("/") + 2).Substring((RequestUri.Substring(RequestUri.IndexOf("/") + 2)).IndexOf("/") + 1));
+
+								if (Redirect.Contains("%UrlNoPort%"))
+								{
+									Uri NewUri = new Uri(RequestUri);
+									var builder = new UriBuilder(NewUri);
+									builder.Port = -1;
+									NewUri = builder.Uri;
+									NewURL = NewUri.ToString();
+								}
+								/*else {
+									NewUri = new Uri(NewURL);
+									NewURL = NewUri.ToString();
+								}*/
+								
 								Console.Write("Fix to {1}", RequestUri, NewURL, ValidMask);
-								SendError(Client, 302, "Брось каку!", "\nLocation: " + NewURL);
-								return;
+								ShouldRedirectInNETFW = ConfigFile.ToBoolean(InternalRedirect);
+
+								if (!ShouldRedirectInNETFW)
+								{
+									SendError(Client, 302, "Брось каку!", "\nLocation: " + NewURL);
+									return;
+								}
+								else
+								{
+									RequestUri = NewURL;
+									Console.Write(" internally. ");
+								}
 							}
 						}
 						catch (Exception rex)
@@ -443,20 +472,22 @@ namespace WebOne
 		{
 			//moved from constructor as is on july 19, 2019
 			//probably needs to be cleaned up and rewritten
+			bool AllowAutoRedirect = Program.CheckString(RequestUri, ConfigFile.InternalRedirectOn);
+			if (!AllowAutoRedirect) AllowAutoRedirect = ShouldRedirectInNETFW;
 			switch (RequestMethod)
 			{
 				case "GET":
 					//try to get...
-					response = https.GET(RequestUri, new CookieContainer(), RequestHeaderCollection);
+					response = https.GET(RequestUri, new CookieContainer(), RequestHeaderCollection, "GET", AllowAutoRedirect);
 					MakeOutput(response);
 					break;
 				case "POST":
 					//try to post...
-					response = https.POST(RequestUri, new CookieContainer(), RequestBody, RequestHeaderCollection);
+					response = https.POST(RequestUri, new CookieContainer(), RequestBody, RequestHeaderCollection, "POST", AllowAutoRedirect);
 					MakeOutput(response);
 					break;
 				case "CONNECT":
-					string ProtocolReplacerJS = "<script>if (window.location.protocol != 'http:') { window.location.protocol = 'http:'; window.location.reload(); }</script>";
+					string ProtocolReplacerJS = "<script>if (window.location.protocol != 'http:') { setTimeout(function(){window.location.protocol = 'http:'; window.location.reload();}, 1000); }</script>";
 					SendError(Client, 405, "The proxy does not know the " + RequestMethod + " method.<BR>Please use HTTP, not HTTPS.<BR>HSTS must be disabled." + ProtocolReplacerJS);
 					Console.WriteLine(" Wrong method.");
 					return;
@@ -464,7 +495,7 @@ namespace WebOne
 					if (Content_Length == 0)
 					{
 						//try to download (HEAD, WebDAV download, etc)
-						response = https.GET(RequestUri, new CookieContainer(), RequestHeaderCollection, RequestMethod);
+						response = https.GET(RequestUri, new CookieContainer(), RequestHeaderCollection, RequestMethod, AllowAutoRedirect);
 						MakeOutput(response);
 						break;
 					}
@@ -472,7 +503,7 @@ namespace WebOne
 					{
 						//try to upload (PUT, WebDAV, etc)
 						Console.Write(" CL={0}K", Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024);
-						response = https.POST(RequestUri, new CookieContainer(), RequestBody, RequestHeaderCollection, RequestMethod);
+						response = https.POST(RequestUri, new CookieContainer(), RequestBody, RequestHeaderCollection, RequestMethod, AllowAutoRedirect);
 						MakeOutput(response);
 						break;
 					}

@@ -38,8 +38,9 @@ namespace WebOne
 		/// <param name="cc">Cookie container</param>
 		/// <param name="headers">HTTP headers</param>
 		/// <param name="method">HTTP method (GET by default)</param>
+		/// <param name="AllowAutoRedirect">Allow 302 redirection handling in .NET FW or not</param>
 		/// <returns>Server's response.</returns>
-		public HttpResponse GET(string host, CookieContainer cc, WebHeaderCollection headers, string method = "GET")
+		public HttpResponse GET(string host, CookieContainer cc, WebHeaderCollection headers, string method = "GET", bool AllowAutoRedirect = false)
 		{
 			try
 			{
@@ -69,7 +70,7 @@ namespace WebOne
 				webRequest.CookieContainer = cc;
 				webRequest.ProtocolVersion = HttpVersion.Version11;
 				webRequest.KeepAlive = true;
-				webRequest.AllowAutoRedirect = Program.CheckString(host, ConfigFile.InternalRedirectOn);
+				webRequest.AllowAutoRedirect = AllowAutoRedirect;
 
 				webResponse = (HttpWebResponse)webRequest.GetResponse();
 				return new HttpResponse(webResponse);
@@ -94,9 +95,9 @@ namespace WebOne
 		/// <param name="data">Raw post data</param>
 		/// <param name="headers">HTTP headers</param>
 		/// <param name="method">HTTP method (POST by default)</param>
+		/// <param name="AllowAutoRedirect">Allow 302 redirection handling in .NET FW or not</param>
 		/// <returns></returns>
-		//public HttpResponse POST(string host, CookieContainer cc, NameValueCollection param)
-		public HttpResponse POST(string host, CookieContainer cc, string data, WebHeaderCollection headers, string method = "POST")
+		public HttpResponse POST(string host, CookieContainer cc, string data, WebHeaderCollection headers, string method = "POST", bool AllowAutoRedirect = false)
 		{
 			try
 			{
@@ -122,7 +123,7 @@ namespace WebOne
 				webRequest.UserAgent = UA;
 				webRequest.Referer = Referer;
 				webRequest.Method = method;
-				webRequest.AllowAutoRedirect = true;
+				webRequest.AllowAutoRedirect = AllowAutoRedirect;
 				webRequest.CookieContainer = cc;
 				webRequest.ProtocolVersion = HttpVersion.Version10;
 				webRequest.KeepAlive = true;
@@ -166,7 +167,7 @@ namespace WebOne
 		{
 			WebHeaderCollection Headers = new WebHeaderCollection();
 			Headers = new WebHeaderCollection();
-			Headers.Add("Accept-Language", "ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3");
+			//Headers.Add("Accept-Language", "ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3");
 			Headers.Add("Accept-Encoding", "gzip, deflate");
 			return Headers;
 		}
