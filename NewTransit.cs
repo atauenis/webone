@@ -275,7 +275,8 @@ namespace WebOne
 							{
 								if (!header.StartsWith("Connection") && !header.StartsWith("Transfer-Encoding"))
 								{
-									ResponseHeaders += (header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", "") + "\n");
+									//ResponseHeaders += (header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
+									ClientResponse.AddHeader(header, value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
 									//if (ClientRequest.HttpMethod == "OPTIONS" && header == "Allow") Console.Write("[Options allowed: {0}]", value);
 								}
 							}
@@ -310,22 +311,23 @@ namespace WebOne
 						ClientResponse.StatusCode = ResponseCode;
 						ClientResponse.AddHeader("Via", "HTTP/1.0 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
 
+
 						if (CheckString(ContentType, ConfigFile.TextTypes) || ContentType == "")
 						{
 							ClientResponse.AddHeader("Content-Type", ContentType);
-							ClientResponse.AddHeader("Content-Length", ResponseBody.Length.ToString());
+							//ClientResponse.AddHeader("Content-Length", ResponseBody.Length.ToString());
 							//ResponseHeaders = "HTTP/1.0 " + ResponseCode + "\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + ResponseBody.Length;
 						}
 						else
 						{
 							ClientResponse.AddHeader("Content-Type", ContentType);
-							ClientResponse.AddHeader("Content-Length", response.ContentLength.ToString());
+							//ClientResponse.AddHeader("Content-Length", response.ContentLength.ToString());
 						}
-							//ResponseHeaders = "HTTP/1.0 " + ResponseCode + "\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + response.ContentLength;
+						//ResponseHeaders = "HTTP/1.0 " + ResponseCode + "\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + response.ContentLength;
 
-						byte[] RespBuffer = (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(ResponseHeaders + "\n\n");
 						if (TransitStream == null)
 						{
+							byte[] RespBuffer;// = (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(ResponseHeaders + "\n\n");
 							RespBuffer = (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(ResponseBody).ToArray();
 							//RespBuffer = RespBuffer.Concat(ResponseBuffer ?? (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(ResponseBody)).ToArray();
 							//ClientStream.Write(RespBuffer, 0, RespBuffer.Length);
@@ -339,12 +341,13 @@ namespace WebOne
 						}
 						//Client.Close();
 						ClientResponse.OutputStream.Close();
+						Console.WriteLine("{0}\t Document sent.", GetTime(BeginTime));
 					}
 				}
 				catch (Exception ex)
 				{
 					if (!ConfigFile.HideClientErrors)
-						Console.WriteLine("Cannot return reply to the client. " + ex.Message + ex.StackTrace);
+						Console.WriteLine("{0}\t Cannot return reply to the client. " + ex.Message + ex.StackTrace, GetTime(BeginTime));
 				}
 			}
 			catch(Exception E)
@@ -455,7 +458,8 @@ namespace WebOne
 					!header.StartsWith("Upgrade-Insecure-Requests") &&
 					!(header.StartsWith("Vary") && value.Contains("Upgrade-Insecure-Requests")))
 					{
-						ResponseHeaders += (header + ": " + value.Replace("; secure", "") + "\n").Replace("https://", "http://");
+						ClientResponse.AddHeader(header, value.Replace("; secure", "").Replace("https://", "http://"));
+						//ResponseHeaders += (header + ": " + value.Replace("; secure", "") + "\n").Replace("https://", "http://");
 						//Console.WriteLine(header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
 						//if (header.Contains("ookie")) Console.WriteLine("Got cookie: " + value);
 					}
@@ -531,7 +535,6 @@ namespace WebOne
 		/// <returns>ResponseBuffer+ResponseBody for texts or TransitStream for binaries</returns>
 		private void MakeOutput(HttpResponse response)
 		{
-			Console.Write(response.StatusCode);
 			ContentType = response.ContentType;
 
 			if (Program.CheckString(ContentType, ConfigFile.TextTypes))
