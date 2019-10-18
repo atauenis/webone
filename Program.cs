@@ -21,26 +21,12 @@ namespace WebOne
 			int Port = -1;
 			try { Port = Convert.ToInt32(args[0]); if (args.Length > 1) ConfigFileName = args[1]; }
 			catch { if(args.Length > 0) ConfigFileName = args[0]; }
-			if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Authenticate = ConfigFile.Authenticate;
+			if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Authenticate = ConfigFile.Authenticate; //what?!!
 			Console.Title = "WebOne @ " + Environment.MachineName + ":" + Port;
+			
+			NewHTTPServer Server = new NewHTTPServer(Port);
 
-			/*string host = "https://mozilla.org";
-			HTTPC https = new HTTPC();
-			Console.WriteLine("try to get...");
-			HttpResponse response = https.GET(host, new CookieContainer());
-			Console.WriteLine("wait for response...");
-			Console.WriteLine("Code=" + response.StatusCode);
-			Console.WriteLine("wait for body...");
-			var body = response.Content;
-			Console.WriteLine("Body length" + body.Length);
-			Console.ReadKey();
-
-			if (response.StatusCode == HttpStatusCode.OK)
-			{
-				//var body = response.Content;
-			}*/
-
-			HTTPServer Server = new HTTPServer(Port);
+			//HTTPServer Server = new HTTPServer(Port);
 
 			Console.WriteLine("That's all. Closing.");
 		}

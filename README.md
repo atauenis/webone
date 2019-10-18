@@ -2,7 +2,7 @@
 This is a HTTP 1.x proxy that makes old web browsers usable again in the Web 2.0 world.
 
 The proxy should be ran on a modern PC with .NET Framework 4.6 (or newer).
-Probably should work in Mono too.
+Probably should work in Mono too. Administrator privilegies are required.
 
 WebOne HTTP Proxy server is working by default on port 80 and compatible even with Netscape Navigator 3. Set IP or hostname of the PC with WebOne as HTTP Proxy Server in old browser's settings and begin WWW surfing again. There also a local mode (http://proxyhost:port/http://domain/filename.ext) for browsers that cannot work with proxies.
 
