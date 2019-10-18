@@ -53,7 +53,27 @@ namespace WebOne
 
 				ShouldRedirectInNETFW = false;
 
-				//undone: add proxy authentication
+				//check for login to proxy if need
+				if (ConfigFile.Authenticate != "")
+				{
+					if (ClientRequest.Headers["Proxy-Authorization"] == null || ClientRequest.Headers["Proxy-Authorization"] == "")
+					{
+						ClientResponse.AddHeader("Proxy-Authenticate", @"Basic realm=""Log in to WebOne""");
+						SendError(407, "Hello! This Web 2.0-to-1.0 proxy server is private. Please enter your credentials.");
+						return;
+					}
+					else
+					{
+						string auth = Encoding.Default.GetString(Convert.FromBase64String(ClientRequest.Headers["Proxy-Authorization"].Substring(6)));
+						if (auth != ConfigFile.Authenticate)
+						{
+							Console.WriteLine("{0}\t Incorrect login: '{1}'.", GetTime(BeginTime), auth);
+							ClientResponse.AddHeader("Proxy-Authenticate", @"Basic realm=""Your WebOne credentials are incorrect""");
+							SendError(407, "Your password is not correct. Please try again.");
+							return;
+						}
+					}
+				}
 
 				//fix "carousels"
 				string RefererUri = ClientRequest.Headers["Referer"];
@@ -275,7 +295,6 @@ namespace WebOne
 							{
 								if (!header.StartsWith("Connection") && !header.StartsWith("Transfer-Encoding"))
 								{
-									//ResponseHeaders += (header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
 									ClientResponse.AddHeader(header, value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
 									//if (ClientRequest.HttpMethod == "OPTIONS" && header == "Allow") Console.Write("[Options allowed: {0}]", value);
 								}
@@ -283,7 +302,6 @@ namespace WebOne
 						}
 						ContentType = wex.Response.ContentType;
 						ResponseBody = new StreamReader(wex.Response.GetResponseStream()).ReadToEnd();
-						//ResponseBody = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(new StreamReader(wex.Response.GetResponseStream()).ReadToEnd()));
 						//todo: add correct returning of error pages through MakeOutput subprogram.
 					}
 
@@ -315,31 +333,23 @@ namespace WebOne
 						if (CheckString(ContentType, ConfigFile.TextTypes) || ContentType == "")
 						{
 							ClientResponse.AddHeader("Content-Type", ContentType);
-							//ClientResponse.AddHeader("Content-Length", ResponseBody.Length.ToString());
-							//ResponseHeaders = "HTTP/1.0 " + ResponseCode + "\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + ResponseBody.Length;
 						}
 						else
 						{
 							ClientResponse.AddHeader("Content-Type", ContentType);
-							//ClientResponse.AddHeader("Content-Length", response.ContentLength.ToString());
 						}
-						//ResponseHeaders = "HTTP/1.0 " + ResponseCode + "\n" + ResponseHeaders + "Content-Type: " + ContentType + "\nContent-Length: " + response.ContentLength;
 
 						if (TransitStream == null)
 						{
-							byte[] RespBuffer;// = (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(ResponseHeaders + "\n\n");
+							byte[] RespBuffer;
 							RespBuffer = (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(ResponseBody).ToArray();
-							//RespBuffer = RespBuffer.Concat(ResponseBuffer ?? (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(ResponseBody)).ToArray();
-							//ClientStream.Write(RespBuffer, 0, RespBuffer.Length);
+
 							ClientResponse.OutputStream.Write(RespBuffer, 0, RespBuffer.Length);
 						}
 						else
 						{
-							/*ClientStream.Write(RespBuffer, 0, RespBuffer.Length);
-							TransitStream.CopyTo(ClientStream);*/
 							TransitStream.CopyTo(ClientResponse.OutputStream);
 						}
-						//Client.Close();
 						ClientResponse.OutputStream.Close();
 						Console.WriteLine("{0}\t Document sent.", GetTime(BeginTime));
 					}
@@ -354,7 +364,6 @@ namespace WebOne
 			{
 				string time = GetTime(BeginTime);
 				Console.WriteLine("{0}\t A error has been catched: {1}\n{0}\t Please report to author.", time, E.ToString().Replace("\n", "\n{0}\t "));
-				//Console.WriteLine("{0}\t A error has been catched: {1}\n{2}\n{0}\t Please report to author", time, E, E.StackTrace);
 				SendError(500, "WTF?! " + E.ToString().Replace("\n", "\n<BR>"));
 			}
 			Console.WriteLine("{0}\t End process.", GetTime(BeginTime));
@@ -371,26 +380,12 @@ namespace WebOne
 		/// <returns>Response status code (and the Response in shared variable)</returns>
 		private void SendRequest(HTTPC https, string RequestMethod, WebHeaderCollection RequestHeaderCollection, int Content_Length)
 		{
-			//moved from constructor as is on july 19, 2019
-			//probably needs to be cleaned up and rewritten
 			bool AllowAutoRedirect = CheckString(RequestURL.AbsoluteUri, ConfigFile.InternalRedirectOn);
 			if (!AllowAutoRedirect) AllowAutoRedirect = ShouldRedirectInNETFW;
 			string RequestBody;
 
 			switch (RequestMethod)
 			{
-				/*case "GET":
-					//try to get...
-					response = https.GET(RequestURL.AbsoluteUri, new CookieContainer(), RequestHeaderCollection, "GET", AllowAutoRedirect);
-					MakeOutput(response);
-					break;
-				case "POST":
-					//try to post...
-					StreamReader p_sr = new StreamReader(ClientRequest.InputStream);
-					RequestBody = p_sr.ReadToEnd();
-					response = https.POST(RequestURL.AbsoluteUri, new CookieContainer(), RequestBody, RequestHeaderCollection, "POST", AllowAutoRedirect);
-					MakeOutput(response);
-					break;*/
 				case "CONNECT":
 					string ProtocolReplacerJS = "<script>if (window.location.protocol != 'http:') { setTimeout(function(){window.location.protocol = 'http:'; window.location.reload();}, 1000); }</script>";
 					SendError(405, "The proxy does not know the " + RequestMethod + " method.<BR>Please use HTTP, not HTTPS.<BR>HSTS must be disabled." + ProtocolReplacerJS);
@@ -399,7 +394,7 @@ namespace WebOne
 				default:
 					if (Content_Length == 0)
 					{
-						//try to download (HEAD, WebDAV download, etc)
+						//try to download (GET, HEAD, WebDAV download, etc)
 						Console.WriteLine("{0}\t>Downloading content...", GetTime(BeginTime));
 						response = https.GET(RequestURL.AbsoluteUri, new CookieContainer(), RequestHeaderCollection, RequestMethod, AllowAutoRedirect);
 						MakeOutput(response);
@@ -407,7 +402,7 @@ namespace WebOne
 					}
 					else
 					{
-						//try to upload (PUT, WebDAV, etc)
+						//try to upload (POST, PUT, WebDAV, etc)
 						Console.WriteLine("{0}\t>Reading input stream...", GetTime(BeginTime));
 						StreamReader body_sr = new StreamReader(ClientRequest.InputStream);
 						RequestBody = body_sr.ReadToEnd();
@@ -431,7 +426,6 @@ namespace WebOne
 					RequestURL = new Uri(RequestURL.AbsoluteUri.Replace("http://", "https://"));
 					TransitStream = null;
 					SendRequest(https, RequestMethod, RequestHeaderCollection, Content_Length);
-					//ResponseHeaders += "X-Redirected: Make-Https\n";
 
 					//add to ForceHttp list
 					List<string> ForceHttpsList = ConfigFile.ForceHttps.ToList<string>();
@@ -459,9 +453,6 @@ namespace WebOne
 					!(header.StartsWith("Vary") && value.Contains("Upgrade-Insecure-Requests")))
 					{
 						ClientResponse.AddHeader(header, value.Replace("; secure", "").Replace("https://", "http://"));
-						//ResponseHeaders += (header + ": " + value.Replace("; secure", "") + "\n").Replace("https://", "http://");
-						//Console.WriteLine(header + ": " + value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
-						//if (header.Contains("ookie")) Console.WriteLine("Got cookie: " + value);
 					}
 				}
 			}
@@ -561,7 +552,6 @@ namespace WebOne
 				else ResponseBody = Encoding.Default.GetString(response.RawContent);
 
 				if (Regex.IsMatch(ResponseBody, @"<meta.*UTF-8.*>", RegexOptions.IgnoreCase)) { ResponseBody = Encoding.UTF8.GetString(response.RawContent); }
-				//ResponseBuffer = ConfigFile.OutputEncoding.GetBytes(ResponseBody);
 
 				if (ContentType.ToLower().Contains("utf-8")) ContentType = ContentType.Substring(0, ContentType.IndexOf(';'));
 				ResponseBody = ProcessBody(ResponseBody);
@@ -585,7 +575,7 @@ namespace WebOne
 		private void SendError(int Code, string Text = "")
 		{
 			Console.WriteLine("{0}\t<Return code {1}.", GetTime(BeginTime), Code);
-			Text += Program.GetInfoString();
+			Text += GetInfoString();
 			string CodeStr = Code.ToString() + " " + ((HttpStatusCode)Code).ToString();
 			string Refresh = "";
 			if (ClientResponse.Headers["Refresh"] != null) Refresh = "<META HTTP-EQUIV=REFRESH CONTENT="+ ClientResponse.Headers["Refresh"] +">";
