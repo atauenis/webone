@@ -45,5 +45,16 @@ namespace WebOne
 			foreach (string str in For) { if (What.Contains(str)) return true; }
 			return false;
 		}
+
+		/// <summary>
+		/// Make a string with timestamp
+		/// </summary>
+		/// <param name="BeginTime">Initial time</param>
+		/// <returns>The initial time and difference with the current time</returns>
+		public static string GetTime(DateTime BeginTime)
+		{
+			TimeSpan difference = DateTime.UtcNow - BeginTime;
+			return BeginTime.ToString("HH:mm:ss.fff") + "+" + difference.Ticks;
+		}
 	}
 }
