@@ -65,13 +65,20 @@ namespace WebOne
 						Count++;
 					}
 					Request += Encoding.Default.GetString(Buffer).Trim('\0'); //cut empty 10 megabytes
+					//todo: внедрить адаптируемый к размеру запроса вариант: http://www.cyberforum.ru/post6920071.html
+					//or replacу with HttpListener (or something).
 
 					//check if the request is empty and report to try again.
 					if (Request.Length == 0) { Console.Write(" Empty request."); SendError(Client, 302, "The request wasn't heard. Please try again.", "\nLocation: "); return; }
 
 					RequestHeadersEnd = Request.IndexOf("\r\n\r\n");
+					if (RequestHeadersEnd == -1) RequestHeadersEnd = Request.Length;
 					RequestHeaders = Request.Substring(0, RequestHeadersEnd);
-					RequestBody = Request.Substring(RequestHeadersEnd + 4);
+					if (RequestHeadersEnd != Request.Length)
+						RequestBody = Request.Substring(RequestHeadersEnd + 4);
+					else
+					{ RequestBody = ""; Console.Write("[Short request]"); }
+					//may be caused by TCP packet non-gluing. Long HTTP requests, splitted to few packets, are read only on first packet. Bug!
 
 					/*Console.Write("-{0} of {1}-", Request.IndexOf("\r\n\r\n"), Request.Length);
 					Console.Write("-POST body={0}-", Request.Substring(Request.IndexOf("\r\n\r\n")).Trim("\r\n\r\n".ToCharArray()));*/
