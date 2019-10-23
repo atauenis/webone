@@ -561,6 +561,7 @@ namespace WebOne
 		/// <returns>ResponseBuffer+ResponseBody for texts or TransitStream for binaries</returns>
 		private void MakeOutput(HttpStatusCode StatusCode, Stream ResponseStream, string ContentType, long ContentLength)
 		{
+			this.ContentType = ContentType;
 			if (Program.CheckString(ContentType, ConfigFile.TextTypes))
 			{
 				//if server returns text, make edits
@@ -573,7 +574,9 @@ namespace WebOne
 					//if don't touch codepage (OutputEncoding=AsIs)
 					ResponseBody = Encoding.Default.GetString(RawContent);
 					ResponseBody = ProcessBody(ResponseBody);
+					#if DEBUG
 					Console.WriteLine("{0}\t Body maked.", GetTime(BeginTime));
+					#endif
 					return;
 				}
 
@@ -597,9 +600,9 @@ namespace WebOne
 				TransitStream = ResponseStream;
 				this.ContentType = ContentType;
 			}
-			#if DEBUG
+#if DEBUG
 			Console.WriteLine("{0}\t Body maked.", GetTime(BeginTime));
-			#endif
+#endif
 			return;
 		}
 
