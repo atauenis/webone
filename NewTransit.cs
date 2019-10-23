@@ -24,12 +24,11 @@ namespace WebOne
 		byte[] UTF8BOM = Encoding.UTF8.GetPreamble();
 
 		Uri RequestURL = new Uri("about:blank");
-		static string LastURL = "http://999.999.999.999/CON";//dirty workaround for phantom.sannata.org and similar sites
+		static string LastURL = "http://999.999.999.999/CON";
 		bool ShouldRedirectInNETFW = false;
 
 		HttpResponse response;
 		int ResponseCode = 502;
-		string ResponseHeaders;
 		string ResponseBody = ":(";
 		Stream TransitStream = null;
 		string ContentType = "text/plain";
@@ -107,7 +106,18 @@ namespace WebOne
 						}
 						return;
 					}
-					throw new NotImplementedException("WebOne 0.8.2 is a proxy-only server.");
+					//local proxy mode: http://localhost/http://example.com/indexr.shtml
+					if (RequestURL.LocalPath.StartsWith("/http:") || RequestURL.AbsoluteUri.StartsWith("/https:"))
+					{
+						RequestURL = new Uri(RequestURL.LocalPath.Replace("/http:/", "http://"));
+						Console.WriteLine("{0}\t Local: {1}", GetTime(BeginTime), RequestURL);
+					}
+					else
+					{
+						//dirty local mode, try to use last used host: http://localhost/favicon.ico
+						RequestURL = new Uri("http://" + new Uri(LastURL).Host + RequestURL.LocalPath);
+						Console.WriteLine("{0}\t Dirty local: {1}", GetTime(BeginTime), RequestURL);
+					}
 				}
 
 				//check for HTTP-to-FTP requests
@@ -564,11 +574,13 @@ namespace WebOne
 
 				if (ContentType.ToLower().Contains("utf-8")) ContentType = ContentType.Substring(0, ContentType.IndexOf(';'));
 				ResponseBody = ProcessBody(ResponseBody);
+				this.ContentType = ContentType;
 			}
 			else
 			{
-				Console.WriteLine("{0}\t E{1} {2}. Body {3}K of {4} [Binary].", GetTime(BeginTime), (int)StatusCode, StatusCode, response.ContentLength / 1024, ContentType);
+				Console.WriteLine("{0}\t {1} {2}. Body {3}K of {4} [Binary].", GetTime(BeginTime), (int)StatusCode, StatusCode, response.ContentLength / 1024, ContentType);
 				TransitStream = ResponseStream;
+				this.ContentType = ContentType;
 			}
 			Console.WriteLine("{0}\t Body maked.", GetTime(BeginTime));
 			return;

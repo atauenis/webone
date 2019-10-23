@@ -18,6 +18,7 @@ namespace WebOne
 		int Port = 80;
 		bool Work = true;
 		private static HttpListener _listener;
+		int Load = 0;
 
 
 		/// <summary>
@@ -32,6 +33,7 @@ namespace WebOne
 			_listener.Start();
 			_listener.BeginGetContext(ProcessRequest, null);
 			Console.WriteLine("Listening for HTTP 1.x on port {0}.", port);
+			UpdateStatistics();
 			while (Work) { Console.Read(); }
 		}
 
@@ -42,6 +44,8 @@ namespace WebOne
 		/// <param name="ar">Something from HttpListener</param>
 		private void ProcessRequest(IAsyncResult ar)
 		{
+			Load++;
+			UpdateStatistics();
 			DateTime BeginTime = DateTime.UtcNow;
 			Console.WriteLine("{0}\tGot a request.", BeginTime.ToString("HH:mm:ss.fff"));
 			HttpListenerContext ctx = _listener.EndGetContext(ar);
@@ -53,6 +57,16 @@ namespace WebOne
 			NewTransit Tranzit = new NewTransit(req, resp, BeginTime);
 
 			Console.WriteLine("{0}\t<Done.", GetTime(BeginTime));
+			Load--;
+			UpdateStatistics();
+		}
+
+
+		/// <summary>
+		/// Display count of open requests in app's titlebar
+		/// </summary>
+		private void UpdateStatistics() {
+			Console.Title = string.Format("WebOne @ {0}:{1} [{2}]", Environment.MachineName, Port, Load);
 		}
 	}
 }
