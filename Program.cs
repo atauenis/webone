@@ -22,20 +22,28 @@ namespace WebOne
 			int Port = -1;
 			try { Port = Convert.ToInt32(args[0]); if (args.Length > 1) ConfigFileName = args[1]; }
 			catch { if(args.Length > 0) ConfigFileName = args[0]; }
-			if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Authenticate = ConfigFile.Authenticate; //what?!!
+			if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Authenticate = ConfigFile.Authenticate; //else load config file (пусть прочухается static class)
 			Console.Title = "WebOne @ " + Environment.MachineName + ":" + Port;
-			
-			NewHTTPServer Server = new NewHTTPServer(Port);
 
-			//HTTPServer Server = new HTTPServer(Port);
+			try
+			{
+				new HTTPServer(Port);
+			}
+			catch(Exception ex)
+			{
+				Console.WriteLine("Cannot start server: {0}!", ex.Message);
+				#if DEBUG
+				throw;
+				#endif
+			}
 
-			Console.WriteLine("That's all. Closing.");
+			Console.WriteLine("Press any key to exit.");
+			Console.ReadKey();
 		}
 
 
 		public static string GetInfoString() {
-			string OnNet40 = "";
-			return "<hr>WebOne Proxy Server " + Assembly.GetExecutingAssembly().GetName().Version + "<br>on " + Environment.OSVersion.VersionString + OnNet40;
+			return "<hr>WebOne Proxy Server " + Assembly.GetExecutingAssembly().GetName().Version + "<br>on " + Environment.OSVersion.VersionString;
 		}
 
 
