@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
@@ -31,10 +32,12 @@ namespace WebOne
 			Console.WriteLine("That's all. Closing.");
 		}
 
+
 		public static string GetInfoString() {
 			string OnNet40 = "";
 			return "<hr>WebOne Proxy Server " + Assembly.GetExecutingAssembly().GetName().Version + "<br>on " + Environment.OSVersion.VersionString + OnNet40;
 		}
+
 
 		/// <summary>
 		/// Check a string for containing a something from list of patterns
@@ -46,6 +49,7 @@ namespace WebOne
 			return false;
 		}
 
+
 		/// <summary>
 		/// Make a string with timestamp
 		/// </summary>
@@ -55,6 +59,21 @@ namespace WebOne
 		{
 			TimeSpan difference = DateTime.UtcNow - BeginTime;
 			return BeginTime.ToString("HH:mm:ss.fff") + "+" + difference.Ticks;
+		}
+
+
+		/// <summary>
+		/// Read all bytes from a Stream (like StreamReader.ReadToEnd)
+		/// </summary>
+		/// <param name="stream">Source Stream</param>
+		/// <returns>All bytes of it</returns>
+		public static byte[] ReadAllBytes(Stream stream)
+		{
+			using (var ms = new MemoryStream())
+			{
+				stream.CopyTo(ms);
+				return ms.ToArray();
+			}
 		}
 	}
 }

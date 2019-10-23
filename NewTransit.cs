@@ -31,9 +31,8 @@ namespace WebOne
 		int ResponseCode = 502;
 		string ResponseHeaders;
 		string ResponseBody = ":(";
-		byte[] ResponseBuffer;
 		Stream TransitStream = null;
-		string ContentType = "text/ad";
+		string ContentType = "text/plain";
 
 
 		/// <summary>
@@ -218,8 +217,10 @@ namespace WebOne
 				{
 					if (wex.Response == null) ResponseCode = 502;
 					else ResponseCode = (int)(wex.Response as HttpWebResponse).StatusCode;
-					if (ResponseCode == 502) Console.WriteLine("{0}\t Web exception: {1}!", GetTime(BeginTime), wex.Status); else Console.WriteLine("{0}\t Web exception: {1} {2}.", GetTime(BeginTime), ResponseCode, (wex.Response as HttpWebResponse).StatusCode);
+					if (ResponseCode == 502) Console.WriteLine("{0}\t Cannot load this page: {1}.", GetTime(BeginTime), wex.Status);
+					else Console.WriteLine("{0}\t Web exception: {1} {2}.", GetTime(BeginTime), ResponseCode, (wex.Response as HttpWebResponse).StatusCode);
 
+					ContentType = "text/html";
 					string err = ": " + wex.Status.ToString();
 #if DEBUG
 					ResponseBody = "<html><body>Cannot load this page" + err + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + Program.GetInfoString() + "</body></html>";
@@ -293,19 +294,23 @@ namespace WebOne
 							string header = wex.Response.Headers.GetKey(i);
 							foreach (string value in wex.Response.Headers.GetValues(i))
 							{
-								if (!header.StartsWith("Connection") && !header.StartsWith("Transfer-Encoding"))
+								if (!header.StartsWith("Content-") &&
+								!header.StartsWith("Connection") &&
+								!header.StartsWith("Transfer-Encoding") &&
+								!header.StartsWith("Access-Control-Allow-Methods") &&
+								!header.StartsWith("Strict-Transport-Security") &&
+								!header.StartsWith("Content-Security-Policy") &&
+								!header.StartsWith("Upgrade-Insecure-Requests") &&
+								!(header.StartsWith("Vary") && value.Contains("Upgrade-Insecure-Requests")))
 								{
-									ClientResponse.AddHeader(header, value.Replace("; secure", "").Replace("no-cache=\"set-cookie\"", ""));
-									//if (ClientRequest.HttpMethod == "OPTIONS" && header == "Allow") Console.Write("[Options allowed: {0}]", value);
+									ClientResponse.AddHeader(header, value.Replace("; secure", "").Replace("https://", "http://"));
 								}
 							}
 						}
 						ContentType = wex.Response.ContentType;
-						ResponseBody = new StreamReader(wex.Response.GetResponseStream()).ReadToEnd();
-						//todo: add correct returning of error pages through MakeOutput subprogram.
+						MakeOutput((HttpStatusCode)ResponseCode, wex.Response.GetResponseStream(),wex.Response.ContentType, wex.Response.ContentLength);
 					}
-
-					if (!Archived)
+					else if (!Archived)
 						Console.WriteLine("{0}\t Failed: {1}.", GetTime(BeginTime), ResponseCode);
 				}
 				catch (UriFormatException)
@@ -344,6 +349,7 @@ namespace WebOne
 							byte[] RespBuffer;
 							RespBuffer = (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(ResponseBody).ToArray();
 
+							if(ClientResponse.ContentLength64 > 300*1024) Console.WriteLine("{0}\t Sending binary.", GetTime(BeginTime));
 							ClientResponse.OutputStream.Write(RespBuffer, 0, RespBuffer.Length);
 						}
 						else
@@ -353,6 +359,7 @@ namespace WebOne
 						ClientResponse.OutputStream.Close();
 						Console.WriteLine("{0}\t Document sent.", GetTime(BeginTime));
 					}
+					else Console.WriteLine("{0}\t Abnormal return (something was wrong).", GetTime(BeginTime));
 				}
 				catch (Exception ex)
 				{
@@ -397,7 +404,7 @@ namespace WebOne
 						//try to download (GET, HEAD, WebDAV download, etc)
 						Console.WriteLine("{0}\t>Downloading content...", GetTime(BeginTime));
 						response = https.GET(RequestURL.AbsoluteUri, new CookieContainer(), RequestHeaderCollection, RequestMethod, AllowAutoRedirect);
-						MakeOutput(response);
+						MakeOutput(response.StatusCode, response.Stream, response.ContentType, response.ContentLength);
 						break;
 					}
 					else
@@ -408,7 +415,7 @@ namespace WebOne
 						RequestBody = body_sr.ReadToEnd();
 						Console.WriteLine("{0}\t>Uploading {1}K...", GetTime(BeginTime), Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024);
 						response = https.POST(RequestURL.AbsoluteUri, new CookieContainer(), RequestBody, RequestHeaderCollection, RequestMethod, AllowAutoRedirect);
-						MakeOutput(response);
+						MakeOutput(response.StatusCode, response.Stream, response.ContentType, response.ContentLength);
 						break;
 					}
 			}
@@ -520,47 +527,48 @@ namespace WebOne
 
 
 		/// <summary>
-		/// Make reply's body as byte array
+		/// Prepare response body for tranfer to client
 		/// </summary>
-		/// <param name="response">The HTTP Response</param>
+		/// <param name="StatusCode">HTTP Status code</param>
+		/// <param name="ResponseStream">Stream of response body</param>
+		/// <param name="ContentType">HTTP Content-Type</param>
+		/// <param name="ContentLength">HTTP Content-Lenght</param>
 		/// <returns>ResponseBuffer+ResponseBody for texts or TransitStream for binaries</returns>
-		private void MakeOutput(HttpResponse response)
+		private void MakeOutput(HttpStatusCode StatusCode, Stream ResponseStream, string ContentType, long ContentLength)
 		{
-			ContentType = response.ContentType;
-
 			if (Program.CheckString(ContentType, ConfigFile.TextTypes))
 			{
-				//если сервер вернул текст, сделать правки, иначе прогнать как есть дальше
-				Console.WriteLine("{0}\t {1} {2}. Body {3}K of {4} [Text].", GetTime(BeginTime), (int)response.StatusCode, response.StatusCode, response.ContentLength / 1024, ContentType);
+				//if server returns text, make edits
+				Console.WriteLine("{0}\t {1} {2}. Body {3}K of {4} [Text].", GetTime(BeginTime), (int)StatusCode, StatusCode, ContentLength / 1024, ContentType);
+				byte[] RawContent = null;
+				RawContent = ReadAllBytes(ResponseStream);
 
 				if (ConfigFile.OutputEncoding == null)
 				{
 					//if don't touch codepage (OutputEncoding=AsIs)
-					ResponseBody = Encoding.Default.GetString(response.RawContent);
+					ResponseBody = Encoding.Default.GetString(RawContent);
 					ResponseBody = ProcessBody(ResponseBody);
-					ResponseBuffer = Encoding.Default.GetBytes(ResponseBody);
 					Console.WriteLine("{0}\t Body maked.", GetTime(BeginTime));
 					return;
 				}
 
 				bool ForceUTF8 = ContentType.ToLower().Contains("utf-8");
-				if (!ForceUTF8 && response.RawContent.Length > 0) ForceUTF8 = response.RawContent[0] == Encoding.UTF8.GetPreamble()[0];
+				if (!ForceUTF8 && RawContent.Length > 0) ForceUTF8 = RawContent[0] == Encoding.UTF8.GetPreamble()[0];
 				foreach (string utf8url in ConfigFile.ForceUtf8) { if (Regex.IsMatch(RequestURL.AbsoluteUri, utf8url)) ForceUTF8 = true; }
 				//todo: add fix for "invalid range in character class" at www.yandex.ru with Firefox 3.6 if OutputEncoding!=AsIs
 
-				if (ForceUTF8) ResponseBody = Encoding.UTF8.GetString(response.RawContent);
-				else ResponseBody = Encoding.Default.GetString(response.RawContent);
+				if (ForceUTF8) ResponseBody = Encoding.UTF8.GetString(RawContent);
+				else ResponseBody = Encoding.Default.GetString(RawContent);
 
-				if (Regex.IsMatch(ResponseBody, @"<meta.*UTF-8.*>", RegexOptions.IgnoreCase)) { ResponseBody = Encoding.UTF8.GetString(response.RawContent); }
+				if (Regex.IsMatch(ResponseBody, @"<meta.*UTF-8.*>", RegexOptions.IgnoreCase)) { ResponseBody = Encoding.UTF8.GetString(RawContent); }
 
 				if (ContentType.ToLower().Contains("utf-8")) ContentType = ContentType.Substring(0, ContentType.IndexOf(';'));
 				ResponseBody = ProcessBody(ResponseBody);
-				ResponseBuffer = ConfigFile.OutputEncoding.GetBytes(ResponseBody);
 			}
 			else
 			{
-				Console.WriteLine("{0}\t {1} {2}. Body {3}K of {4} [Binary].", GetTime(BeginTime), (int)response.StatusCode, response.StatusCode, response.ContentLength / 1024, ContentType);
-				TransitStream = response.Stream;
+				Console.WriteLine("{0}\t E{1} {2}. Body {3}K of {4} [Binary].", GetTime(BeginTime), (int)StatusCode, StatusCode, response.ContentLength / 1024, ContentType);
+				TransitStream = ResponseStream;
 			}
 			Console.WriteLine("{0}\t Body maked.", GetTime(BeginTime));
 			return;
