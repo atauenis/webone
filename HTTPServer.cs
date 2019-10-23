@@ -1,82 +1,78 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
+using System.Net;
+using System.IO;
+using System.Threading;
+using static WebOne.Program;
 
 namespace WebOne
 {
 /// <summary>
-/// HTTP Server (listener)
+/// HTTP Listener and Server
 /// </summary>
 	class HTTPServer
 	{
-		//Based on https://habr.com/ru/post/120157/
+		int Port = 80;
+		bool Work = true;
+		private static HttpListener _listener;
+		int Load = 0;
 
-		TcpListener Listener; 
 
 		/// <summary>
-		/// Start the HTTP Server
+		/// Start a new HTTP Listener
 		/// </summary>
-		/// <param name="Port">TCP port which the Server should listen</param>
-		public HTTPServer(int Port)
-		{
+		/// <param name="port"></param>
+		public HTTPServer(int port) {
 			Console.WriteLine("Starting server...");
-			Listener = new TcpListener(IPAddress.Any, Port); 
-			Listener.Start();
-			Console.WriteLine("Listening for HTTP 1.x on port {0}.", Port);
-
-			while (true)
-			{
-				// Принимаем новых клиентов. После того, как клиент был принят, он передается в новый поток (ClientThread)
-				// с использованием пула потоков.
-				//ThreadPool.QueueUserWorkItem(new WaitCallback(ClientThread), Listener.AcceptTcpClient());
-
-				
-                // Принимаем нового клиента
-                TcpClient Client = Listener.AcceptTcpClient();
-                // Создаем поток
-                Thread Thread = new Thread(new ParameterizedThreadStart(ClientThread));
-                // И запускаем этот поток, передавая ему принятого клиента
-                Thread.Start(Client);
-			}
+			Port = port;
+			_listener = new HttpListener();
+			_listener.Prefixes.Add("http://*:" + Port + "/");
+			_listener.Start();
+			_listener.BeginGetContext(ProcessRequest, null);
+			Console.WriteLine("Listening for HTTP 1.x on port {0}.", port);
+			UpdateStatistics();
+			while (Work) { Console.Read(); }
 		}
+
 
 		/// <summary>
-		/// Запуск обработчика запроса
+		/// Process a HTTP request (callback for HttpListener)
 		/// </summary>
-		/// <param name="StateInfo">Приведенный к классу TcpClient объект StateInfo</param>
-		static void ClientThread(Object StateInfo)
+		/// <param name="ar">Something from HttpListener</param>
+		private void ProcessRequest(IAsyncResult ar)
 		{
-			// Просто создаем новый экземпляр класса Client и передаем ему приведенный к классу TcpClient объект StateInfo
-			new Transit((TcpClient)StateInfo);
+			Load++;
+			UpdateStatistics();
+			DateTime BeginTime = DateTime.UtcNow;
+			#if DEBUG
+			Console.WriteLine("{0}\tGot a request.", BeginTime.ToString("HH:mm:ss.fff"));
+			#endif
+			HttpListenerContext ctx = _listener.EndGetContext(ar);
+			_listener.BeginGetContext(ProcessRequest, null);
+			HttpListenerRequest req = ctx.Request;
+			#if DEBUG
+			Console.WriteLine("{0}\t>{1} {2}", GetTime(BeginTime), req.HttpMethod, req.Url);
+			#else
+			Console.WriteLine("{0}\t>{1} {2}", BeginTime.ToString("HH:mm:ss.fff"), req.HttpMethod, req.Url);
+			#endif
+
+			HttpListenerResponse resp = ctx.Response;
+			Transit Tranzit = new Transit(req, resp, BeginTime);
+
+			Console.WriteLine("{0}\t<Done.", GetTime(BeginTime));
+			Load--;
+			UpdateStatistics();
 		}
 
-		~HTTPServer()
-		{
-			if (Listener != null)
-			{
-				Console.WriteLine("Stopping server...");
-				Listener.Stop();
-			}
-		}
 
-		static void Main(string[] args)
-		{
-			//probably should be put into trash.
-			// Определим нужное максимальное количество потоков
-			// Пусть будет по 4 на каждый процессор
-			int MaxThreadsCount = Environment.ProcessorCount * 4;
-			// Установим максимальное количество рабочих потоков
-			ThreadPool.SetMaxThreads(MaxThreadsCount, MaxThreadsCount);
-			// Установим минимальное количество рабочих потоков
-			ThreadPool.SetMinThreads(2, 2);
-			// Создадим новый сервер на порту 80
-			new HTTPServer(80);
+		/// <summary>
+		/// Display count of open requests in app's titlebar
+		/// </summary>
+		private void UpdateStatistics() {
+			Console.Title = string.Format("WebOne @ {0}:{1} [{2}]", Environment.MachineName, Port, Load);
 		}
 	}
-
 }

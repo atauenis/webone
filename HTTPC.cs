@@ -49,7 +49,8 @@ namespace WebOne
 					if (host.Substring(7).StartsWith(badhost))
 					{
 						host = "https" + host.Substring(4);
-						Console.Write(" secure");
+						//Console.Write(" secure");
+						Console.WriteLine("Secure request.");
 					}
 				}
 
@@ -106,7 +107,8 @@ namespace WebOne
 					if (host.Substring(7).StartsWith(badhost))
 					{
 						host = "https" + host.Substring(4);
-						Console.Write(" secure");
+						//Console.Write(" secure");
+						Console.WriteLine("Secure request.");
 					}
 				}
 
