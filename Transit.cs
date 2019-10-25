@@ -103,6 +103,61 @@ namespace WebOne
 								codepages += "</table><br>Use any of these. Underlined are for your locale.";
 								SendError(200, codepages);
 								break;
+							case "/!img-test/":
+								SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
+								break;
+							case "/!convert/":
+								string Src = "", Dest = "xbm", DestMime = "image/x-xbitmap";
+
+								Match FindSrc = Regex.Match(RequestURL.Query, @"(src)=([^&]+)");
+								Match FindDest = Regex.Match(RequestURL.Query, @"(dest)=([^&]+)");
+								Match FindDestMime = Regex.Match(RequestURL.Query, @"(type)=([^&]+)");
+
+								if (FindSrc.Success)
+									Src = FindSrc.Groups[2].Value;
+
+								if (FindDest.Success)
+									Dest = FindDest.Groups[2].Value;
+
+								if (FindDestMime.Success)
+									DestMime = FindDestMime.Groups[2].Value;
+
+								int Rnd = new Random().Next();
+								string DestName = "convert-" + Rnd + "." + Dest;
+
+								if(Src != "")
+								try
+								{
+									System.Diagnostics.Process ConvProc = System.Diagnostics.Process.Start("convert", string.Format("{0} {1}",Src,DestName));
+									while (!ConvProc.HasExited) { }
+									
+									SendFile(DestName, DestMime);
+									File.Delete(DestName);
+									return;
+								}
+								catch(Exception ConvEx) {
+									SendError(500, ConvEx.ToString().Replace("\n","<BR>"));
+								}
+
+								SendError(200, "Summon ImageMagick to convert a local picture file.<br>Usage: /!convert/?src=filename.ext&dest=gif&type=image/gif");
+								break;
+							case "/!file/":
+								//todo: add security checks
+								string FileName, MimeType="text/plain";
+								Match FindName = Regex.Match(RequestURL.Query, @"(name)=([^&]+)");
+								Match FindMime = Regex.Match(RequestURL.Query, @"(type)=([^&]+)");
+
+								if (FindMime.Success)
+									MimeType = FindMime.Groups[2].Value;
+
+								if (FindName.Success)
+								{
+									FileName = FindName.Groups[2].Value;
+									SendFile(FileName, "text/plain");
+									return;
+								}
+								SendError(200, "Get a local file.<br>Usage: /!file/?name=filename.ext&type=text/plain");
+								break;
 							default:
 								SendError(200, "Unknown internal URL: " + RequestURL.PathAndQuery);
 								break;
@@ -635,6 +690,32 @@ namespace WebOne
 			{
 				Console.WriteLine("{0}\t<!Cannot return code {1}.", GetTime(BeginTime), Code);
 			}
+		}
+
+		/// <summary>
+		/// Send a file to client
+		/// </summary>
+		/// <param name="FileName">Full path to the file</param>
+		/// <param name="ContentType">File's content-type.</param>
+		private void SendFile(string FileName, string ContentType) {
+			Console.WriteLine("{0}\t<Send file {1}.", GetTime(BeginTime), FileName);
+			try
+			{
+				ClientResponse.StatusCode = 200;
+				ClientResponse.ProtocolVersion = new Version(1, 0);
+				ClientResponse.ContentType = ContentType;
+				FileStream potok = File.OpenRead(FileName);
+				potok.CopyTo(ClientResponse.OutputStream);
+				potok.Close();
+				ClientResponse.OutputStream.Close();
+			}
+			catch(Exception ex)
+			{
+				int ErrNo = 500;
+				if (ex is FileNotFoundException) ErrNo = 404;
+				SendError(ErrNo, "Cannot open the file <i>" + FileName + "</i>.<br>" + ex.ToString().Replace("\n", "<br>"));
+			}
+
 		}
 	}
 }

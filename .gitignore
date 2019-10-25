@@ -335,3 +335,5 @@ ASALocalRun/
 /EXE/*.png
 /EXE/*.JPG
 /Screenshots
+/ImageMagic
+/ImageMagick.Lite/cut
