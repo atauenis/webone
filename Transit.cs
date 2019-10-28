@@ -107,14 +107,18 @@ namespace WebOne
 								SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
 								break;
 							case "/!convert/":
-								string Src = "", Dest = "xbm", DestMime = "image/x-xbitmap";
+								string SrcUrl = "", Src = "", Dest = "xbm", DestMime = "image/x-xbitmap";
 
 								Match FindSrc = Regex.Match(RequestURL.Query, @"(src)=([^&]+)");
+								Match FindSrcUrl = Regex.Match(RequestURL.Query, @"(url)=([^&]+)");
 								Match FindDest = Regex.Match(RequestURL.Query, @"(dest)=([^&]+)");
 								Match FindDestMime = Regex.Match(RequestURL.Query, @"(type)=([^&]+)");
 
 								if (FindSrc.Success)
 									Src = FindSrc.Groups[2].Value;
+
+								if (FindSrcUrl.Success)
+									SrcUrl = FindSrcUrl.Groups[2].Value;
 
 								if (FindDest.Success)
 									Dest = FindDest.Groups[2].Value;
@@ -124,22 +128,51 @@ namespace WebOne
 
 								int Rnd = new Random().Next();
 								string DestName = "convert-" + Rnd + "." + Dest;
+								string TmpFile = "orig-" + Rnd + ".tmp"; //for downloaded original if any
+
+								if (SrcUrl != "")
+								{
+									try
+									{
+										Console.WriteLine("{0}\t>Downloading source.", GetTime(BeginTime));
+										new WebClient().DownloadFile(SrcUrl, TmpFile);
+										Src = TmpFile;
+									}
+									catch (Exception DownloadEx)
+									{
+										Console.WriteLine("{0}\t Can't download source: {1}.", GetTime(BeginTime), DownloadEx.Message);
+										SendError(500, "Cannot download:<br>" + DownloadEx.ToString().Replace("\n", "<BR>"));
+										return;
+									}
+								}
 
 								if(Src != "")
 								try
 								{
-									System.Diagnostics.Process ConvProc = System.Diagnostics.Process.Start("convert", string.Format("{0} {1}",Src,DestName));
+									if (!File.Exists(Src)) throw new FileNotFoundException("Source file not found");
+
+									string ConvCmdLine = string.Format("{0} {1}", Src, DestName);
+									Console.WriteLine("{0}\t Converting: {1} {2}...", GetTime(BeginTime), "convert", ConvCmdLine);
+
+									System.Diagnostics.Process ConvProc = System.Diagnostics.Process.Start("convert", ConvCmdLine);
 									while (!ConvProc.HasExited) { }
-									
+
+									if (!File.Exists(DestName)) throw new Exception("Convertion failed - no result found");
+
 									SendFile(DestName, DestMime);
 									File.Delete(DestName);
+									if (SrcUrl != "") File.Delete(TmpFile);
 									return;
 								}
 								catch(Exception ConvEx) {
-									SendError(500, ConvEx.ToString().Replace("\n","<BR>"));
+										Console.WriteLine("{0}\t Can't convert: {1}.", GetTime(BeginTime), ConvEx.Message);
+										SendError(500, "Cannot convert:<br>" + ConvEx.ToString().Replace("\n","<BR>"));
+										return;
 								}
 
-								SendError(200, "Summon ImageMagick to convert a local picture file.<br>Usage: /!convert/?src=filename.ext&dest=gif&type=image/gif");
+								SendError(200, "Summon ImageMagick to convert a picture file.<br>"+
+								"Usage: /!convert/?src=filename.ext&dest=gif&type=image/gif<br>"+
+								"or: /!convert/?url=https://example.com/filename.ext&dest=gif&type=image/gif");
 								break;
 							case "/!file/":
 								//todo: add security checks
@@ -697,7 +730,8 @@ namespace WebOne
 		/// </summary>
 		/// <param name="FileName">Full path to the file</param>
 		/// <param name="ContentType">File's content-type.</param>
-		private void SendFile(string FileName, string ContentType) {
+		private void SendFile(string FileName, string ContentType)
+		{
 			Console.WriteLine("{0}\t<Send file {1}.", GetTime(BeginTime), FileName);
 			try
 			{
@@ -715,7 +749,6 @@ namespace WebOne
 				if (ex is FileNotFoundException) ErrNo = 404;
 				SendError(ErrNo, "Cannot open the file <i>" + FileName + "</i>.<br>" + ex.ToString().Replace("\n", "<br>"));
 			}
-
 		}
 	}
 }
