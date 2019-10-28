@@ -81,7 +81,13 @@ namespace WebOne
 				RequestURL = ClientRequest.Url;
 
 				//check for local or internal URL
-				if (RequestURL.Host == "localhost" || RequestURL.Host == Environment.MachineName || RequestURL.Host == "127.0.0.1")
+				bool IsLocalhost = false;
+				var LocalIPs = System.Net.Dns.GetHostByName(Environment.MachineName).AddressList;
+				foreach (IPAddress LocIP in LocalIPs) if (RequestURL.Host == LocIP.ToString()) IsLocalhost = true;
+				if (RequestURL.Host.ToLower() == "localhost" || RequestURL.Host.ToLower() == Environment.MachineName.ToLower() || RequestURL.Host == "127.0.0.1")
+					IsLocalhost = true;
+
+				if (IsLocalhost)
 				{
 					if (RequestURL.PathAndQuery.StartsWith("/!"))
 					{
@@ -222,7 +228,7 @@ namespace WebOne
 				}
 
 				//dirty workarounds for HTTP>HTTPS redirection bugs
-				if ((RequestURL.AbsoluteUri == RefererUri || RequestURL.AbsoluteUri == LastURL) && RequestURL.AbsoluteUri != "" && ClientRequest.HttpMethod != "POST" && ClientRequest.HttpMethod != "CONNECT" && !Program.CheckString(RequestURL.AbsoluteUri, ConfigFile.ForceHttps))
+				if ((RequestURL.AbsoluteUri == RefererUri || RequestURL.AbsoluteUri == LastURL) && RequestURL.AbsoluteUri != "" && ClientRequest.HttpMethod != "POST" && ClientRequest.HttpMethod != "CONNECT" && !Program.CheckString(RequestURL.AbsoluteUri, ConfigFile.ForceHttps) && RequestURL.Host.ToLower() != Environment.MachineName.ToLower())
 				{
 					Console.WriteLine("{0}\t Carousel detected.", GetTime(BeginTime));
 					if (!LastURL.StartsWith("https") && !RequestURL.AbsoluteUri.StartsWith("https")) //if http is gone, try https
@@ -650,6 +656,40 @@ namespace WebOne
 		private void MakeOutput(HttpStatusCode StatusCode, Stream ResponseStream, string ContentType, long ContentLength)
 		{
 			this.ContentType = ContentType;
+
+			//check for need of converting
+			foreach (string str in ConfigFile.FixableTypes)
+			{
+				if (Regex.Match(ContentType, str).Success)
+				{
+					bool Need = true;
+
+					string Redirect = "http://" + Environment.MachineName + "/!convert/";
+					if (ConfigFile.FixableTypesActions[str].ContainsKey("Redirect")) Redirect = ConfigFile.FixableTypesActions[str]["Redirect"];
+					Redirect = Redirect.Replace("%URL%", RequestURL.AbsoluteUri);
+					Redirect = Redirect.Replace("%ProxyHost%", Environment.MachineName);
+					Redirect = Redirect.Replace("%ProxyPort%", ConfigFile.Port.ToString());
+
+					string IfUrl = ".*";
+					if (ConfigFile.FixableTypesActions[str].ContainsKey("IfUrl")) IfUrl = ConfigFile.FixableTypesActions[str]["IfUrl"];
+
+					string NotUrl = "";
+					if (ConfigFile.FixableTypesActions[str].ContainsKey("NotUrl")) NotUrl = ConfigFile.FixableTypesActions[str]["NotUrl"];
+
+					Need = Regex.IsMatch(RequestURL.AbsoluteUri, IfUrl);
+					Need = !Regex.IsMatch(RequestURL.AbsoluteUri, NotUrl);
+
+					if (Need)
+					{
+						Console.WriteLine("{0}\t {1} {2}. Body {3}K of {4} [Need to convert].", GetTime(BeginTime), (int)StatusCode, StatusCode, ContentLength / 1024, ContentType);
+						ClientResponse.AddHeader("Location", Redirect);
+						SendError(302, "Need to convert this.");
+						return;
+					}
+
+				}
+			}
+
 			if (Program.CheckString(ContentType, ConfigFile.TextTypes))
 			{
 				//if server returns text, make edits

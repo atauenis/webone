@@ -69,6 +69,17 @@ namespace WebOne
 		public static Dictionary<string, Dictionary<string, string>> FixableUrlActions =  new Dictionary<string, Dictionary<string, string>>();
 
 		/// <summary>
+		/// List of Content-Types that should be always 302ed
+		/// </summary>
+		public static List<string> FixableTypes = new List<string>();
+
+		/// <summary>
+		/// Dictionary of Content-Types that should be always 302ed to converter
+		/// </summary>
+		public static Dictionary<string, Dictionary<string, string>> FixableTypesActions = new Dictionary<string, Dictionary<string, string>>();
+
+
+		/// <summary>
 		/// List of possible content patches
 		/// </summary>
 		public static List<string> ContentPatches = new List<string>();
@@ -122,6 +133,12 @@ namespace WebOne
 						{
 							FixableURLs.Add(Section.Substring(11));
 							FixableUrlActions.Add(Section.Substring(11), new Dictionary<string, string>());
+						}
+
+						if (Section.StartsWith("FixableType:"))
+						{
+							FixableTypes.Add(Section.Substring(12));
+							FixableTypesActions.Add(Section.Substring(12), new Dictionary<string, string>());
 						}
 
 						if (Section.StartsWith("ContentPatch:"))
@@ -179,6 +196,12 @@ namespace WebOne
 					{
 						//Console.WriteLine("URL Fix rule: {0}/{1} = {2}",Section.Substring(11),ParamName,ParamValue);
 						FixableUrlActions[Section.Substring(11)].Add(ParamName, ParamValue);
+						continue;
+					}
+
+					if (Section.StartsWith("FixableType"))
+					{
+						FixableTypesActions[Section.Substring(12)].Add(ParamName, ParamValue);
 						continue;
 					}
 
