@@ -89,7 +89,11 @@ namespace WebOne
 
 				if (IsLocalhost)
 				{
-					if (RequestURL.PathAndQuery.StartsWith("/!"))
+					bool PAC = false;
+					string[] PacUrls = { "/auto/", "/auto.pac", "/wpad.dat", "/wpad.da" }; //Netscape PAC/Microsoft WPAD
+					foreach (string PacUrl in PacUrls) { if (RequestURL.LocalPath == PacUrl) { PAC = true; break; } }
+
+					if (RequestURL.PathAndQuery.StartsWith("/!") || PAC)
 					{
 						//internal URLs
 						Console.WriteLine("{0}\t Internal: {1} ", GetTime(BeginTime), RequestURL.PathAndQuery);
@@ -113,28 +117,36 @@ namespace WebOne
 								SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
 								break;
 							case "/!convert/":
-								string SrcUrl = "", Src = "", Dest = "xbm", DestMime = "image/x-xbitmap", Converter = "convert";
+								string SrcUrl = "", Src = "", Dest = "xbm", DestMime = "image/x-xbitmap", Converter = "convert", Args1 = "", Args2 = "";
 
 								Match FindSrc = Regex.Match(RequestURL.Query, @"(src)=([^&]+)");
 								Match FindSrcUrl = Regex.Match(RequestURL.Query, @"(url)=([^&]+)");
 								Match FindDest = Regex.Match(RequestURL.Query, @"(dest)=([^&]+)");
 								Match FindDestMime = Regex.Match(RequestURL.Query, @"(type)=([^&]+)");
 								Match FindConverter = Regex.Match(RequestURL.Query, @"(util)=([^&]+)");
+								Match FindArg1 = Regex.Match(RequestURL.Query, @"(arg)=([^&]+)");
+								Match FindArg2 = Regex.Match(RequestURL.Query, @"(arg2)=([^&]+)");
 
 								if (FindSrc.Success)
-									Src = FindSrc.Groups[2].Value;
+									Src = FindSrc.Groups[2].Value.Replace("%20"," ");
 
 								if (FindSrcUrl.Success)
-									SrcUrl = FindSrcUrl.Groups[2].Value;
+									SrcUrl = FindSrcUrl.Groups[2].Value.Replace("%20"," ");
 
 								if (FindDest.Success)
-									Dest = FindDest.Groups[2].Value;
+									Dest = FindDest.Groups[2].Value.Replace("%20"," ");
 
 								if (FindDestMime.Success)
-									DestMime = FindDestMime.Groups[2].Value;
+									DestMime = FindDestMime.Groups[2].Value.Replace("%20"," ");
 									
 								if (FindConverter.Success)
-									Converter = FindConverter.Groups[2].Value;
+									Converter = FindConverter.Groups[2].Value.Replace("%20"," ");
+
+								if (FindArg1.Success)
+									Args1 = FindArg1.Groups[2].Value.Replace("%20"," ");
+
+								if (FindArg2.Success)
+									Args1 = FindArg2.Groups[2].Value.Replace("%20"," ");
 
 								int Rnd = new Random().Next();
 								string DestName = "convert-" + Rnd + "." + Dest;
@@ -162,7 +174,7 @@ namespace WebOne
 									if (!CheckString(Converter, ConfigFile.Converters)) throw new Exception("Converter '" + Converter + "' is not allowed.");
 									if (!File.Exists(Src)) throw new FileNotFoundException("Source file not found");
 
-									string ConvCmdLine = string.Format("{0} {1}", Src, DestName);
+									string ConvCmdLine = string.Format("{0} {1} {2} {3}", Src, Args1, DestName, Args2);
 									Console.WriteLine("{0}\t Converting: {1} {2}...", GetTime(BeginTime), Converter, ConvCmdLine);
 
 									System.Diagnostics.Process ConvProc = System.Diagnostics.Process.Start(Converter, ConvCmdLine);
@@ -216,6 +228,35 @@ namespace WebOne
 									catch { }
 								}
 								SendError(200, FilesDeleted + " temporary files have been deleted.");
+								return;
+							case "/!pac/":
+							case "/auto/":
+							case "/auto.pac":
+							case "/wpad.dat":
+							case "/wpad.da":
+								//Proxy Auto-Config
+								Console.WriteLine("{0}\t<Return PAC/WPAD script.", GetTime(BeginTime));
+								string PacString =
+								@"function FindProxyForURL(url, host) {" +
+								@"if (url.substring(0, 5) == ""http:"")" +
+								@"{ return ""PROXY "+Environment.MachineName+":"+ConfigFile.Port+@"""; }" +
+								@"else { return ""DIRECT""; }"+
+								@"} /*WebOne PAC*/";
+								byte[] Buffer = Encoding.Default.GetBytes(PacString);
+								try
+								{
+									ClientResponse.StatusCode = 200;
+									ClientResponse.ProtocolVersion = new Version(1, 0);
+
+									ClientResponse.ContentType = "application/x-ns-proxy-autoconfig";
+									ClientResponse.ContentLength64 = PacString	.Length;
+									ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
+									ClientResponse.OutputStream.Close();
+								}
+								catch
+								{
+									Console.WriteLine("{0}\t<!Cannot return PAC.", GetTime(BeginTime));
+								}
 								return;
 							default:
 								SendError(200, "Unknown internal URL: " + RequestURL.PathAndQuery);
