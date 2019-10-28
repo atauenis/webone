@@ -1,0 +1,12 @@
+﻿License agreement for WebOne Proxy Server
+=========================================
+
+This Software is provided "as is" without any warranties. In no event author shall be liable for any damages.
+
+Copy and/or use the Software or any parts of it wherever and however you want, in the bounds of decency and social norms.
+
+Any users (clients) of service(s) based on this Software must be notified about traffic changes and possible security problems.
+
+WebOne uses parts of ImageMagick (Copyright 1999-2019 ImageMagick Studio LLC). See LICENSE-ImageMagick.txt for more details on them.
+
+A copy of this License agreement must be shipped with every copy of this Software.
