@@ -3,7 +3,7 @@
 
 This Software is provided "as is" without any warranties. In no event author shall be liable for any damages.
 
-Copy and/or use the Software or any parts of it wherever and however you want, the bounds of decency and social norms.
+Copy and/or use the Software or any parts of it wherever and however you want, in the bounds of decency and social norms.
 
 Any users (clients) of service(s) based on this Software must be notified about traffic changes and possible security problems.
 
