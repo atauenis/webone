@@ -113,12 +113,13 @@ namespace WebOne
 								SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
 								break;
 							case "/!convert/":
-								string SrcUrl = "", Src = "", Dest = "xbm", DestMime = "image/x-xbitmap";
+								string SrcUrl = "", Src = "", Dest = "xbm", DestMime = "image/x-xbitmap", Converter = "convert";
 
 								Match FindSrc = Regex.Match(RequestURL.Query, @"(src)=([^&]+)");
 								Match FindSrcUrl = Regex.Match(RequestURL.Query, @"(url)=([^&]+)");
 								Match FindDest = Regex.Match(RequestURL.Query, @"(dest)=([^&]+)");
 								Match FindDestMime = Regex.Match(RequestURL.Query, @"(type)=([^&]+)");
+								Match FindConverter = Regex.Match(RequestURL.Query, @"(util)=([^&]+)");
 
 								if (FindSrc.Success)
 									Src = FindSrc.Groups[2].Value;
@@ -131,6 +132,9 @@ namespace WebOne
 
 								if (FindDestMime.Success)
 									DestMime = FindDestMime.Groups[2].Value;
+									
+								if (FindConverter.Success)
+									Converter = FindConverter.Groups[2].Value;
 
 								int Rnd = new Random().Next();
 								string DestName = "convert-" + Rnd + "." + Dest;
@@ -155,12 +159,13 @@ namespace WebOne
 								if(Src != "")
 								try
 								{
+									if (!CheckString(Converter, ConfigFile.Converters)) throw new Exception("Converter '" + Converter + "' is not allowed.");
 									if (!File.Exists(Src)) throw new FileNotFoundException("Source file not found");
 
 									string ConvCmdLine = string.Format("{0} {1}", Src, DestName);
-									Console.WriteLine("{0}\t Converting: {1} {2}...", GetTime(BeginTime), "convert", ConvCmdLine);
+									Console.WriteLine("{0}\t Converting: {1} {2}...", GetTime(BeginTime), Converter, ConvCmdLine);
 
-									System.Diagnostics.Process ConvProc = System.Diagnostics.Process.Start("convert", ConvCmdLine);
+									System.Diagnostics.Process ConvProc = System.Diagnostics.Process.Start(Converter, ConvCmdLine);
 									while (!ConvProc.HasExited) { }
 
 									if (!File.Exists(DestName)) throw new Exception("Convertion failed - no result found");
@@ -181,7 +186,6 @@ namespace WebOne
 								"or: /!convert/?url=https://example.com/filename.ext&dest=gif&type=image/gif");
 								break;
 							case "/!file/":
-								//todo: add security checks
 								string FileName, MimeType="text/plain";
 								Match FindName = Regex.Match(RequestURL.Query, @"(name)=([^&]+)");
 								Match FindMime = Regex.Match(RequestURL.Query, @"(type)=([^&]+)");
@@ -192,11 +196,27 @@ namespace WebOne
 								if (FindName.Success)
 								{
 									FileName = FindName.Groups[2].Value;
+
+									if (new FileInfo(FileName).DirectoryName != Directory.GetCurrentDirectory())
+									{
+										SendError(200, "Cannot access to files outside Proxy's directory");
+										return;
+									}
+									
 									SendFile(FileName, "text/plain");
 									return;
 								}
 								SendError(200, "Get a local file.<br>Usage: /!file/?name=filename.ext&type=text/plain");
 								break;
+							case "/!clear/":
+								int FilesDeleted = 0;
+								foreach (FileInfo file in (new DirectoryInfo(Directory.GetCurrentDirectory())).EnumerateFiles("*.tmp"))
+								{
+									try { file.Delete(); FilesDeleted++; }
+									catch { }
+								}
+								SendError(200, FilesDeleted + " temporary files have been deleted.");
+								return;
 							default:
 								SendError(200, "Unknown internal URL: " + RequestURL.PathAndQuery);
 								break;

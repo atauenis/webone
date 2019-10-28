@@ -15,7 +15,7 @@ namespace WebOne
 		static string ConfigFileName = Program.ConfigFileName;
 		static List<string> StringListConstructor = new List<string>();
 
-		static string[] SpecialSections = { "ForceHttps", "TextTypes", "ForceUtf8", "InternalRedirectOn" };
+		static string[] SpecialSections = { "ForceHttps", "TextTypes", "ForceUtf8", "InternalRedirectOn", "Converters" };
 
 		/// <summary>
 		/// TCP port that should be used by the Proxy Server
@@ -109,6 +109,11 @@ namespace WebOne
 		/// </summary>
 		public static bool ShortenArchiveErrors = false;
 
+		/// <summary>
+		/// List of enabled format converters
+		/// </summary>
+		public static string[] Converters = { "magick", "convert" };
+
 		static ConfigFile()
 		{
 			//ConfigFileName = "webone.conf";
@@ -177,6 +182,10 @@ namespace WebOne
 							case "InternalRedirectOn":
 								StringListConstructor.Add(CfgFile[i]);
 								InternalRedirectOn = StringListConstructor.ToArray();
+								continue;
+							case "Converters":
+								StringListConstructor.Add(CfgFile[i]);
+								Converters = StringListConstructor.ToArray();
 								continue;
 							default:
 								Console.WriteLine("Warning: The special section {0} is not implemented in this build.", Section);
