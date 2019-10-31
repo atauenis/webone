@@ -112,7 +112,7 @@ namespace WebOne
 		/// <summary>
 		/// List of enabled format converters
 		/// </summary>
-		public static string[] Converters = { "magick", "convert" };
+		public static string[] Converters = { "magick %SRC% %ARG1% %DEST% %ARG2%", "convert %SRC% %ARG1% %DEST% %ARG2%" };
 
 		static ConfigFile()
 		{

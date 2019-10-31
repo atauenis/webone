@@ -8,6 +8,7 @@ using System.IO;
 using System.Threading;
 using static WebOne.Program;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace WebOne
 {
@@ -128,25 +129,25 @@ namespace WebOne
 								Match FindArg2 = Regex.Match(RequestURL.Query, @"(arg2)=([^&]+)");
 
 								if (FindSrc.Success)
-									Src = FindSrc.Groups[2].Value.Replace("%20"," ");
+									Src = Uri.UnescapeDataString(FindSrc.Groups[2].Value);
 
 								if (FindSrcUrl.Success)
-									SrcUrl = FindSrcUrl.Groups[2].Value.Replace("%20"," ");
+									SrcUrl = Uri.UnescapeDataString(FindSrcUrl.Groups[2].Value);
 
 								if (FindDest.Success)
-									Dest = FindDest.Groups[2].Value.Replace("%20"," ");
+									Dest = Uri.UnescapeDataString(FindDest.Groups[2].Value);
 
 								if (FindDestMime.Success)
-									DestMime = FindDestMime.Groups[2].Value.Replace("%20"," ");
+									DestMime = Uri.UnescapeDataString(FindDestMime.Groups[2].Value);
 									
 								if (FindConverter.Success)
-									Converter = FindConverter.Groups[2].Value.Replace("%20"," ");
+									Converter = Uri.UnescapeDataString(FindConverter.Groups[2].Value);
 
 								if (FindArg1.Success)
-									Args1 = FindArg1.Groups[2].Value.Replace("%20"," ");
+									Args1 = Uri.UnescapeDataString(FindArg1.Groups[2].Value);
 
 								if (FindArg2.Success)
-									Args1 = FindArg2.Groups[2].Value.Replace("%20"," ");
+									Args2 = Uri.UnescapeDataString(FindArg2.Groups[2].Value);
 
 								int Rnd = new Random().Next();
 								string DestName = "convert-" + Rnd + "." + Dest;
@@ -156,7 +157,7 @@ namespace WebOne
 								{
 									try
 									{
-										Console.WriteLine("{0}\t>Downloading source.", GetTime(BeginTime));
+										Console.WriteLine("{0}\t>Downloading source...", GetTime(BeginTime));
 										new WebClient().DownloadFile(SrcUrl, TmpFile);
 										Src = TmpFile;
 									}
@@ -171,20 +172,66 @@ namespace WebOne
 								if(Src != "")
 								try
 								{
-									if (!CheckString(Converter, ConfigFile.Converters)) throw new Exception("Converter '" + Converter + "' is not allowed.");
+									string ConvCmdLine = string.Format("{0} {1} {2} {3}", Src, Args1, DestName, Args2);
+									bool HasConverter = false, UseStdout = true;
+									foreach(string Cvt in ConfigFile.Converters)
+									{
+										//todo: make parsing paying attention to quotes, not simply by space character
+										if (Cvt.IndexOf(" ") < 0) break;
+										string CvtName = Cvt.Substring(0, Cvt.IndexOf(" "));
+										if (CvtName == Converter)
+										{
+											HasConverter = true;
+											if(Cvt.Contains("%DEST%")) UseStdout = false;
+
+											Converter = CvtName;
+											ConvCmdLine = Cvt.Substring(Cvt.IndexOf(" ") + 1)
+											.Replace("%SRC%",Src)
+											.Replace("%ARG1%",Args1)
+											.Replace("%DEST%",DestName)
+											.Replace("%ARG2%",Args2)
+											.Replace("%DESTEXT%",Dest);
+										}
+									}
+									if (!HasConverter) throw new Exception("Converter '" + Converter + "' is not allowed");
 									if (!File.Exists(Src)) throw new FileNotFoundException("Source file not found");
 
-									string ConvCmdLine = string.Format("{0} {1} {2} {3}", Src, Args1, DestName, Args2);
 									Console.WriteLine("{0}\t Converting: {1} {2}...", GetTime(BeginTime), Converter, ConvCmdLine);
 
-									System.Diagnostics.Process ConvProc = System.Diagnostics.Process.Start(Converter, ConvCmdLine);
-									while (!ConvProc.HasExited) { }
+									MemoryStream ConvStdout = new MemoryStream();
+									ProcessStartInfo ConvProcInfo = new ProcessStartInfo();
+									ConvProcInfo.FileName = Converter;
+									ConvProcInfo.Arguments = ConvCmdLine;
+									ConvProcInfo.StandardOutputEncoding = Encoding.GetEncoding("latin1");//important part; thx to https://stackoverflow.com/a/5446177/7600726
+									ConvProcInfo.RedirectStandardOutput = true;
+									ConvProcInfo.UseShellExecute = false;
+									Process ConvProc = Process.Start(ConvProcInfo);
 
-									if (!File.Exists(DestName)) throw new Exception("Convertion failed - no result found");
+									if (UseStdout)
+									{
+										#if DEBUG
+										Console.WriteLine("{0}\t Reading stdout...", GetTime(BeginTime));
+										#endif
+										int val;
+										while ((val = ConvProc.StandardOutput.Read()) != -1)
+										{
+											ConvStdout.WriteByte((byte)val);
+										}
+										ConvProc.WaitForExit();
+										if (ConvStdout.Length < 1) throw new Exception("Convertion failed - nothing returned");
+										SendStream(ConvStdout, DestMime);
+										if (SrcUrl != "") File.Delete(TmpFile);
+										return;
+									}
+									else
+									{
+										ConvProc.WaitForExit();
+										if (!File.Exists(DestName)) throw new Exception("Convertion failed - no result found");
 
-									SendFile(DestName, DestMime);
-									File.Delete(DestName);
-									if (SrcUrl != "") File.Delete(TmpFile);
+										SendFile(DestName, DestMime);
+										File.Delete(DestName);
+										if (SrcUrl != "") File.Delete(TmpFile);
+									}
 									return;
 								}
 								catch(Exception ConvEx) {
@@ -557,7 +604,6 @@ namespace WebOne
 			#endif
 		}
 
-
 		/// <summary>
 		/// Send a HTTPS request and put the response to shared variable "response"
 		/// </summary>
@@ -846,6 +892,34 @@ namespace WebOne
 				int ErrNo = 500;
 				if (ex is FileNotFoundException) ErrNo = 404;
 				SendError(ErrNo, "Cannot open the file <i>" + FileName + "</i>.<br>" + ex.ToString().Replace("\n", "<br>"));
+			}
+		}
+
+		/// <summary>
+		/// Send a stream to client (assuming that it is filled completely and can seek)
+		/// </summary>
+		/// <param name="Potok">The stream</param>
+		/// <param name="ContentType">Expected content type</param>
+		private void SendStream(Stream Potok, string ContentType)
+		{
+			if (!Potok.CanRead) throw new ArgumentException("Cannot send write-only stream","Potok");
+			if (!Potok.CanSeek) throw new ArgumentException("Cannot send stream that isn't able to set position", "Potok");
+			Console.WriteLine("{0}\t<Send stream with {2}K of {1}.", GetTime(BeginTime), ContentType, Potok.Length/1024);
+			try
+			{
+				ClientResponse.StatusCode = 200;
+				ClientResponse.ProtocolVersion = new Version(1, 0);
+				ClientResponse.ContentType = ContentType;
+				ClientResponse.ContentLength64 = Potok.Length;
+				Potok.Position = 0;
+				Potok.CopyTo(ClientResponse.OutputStream);
+				ClientResponse.OutputStream.Close();
+			}
+			catch(Exception ex)
+			{
+				int ErrNo = 500;
+				if (ex is FileNotFoundException) ErrNo = 404;
+				SendError(ErrNo, "Cannot retreive stream.<br>" + ex.ToString().Replace("\n", "<br>"));
 			}
 		}
 	}
