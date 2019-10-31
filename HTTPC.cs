@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using static WebOne.Program;
 
 namespace WebOne
 {
@@ -21,57 +22,52 @@ namespace WebOne
 		private string[] HeaderBanList = { "Proxy-Connection", "User-Agent", "Host", "Accept", "Referer", "Connection", "Content-type", "Content-length", "If-Modified-Since", "Accept-Encoding", "Accept-Charset", "Date" };
 		HttpWebResponse webResponse = null;
 
-
-		public HTTPC()
-		{
-
-		}
-
 		~HTTPC() {
 			if (webResponse != null) webResponse.Close();
 		}
 
 		/// <summary>
-		/// Perform a GET-like request
+		/// Perform a GET-like request (content retrieve)
 		/// </summary>
-		/// <param name="host">URL</param>
-		/// <param name="cc">Cookie container</param>
-		/// <param name="headers">HTTP headers</param>
-		/// <param name="method">HTTP method (GET by default)</param>
+		/// <param name="Host">URL</param>
+		/// <param name="CC">Cookie container</param>
+		/// <param name="Headers">HTTP headers</param>
+		/// <param name="Method">HTTP method (GET by default)</param>
 		/// <param name="AllowAutoRedirect">Allow 302 redirection handling in .NET FW or not</param>
+		/// <param name="BeginTime">Initial time (for log)</param>
 		/// <returns>Server's response.</returns>
-		public HttpResponse GET(string host, CookieContainer cc, WebHeaderCollection headers, string method = "GET", bool AllowAutoRedirect = false)
+		public HttpResponse GET(string Host, CookieContainer CC, WebHeaderCollection Headers, string Method, bool AllowAutoRedirect, DateTime BeginTime)
 		{
 			try
 			{
-				foreach(string badhost in ConfigFile.ForceHttps)
+				foreach (string SslHost in ConfigFile.ForceHttps)
 				{
-					if (host.Substring(7).StartsWith(badhost))
+					if (Host.Substring(7).StartsWith(SslHost))
 					{
-						host = "https" + host.Substring(4);
-						//Console.Write(" secure");
-						Console.WriteLine("Secure request.");
+						Host = "https" + Host.Substring(4);
+#if DEBUG
+						Console.WriteLine("{0}\t Willfully secure request.", GetTime(BeginTime));
+#endif
 					}
 				}
 
-				HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(host);
-				string UA = headers["User-Agent"] + " WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-				string Accept = headers["Accept"];
-				string Referer = headers["Referer"];
-				//undone: add other headers that cannot be passed directly to the webRequest.Headers
+				HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(Host);
+				string UA = Headers["User-Agent"] + " WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+				string Accept = Headers["Accept"];
+				string Referer = Headers["Referer"];
 
-				foreach (string str in HeaderBanList) { headers.Remove(str); }
-				webRequest.Headers = headers;
+				foreach (string str in HeaderBanList) { Headers.Remove(str); }
+				webRequest.Headers = Headers;
 
 				webRequest.Accept = Accept ?? "*/*";
 				webRequest.UserAgent = UA ?? UA_Mozilla;
 				if(Referer != null) webRequest.Referer = Referer;
-				webRequest.Method = method;
-				webRequest.AllowAutoRedirect = true;
-				webRequest.CookieContainer = cc;
+				webRequest.Method = Method;
+				webRequest.AllowAutoRedirect = AllowAutoRedirect;
+				webRequest.CookieContainer = CC;
 				webRequest.ProtocolVersion = HttpVersion.Version11;
 				webRequest.KeepAlive = true;
-				webRequest.AllowAutoRedirect = AllowAutoRedirect;
+				webRequest.ServicePoint.Expect100Continue = false;
 
 				webResponse = (HttpWebResponse)webRequest.GetResponse();
 				return new HttpResponse(webResponse);
@@ -87,67 +83,70 @@ namespace WebOne
 			}*/
 
 		}
-		
+
 		/// <summary>
-		/// Perform a POST or POST-like request (content upload)
+		/// Perform a POST-like request (content upload)
 		/// </summary>
-		/// <param name="host">URL</param>
-		/// <param name="cc">Cookie Container</param>
-		/// <param name="data">Raw post data</param>
-		/// <param name="headers">HTTP headers</param>
-		/// <param name="method">HTTP method (POST by default)</param>
+		/// <param name="Host">URL</param>
+		/// <param name="CC">Cookie Container</param>
+		/// <param name="BodyStream">Stream of request's body</param>
+		/// <param name="Headers">HTTP headers</param>
+		/// <param name="Method">HTTP method (POST by default)</param>
 		/// <param name="AllowAutoRedirect">Allow 302 redirection handling in .NET FW or not</param>
+		/// <param name="BeginTime">Initial time (for log)</param>
 		/// <returns></returns>
-		public HttpResponse POST(string host, CookieContainer cc, string data, WebHeaderCollection headers, string method = "POST", bool AllowAutoRedirect = false)
+		public HttpResponse POST(string Host, CookieContainer CC, Stream BodyStream, WebHeaderCollection Headers, string Method, bool AllowAutoRedirect, DateTime BeginTime)
 		{
 			try
 			{
-				foreach (string badhost in ConfigFile.ForceHttps)
+				foreach (string SslHost in ConfigFile.ForceHttps)
 				{
-					if (host.Substring(7).StartsWith(badhost))
+					if (Host.Substring(7).StartsWith(SslHost))
 					{
-						host = "https" + host.Substring(4);
-						//Console.Write(" secure");
-						Console.WriteLine("Secure request.");
+						Host = "https" + Host.Substring(4);
+						#if DEBUG
+						Console.WriteLine("{0}\t Willfully secure request.", GetTime(BeginTime));
+						#endif
 					}
 				}
 
-				HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(host);
-				string UA = headers["User-Agent"] + " WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-				string Accept = headers["Accept"];
-				string Referer = headers["Referer"];
-				//undone: add other headers that cannot be passed directly to the webRequest.Headers
+				HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(Host);
 
-				foreach (string str in HeaderBanList) { headers.Remove(str); }
-				webRequest.Headers = headers;
+				string UA = Headers["User-Agent"] + " WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+				string Accept = Headers["Accept"];
+				string Referer = Headers["Referer"];
+				string ContentType = Headers["Content-Type"];// ?? "application/x-www-form-urlencoded";
+				long ContentLength = long.Parse(Headers["Content-Length"] ?? "0");
+				
+				foreach (string str in HeaderBanList) { Headers.Remove(str); }
+				webRequest.Headers = Headers;
 
-				webRequest.Accept = Accept;
-				webRequest.UserAgent = UA;
-				webRequest.Referer = Referer;
-				webRequest.Method = method;
+				webRequest.Accept = Accept ?? "*/*";
+				webRequest.UserAgent = UA ?? UA_Mozilla;
+				if (Referer != null) webRequest.Referer = Referer;
+				webRequest.Method = Method;
 				webRequest.AllowAutoRedirect = AllowAutoRedirect;
-				webRequest.CookieContainer = cc;
-				webRequest.ProtocolVersion = HttpVersion.Version10;
+				webRequest.CookieContainer = CC;
+				webRequest.ProtocolVersion = HttpVersion.Version11;
 				webRequest.KeepAlive = true;
-				webRequest.ContentType = "application/x-www-form-urlencoded";
-				webRequest.ContentLength = data.Length;
+				webRequest.ContentType = ContentType;
+				webRequest.ContentLength = ContentLength;
 				webRequest.ServicePoint.Expect100Continue = false;
 				/*try
 				{
 					webRequest.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(AcceptAllCertifications);
 				}
 				catch (MissingMethodException) { }*/
-				webRequest.AllowAutoRedirect = Program.CheckString(host, ConfigFile.InternalRedirectOn);
+				webRequest.AllowAutoRedirect = Program.CheckString(Host, ConfigFile.InternalRedirectOn);
 
-				using (var requestStream = new StreamWriter(webRequest.GetRequestStream()))
+				using (var RequestStream = new StreamWriter(webRequest.GetRequestStream()))
 				{
-					requestStream.Write(data);
-					requestStream.Close();
+					BodyStream.CopyTo(RequestStream.BaseStream);
+					RequestStream.Close();
 				}
 
 				webResponse = (HttpWebResponse)webRequest.GetResponse();
 				return new HttpResponse(webResponse);
-
 			}
 			catch (Exception)
 			{
@@ -184,6 +183,8 @@ namespace WebOne
 
 	public class HttpResponse
 	{
+		//probably need to be thrown away
+		//except Decompress function
 		public HttpResponse(HttpWebResponse webResponse)
 		{
 			this.CharacterSet = webResponse.CharacterSet;

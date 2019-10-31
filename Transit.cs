@@ -84,13 +84,13 @@ namespace WebOne
 				bool IsLocalhost = false;
 				var LocalIPs = System.Net.Dns.GetHostByName(Environment.MachineName).AddressList;
 				foreach (IPAddress LocIP in LocalIPs) if (RequestURL.Host == LocIP.ToString()) IsLocalhost = true;
-				if (RequestURL.Host.ToLower() == "localhost" || RequestURL.Host.ToLower() == Environment.MachineName.ToLower() || RequestURL.Host == "127.0.0.1")
+				if (RequestURL.Host.ToLower() == "localhost" || RequestURL.Host.ToLower() == Environment.MachineName.ToLower() || RequestURL.Host == "127.0.0.1" || RequestURL.Host.ToLower() == "wpad" || RequestURL.Host == "")
 					IsLocalhost = true;
 
 				if (IsLocalhost)
 				{
 					bool PAC = false;
-					string[] PacUrls = { "/auto/", "/auto.pac", "/wpad.dat", "/wpad.da" }; //Netscape PAC/Microsoft WPAD
+					string[] PacUrls = { "/auto/", "/auto", "/auto.pac", "/wpad.dat", "/wpad.da" }; //Netscape PAC/Microsoft WPAD
 					foreach (string PacUrl in PacUrls) { if (RequestURL.LocalPath == PacUrl) { PAC = true; break; } }
 
 					if (RequestURL.PathAndQuery.StartsWith("/!") || PAC)
@@ -231,6 +231,7 @@ namespace WebOne
 								return;
 							case "/!pac/":
 							case "/auto/":
+							case "/auto":
 							case "/auto.pac":
 							case "/wpad.dat":
 							case "/wpad.da":
@@ -569,7 +570,6 @@ namespace WebOne
 		{
 			bool AllowAutoRedirect = CheckString(RequestURL.AbsoluteUri, ConfigFile.InternalRedirectOn);
 			if (!AllowAutoRedirect) AllowAutoRedirect = ShouldRedirectInNETFW;
-			string RequestBody;
 
 			switch (RequestMethod)
 			{
@@ -583,18 +583,15 @@ namespace WebOne
 					{
 						//try to download (GET, HEAD, WebDAV download, etc)
 						Console.WriteLine("{0}\t>Downloading content...", GetTime(BeginTime));
-						response = https.GET(RequestURL.AbsoluteUri, new CookieContainer(), RequestHeaderCollection, RequestMethod, AllowAutoRedirect);
+						response = https.GET(RequestURL.AbsoluteUri, new CookieContainer(), RequestHeaderCollection, RequestMethod, AllowAutoRedirect, BeginTime);
 						MakeOutput(response.StatusCode, response.Stream, response.ContentType, response.ContentLength);
 						break;
 					}
 					else
 					{
 						//try to upload (POST, PUT, WebDAV, etc)
-						Console.WriteLine("{0}\t>Reading input stream...", GetTime(BeginTime));
-						StreamReader body_sr = new StreamReader(ClientRequest.InputStream);
-						RequestBody = body_sr.ReadToEnd();
-						Console.WriteLine("{0}\t>Uploading {1}K...", GetTime(BeginTime), Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024);
-						response = https.POST(RequestURL.AbsoluteUri, new CookieContainer(), RequestBody, RequestHeaderCollection, RequestMethod, AllowAutoRedirect);
+						Console.WriteLine("{0}\t>Uploading {1}K of {2}...", GetTime(BeginTime), Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024, RequestHeaderCollection["Content-Type"]);
+						response = https.POST(RequestURL.AbsoluteUri, new CookieContainer(), ClientRequest.InputStream, RequestHeaderCollection, RequestMethod, AllowAutoRedirect, BeginTime);
 						MakeOutput(response.StatusCode, response.Stream, response.ContentType, response.ContentLength);
 						break;
 					}
