@@ -26,6 +26,8 @@ namespace WebOne
 
 		Uri RequestURL = new Uri("about:blank");
 		static string LastURL = "http://999.999.999.999/CON";
+		static HttpStatusCode LastCode = HttpStatusCode.OK;
+		static string LastContentType = "not-a-carousel";
 		bool ShouldRedirectInNETFW = false;
 
 		HttpResponse response;
@@ -332,12 +334,21 @@ namespace WebOne
 				if (CheckString(RequestURL.Scheme, BadProtocols))
 				{
 					Console.WriteLine("{0}\t CERN Proxy request to {1} detected.", GetTime(BeginTime), RequestURL.Scheme.ToUpper());
-					SendError(101, "Cannot work with " + RequestURL.Scheme.ToUpper() + " protocol. Please connect directly bypassing the proxy.");//, "\nUpgrade: " + RequestURL.Scheme.ToUpper());
+					ClientResponse.AddHeader("Upgrade", RequestURL.Scheme.ToUpper());
+					SendError(101, "Cannot work with " + RequestURL.Scheme.ToUpper() + " protocol. Please connect directly bypassing the proxy.");
 					return;
 				}
 
 				//dirty workarounds for HTTP>HTTPS redirection bugs
-				if ((RequestURL.AbsoluteUri == RefererUri || RequestURL.AbsoluteUri == LastURL) && RequestURL.AbsoluteUri != "" && ClientRequest.HttpMethod != "POST" && ClientRequest.HttpMethod != "CONNECT" && !Program.CheckString(RequestURL.AbsoluteUri, ConfigFile.ForceHttps) && RequestURL.Host.ToLower() != Environment.MachineName.ToLower())
+				//should redirect on 302s or reloadings from 200 and only on htmls
+				if ((RequestURL.AbsoluteUri == RefererUri || RequestURL.AbsoluteUri == LastURL) &&
+				RequestURL.AbsoluteUri != "" && 
+				(LastContentType.StartsWith("text/htm") || LastContentType == "") &&
+				(((int)LastCode > 299 && (int)LastCode < 400) || LastCode == HttpStatusCode.OK) &&
+				ClientRequest.HttpMethod != "POST" && 
+				ClientRequest.HttpMethod != "CONNECT" && 
+				!Program.CheckString(RequestURL.AbsoluteUri, ConfigFile.ForceHttps) && 
+				RequestURL.Host.ToLower() != Environment.MachineName.ToLower())
 				{
 					Console.WriteLine("{0}\t Carousel detected.", GetTime(BeginTime));
 					if (!LastURL.StartsWith("https") && !RequestURL.AbsoluteUri.StartsWith("https")) //if http is gone, try https
@@ -407,6 +418,8 @@ namespace WebOne
 
 
 				LastURL = RequestURL.AbsoluteUri;
+				LastContentType = "unknown/unknown"; //will be populated in MakeOutput
+				LastCode = HttpStatusCode.OK; //same
 
 				//make reply
 				//SendError(200, "Okay, bro! Open " + RequestURL);
@@ -793,6 +806,9 @@ namespace WebOne
 
 				}
 			}
+
+			LastCode = StatusCode;
+			LastContentType = ContentType;
 
 			if (Program.CheckString(ContentType, ConfigFile.TextTypes))
 			{
