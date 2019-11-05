@@ -85,7 +85,7 @@ namespace WebOne
 
 				//check for local or internal URL
 				bool IsLocalhost = false;
-				var LocalIPs = System.Net.Dns.GetHostByName(Environment.MachineName).AddressList;
+				var LocalIPs = Dns.GetHostEntry(Environment.MachineName).AddressList;
 				foreach (IPAddress LocIP in LocalIPs) if (RequestURL.Host == LocIP.ToString()) IsLocalhost = true;
 				if (RequestURL.Host.ToLower() == "localhost" || RequestURL.Host.ToLower() == Environment.MachineName.ToLower() || RequestURL.Host == "127.0.0.1" || RequestURL.Host.ToLower() == "wpad" || RequestURL.Host == "")
 					IsLocalhost = true;
@@ -100,8 +100,41 @@ namespace WebOne
 					{
 						//internal URLs
 						Console.WriteLine("{0}\t Internal: {1} ", GetTime(BeginTime), RequestURL.PathAndQuery);
-						switch (RequestURL.AbsolutePath)
+						switch (RequestURL.AbsolutePath.ToLower())
 						{
+							case "/!":
+							case "/!/":
+								string HelpString = "This is <b>" + Environment.MachineName + ":" + ConfigFile.Port + "</b>.<br>";
+								HelpString +="Used memory: <b>" + (double)Environment.WorkingSet/1024/1024 + "</b> MB.<br>";
+								HelpString += "Pending requests: <b>" + (Program.Load - 1) + "</b>.<br>";
+								HelpString += "Available security: <b>" + ServicePointManager.SecurityProtocol + "</b>"/* + (int)ServicePointManager.SecurityProtocol*/ + ".<br>";
+
+								HelpString += "<h2>Aliases:</h2><ul>";
+								foreach (IPAddress LocIP in Dns.GetHostEntry(Environment.MachineName).AddressList)
+								{ HelpString += "<li>" + LocIP + ":" + ConfigFile.Port + "</li>"; }
+								HelpString += "</ul>";
+								HelpString += "</ul>";
+
+								HelpString += "<p>Client IP: <b>" + ClientRequest.RemoteEndPoint + "</b>.</p>";
+
+								HelpString += "<h2>Internal URLs:</h2><ul>" +
+											  "<li><a href='/!codepages/'>/!codepages/</a> - list of available encodings for OutputEncoding setting</li>" +
+											  "<li><a href='/!img-test/'>/!img-test/</a> - test if ImageMagick is working</li>" +
+											  "<li><a href='/!convert/'>/!convert/</a> - run a file format converter (<a href='/!convert/?src=logo.webp&dest=gif&type=image/gif'>demo</a>)</li>" +
+											  "<li><a href='/!file/'>/!file/</a> - get a file from WebOne working directory (<a href='/!file/?name=webone.conf&type=text/plain'>demo</a>)</li>" +
+											  "<li><a href='/!clear/'>/!clear/</a> - remove temporary files in WebOne working directory</li>"+
+											  "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>"+
+								              "</ul>";
+
+								HelpString += "<h2>Headers sent by browser</h2><ul>";
+								HelpString += "<li><b>" + ClientRequest.HttpMethod + " " + ClientRequest.RawUrl + " HTTP/" + ClientRequest.ProtocolVersion + "</b></li>";
+								foreach (string hdrn in ClientRequest.Headers.Keys)
+								{
+									HelpString += "<li>" + hdrn + ": " + ClientRequest.Headers[hdrn] + "</li>";
+								}
+								HelpString += "</ul>";
+								SendError(200, HelpString);
+								return;
 							case "/!codepages/":
 								string codepages = "The following code pages are available: <br>\n" +
 												   "<table><tr><td><b>Name</b></td><td><b>#</b></td><td><b>Description</b></td></tr>\n";
@@ -268,7 +301,7 @@ namespace WebOne
 									return;
 								}
 								SendError(200, "Get a local file.<br>Usage: /!file/?name=filename.ext&type=text/plain");
-								break;
+								return;
 							case "/!clear/":
 								int FilesDeleted = 0;
 								foreach (FileInfo file in (new DirectoryInfo(Directory.GetCurrentDirectory())).EnumerateFiles("*.tmp"))

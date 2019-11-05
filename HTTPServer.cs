@@ -16,9 +16,8 @@ namespace WebOne
 	class HTTPServer
 	{
 		int Port = 80;
-		bool Work = true;
+		bool Work = true; 
 		private static HttpListener _listener;
-		int Load = 0;
 
 
 		/// <summary>

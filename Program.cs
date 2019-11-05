@@ -13,6 +13,7 @@ namespace WebOne
 	{
 		public static string ConfigFileName = "webone.conf";
 
+		public static int Load = 0;
 
 		static void Main(string[] args)
 		{
@@ -22,7 +23,9 @@ namespace WebOne
 			int Port = -1;
 			try { Port = Convert.ToInt32(args[0]); if (args.Length > 1) ConfigFileName = args[1]; }
 			catch { if(args.Length > 0) ConfigFileName = args[0]; }
+#pragma warning disable CS1717 // Назначение выполнено для той же переменной - workaround to call ConfigFile constructor
 			if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Authenticate = ConfigFile.Authenticate; //else load config file (пусть прочухается static class)
+#pragma warning restore CS1717 // Назначение выполнено для той же переменной
 			Console.Title = "WebOne @ " + Environment.MachineName + ":" + Port;
 
 			try
