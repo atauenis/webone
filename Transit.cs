@@ -298,7 +298,7 @@ namespace WebOne
 										return;
 									}
 									
-									SendFile(FileName, "text/plain");
+									SendFile(FileName, MimeType);
 									return;
 								}
 								SendError(200, "Get a local file.<br>Usage: /!file/?name=filename.ext&type=text/plain");
