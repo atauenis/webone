@@ -107,7 +107,7 @@ namespace WebOne
 								string HelpString = "This is <b>" + Environment.MachineName + ":" + ConfigFile.Port + "</b>.<br>";
 								HelpString +="Used memory: <b>" + (double)Environment.WorkingSet/1024/1024 + "</b> MB.<br>";
 								HelpString += "Pending requests: <b>" + (Program.Load - 1) + "</b>.<br>";
-								HelpString += "Available security: <b>" + ServicePointManager.SecurityProtocol + "</b>"/* + (int)ServicePointManager.SecurityProtocol*/ + ".<br>";
+								HelpString += "Available security: <b>" + ServicePointManager.SecurityProtocol + "</b> (" + (int)ServicePointManager.SecurityProtocol + ").<br>";
 
 								HelpString += "<h2>Aliases:</h2><ul>";
 								foreach (IPAddress LocIP in Dns.GetHostEntry(Environment.MachineName).AddressList)

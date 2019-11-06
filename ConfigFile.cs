@@ -23,17 +23,6 @@ namespace WebOne
 		public static int Port = 80;
 
 		/// <summary>
-		/// Size of request buffer size.
-		/// Too long size will enlarge memory usage, too short size may cause problems with POST queries.
-		/// </summary>
-		public static long RequestBufferSize = 10485760;
-
-		/// <summary>
-		/// Timeout for connections. For fast clients set less than 10, for slow set more than 9000.
-		/// </summary>
-		public static long ClientTimeout = 1000;
-
-		/// <summary>
 		/// List of domains that should be open only using HTTPS
 		/// </summary>
 		public static string[] ForceHttps = { "www.phantom.sannata.org.example" };
@@ -230,12 +219,6 @@ namespace WebOne
 								case "Port":
 									Port = Convert.ToInt32(ParamValue);
 									break;
-								case "RequestBufferSize":
-									RequestBufferSize = Convert.ToInt32(ParamValue);
-									break;
-								case "ClientTimeout":
-									ClientTimeout = Convert.ToInt32(ParamValue);
-									break;
 								case "OutputEncoding":
 									if (ParamValue == "Windows" || ParamValue == "Win" || ParamValue == "ANSI")
 									{
@@ -264,6 +247,9 @@ namespace WebOne
 									continue;
 								case "ShortenArchiveErrors":
 									ShortenArchiveErrors = ToBoolean(ParamValue);
+									continue;
+								case "SecurityProtocols":
+									System.Net.ServicePointManager.SecurityProtocol = (System.Net.SecurityProtocolType)(int.Parse(ParamValue));
 									continue;
 								default:
 									Console.WriteLine("Warning: Unknown server option: " + ParamName);
