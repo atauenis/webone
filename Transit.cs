@@ -79,9 +79,10 @@ namespace WebOne
 					}
 				}
 
-				//fix "carousels"
+				//get request URL and referer URL
 				string RefererUri = ClientRequest.Headers["Referer"];
-				RequestURL = new UriBuilder(ClientRequest.RawUrl).Uri;
+				try { RequestURL = new UriBuilder(ClientRequest.RawUrl).Uri; }
+				catch { RequestURL = ClientRequest.Url; };
 
 				//check for local or internal URL
 				bool IsLocalhost = false;
@@ -372,7 +373,7 @@ namespace WebOne
 					return;
 				}
 
-				//dirty workarounds for HTTP>HTTPS redirection bugs
+				//dirty workarounds for HTTP>HTTPS redirection bugs ("carousels")
 				//should redirect on 302s or reloadings from 200 and only on htmls
 				if ((RequestURL.AbsoluteUri == RefererUri || RequestURL.AbsoluteUri == LastURL) &&
 				RequestURL.AbsoluteUri != "" && 
