@@ -81,7 +81,7 @@ namespace WebOne
 
 				//fix "carousels"
 				string RefererUri = ClientRequest.Headers["Referer"];
-				RequestURL = ClientRequest.Url;
+				RequestURL = new UriBuilder(ClientRequest.RawUrl).Uri;
 
 				//check for local or internal URL
 				bool IsLocalhost = false;

@@ -249,7 +249,8 @@ namespace WebOne
 									ShortenArchiveErrors = ToBoolean(ParamValue);
 									continue;
 								case "SecurityProtocols":
-									System.Net.ServicePointManager.SecurityProtocol = (System.Net.SecurityProtocolType)(int.Parse(ParamValue));
+									try { System.Net.ServicePointManager.SecurityProtocol = (System.Net.SecurityProtocolType)(int.Parse(ParamValue)); }
+									catch (NotSupportedException) { Console.WriteLine("Warning: Bad TLS version {1} ({0}), using {2} ({2:D}).", ParamValue, (System.Net.SecurityProtocolType)(int.Parse(ParamValue)), System.Net.ServicePointManager.SecurityProtocol); };
 									continue;
 								default:
 									Console.WriteLine("Warning: Unknown server option: " + ParamName);

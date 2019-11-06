@@ -53,10 +53,10 @@ namespace WebOne
 			_listener.BeginGetContext(ProcessRequest, null);
 			HttpListenerRequest req = ctx.Request;
 			#if DEBUG
-			Console.WriteLine("{0}\t>{1} {2}", GetTime(BeginTime), req.HttpMethod, req.Url);
-			#else
-			Console.WriteLine("{0}\t>{1} {2}", BeginTime.ToString("HH:mm:ss.fff"), req.HttpMethod, req.Url);
-			#endif
+			Console.WriteLine("{0}\t>{1} {2}", GetTime(BeginTime), req.HttpMethod, req.RawUrl);
+#else
+			Console.WriteLine("{0}\t>{1} {2}", BeginTime.ToString("HH:mm:ss.fff"), req.HttpMethod, req.RawUrl);
+#endif
 
 			HttpListenerResponse resp = ctx.Response;
 			Transit Tranzit = new Transit(req, resp, BeginTime);
