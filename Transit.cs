@@ -196,7 +196,7 @@ namespace WebOne
 
 								//prepare converter name
 								string ConvCmdLine = string.Format("{0} {1} {2} {3}", Src, Args1, DestName, Args2);
-								bool HasConverter = false, UseStdout = true, UseStdin = true;
+								bool HasConverter = false, UseStdout = true, UseStdin = true, SelfDownload = false;
 								foreach (string Cvt in ConfigFile.Converters)
 								{
 									//todo: make parsing paying attention to quotes, not simply by space character
@@ -207,6 +207,7 @@ namespace WebOne
 										HasConverter = true;
 										if (Cvt.Contains("%DEST%")) UseStdout = false;
 										if (Cvt.Contains("%SRC%")) UseStdin = false;
+										SelfDownload = Cvt.Contains("%SRCURL%");
 
 										Converter = CvtName;
 										ConvCmdLine = Cvt.Substring(Cvt.IndexOf(" ") + 1)
@@ -214,7 +215,8 @@ namespace WebOne
 										.Replace("%ARG1%", Args1)
 										.Replace("%DEST%", DestName)
 										.Replace("%ARG2%", Args2)
-										.Replace("%DESTEXT%", Dest);
+										.Replace("%DESTEXT%", Dest)
+										.Replace("%SRCURL%", SrcUrl);
 									}
 								}
 								if (!HasConverter) throw new ArgumentException("Converter '" + Converter + "' is not allowed");
@@ -223,7 +225,7 @@ namespace WebOne
 								MemoryStream ConvStdout = new MemoryStream();
 
 								//download source if need
-								if (SrcUrl != "")
+								if (SrcUrl != "" && !SelfDownload)
 								{
 									if (!UseStdin)
 									{
@@ -264,10 +266,9 @@ namespace WebOne
 											SendError(500, "Source stream error:<br>" + DlStreamEx.ToString().Replace("\n", "<BR>"));
 											return;
 										}
-
 									}
 								}
-								else
+								else if(!SelfDownload)
 								{
 									//open local
 									if(UseStdin)
@@ -295,7 +296,7 @@ namespace WebOne
 								if (Src != "")
 								try
 								{
-									if (!File.Exists(Src) && Src != "CON:") throw new FileNotFoundException("Source file not found");
+									if (!File.Exists(Src) && Src != "CON:" && !SelfDownload) throw new FileNotFoundException("Source file not found");
 
 									Console.WriteLine("{0}\t Converting: {1} {2}...", GetTime(BeginTime), Converter, ConvCmdLine);
 
