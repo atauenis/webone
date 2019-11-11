@@ -156,6 +156,7 @@ namespace WebOne
 							case "/!convert/":
 								string SrcUrl = "", Src = "", Dest = "xbm", DestMime = "image/x-xbitmap", Converter = "convert", Args1 = "", Args2 = "";
 
+								//parse URL
 								Match FindSrc = Regex.Match(RequestURL.Query, @"(src)=([^&]+)");
 								Match FindSrcUrl = Regex.Match(RequestURL.Query, @"(url)=([^&]+)");
 								Match FindDest = Regex.Match(RequestURL.Query, @"(dest)=([^&]+)");
@@ -185,95 +186,175 @@ namespace WebOne
 								if (FindArg2.Success)
 									Args2 = Uri.UnescapeDataString(FindArg2.Groups[2].Value);
 
+								if (Src == "CON:") throw new ArgumentException("Bad source file name");
+
+								//prepare temporary file names
 								int Rnd = new Random().Next();
 								string DestName = "convert-" + Rnd + "." + Dest;
 								string TmpFile = "orig-" + Rnd + ".tmp"; //for downloaded original if any
+								if (FindSrcUrl.Success) Src = TmpFile;
 
-								if (SrcUrl != "")
+								//prepare converter name
+								string ConvCmdLine = string.Format("{0} {1} {2} {3}", Src, Args1, DestName, Args2);
+								bool HasConverter = false, UseStdout = true, UseStdin = true;
+								foreach (string Cvt in ConfigFile.Converters)
 								{
-									try
+									//todo: make parsing paying attention to quotes, not simply by space character
+									if (Cvt.IndexOf(" ") < 0) break;
+									string CvtName = Cvt.Substring(0, Cvt.IndexOf(" "));
+									if (CvtName == Converter)
 									{
-										Console.WriteLine("{0}\t>Downloading source...", GetTime(BeginTime));
-										new WebClient().DownloadFile(SrcUrl, TmpFile);
-										Src = TmpFile;
-									}
-									catch (Exception DownloadEx)
-									{
-										Console.WriteLine("{0}\t Can't download source: {1}.", GetTime(BeginTime), DownloadEx.Message);
-										SendError(500, "Cannot download:<br>" + DownloadEx.ToString().Replace("\n", "<BR>"));
-										return;
+										HasConverter = true;
+										if (Cvt.Contains("%DEST%")) UseStdout = false;
+										if (Cvt.Contains("%SRC%")) UseStdin = false;
+
+										Converter = CvtName;
+										ConvCmdLine = Cvt.Substring(Cvt.IndexOf(" ") + 1)
+										.Replace("%SRC%", Src)
+										.Replace("%ARG1%", Args1)
+										.Replace("%DEST%", DestName)
+										.Replace("%ARG2%", Args2)
+										.Replace("%DESTEXT%", Dest);
 									}
 								}
+								if (!HasConverter) throw new ArgumentException("Converter '" + Converter + "' is not allowed");
 
-								if(Src != "")
-								try
+								Stream ConvStdin = new MemoryStream();
+								MemoryStream ConvStdout = new MemoryStream();
+
+								//download source if need
+								if (SrcUrl != "")
 								{
-									string ConvCmdLine = string.Format("{0} {1} {2} {3}", Src, Args1, DestName, Args2);
-									bool HasConverter = false, UseStdout = true;
-									foreach(string Cvt in ConfigFile.Converters)
+									if (!UseStdin)
 									{
-										//todo: make parsing paying attention to quotes, not simply by space character
-										if (Cvt.IndexOf(" ") < 0) break;
-										string CvtName = Cvt.Substring(0, Cvt.IndexOf(" "));
-										if (CvtName == Converter)
+										//download source to tmp file
+										try
 										{
-											HasConverter = true;
-											if(Cvt.Contains("%DEST%")) UseStdout = false;
-
-											Converter = CvtName;
-											ConvCmdLine = Cvt.Substring(Cvt.IndexOf(" ") + 1)
-											.Replace("%SRC%",Src)
-											.Replace("%ARG1%",Args1)
-											.Replace("%DEST%",DestName)
-											.Replace("%ARG2%",Args2)
-											.Replace("%DESTEXT%",Dest);
+											Console.WriteLine("{0}\t>Downloading source...", GetTime(BeginTime));
+											new WebClient().DownloadFile(SrcUrl, TmpFile);
+											Src = TmpFile;
+										}
+										catch (Exception DownloadEx)
+										{
+											Console.WriteLine("{0}\t Can't download source: {1}.", GetTime(BeginTime), DownloadEx.Message);
+											SendError(500, "Cannot download:<br>" + DownloadEx.ToString().Replace("\n", "<BR>"));
+											return;
 										}
 									}
-									if (!HasConverter) throw new Exception("Converter '" + Converter + "' is not allowed");
-									if (!File.Exists(Src)) throw new FileNotFoundException("Source file not found");
+									else
+									{
+										//download source file to a Stream
+										try
+										{ 
+											Console.WriteLine("{0}\t>Downloading source stream...", GetTime(BeginTime));
+											WebClient WC = new WebClient(); //not HttpClient because it's appear in .net 4.0
+											WC.Headers.Add("User-agent", "WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
+											Task<Stream> DownloadTask =  WC.OpenReadTaskAsync(SrcUrl);
+											ConvStdin = DownloadTask.Result;
+											DownloadTask.Wait();
+											Src = "CON:";
+											#if DEBUG
+											Console.WriteLine("{0}\t Stream okay: {1}", GetTime(BeginTime), WC.ResponseHeaders["Content-type"]);
+											#endif
+
+										}
+										catch (Exception DlStreamEx)
+										{
+											Console.WriteLine("{0}\t Can't download source: {1}.", GetTime(BeginTime), DlStreamEx.Message);
+											SendError(500, "Source stream error:<br>" + DlStreamEx.ToString().Replace("\n", "<BR>"));
+											return;
+										}
+
+									}
+								}
+								else
+								{
+									//open local
+									if(UseStdin)
+									{
+										//load source file to a FileStream
+										try
+										{
+											ConvStdin = new FileStream(Src, FileMode.Open, FileAccess.Read);
+											ConvStdin.Position = 0;
+											Src = "CON:";
+										}
+										catch (Exception StreamEx)
+										{
+											Console.WriteLine("{0}\t Cannot open src file: {1}.", GetTime(BeginTime), StreamEx.Message);
+											SendError(500, "Cannot open source file:<br>" + StreamEx.ToString().Replace("\n", "<BR>"));
+											return;
+										}
+									}
+									//else it is already in ConvCmdLine
+								}
+
+								//run converter
+								ProcessStartInfo ConvProcInfo = null;
+								Process ConvProc = null;
+								if (Src != "")
+								try
+								{
+									if (!File.Exists(Src) && Src != "CON:") throw new FileNotFoundException("Source file not found");
 
 									Console.WriteLine("{0}\t Converting: {1} {2}...", GetTime(BeginTime), Converter, ConvCmdLine);
 
-									MemoryStream ConvStdout = new MemoryStream();
-									ProcessStartInfo ConvProcInfo = new ProcessStartInfo();
+									ConvProcInfo = new ProcessStartInfo();
 									ConvProcInfo.FileName = Converter;
 									ConvProcInfo.Arguments = ConvCmdLine;
 									ConvProcInfo.StandardOutputEncoding = Encoding.GetEncoding("latin1");//important part; thx to https://stackoverflow.com/a/5446177/7600726
 									ConvProcInfo.RedirectStandardOutput = true;
+									ConvProcInfo.RedirectStandardInput = true;
 									ConvProcInfo.UseShellExecute = false;
-									Process ConvProc = Process.Start(ConvProcInfo);
+									ConvProc = Process.Start(ConvProcInfo);
 
 									if (UseStdout)
 									{
+										if(UseStdin)
+										{ 
+											#if DEBUG
+											Console.WriteLine("{0}\t Writing stdin...", GetTime(BeginTime));
+											#endif
+											new Task(() => { try { ConvStdin.CopyTo(ConvProc.StandardInput.BaseStream); } catch { } }).Start();
+										}
+
 										#if DEBUG
 										Console.WriteLine("{0}\t Reading stdout...", GetTime(BeginTime));
 										#endif
-										int val;
-										while ((val = ConvProc.StandardOutput.Read()) != -1)
-										{
-											ConvStdout.WriteByte((byte)val);
-										}
+										SendStream(ConvProc.StandardOutput.BaseStream, DestMime, false);
 										ConvProc.WaitForExit();
-										if (ConvStdout.Length < 1) throw new Exception("Convertion failed - nothing returned");
-										SendStream(ConvStdout, DestMime);
+										ClientResponse.Close();
+
 										if (SrcUrl != "") File.Delete(TmpFile);
+										ConvStdin.Close();
 										return;
 									}
 									else
 									{
+										if(UseStdin)
+										{ 
+											#if DEBUG
+											Console.WriteLine("{0}\t Writing stdin...", GetTime(BeginTime));
+											#endif
+											new Task(() => { ConvStdin.CopyTo(ConvProc.StandardInput.BaseStream); }).Start();
+										}
 										ConvProc.WaitForExit();
-										if (!File.Exists(DestName)) throw new Exception("Convertion failed - no result found");
 
+										if (!File.Exists(DestName)) throw new Exception("Convertion failed - no result found");
 										SendFile(DestName, DestMime);
 										File.Delete(DestName);
+
 										if (SrcUrl != "") File.Delete(TmpFile);
+										ConvStdin.Close();
+										return;
 									}
-									return;
 								}
 								catch(Exception ConvEx) {
-										Console.WriteLine("{0}\t Can't convert: {1}.", GetTime(BeginTime), ConvEx.Message);
-										SendError(500, "Cannot convert:<br>" + ConvEx.ToString().Replace("\n","<BR>"));
-										return;
+									if (ConvProc != null && !ConvProc.HasExited) ConvProc.Kill();
+									Console.WriteLine("{0}\t Can't convert: {1}.", GetTime(BeginTime), ConvEx.Message);
+									SendError(500, "Cannot convert:<br>" + ConvEx.ToString().Replace("\n","<BR>"));
+									ConvStdin.Close();
+									return;
 								}
 
 								SendError(200, "Summon ImageMagick to convert a picture file.<br>"+
@@ -950,20 +1031,23 @@ namespace WebOne
 		/// </summary>
 		/// <param name="Potok">The stream</param>
 		/// <param name="ContentType">Expected content type</param>
-		private void SendStream(Stream Potok, string ContentType)
+		/// <param name="Close">Close the response after end of transfer</param>
+		private void SendStream(Stream Potok, string ContentType, bool Close = true)
 		{
-			if (!Potok.CanRead) throw new ArgumentException("Cannot send write-only stream","Potok");
-			if (!Potok.CanSeek) throw new ArgumentException("Cannot send stream that isn't able to set position", "Potok");
-			Console.WriteLine("{0}\t<Send stream with {2}K of {1}.", GetTime(BeginTime), ContentType, Potok.Length/1024);
+			if (!Potok.CanRead) throw new ArgumentException("Cannot send write-only stream", "Potok");
+			if (Potok.CanSeek)
+				Console.WriteLine("{0}\t<Send stream with {2}K of {1}.", GetTime(BeginTime), ContentType, Potok.Length/1024);
+			else
+				Console.WriteLine("{0}\t<Send {1} stream.", GetTime(BeginTime), ContentType);
 			try
 			{
 				ClientResponse.StatusCode = 200;
 				ClientResponse.ProtocolVersion = new Version(1, 0);
 				ClientResponse.ContentType = ContentType;
-				ClientResponse.ContentLength64 = Potok.Length;
-				Potok.Position = 0;
+				if(Potok.CanSeek) ClientResponse.ContentLength64 = Potok.Length;
+				if(Potok.CanSeek) Potok.Position = 0;
 				Potok.CopyTo(ClientResponse.OutputStream);
-				ClientResponse.OutputStream.Close();
+				if(Close) ClientResponse.OutputStream.Close();
 			}
 			catch(Exception ex)
 			{

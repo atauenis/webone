@@ -332,8 +332,15 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
+
 /EXE/*.png
 /EXE/*.JPG
 /Screenshots
 /ImageMagic
 /ImageMagick.Lite/cut
+/LibAV-win32
+/avconv
+/EXE/avconv
+*.mkv
+*.mts
+*.mp4
