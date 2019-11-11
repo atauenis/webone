@@ -238,8 +238,8 @@ namespace WebOne
 										}
 										catch (Exception DownloadEx)
 										{
-											Console.WriteLine("{0}\t Can't download source: {1}.", GetTime(BeginTime), DownloadEx.Message);
-											SendError(500, "Cannot download:<br>" + DownloadEx.ToString().Replace("\n", "<BR>"));
+											Console.WriteLine("{0}\t Can't download source: {1}.", GetTime(BeginTime), (DownloadEx.InnerException ?? DownloadEx).Message);
+											SendError(500, "Cannot download:<br>" + (DownloadEx.InnerException ?? DownloadEx).ToString().Replace("\n", "<BR>"));
 											return;
 										}
 									}
@@ -262,8 +262,8 @@ namespace WebOne
 										}
 										catch (Exception DlStreamEx)
 										{
-											Console.WriteLine("{0}\t Can't download source: {1}.", GetTime(BeginTime), DlStreamEx.Message);
-											SendError(500, "Source stream error:<br>" + DlStreamEx.ToString().Replace("\n", "<BR>"));
+											Console.WriteLine("{0}\t Can't download source: {1}.", GetTime(BeginTime), (DlStreamEx.InnerException ?? DlStreamEx).Message);
+											SendError(500, "Source stream error:<br>" + (DlStreamEx.InnerException ?? DlStreamEx).ToString().Replace("\n", "<BR>"));
 											return;
 										}
 									}
@@ -282,8 +282,8 @@ namespace WebOne
 										}
 										catch (Exception StreamEx)
 										{
-											Console.WriteLine("{0}\t Cannot open src file: {1}.", GetTime(BeginTime), StreamEx.Message);
-											SendError(500, "Cannot open source file:<br>" + StreamEx.ToString().Replace("\n", "<BR>"));
+											Console.WriteLine("{0}\t Cannot open src file: {1}.", GetTime(BeginTime), (StreamEx.InnerException ?? StreamEx).Message);
+											SendError(500, "Cannot open source file:<br>" + (StreamEx.InnerException ?? StreamEx).Message.ToString().Replace("\n", "<BR>"));
 											return;
 										}
 									}
@@ -322,6 +322,8 @@ namespace WebOne
 										#if DEBUG
 										Console.WriteLine("{0}\t Reading stdout...", GetTime(BeginTime));
 										#endif
+										new Task(() => { while (ConvStdin.CanRead) { } if(!ConvProc.HasExited) ConvProc.Kill(); }).Start();
+										new Task(() => { while (ConvProc.StandardInput.BaseStream.CanWrite) { } if(!ConvProc.HasExited) ConvProc.Kill(); }).Start();
 										SendStream(ConvProc.StandardOutput.BaseStream, DestMime, false);
 										ConvProc.WaitForExit();
 										ClientResponse.Close();
@@ -338,6 +340,8 @@ namespace WebOne
 											Console.WriteLine("{0}\t Writing stdin...", GetTime(BeginTime));
 											#endif
 											new Task(() => { ConvStdin.CopyTo(ConvProc.StandardInput.BaseStream); }).Start();
+											new Task(() => { while (ConvStdin.CanRead) { } if(!ConvProc.HasExited) ConvProc.Kill(); }).Start();
+											new Task(() => { while (ConvProc.StandardInput.BaseStream.CanWrite) { } if(!ConvProc.HasExited) ConvProc.Kill(); }).Start();
 										}
 										ConvProc.WaitForExit();
 
@@ -997,6 +1001,7 @@ namespace WebOne
 			}
 			catch
 			{
+				if(!ConfigFile.HideClientErrors)
 				Console.WriteLine("{0}\t<!Cannot return code {1}.", GetTime(BeginTime), Code);
 			}
 		}
