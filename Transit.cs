@@ -251,12 +251,20 @@ namespace WebOne
 											Console.WriteLine("{0}\t>Downloading source stream...", GetTime(BeginTime));
 											WebClient WC = new WebClient(); //not HttpClient because it's appear in .net 4.0
 											WC.Headers.Add("User-agent", "WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
-											Task<Stream> DownloadTask =  WC.OpenReadTaskAsync(SrcUrl);
-											ConvStdin = DownloadTask.Result;
-											DownloadTask.Wait();
+											Exception WCerr = null;
+
+											WC.OpenReadAsync(new Uri(SrcUrl)); //not OpenReadTaskAsync for compatibility with WinXP
+											WC.OpenReadCompleted += (object sender, OpenReadCompletedEventArgs e) =>
+											{
+												if (e.Error != null) { WCerr = e.Error; return; }
+												if(ConvStdin is MemoryStream) ConvStdin = e.Result;
+											};
+											while (ConvStdin is MemoryStream && WCerr == null) { }
+											if (WCerr != null) throw WCerr.InnerException;
+
 											Src = "CON:";
 											#if DEBUG
-											Console.WriteLine("{0}\t Stream okay: {1}", GetTime(BeginTime), WC.ResponseHeaders["Content-type"]);
+											Console.WriteLine("{0}\t Stream has go: {1}.", GetTime(BeginTime), WC.ResponseHeaders["Content-type"] ?? "no content type");
 											#endif
 
 										}
@@ -322,8 +330,8 @@ namespace WebOne
 										#if DEBUG
 										Console.WriteLine("{0}\t Reading stdout...", GetTime(BeginTime));
 										#endif
-										new Task(() => { while (ConvStdin.CanRead) { } if(!ConvProc.HasExited) ConvProc.Kill(); }).Start();
-										new Task(() => { while (ConvProc.StandardInput.BaseStream.CanWrite) { } if(!ConvProc.HasExited) ConvProc.Kill(); }).Start();
+										new Task(() => { while (ConvStdin.CanRead) { } if(!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine(); }).Start();
+										new Task(() => { while (ClientResponse.StatusCode != 500) { } if(!ConvProc.HasExited) ConvProc.Kill(); }).Start();
 										SendStream(ConvProc.StandardOutput.BaseStream, DestMime, false);
 										ConvProc.WaitForExit();
 										ClientResponse.Close();
@@ -340,8 +348,8 @@ namespace WebOne
 											Console.WriteLine("{0}\t Writing stdin...", GetTime(BeginTime));
 											#endif
 											new Task(() => { ConvStdin.CopyTo(ConvProc.StandardInput.BaseStream); }).Start();
-											new Task(() => { while (ConvStdin.CanRead) { } if(!ConvProc.HasExited) ConvProc.Kill(); }).Start();
-											new Task(() => { while (ConvProc.StandardInput.BaseStream.CanWrite) { } if(!ConvProc.HasExited) ConvProc.Kill(); }).Start();
+											new Task(() => { while (ConvStdin.CanRead) { } if(!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine(); }).Start();
+											new Task(() => { while (ClientResponse.StatusCode != 500) { } if(!ConvProc.HasExited) ConvProc.Kill(); }).Start();
 										}
 										ConvProc.WaitForExit();
 
