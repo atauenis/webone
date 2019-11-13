@@ -187,6 +187,8 @@ namespace WebOne
 									Args2 = Uri.UnescapeDataString(FindArg2.Groups[2].Value);
 
 								if (Src == "CON:") throw new ArgumentException("Bad source file name");
+								if (CheckString(SrcUrl, ConfigFile.ForceHttps))
+									SrcUrl = new UriBuilder(SrcUrl) { Scheme = "https" }.Uri.ToString();
 
 								//prepare temporary file names
 								int Rnd = new Random().Next();
@@ -1061,11 +1063,17 @@ namespace WebOne
 		/// Fill %masks% on an URI template
 		/// </summary>
 		/// <param name="MaskedURL">URI template</param>
-		/// <param name="URL">Previous URI (for "%URL%" mask and similar)</param>
+		/// <param name="PossibleURL">Previous URI (for "%URL%" mask and similar)</param>
 		/// <returns>Ready URL</returns>
-		private string ProcessUriMasks(string MaskedURL, string URL = "http://webone.github.io:80/index.htm")
+		private string ProcessUriMasks(string MaskedURL, string PossibleURL = "http://webone.github.io:80/index.htm")
 		{
 			string str = MaskedURL;
+			string URL = null;
+			if (CheckString(PossibleURL, ConfigFile.ForceHttps))
+				URL = new UriBuilder(PossibleURL) { Scheme = "https" }.Uri.ToString();
+			else
+				URL = PossibleURL;
+
 			str = str.Replace("%URL%", URL);
 			str = str.Replace("%Url%", Uri.EscapeDataString(URL));
 			str = str.Replace("%ProxyHost%", Environment.MachineName);
