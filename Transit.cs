@@ -246,6 +246,8 @@ namespace WebOne
 									else
 									{
 										//download source file to a Stream
+										//test: http://localhost/!convert/?url=http%3A%2F%2Fcommondatastorage.googleapis.com%2Fgtv-videos-bucket%2Fsample%2FBigBuckBunny.mp4&util=../avconv&arg=-vcodec%20wmv1%20-acodec%20wmav1%20-f%20asf&type=video/x-ms-asf
+										//or http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4 via proxy
 										try
 										{ 
 											Console.WriteLine("{0}\t>Downloading source stream...", GetTime(BeginTime));
@@ -257,14 +259,14 @@ namespace WebOne
 											WC.OpenReadCompleted += (object sender, OpenReadCompletedEventArgs e) =>
 											{
 												if (e.Error != null) { WCerr = e.Error; return; }
-												if(ConvStdin is MemoryStream) ConvStdin = e.Result;
+												if (ConvStdin is MemoryStream) ConvStdin = e.Result;
 											};
 											while (ConvStdin is MemoryStream && WCerr == null) { }
-											if (WCerr != null) throw WCerr.InnerException;
+											if (WCerr != null) throw WCerr.InnerException ?? WCerr;
 
 											Src = "CON:";
 											#if DEBUG
-											Console.WriteLine("{0}\t Stream has go: {1}.", GetTime(BeginTime), WC.ResponseHeaders["Content-type"] ?? "no content type");
+											Console.WriteLine("{0}\t Stream begin: {1} ({2}).", GetTime(BeginTime), WC.ResponseHeaders["Content-type"] ?? "no content type", WC.ResponseHeaders["Content-length"] ?? "endless");
 											#endif
 
 										}
