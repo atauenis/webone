@@ -210,7 +210,7 @@ namespace WebOne
 										SelfDownload = Cvt.Contains("%SRCURL%");
 
 										Converter = CvtName;
-										ConvCmdLine = Cvt.Substring(Cvt.IndexOf(" ") + 1)
+										ConvCmdLine = ProcessUriMasks(Cvt, SrcUrl != "" ? SrcUrl : "http://webone.github.io/index.htm").Substring(Cvt.IndexOf(" ") + 1)
 										.Replace("%SRC%", Src)
 										.Replace("%ARG1%", Args1)
 										.Replace("%DEST%", DestName)
@@ -505,22 +505,7 @@ namespace WebOne
 
 							if (ValidMask == "" || !Regex.Match(RequestURL.AbsoluteUri, ValidMask).Success)
 							{
-								string NewURL = Redirect.Replace("%URL%", RequestURL.AbsoluteUri).Replace("%UrlNoDomain%", RequestURL.AbsoluteUri.Substring(RequestURL.AbsoluteUri.IndexOf("/") + 2).Substring((RequestURL.AbsoluteUri.Substring(RequestURL.AbsoluteUri.IndexOf("/") + 2)).IndexOf("/") + 1));
-								//need to fix urlnodomain to extract using System.Uri instead of InStr/Mid$.
-
-								if (Redirect.Contains("%UrlNoPort%"))
-								{
-									
-									Uri NewUri = RequestURL;
-									var builder = new UriBuilder(NewUri);
-									builder.Port = -1;
-									NewUri = builder.Uri;
-									NewURL = NewUri.ToString();
-								}
-								/*else {
-									NewUri = new Uri(NewURL);
-									NewURL = NewUri.ToString();
-								}*/
+								string NewURL = ProcessUriMasks(Redirect, RequestURL.AbsoluteUri);
 								
 								ShouldRedirectInNETFW = ConfigFile.ToBoolean(InternalRedirect);
 
@@ -913,10 +898,8 @@ namespace WebOne
 
 					string Redirect = "http://" + Environment.MachineName + "/!convert/";
 					if (ConfigFile.FixableTypesActions[str].ContainsKey("Redirect")) Redirect = ConfigFile.FixableTypesActions[str]["Redirect"];
-					Redirect = Redirect.Replace("%URL%", RequestURL.AbsoluteUri);
-					Redirect = Redirect.Replace("%ProxyHost%", Environment.MachineName);
-					Redirect = Redirect.Replace("%ProxyPort%", ConfigFile.Port.ToString());
-
+					Redirect = ProcessUriMasks(Redirect, RequestURL.AbsoluteUri);
+					
 					string IfUrl = ".*";
 					if (ConfigFile.FixableTypesActions[str].ContainsKey("IfUrl")) IfUrl = ConfigFile.FixableTypesActions[str]["IfUrl"];
 
@@ -1072,5 +1055,55 @@ namespace WebOne
 				SendError(ErrNo, "Cannot retreive stream.<br>" + ex.ToString().Replace("\n", "<br>"));
 			}
 		}
+
+
+		/// <summary>
+		/// Fill %masks% on an URI template
+		/// </summary>
+		/// <param name="MaskedURL">URI template</param>
+		/// <param name="URL">Previous URI (for "%URL%" mask and similar)</param>
+		/// <returns>Ready URL</returns>
+		private string ProcessUriMasks(string MaskedURL, string URL = "http://webone.github.io:80/index.htm")
+		{
+			string str = MaskedURL;
+			str = str.Replace("%URL%", URL);
+			str = str.Replace("%Url%", Uri.EscapeDataString(URL));
+			str = str.Replace("%ProxyHost%", Environment.MachineName);
+			str = str.Replace("%ProxyPort%", ConfigFile.Port.ToString());
+			str = str.Replace("%Proxy%", Environment.MachineName + ":" + ConfigFile.Port.ToString());
+
+			UriBuilder builder = new UriBuilder(URL);
+
+			if (str.Contains("%UrlNoDomain%"))
+			{
+				builder.Host = "butaforia-" +  new Random().Next().ToString();
+				str = str.Replace("%UrlNoDomain%", builder.Uri.ToString().Replace(builder.Host,""));
+				builder = new UriBuilder(URL);
+			}
+
+			if (str.Contains("%UrlNoPort%"))
+			{
+				builder.Port = new Random().Next(1, 65535);
+				str = str.Replace("%UrlNoPort%", builder.Uri.ToString().Replace(":" + builder.Port.ToString(), ""));
+				builder = new UriBuilder(URL);
+			}
+
+			if (str.Contains("%UrlNoQuery%"))
+			{
+				builder.Query = "?noquery=" + new Random().Next().ToString();
+				str = str.Replace("%UrlNoPort%", builder.Uri.ToString().Replace(builder.Query, ""));
+				builder = new UriBuilder(URL);
+			}
+
+			if (str.Contains("%UrlHttps%"))
+			{
+				builder.Scheme = "https";
+				str = str.Replace("%UrlNoPort%", builder.Uri.ToString());
+				builder = new UriBuilder(URL);
+			}
+
+			return str;
+		}
+
 	}
 }
