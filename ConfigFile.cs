@@ -103,6 +103,11 @@ namespace WebOne
 		/// </summary>
 		public static string[] Converters = { "magick %SRC% %ARG1% %DEST% %ARG2%", "convert %SRC% %ARG1% %DEST% %ARG2%" };
 
+		/// <summary>
+		/// User-agent string of the Proxy
+		/// </summary>
+		public static string UserAgent = "%Original% WebOne/%WOVer%";
+
 		static ConfigFile()
 		{
 			//ConfigFileName = "webone.conf";
@@ -251,6 +256,9 @@ namespace WebOne
 								case "SecurityProtocols":
 									try { System.Net.ServicePointManager.SecurityProtocol = (System.Net.SecurityProtocolType)(int.Parse(ParamValue)); }
 									catch (NotSupportedException) { Console.WriteLine("Warning: Bad TLS version {1} ({0}), using {2} ({2:D}).", ParamValue, (System.Net.SecurityProtocolType)(int.Parse(ParamValue)), System.Net.ServicePointManager.SecurityProtocol); };
+									continue;
+								case "UserAgent":
+									UserAgent = ParamValue;
 									continue;
 								default:
 									Console.WriteLine("Warning: Unknown server option: " + ParamName);

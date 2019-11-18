@@ -235,7 +235,7 @@ namespace WebOne
 										try
 										{
 											Console.WriteLine("{0}\t>Downloading source...", GetTime(BeginTime));
-											new WebClient().DownloadFile(SrcUrl, TmpFile);
+											new WebClient() { Headers=new WebHeaderCollection() { "User-agent: " + GetUserAgent(ClientRequest.Headers["User-agent"]) } }.DownloadFile(SrcUrl, TmpFile);
 											Src = TmpFile;
 										}
 										catch (Exception DownloadEx)
@@ -254,7 +254,7 @@ namespace WebOne
 										{ 
 											Console.WriteLine("{0}\t>Downloading source stream...", GetTime(BeginTime));
 											WebClient WC = new WebClient(); //not HttpClient because it's appear in .net 4.0
-											WC.Headers.Add("User-agent", "WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
+											WC.Headers.Add("User-agent", GetUserAgent(ClientRequest.Headers["User-agent"]));
 											Exception WCerr = null;
 
 											WC.OpenReadAsync(new Uri(SrcUrl)); //not OpenReadTaskAsync for compatibility with WinXP

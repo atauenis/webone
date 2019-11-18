@@ -52,7 +52,7 @@ namespace WebOne
 				}
 
 				HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(Host);
-				string UA = Headers["User-Agent"] + " WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+				string UA = GetUserAgent(Headers["User-Agent"]);
 				string Accept = Headers["Accept"];
 				string Referer = Headers["Referer"];
 
@@ -112,7 +112,7 @@ namespace WebOne
 
 				HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(Host);
 
-				string UA = Headers["User-Agent"] + " WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+				string UA = GetUserAgent(Headers["User-Agent"]);
 				string Accept = Headers["Accept"];
 				string Referer = Headers["Referer"];
 				string ContentType = Headers["Content-Type"];// ?? "application/x-www-form-urlencoded";

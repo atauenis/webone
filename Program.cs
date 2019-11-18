@@ -86,5 +86,19 @@ namespace WebOne
 				return ms.ToArray();
 			}
 		}
+
+
+		/// <summary>
+		/// Get user-agent string for a request
+		/// </summary>
+		/// <param name="ClientUA">Client's user-agent</param>
+		/// <returns>Something like "Mozilla/3.04Gold (U; Windows NT 3.51) WebOne/1.0.0.0 (Unix)"</returns>
+		public static string GetUserAgent(string ClientUA = "")
+		{
+			return ConfigFile.UserAgent
+			.Replace("%Original%", ClientUA ?? "Mozilla/5.0 (Kundryuchy-Leshoz)")
+			.Replace("%WOVer%", Assembly.GetExecutingAssembly().GetName().Version.ToString())
+			.Replace("%WOSystem%", Environment.OSVersion.Platform.ToString());
+		}
 	}
 }
