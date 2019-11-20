@@ -88,7 +88,7 @@ namespace WebOne
 				bool IsLocalhost = false;
 				var LocalIPs = Dns.GetHostEntry(Environment.MachineName).AddressList;
 				foreach (IPAddress LocIP in LocalIPs) if (RequestURL.Host == LocIP.ToString()) IsLocalhost = true;
-				if (RequestURL.Host.ToLower() == "localhost" || RequestURL.Host.ToLower() == Environment.MachineName.ToLower() || RequestURL.Host == "127.0.0.1" || RequestURL.Host.ToLower() == "wpad" || RequestURL.Host == "")
+				if (RequestURL.Host.ToLower() == "localhost" || RequestURL.Host.ToLower() == Environment.MachineName.ToLower() || RequestURL.Host == "127.0.0.1" || RequestURL.Host.ToLower() == "wpad" || RequestURL.Host.ToLower() == ConfigFile.DefaultHostName.ToLower() || RequestURL.Host == "")
 					IsLocalhost = true;
 
 				if (IsLocalhost)
@@ -421,7 +421,7 @@ namespace WebOne
 								string PacString =
 								@"function FindProxyForURL(url, host) {" +
 								@"if (url.substring(0, 5) == ""http:"")" +
-								@"{ return ""PROXY "+Environment.MachineName+":"+ConfigFile.Port+@"""; }" +
+								@"{ return ""PROXY "+ ConfigFile.DefaultHostName + ":"+ConfigFile.Port+@"""; }" +
 								@"else { return ""DIRECT""; }"+
 								@"} /*WebOne PAC*/";
 								byte[] Buffer = Encoding.Default.GetBytes(PacString);
@@ -480,7 +480,8 @@ namespace WebOne
 				ClientRequest.HttpMethod != "POST" && 
 				ClientRequest.HttpMethod != "CONNECT" && 
 				!Program.CheckString(RequestURL.AbsoluteUri, ConfigFile.ForceHttps) && 
-				RequestURL.Host.ToLower() != Environment.MachineName.ToLower())
+				RequestURL.Host.ToLower() != Environment.MachineName.ToLower() &&
+				RequestURL.Host.ToLower() != ConfigFile.DefaultHostName.ToLower())
 				{
 					Console.WriteLine("{0}\t Carousel detected.", GetTime(BeginTime));
 					if (!LastURL.StartsWith("https") && !RequestURL.AbsoluteUri.StartsWith("https")) //if http is gone, try https
@@ -827,7 +828,7 @@ namespace WebOne
 		private string ProcessBody(string Body)
 		{
 			Body = Body.Replace("https", "http");
-			//if (LocalMode) Body = Body.Replace("http://", "http://" + Environment.MachineName + "/http://");//replace with real hostname
+			//if (LocalMode) Body = Body.Replace("http://", "http://" + ConfigFile.DefaultHostname + "/http://");//replace with real hostname
 			if (ConfigFile.OutputEncoding != null)
 			{
 				Body = Body.Replace("harset=\"utf-8\"", "harset=\"" + ConfigFile.OutputEncoding.WebName + "\"");
@@ -898,7 +899,7 @@ namespace WebOne
 				{
 					bool Need = true;
 
-					string Redirect = "http://" + Environment.MachineName + "/!convert/";
+					string Redirect = "http://" + ConfigFile.DefaultHostName + "/!convert/";
 					if (ConfigFile.FixableTypesActions[str].ContainsKey("Redirect")) Redirect = ConfigFile.FixableTypesActions[str]["Redirect"];
 					Redirect = ProcessUriMasks(Redirect, RequestURL.AbsoluteUri);
 					
@@ -1078,7 +1079,7 @@ namespace WebOne
 			str = str.Replace("%Url%", Uri.EscapeDataString(URL));
 			str = str.Replace("%ProxyHost%", Environment.MachineName);
 			str = str.Replace("%ProxyPort%", ConfigFile.Port.ToString());
-			str = str.Replace("%Proxy%", Environment.MachineName + ":" + ConfigFile.Port.ToString());
+			str = str.Replace("%Proxy%", ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString());
 
 			UriBuilder builder = new UriBuilder(URL);
 

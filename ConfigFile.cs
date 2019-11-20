@@ -108,6 +108,11 @@ namespace WebOne
 		/// </summary>
 		public static string UserAgent = "%Original% WebOne/%WOVer%";
 
+		/// <summary>
+		/// Proxy default host name (or IP)
+		/// </summary>
+		public static string DefaultHostName = "%HostName%";
+
 		static ConfigFile()
 		{
 			//ConfigFileName = "webone.conf";
@@ -238,7 +243,7 @@ namespace WebOne
 									else
 									{
 										try { OutputEncoding = Encoding.GetEncoding(ParamValue); }
-										catch (ArgumentException) { Console.WriteLine("Warning: Bad codepage {0}, using {1}. Get list of available encodings at http://{2}:{3}/!codepages/.", ParamValue, OutputEncoding.EncodingName, Environment.MachineName, Port); }
+										catch (ArgumentException) { Console.WriteLine("Warning: Bad codepage {0}, using {1}. Get list of available encodings at http://{2}:{3}/!codepages/.", ParamValue, OutputEncoding.EncodingName, ConfigFile.DefaultHostName, Port); }
 									}
 									continue;
 								case "Authenticate":
@@ -259,6 +264,9 @@ namespace WebOne
 									continue;
 								case "UserAgent":
 									UserAgent = ParamValue;
+									continue;
+								case "DefaultHostName":
+									DefaultHostName = ParamValue;
 									continue;
 								default:
 									Console.WriteLine("Warning: Unknown server option: " + ParamName);

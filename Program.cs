@@ -26,7 +26,10 @@ namespace WebOne
 #pragma warning disable CS1717 // Назначение выполнено для той же переменной - workaround to call ConfigFile constructor
 			if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Authenticate = ConfigFile.Authenticate; //else load config file (пусть прочухается static class)
 #pragma warning restore CS1717 // Назначение выполнено для той же переменной
-			Console.Title = "WebOne @ " + Environment.MachineName + ":" + Port;
+
+			ConfigFile.DefaultHostName = ConfigFile.DefaultHostName.Replace("%HostName%", Environment.MachineName);
+
+			Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + Port;
 
 			try
 			{
