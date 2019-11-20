@@ -1099,14 +1099,21 @@ namespace WebOne
 			if (str.Contains("%UrlNoQuery%"))
 			{
 				builder.Query = "?noquery=" + new Random().Next().ToString();
-				str = str.Replace("%UrlNoPort%", builder.Uri.ToString().Replace(builder.Query, ""));
+				str = str.Replace("%UrlNoQuery%", builder.Uri.ToString().Replace(builder.Query, ""));
 				builder = new UriBuilder(URL);
 			}
 
 			if (str.Contains("%UrlHttps%"))
 			{
 				builder.Scheme = "https";
-				str = str.Replace("%UrlNoPort%", builder.Uri.ToString());
+				str = str.Replace("%UrlHttps%", builder.Uri.ToString());
+				builder = new UriBuilder(URL);
+			}
+
+			if (str.Contains("%UrlHttp%"))
+			{
+				builder.Scheme = "http";
+				str = str.Replace("%UrlHttp%", builder.Uri.ToString());
 				builder = new UriBuilder(URL);
 			}
 
