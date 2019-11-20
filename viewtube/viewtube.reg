@@ -1,0 +1,12 @@
+REGEDIT4
+
+[HKEY_CLASSES_ROOT\viewtube]
+@="URL:viewtube Protocol"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\viewtube\shell]
+
+[HKEY_CLASSES_ROOT\viewtube\shell\open]
+
+[HKEY_CLASSES_ROOT\viewtube\shell\open\command]
+@="wscript \"C:\\viewtube.vbs\" \"%1\""
