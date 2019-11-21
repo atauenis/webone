@@ -573,7 +573,7 @@ namespace WebOne
 #if DEBUG
 					ResponseBody = "<html><body>Cannot load this page" + err + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + Program.GetInfoString() + "</body></html>";
 #else
-					ResponseBody = "<html><body><h1>Cannot load this page</h1><p><big>" + wex.Message + ".</big></p>Status: " + wex.Status + "<br>URL: " + RequestURL.AbsoluteUri + GetInfoString() + "</body></html>";
+					ResponseBody = "<html><title>WebOne: " + wex.Status + "</title><body><h1>Cannot load this page</h1><p><big>" + wex.Message + ".</big></p>Status: " + wex.Status + "<br>URL: " + RequestURL.AbsoluteUri + GetInfoString() + "</body></html>";
 #endif
 
 					//check if archived copy can be retreived instead
@@ -1088,7 +1088,7 @@ namespace WebOne
 			if (str.Contains("%UrlNoDomain%"))
 			{
 				builder.Host = "butaforia-" +  new Random().Next().ToString();
-				str = str.Replace("%UrlNoDomain%", builder.Uri.ToString().Replace(builder.Host,""));
+				str = str.Replace("%UrlNoDomain%", builder.Uri.ToString().Replace(builder.Host + ":" + builder.Port,"").Replace(builder.Scheme + "://",""));
 				builder = new UriBuilder(URL);
 			}
 
