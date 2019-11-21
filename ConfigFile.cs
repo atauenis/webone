@@ -111,7 +111,7 @@ namespace WebOne
 		/// <summary>
 		/// Proxy default host name (or IP)
 		/// </summary>
-		public static string DefaultHostName = "%HostName%";
+		public static string DefaultHostName = Environment.MachineName;
 
 		static ConfigFile()
 		{
