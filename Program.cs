@@ -27,8 +27,6 @@ namespace WebOne
 			if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Authenticate = ConfigFile.Authenticate; //else load config file (пусть прочухается static class)
 #pragma warning restore CS1717 // Назначение выполнено для той же переменной
 
-			ConfigFile.DefaultHostName = ConfigFile.DefaultHostName.Replace("%HostName%", Environment.MachineName);
-
 			Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + Port;
 
 			try

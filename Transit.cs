@@ -112,7 +112,7 @@ namespace WebOne
 
 								HelpString += "<h2>Aliases:</h2><ul>";
 								foreach (IPAddress LocIP in Dns.GetHostEntry(Environment.MachineName).AddressList)
-								{ HelpString += "<li>" + LocIP + ":" + ConfigFile.Port + "</li>"; }
+								{ HelpString += "<li>" + (LocIP.ToString() == ConfigFile.DefaultHostName ? "<b>" + LocIP.ToString() + "</b>" : LocIP.ToString()) + ":" + ConfigFile.Port + "</li>"; }
 								HelpString += "</ul>";
 								HelpString += "</ul>";
 
@@ -530,6 +530,7 @@ namespace WebOne
 						{
 							Console.WriteLine("{0}\t Cannot redirect! {1}", GetTime(BeginTime), rex.Message);
 							SendError(200, rex.ToString().Replace("\n", "\n<br>"));
+							return;
 						}
 					}
 				}
@@ -572,7 +573,7 @@ namespace WebOne
 #if DEBUG
 					ResponseBody = "<html><body>Cannot load this page" + err + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + Program.GetInfoString() + "</body></html>";
 #else
-					ResponseBody = "<html><body>Cannot load this page" + err + " (<i>" + wex.Message + "</i>)<br>URL: " + RequestURL.AbsoluteUri + Program.GetInfoString() + "</body></html>";
+					ResponseBody = "<html><body><h1>Cannot load this page</h1><p><big>" + wex.Message + ".</big></p>Status: " + wex.Status + "<br>URL: " + RequestURL.AbsoluteUri + GetInfoString() + "</body></html>";
 #endif
 
 					//check if archived copy can be retreived instead
@@ -605,6 +606,7 @@ namespace WebOne
 										ResponseBody = "<html><body><h1>Server not found</h2>But an <a href=" + ArchiveURL + ">archived copy</a> is available! Redirecting to it...</body></html>";
 										ClientResponse.AddHeader("Location", ArchiveURL);
 										SendError(302, ResponseBody);
+										return;
 									}
 									else
 									{
@@ -728,7 +730,7 @@ namespace WebOne
 			{
 				string time = GetTime(BeginTime);
 				Console.WriteLine("{0}\t A error has been catched: {1}\n{0}\t Please report to author.", time, E.ToString().Replace("\n", "\n{0}\t "));
-				SendError(500, "WTF?! " + E.ToString().Replace("\n", "\n<BR>"));
+				SendError(500, "An error occured: " + E.ToString().Replace("\n", "\n<BR>"));
 			}
 			#if DEBUG
 			Console.WriteLine("{0}\t End process.", GetTime(BeginTime));

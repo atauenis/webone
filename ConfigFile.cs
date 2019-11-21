@@ -266,7 +266,11 @@ namespace WebOne
 									UserAgent = ParamValue;
 									continue;
 								case "DefaultHostName":
-									DefaultHostName = ParamValue;
+									DefaultHostName = ParamValue.Replace("%HostName%", Environment.MachineName);
+									bool ValidHostName = (Environment.MachineName.ToLower() == DefaultHostName.ToLower());
+									if (!ValidHostName) foreach (System.Net.IPAddress LocIP in System.Net.Dns.GetHostEntry(Environment.MachineName).AddressList)
+									{ if (LocIP.ToString() == DefaultHostName) ValidHostName = true; }
+									if (!ValidHostName) Console.WriteLine("Warning: DefaultHostName setting is not applicable to this computer!");
 									continue;
 								default:
 									Console.WriteLine("Warning: Unknown server option: " + ParamName);
