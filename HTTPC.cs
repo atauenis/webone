@@ -19,8 +19,33 @@ namespace WebOne
 		//based on http://www.cyberforum.ru/post8143282.html
 
 		private const string UA_Mozilla = "Mozilla/5.0 (Windows NT 4.0; WOW64; rv:99.0) Gecko/20100101 Firefox/99.0";
-		private string[] HeaderBanList = { "Proxy-Connection", "User-Agent", "Host", "Accept", "Referer", "Connection", "Content-type", "Content-length", "If-Modified-Since", "Accept-Encoding", "Accept-Charset", "Date" };
+		private string[] HeaderBanList = { "Proxy-Connection", "User-Agent", "Host", "Accept", "Referer", "Connection", "Content-type", "Content-length", "If-Modified-Since", "Accept-Encoding", "Accept-Charset", "Date", "Range" };
 		HttpWebResponse webResponse = null;
+
+		/*
+		21:04:27.362    >POST http://web.archive.org/web/2006/http://r.office.microsoft.
+		com/r/hlidAwsDglx
+		21:04:27.362+10001      >Uploading 0K of text/xml...
+		21:04:27.362+100006      ============GURU MEDITATION:
+		System.ArgumentException: Заголовок "Range" необходимо изменить с помощью соотве
+		тствующего свойства или метода.
+		Имя параметра: name
+		   в System.Net.WebHeaderCollection.ThrowOnRestrictedHeader(String headerName)
+		   в System.Net.WebHeaderCollection.Add(String name, String value)
+		   в System.Net.HttpWebRequest.set_Headers(WebHeaderCollection value)
+		   в WebOne.HTTPC.POST(String Host, CookieContainer CC, Stream BodyStream, WebHe
+		aderCollection Headers, String Method, Boolean AllowAutoRedirect, DateTime Begin
+		Time)
+		   в WebOne.Transit.SendRequest(HTTPC https, String RequestMethod, WebHeaderColl
+		ection RequestHeaderCollection, Int32 Content_Length)
+		   в WebOne.Transit..ctor(HttpListenerRequest ClientRequest, HttpListenerRespons
+		e ClientResponse, DateTime BeginTime)
+		On URL 'http://web.archive.org/web/2006/http://r.office.microsoft.com/r/hlidAwsD
+		glx', Method 'POST'. Returning 500.============
+		21:04:27.362+400023     <Return code 500.
+		21:04:27.362+400023     <Done.
+		РАЗОБРАТЬСЯ!
+		*/
 
 		~HTTPC() {
 			if (webResponse != null) webResponse.Close();
@@ -55,6 +80,7 @@ namespace WebOne
 				string UA = GetUserAgent(Headers["User-Agent"]);
 				string Accept = Headers["Accept"];
 				string Referer = Headers["Referer"];
+				string Range = Headers["Range"];
 
 				foreach (string str in HeaderBanList) { Headers.Remove(str); }
 				webRequest.Headers = Headers;
@@ -62,6 +88,8 @@ namespace WebOne
 				webRequest.Accept = Accept ?? "*/*";
 				webRequest.UserAgent = UA ?? UA_Mozilla;
 				if(Referer != null) webRequest.Referer = Referer;
+//				if(Range != null) webRequest.ran
+//https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range rtfm
 				webRequest.Method = Method;
 				webRequest.AllowAutoRedirect = AllowAutoRedirect;
 				webRequest.CookieContainer = CC;
