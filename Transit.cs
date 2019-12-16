@@ -962,7 +962,11 @@ namespace WebOne
 			}
 			else
 			{
-				Console.WriteLine("{0}\t {1} {2}. Body {3}K of {4} [Binary].", GetTime(BeginTime), (int)StatusCode, StatusCode, response.ContentLength / 1024, ContentType);
+				if(response != null)
+					Console.WriteLine("{0}\t {1} {2}. Body {3}K of {4} [Binary].", GetTime(BeginTime), (int)StatusCode, StatusCode, response.ContentLength / 1024, ContentType);
+				else
+					Console.WriteLine("{0}\t {1} {2}. Body is {3} [Binary], incomplete.", GetTime(BeginTime), (int)StatusCode, StatusCode, ContentType);
+
 				TransitStream = ResponseStream;
 				this.ContentType = ContentType;
 			}

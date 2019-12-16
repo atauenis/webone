@@ -19,7 +19,7 @@ namespace WebOne
 		//based on http://www.cyberforum.ru/post8143282.html
 
 		private const string UA_Mozilla = "Mozilla/5.0 (Windows NT 4.0; WOW64; rv:99.0) Gecko/20100101 Firefox/99.0";
-		private string[] HeaderBanList = { "Proxy-Connection", "User-Agent", "Host", "Accept", "Referer", "Connection", "Content-type", "Content-length", "If-Modified-Since", "Accept-Encoding", "Accept-Charset", "Date" };
+		private string[] HeaderBanList = { "Proxy-Connection", "Accept", "Connection", "Content-Length", "Content-Type", "Expect", "Date", "Host", "If-Modified-Since", "Range", "Referer", "Transfer-Encoding", "User-Agent", "Accept-Encoding", "Accept-Charset" };
 		HttpWebResponse webResponse = null;
 
 		~HTTPC() {
@@ -52,16 +52,8 @@ namespace WebOne
 				}
 
 				HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(Host);
-				string UA = GetUserAgent(Headers["User-Agent"]);
-				string Accept = Headers["Accept"];
-				string Referer = Headers["Referer"];
+				AddHeaders(Headers, webRequest);
 
-				foreach (string str in HeaderBanList) { Headers.Remove(str); }
-				webRequest.Headers = Headers;
-
-				webRequest.Accept = Accept ?? "*/*";
-				webRequest.UserAgent = UA ?? UA_Mozilla;
-				if(Referer != null) webRequest.Referer = Referer;
 				webRequest.Method = Method;
 				webRequest.AllowAutoRedirect = AllowAutoRedirect;
 				webRequest.CookieContainer = CC;
@@ -83,6 +75,7 @@ namespace WebOne
 			}*/
 
 		}
+
 
 		/// <summary>
 		/// Perform a POST-like request (content upload)
@@ -111,26 +104,13 @@ namespace WebOne
 				}
 
 				HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(Host);
+				AddHeaders(Headers, webRequest);
 
-				string UA = GetUserAgent(Headers["User-Agent"]);
-				string Accept = Headers["Accept"];
-				string Referer = Headers["Referer"];
-				string ContentType = Headers["Content-Type"];// ?? "application/x-www-form-urlencoded";
-				long ContentLength = long.Parse(Headers["Content-Length"] ?? "0");
-				
-				foreach (string str in HeaderBanList) { Headers.Remove(str); }
-				webRequest.Headers = Headers;
-
-				webRequest.Accept = Accept ?? "*/*";
-				webRequest.UserAgent = UA ?? UA_Mozilla;
-				if (Referer != null) webRequest.Referer = Referer;
 				webRequest.Method = Method;
 				webRequest.AllowAutoRedirect = AllowAutoRedirect;
 				webRequest.CookieContainer = CC;
 				webRequest.ProtocolVersion = HttpVersion.Version11;
 				webRequest.KeepAlive = true;
-				webRequest.ContentType = ContentType;
-				webRequest.ContentLength = ContentLength;
 				webRequest.ServicePoint.Expect100Continue = false;
 				/*try
 				{
@@ -179,6 +159,65 @@ namespace WebOne
 			return true;
 		}
 
+
+		/// <summary>
+		/// Readd non-easy headers
+		/// </summary>
+		/// <param name="Headers">Raw request header collection</param>
+		/// <param name="HWR">HttpWebRequest object</param>
+		void AddHeaders(WebHeaderCollection Headers, HttpWebRequest HWR)
+		{
+			//see https://docs.microsoft.com/en-us/dotnet/api/system.net.httpwebrequest.headers?view=netframework-4.6#remarks
+			string UA = GetUserAgent(Headers["User-Agent"]);
+			string Referer = Headers["Referer"];
+			string Accept = Headers["Accept"];
+			string ContentLength = Headers["Content-Length"];
+			string ContentType = Headers["Content-Type"];
+			//string Expect = Headers["Expect"];
+			//string Date = Headers["Date"];
+			//string IfModifiedSince = Headers["If-Modified-Since"];
+			string Range = Headers["Range"];
+			
+			foreach (string str in HeaderBanList) { Headers.Remove(str); }
+			HWR.Headers = Headers;
+
+			HWR.UserAgent = UA ?? UA_Mozilla;
+			if (Referer != null) HWR.Referer = Referer;
+			HWR.Accept = Accept ?? "*/*";
+			if (ContentLength != null) HWR.ContentLength = long.Parse(ContentLength);
+			if (ContentType != null) HWR.ContentType = ContentType;
+			//todo: add Expect, Date, IfModifiedSince
+			if (Range != null) AddRangeHeader(Range, HWR);
+		}
+
+		/// <summary>
+		/// Make Range header for MakeHeaders()
+		/// </summary>
+		/// <param name="RangeHeader">Range: header</param>
+		/// <param name="HWR">HttpWebRequest object</param>
+		private void AddRangeHeader(string RangeHeader, HttpWebRequest HWR)
+		{
+			//see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range
+			string Unit = RangeHeader.Substring(0, RangeHeader.IndexOf("="));
+			string[] Ranges = RangeHeader.Substring(RangeHeader.IndexOf("=") + 1).Split(',');
+			foreach (string RangeString in Ranges)
+			{
+				string[] FromTo = RangeString.Replace(" ", "").Split('-');
+				if (FromTo.Length != 2) return;
+				if (FromTo[0] == "") // bytes=-99
+				{
+					HWR.AddRange(Unit, 0 - int.Parse(FromTo[1]));
+					return;
+				}
+				if (FromTo[1] == "") // bytes=99-
+				{
+					HWR.AddRange(Unit, int.Parse(FromTo[0]));
+					return;
+				}
+				// bytes=100-200
+				HWR.AddRange(Unit, int.Parse(FromTo[0]), int.Parse(FromTo[1]));
+			}
+		}
 	}
 
 	public class HttpResponse
