@@ -99,352 +99,364 @@ namespace WebOne
 
 					if (RequestURL.PathAndQuery.StartsWith("/!") || PAC)
 					{
-						//internal URLs
-						Console.WriteLine("{0}\t Internal: {1} ", GetTime(BeginTime), RequestURL.PathAndQuery);
-						switch (RequestURL.AbsolutePath.ToLower())
-						{
-							case "/!":
-							case "/!/":
-								string HelpString = "This is <b>" + Environment.MachineName + ":" + ConfigFile.Port + "</b>.<br>";
-								HelpString +="Used memory: <b>" + (double)Environment.WorkingSet/1024/1024 + "</b> MB.<br>";
-								HelpString += "Pending requests: <b>" + (Program.Load - 1) + "</b>.<br>";
-								HelpString += "Available security: <b>" + ServicePointManager.SecurityProtocol + "</b> (" + (int)ServicePointManager.SecurityProtocol + ").<br>";
+						try
+						{ 
+							//internal URLs
+							Console.WriteLine("{0}\t Internal: {1} ", GetTime(BeginTime), RequestURL.PathAndQuery);
+							switch (RequestURL.AbsolutePath.ToLower())
+							{
+								case "/!":
+								case "/!/":
+									string HelpString = "This is <b>" + Environment.MachineName + ":" + ConfigFile.Port + "</b>.<br>";
+									HelpString +="Used memory: <b>" + (double)Environment.WorkingSet/1024/1024 + "</b> MB.<br>";
+									HelpString += "Pending requests: <b>" + (Program.Load - 1) + "</b>.<br>";
+									HelpString += "Available security: <b>" + ServicePointManager.SecurityProtocol + "</b> (" + (int)ServicePointManager.SecurityProtocol + ").<br>";
 
-								HelpString += "<h2>Aliases:</h2><ul>";
-								foreach (IPAddress LocIP in Dns.GetHostEntry(Environment.MachineName).AddressList)
-								{ HelpString += "<li>" + (LocIP.ToString() == ConfigFile.DefaultHostName ? "<b>" + LocIP.ToString() + "</b>" : LocIP.ToString()) + ":" + ConfigFile.Port + "</li>"; }
-								HelpString += "</ul>";
-								HelpString += "</ul>";
+									HelpString += "<h2>Aliases:</h2><ul>";
+									foreach (IPAddress LocIP in Dns.GetHostEntry(Environment.MachineName).AddressList)
+									{ HelpString += "<li>" + (LocIP.ToString() == ConfigFile.DefaultHostName ? "<b>" + LocIP.ToString() + "</b>" : LocIP.ToString()) + ":" + ConfigFile.Port + "</li>"; }
+									HelpString += "</ul>";
+									HelpString += "</ul>";
 
-								HelpString += "<p>Client IP: <b>" + ClientRequest.RemoteEndPoint + "</b>.</p>";
+									HelpString += "<p>Client IP: <b>" + ClientRequest.RemoteEndPoint + "</b>.</p>";
 
-								HelpString += "<h2>Internal URLs:</h2><ul>" +
-											  "<li><a href='/!codepages/'>/!codepages/</a> - list of available encodings for OutputEncoding setting</li>" +
-											  "<li><a href='/!img-test/'>/!img-test/</a> - test if ImageMagick is working</li>" +
-											  "<li><a href='/!convert/'>/!convert/</a> - run a file format converter (<a href='/!convert/?src=logo.webp&dest=gif&type=image/gif'>demo</a>)</li>" +
-											  "<li><a href='/!file/'>/!file/</a> - get a file from WebOne working directory (<a href='/!file/?name=webone.conf&type=text/plain'>demo</a>)</li>" +
-											  "<li><a href='/!clear/'>/!clear/</a> - remove temporary files in WebOne working directory</li>"+
-											  "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>"+
-								              "</ul>";
+									HelpString += "<h2>Internal URLs:</h2><ul>" +
+												  "<li><a href='/!codepages/'>/!codepages/</a> - list of available encodings for OutputEncoding setting</li>" +
+												  "<li><a href='/!img-test/'>/!img-test/</a> - test if ImageMagick is working</li>" +
+												  "<li><a href='/!convert/'>/!convert/</a> - run a file format converter (<a href='/!convert/?src=logo.webp&dest=gif&type=image/gif'>demo</a>)</li>" +
+												  "<li><a href='/!file/'>/!file/</a> - get a file from WebOne working directory (<a href='/!file/?name=webone.conf&type=text/plain'>demo</a>)</li>" +
+												  "<li><a href='/!clear/'>/!clear/</a> - remove temporary files in WebOne working directory</li>"+
+												  "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>"+
+												  "</ul>";
 
-								HelpString += "<h2>Headers sent by browser</h2><ul>";
-								HelpString += "<li><b>" + ClientRequest.HttpMethod + " " + ClientRequest.RawUrl + " HTTP/" + ClientRequest.ProtocolVersion + "</b></li>";
-								foreach (string hdrn in ClientRequest.Headers.Keys)
-								{
-									HelpString += "<li>" + hdrn + ": " + ClientRequest.Headers[hdrn] + "</li>";
-								}
-								HelpString += "</ul>";
-								SendError(200, HelpString);
-								return;
-							case "/!codepages/":
-								string codepages = "The following code pages are available: <br>\n" +
-												   "<table><tr><td><b>Name</b></td><td><b>#</b></td><td><b>Description</b></td></tr>\n";
-								codepages += "<tr><td><b>AsIs</b></td><td>0</td><td>Leave page's code page as is</td></tr>\n";
-								foreach (EncodingInfo cp in Encoding.GetEncodings())
-								{
-									if (Encoding.Default.EncodingName.Contains(" ") && cp.DisplayName.Contains(Encoding.Default.EncodingName.Substring(0, Encoding.Default.EncodingName.IndexOf(" "))))
-										codepages += "<tr><td><b><u>" + cp.Name + "</u></b></td><td><u>" + cp.CodePage + "</u></td><td><u>" + cp.DisplayName + (cp.CodePage == Encoding.Default.CodePage ? "</u> (<i>system default</i>)" : "</u>") + "</td></tr>\n";
-									else
-										codepages += "<tr><td><b>" + cp.Name + "</b></td><td>" + cp.CodePage + "</td><td>" + cp.DisplayName + "</td></tr>\n";
-								}
-								codepages += "</table><br>Use any of these. Underlined are for your locale.";
-								SendError(200, codepages);
-								break;
-							case "/!img-test/":
-								SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
-								break;
-							case "/!convert/":
-								string SrcUrl = "", Src = "", Dest = "xbm", DestMime = "image/x-xbitmap", Converter = "convert", Args1 = "", Args2 = "";
+									HelpString += "<h2>Headers sent by browser</h2><ul>";
+									HelpString += "<li><b>" + ClientRequest.HttpMethod + " " + ClientRequest.RawUrl + " HTTP/" + ClientRequest.ProtocolVersion + "</b></li>";
+									foreach (string hdrn in ClientRequest.Headers.Keys)
+									{
+										HelpString += "<li>" + hdrn + ": " + ClientRequest.Headers[hdrn] + "</li>";
+									}
+									HelpString += "</ul>";
+									SendError(200, HelpString);
+									return;
+								case "/!codepages/":
+									string codepages = "The following code pages are available: <br>\n" +
+													   "<table><tr><td><b>Name</b></td><td><b>#</b></td><td><b>Description</b></td></tr>\n";
+									codepages += "<tr><td><b>AsIs</b></td><td>0</td><td>Leave page's code page as is</td></tr>\n";
+									foreach (EncodingInfo cp in Encoding.GetEncodings())
+									{
+										if (Encoding.Default.EncodingName.Contains(" ") && cp.DisplayName.Contains(Encoding.Default.EncodingName.Substring(0, Encoding.Default.EncodingName.IndexOf(" "))))
+											codepages += "<tr><td><b><u>" + cp.Name + "</u></b></td><td><u>" + cp.CodePage + "</u></td><td><u>" + cp.DisplayName + (cp.CodePage == Encoding.Default.CodePage ? "</u> (<i>system default</i>)" : "</u>") + "</td></tr>\n";
+										else
+											codepages += "<tr><td><b>" + cp.Name + "</b></td><td>" + cp.CodePage + "</td><td>" + cp.DisplayName + "</td></tr>\n";
+									}
+									codepages += "</table><br>Use any of these. Underlined are for your locale.";
+									SendError(200, codepages);
+									break;
+								case "/!img-test/":
+									SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
+									break;
+								case "/!convert/":
+									string SrcUrl = "", Src = "", Dest = "xbm", DestMime = "image/x-xbitmap", Converter = "convert", Args1 = "", Args2 = "";
 
-								//parse URL
-								Match FindSrc = Regex.Match(RequestURL.Query, @"(src)=([^&]+)");
-								Match FindSrcUrl = Regex.Match(RequestURL.Query, @"(url)=([^&]+)");
-								Match FindDest = Regex.Match(RequestURL.Query, @"(dest)=([^&]+)");
-								Match FindDestMime = Regex.Match(RequestURL.Query, @"(type)=([^&]+)");
-								Match FindConverter = Regex.Match(RequestURL.Query, @"(util)=([^&]+)");
-								Match FindArg1 = Regex.Match(RequestURL.Query, @"(arg)=([^&]+)");
-								Match FindArg2 = Regex.Match(RequestURL.Query, @"(arg2)=([^&]+)");
+									//parse URL
+									Match FindSrc = Regex.Match(RequestURL.Query, @"(src)=([^&]+)");
+									Match FindSrcUrl = Regex.Match(RequestURL.Query, @"(url)=([^&]+)");
+									Match FindDest = Regex.Match(RequestURL.Query, @"(dest)=([^&]+)");
+									Match FindDestMime = Regex.Match(RequestURL.Query, @"(type)=([^&]+)");
+									Match FindConverter = Regex.Match(RequestURL.Query, @"(util)=([^&]+)");
+									Match FindArg1 = Regex.Match(RequestURL.Query, @"(arg)=([^&]+)");
+									Match FindArg2 = Regex.Match(RequestURL.Query, @"(arg2)=([^&]+)");
 
-								if (FindSrc.Success)
-									Src = Uri.UnescapeDataString(FindSrc.Groups[2].Value);
+									if (FindSrc.Success)
+										Src = Uri.UnescapeDataString(FindSrc.Groups[2].Value);
 
-								if (FindSrcUrl.Success)
-									SrcUrl = Uri.UnescapeDataString(FindSrcUrl.Groups[2].Value);
+									if (FindSrcUrl.Success)
+										SrcUrl = Uri.UnescapeDataString(FindSrcUrl.Groups[2].Value);
 
-								if (FindDest.Success)
-									Dest = Uri.UnescapeDataString(FindDest.Groups[2].Value);
+									if (FindDest.Success)
+										Dest = Uri.UnescapeDataString(FindDest.Groups[2].Value);
 
-								if (FindDestMime.Success)
-									DestMime = Uri.UnescapeDataString(FindDestMime.Groups[2].Value);
+									if (FindDestMime.Success)
+										DestMime = Uri.UnescapeDataString(FindDestMime.Groups[2].Value);
 									
-								if (FindConverter.Success)
-									Converter = Uri.UnescapeDataString(FindConverter.Groups[2].Value);
+									if (FindConverter.Success)
+										Converter = Uri.UnescapeDataString(FindConverter.Groups[2].Value);
 
-								if (FindArg1.Success)
-									Args1 = Uri.UnescapeDataString(FindArg1.Groups[2].Value);
+									if (FindArg1.Success)
+										Args1 = Uri.UnescapeDataString(FindArg1.Groups[2].Value);
 
-								if (FindArg2.Success)
-									Args2 = Uri.UnescapeDataString(FindArg2.Groups[2].Value);
+									if (FindArg2.Success)
+										Args2 = Uri.UnescapeDataString(FindArg2.Groups[2].Value);
 
-								if (Src == "CON:") throw new ArgumentException("Bad source file name");
-								if (CheckString(SrcUrl, ConfigFile.ForceHttps))
-									SrcUrl = new UriBuilder(SrcUrl) { Scheme = "https" }.Uri.ToString();
+									if (Src == "CON:") throw new ArgumentException("Bad source file name");
+									if (CheckString(SrcUrl, ConfigFile.ForceHttps))
+										SrcUrl = new UriBuilder(SrcUrl) { Scheme = "https" }.Uri.ToString();
 
-								//prepare temporary file names
-								int Rnd = new Random().Next();
-								string DestName = "convert-" + Rnd + "." + Dest;
-								string TmpFile = "orig-" + Rnd + ".tmp"; //for downloaded original if any
-								if (FindSrcUrl.Success) Src = TmpFile;
+									//prepare temporary file names
+									int Rnd = new Random().Next();
+									string DestName = "convert-" + Rnd + "." + Dest;
+									string TmpFile = "orig-" + Rnd + ".tmp"; //for downloaded original if any
+									if (FindSrcUrl.Success) Src = TmpFile;
 
-								//prepare converter name
-								string ConvCmdLine = string.Format("{0} {1} {2} {3}", Src, Args1, DestName, Args2);
-								bool HasConverter = false, UseStdout = true, UseStdin = true, SelfDownload = false;
-								foreach (string Cvt in ConfigFile.Converters)
-								{
-									//todo: make parsing paying attention to quotes, not simply by space character
-									if (Cvt.IndexOf(" ") < 0) break;
-									string CvtName = Cvt.Substring(0, Cvt.IndexOf(" "));
-									if (CvtName == Converter)
+									//prepare converter name
+									string ConvCmdLine = string.Format("{0} {1} {2} {3}", Src, Args1, DestName, Args2);
+									bool HasConverter = false, UseStdout = true, UseStdin = true, SelfDownload = false;
+									foreach (string Cvt in ConfigFile.Converters)
 									{
-										HasConverter = true;
-										if (Cvt.Contains("%DEST%")) UseStdout = false;
-										if (Cvt.Contains("%SRC%")) UseStdin = false;
-										SelfDownload = Cvt.Contains("%SRCURL%");
-
-										Converter = CvtName;
-										ConvCmdLine = ProcessUriMasks(Cvt, SrcUrl != "" ? SrcUrl : "http://webone.github.io/index.htm").Substring(Cvt.IndexOf(" ") + 1)
-										.Replace("%SRC%", Src)
-										.Replace("%ARG1%", Args1)
-										.Replace("%DEST%", DestName)
-										.Replace("%ARG2%", Args2)
-										.Replace("%DESTEXT%", Dest)
-										.Replace("%SRCURL%", SrcUrl);
-									}
-								}
-								if (!HasConverter) throw new ArgumentException("Converter '" + Converter + "' is not allowed");
-
-								Stream ConvStdin = new MemoryStream();
-								MemoryStream ConvStdout = new MemoryStream();
-
-								//download source if need
-								if (SrcUrl != "" && !SelfDownload)
-								{
-									if (!UseStdin)
-									{
-										//download source to tmp file
-										try
+										//todo: make parsing paying attention to quotes, not simply by space character
+										if (Cvt.IndexOf(" ") < 0) break;
+										string CvtName = Cvt.Substring(0, Cvt.IndexOf(" "));
+										if (CvtName == Converter)
 										{
-											Console.WriteLine("{0}\t>Downloading source...", GetTime(BeginTime));
-											new WebClient() { Headers=new WebHeaderCollection() { "User-agent: " + GetUserAgent(ClientRequest.Headers["User-agent"]) } }.DownloadFile(SrcUrl, TmpFile);
-											Src = TmpFile;
-										}
-										catch (Exception DownloadEx)
-										{
-											Console.WriteLine("{0}\t Can't download source: {1}.", GetTime(BeginTime), (DownloadEx.InnerException ?? DownloadEx).Message);
-											SendError(500, "Cannot download:<br>" + (DownloadEx.InnerException ?? DownloadEx).ToString().Replace("\n", "<BR>"));
-											return;
+											HasConverter = true;
+											if (Cvt.Contains("%DEST%")) UseStdout = false;
+											if (Cvt.Contains("%SRC%")) UseStdin = false;
+											SelfDownload = Cvt.Contains("%SRCURL%");
+
+											Converter = CvtName;
+											ConvCmdLine = ProcessUriMasks(Cvt, SrcUrl != "" ? SrcUrl : "http://webone.github.io/index.htm").Substring(Cvt.IndexOf(" ") + 1)
+											.Replace("%SRC%", Src)
+											.Replace("%ARG1%", Args1)
+											.Replace("%DEST%", DestName)
+											.Replace("%ARG2%", Args2)
+											.Replace("%DESTEXT%", Dest)
+											.Replace("%SRCURL%", SrcUrl);
 										}
 									}
-									else
-									{
-										//download source file to a Stream
-										//test: http://localhost/!convert/?url=http%3A%2F%2Fcommondatastorage.googleapis.com%2Fgtv-videos-bucket%2Fsample%2FBigBuckBunny.mp4&util=../avconv&arg=-vcodec%20wmv1%20-acodec%20wmav1%20-f%20asf&type=video/x-ms-asf
-										//or http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4 via proxy
-										try
-										{ 
-											Console.WriteLine("{0}\t>Downloading source stream...", GetTime(BeginTime));
-											WebClient WC = new WebClient(); //not HttpClient because it's appear in .net 4.0
-											WC.Headers.Add("User-agent", GetUserAgent(ClientRequest.Headers["User-agent"]));
-											Exception WCerr = null;
+									if (!HasConverter) throw new ArgumentException("Converter '" + Converter + "' is not allowed");
 
-											WC.OpenReadAsync(new Uri(SrcUrl)); //not OpenReadTaskAsync for compatibility with WinXP
-											WC.OpenReadCompleted += (object sender, OpenReadCompletedEventArgs e) =>
+									Stream ConvStdin = new MemoryStream();
+									MemoryStream ConvStdout = new MemoryStream();
+
+									//download source if need
+									if (SrcUrl != "" && !SelfDownload)
+									{
+										if (!UseStdin)
+										{
+											//download source to tmp file
+											try
 											{
-												if (e.Error != null) { WCerr = e.Error; return; }
-												if (ConvStdin is MemoryStream) ConvStdin = e.Result;
-											};
-											while (ConvStdin is MemoryStream && WCerr == null) { }
-											if (WCerr != null) throw WCerr.InnerException ?? WCerr;
-
-											Src = "CON:";
-											#if DEBUG
-											Console.WriteLine("{0}\t Stream begin: {1} ({2}).", GetTime(BeginTime), WC.ResponseHeaders["Content-type"] ?? "no content type", WC.ResponseHeaders["Content-length"] ?? "endless");
-											#endif
-
+												Console.WriteLine("{0}\t>Downloading source...", GetTime(BeginTime));
+												new WebClient() { Headers=new WebHeaderCollection() { "User-agent: " + GetUserAgent(ClientRequest.Headers["User-agent"]) } }.DownloadFile(SrcUrl, TmpFile);
+												Src = TmpFile;
+											}
+											catch (Exception DownloadEx)
+											{
+												Console.WriteLine("{0}\t Can't download source: {1}.", GetTime(BeginTime), (DownloadEx.InnerException ?? DownloadEx).Message);
+												SendError(500, "Cannot download:<br>" + (DownloadEx.InnerException ?? DownloadEx).ToString().Replace("\n", "<BR>"));
+												return;
+											}
 										}
-										catch (Exception DlStreamEx)
+										else
 										{
-											Console.WriteLine("{0}\t Can't download source: {1}.", GetTime(BeginTime), (DlStreamEx.InnerException ?? DlStreamEx).Message);
-											SendError(500, "Source stream error:<br>" + (DlStreamEx.InnerException ?? DlStreamEx).ToString().Replace("\n", "<BR>"));
-											return;
+											//download source file to a Stream
+											//test: http://localhost/!convert/?url=http%3A%2F%2Fcommondatastorage.googleapis.com%2Fgtv-videos-bucket%2Fsample%2FBigBuckBunny.mp4&util=../avconv&arg=-vcodec%20wmv1%20-acodec%20wmav1%20-f%20asf&type=video/x-ms-asf
+											//or http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4 via proxy
+											try
+											{ 
+												Console.WriteLine("{0}\t>Downloading source stream...", GetTime(BeginTime));
+												WebClient WC = new WebClient(); //not HttpClient because it's appear in .net 4.0
+												WC.Headers.Add("User-agent", GetUserAgent(ClientRequest.Headers["User-agent"]));
+												Exception WCerr = null;
+
+												WC.OpenReadAsync(new Uri(SrcUrl)); //not OpenReadTaskAsync for compatibility with WinXP
+												WC.OpenReadCompleted += (object sender, OpenReadCompletedEventArgs e) =>
+												{
+													if (e.Error != null) { WCerr = e.Error; return; }
+													if (ConvStdin is MemoryStream) ConvStdin = e.Result;
+												};
+												while (ConvStdin is MemoryStream && WCerr == null) { }
+												if (WCerr != null) throw WCerr.InnerException ?? WCerr;
+
+												Src = "CON:";
+												#if DEBUG
+												Console.WriteLine("{0}\t Stream begin: {1} ({2}).", GetTime(BeginTime), WC.ResponseHeaders["Content-type"] ?? "no content type", WC.ResponseHeaders["Content-length"] ?? "endless");
+												#endif
+
+											}
+											catch (Exception DlStreamEx)
+											{
+												Console.WriteLine("{0}\t Can't download source: {1}.", GetTime(BeginTime), (DlStreamEx.InnerException ?? DlStreamEx).Message);
+												SendError(500, "Source stream error:<br>" + (DlStreamEx.InnerException ?? DlStreamEx).ToString().Replace("\n", "<BR>"));
+												return;
+											}
 										}
 									}
-								}
-								else if(!SelfDownload)
-								{
-									//open local
-									if(UseStdin)
+									else if(!SelfDownload)
 									{
-										//load source file to a FileStream
-										try
-										{
-											ConvStdin = new FileStream(Src, FileMode.Open, FileAccess.Read);
-											ConvStdin.Position = 0;
-											Src = "CON:";
-										}
-										catch (Exception StreamEx)
-										{
-											Console.WriteLine("{0}\t Cannot open src file: {1}.", GetTime(BeginTime), (StreamEx.InnerException ?? StreamEx).Message);
-											SendError(500, "Cannot open source file:<br>" + (StreamEx.InnerException ?? StreamEx).Message.ToString().Replace("\n", "<BR>"));
-											return;
-										}
-									}
-									//else it is already in ConvCmdLine
-								}
-
-								//run converter
-								ProcessStartInfo ConvProcInfo = null;
-								Process ConvProc = null;
-								if (Src != "")
-								try
-								{
-									if (!File.Exists(Src) && Src != "CON:" && !SelfDownload) throw new FileNotFoundException("Source file not found");
-
-									Console.WriteLine("{0}\t Converting: {1} {2}...", GetTime(BeginTime), Converter, ConvCmdLine);
-
-									ConvProcInfo = new ProcessStartInfo();
-									ConvProcInfo.FileName = Converter;
-									ConvProcInfo.Arguments = ConvCmdLine;
-									ConvProcInfo.StandardOutputEncoding = Encoding.GetEncoding("latin1");//important part; thx to https://stackoverflow.com/a/5446177/7600726
-									ConvProcInfo.RedirectStandardOutput = true;
-									ConvProcInfo.RedirectStandardInput = true;
-									ConvProcInfo.UseShellExecute = false;
-									ConvProc = Process.Start(ConvProcInfo);
-
-									if (UseStdout)
-									{
+										//open local
 										if(UseStdin)
-										{ 
-											#if DEBUG
-											Console.WriteLine("{0}\t Writing stdin...", GetTime(BeginTime));
-											#endif
-											new Task(() => { try { ConvStdin.CopyTo(ConvProc.StandardInput.BaseStream); } catch { } }).Start();
+										{
+											//load source file to a FileStream
+											try
+											{
+												ConvStdin = new FileStream(Src, FileMode.Open, FileAccess.Read);
+												ConvStdin.Position = 0;
+												Src = "CON:";
+											}
+											catch (Exception StreamEx)
+											{
+												Console.WriteLine("{0}\t Cannot open src file: {1}.", GetTime(BeginTime), (StreamEx.InnerException ?? StreamEx).Message);
+												SendError(500, "Cannot open source file:<br>" + (StreamEx.InnerException ?? StreamEx).Message.ToString().Replace("\n", "<BR>"));
+												return;
+											}
 										}
-
-										#if DEBUG
-										Console.WriteLine("{0}\t Reading stdout...", GetTime(BeginTime));
-										#endif
-										new Task(() => { while (ConvStdin.CanRead) { } if(!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine(); }).Start();
-										new Task(() => { while (ClientResponse.StatusCode != 500) { } if(!ConvProc.HasExited) ConvProc.Kill(); }).Start();
-										SendStream(ConvProc.StandardOutput.BaseStream, DestMime, false);
-										ConvProc.WaitForExit();
-										ClientResponse.Close();
-
-										if (SrcUrl != "") File.Delete(TmpFile);
-										ConvStdin.Close();
-										return;
+										//else it is already in ConvCmdLine
 									}
-									else
+
+									//run converter
+									ProcessStartInfo ConvProcInfo = null;
+									Process ConvProc = null;
+									if (Src != "")
+									try
 									{
-										if(UseStdin)
-										{ 
+										if (!File.Exists(Src) && Src != "CON:" && !SelfDownload) throw new FileNotFoundException("Source file not found");
+
+										Console.WriteLine("{0}\t Converting: {1} {2}...", GetTime(BeginTime), Converter, ConvCmdLine);
+
+										ConvProcInfo = new ProcessStartInfo();
+										ConvProcInfo.FileName = Converter;
+										ConvProcInfo.Arguments = ConvCmdLine;
+										ConvProcInfo.StandardOutputEncoding = Encoding.GetEncoding("latin1");//important part; thx to https://stackoverflow.com/a/5446177/7600726
+										ConvProcInfo.RedirectStandardOutput = true;
+										ConvProcInfo.RedirectStandardInput = true;
+										ConvProcInfo.UseShellExecute = false;
+										ConvProc = Process.Start(ConvProcInfo);
+
+										if (UseStdout)
+										{
+											if(UseStdin)
+											{ 
+												#if DEBUG
+												Console.WriteLine("{0}\t Writing stdin...", GetTime(BeginTime));
+												#endif
+												new Task(() => { try { ConvStdin.CopyTo(ConvProc.StandardInput.BaseStream); } catch { } }).Start();
+											}
+
 											#if DEBUG
-											Console.WriteLine("{0}\t Writing stdin...", GetTime(BeginTime));
+											Console.WriteLine("{0}\t Reading stdout...", GetTime(BeginTime));
 											#endif
-											new Task(() => { ConvStdin.CopyTo(ConvProc.StandardInput.BaseStream); }).Start();
 											new Task(() => { while (ConvStdin.CanRead) { } if(!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine(); }).Start();
 											new Task(() => { while (ClientResponse.StatusCode != 500) { } if(!ConvProc.HasExited) ConvProc.Kill(); }).Start();
+											SendStream(ConvProc.StandardOutput.BaseStream, DestMime, false);
+											ConvProc.WaitForExit();
+											ClientResponse.Close();
+
+											if (SrcUrl != "") File.Delete(TmpFile);
+											ConvStdin.Close();
+											return;
 										}
-										ConvProc.WaitForExit();
+										else
+										{
+											if(UseStdin)
+											{ 
+												#if DEBUG
+												Console.WriteLine("{0}\t Writing stdin...", GetTime(BeginTime));
+												#endif
+												new Task(() => { ConvStdin.CopyTo(ConvProc.StandardInput.BaseStream); }).Start();
+												new Task(() => { while (ConvStdin.CanRead) { } if(!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine(); }).Start();
+												new Task(() => { while (ClientResponse.StatusCode != 500) { } if(!ConvProc.HasExited) ConvProc.Kill(); }).Start();
+											}
+											ConvProc.WaitForExit();
 
-										if (!File.Exists(DestName)) throw new Exception("Convertion failed - no result found");
-										SendFile(DestName, DestMime);
-										File.Delete(DestName);
+											if (!File.Exists(DestName)) throw new Exception("Convertion failed - no result found");
+											SendFile(DestName, DestMime);
+											File.Delete(DestName);
 
-										if (SrcUrl != "") File.Delete(TmpFile);
+											if (SrcUrl != "") File.Delete(TmpFile);
+											ConvStdin.Close();
+											return;
+										}
+									}
+									catch(Exception ConvEx) {
+										if (ConvProc != null && !ConvProc.HasExited) ConvProc.Kill();
+										Console.WriteLine("{0}\t Can't convert: {1}.", GetTime(BeginTime), ConvEx.Message);
+										SendError(500, "Cannot convert:<br>" + ConvEx.ToString().Replace("\n","<BR>"));
 										ConvStdin.Close();
 										return;
 									}
-								}
-								catch(Exception ConvEx) {
-									if (ConvProc != null && !ConvProc.HasExited) ConvProc.Kill();
-									Console.WriteLine("{0}\t Can't convert: {1}.", GetTime(BeginTime), ConvEx.Message);
-									SendError(500, "Cannot convert:<br>" + ConvEx.ToString().Replace("\n","<BR>"));
-									ConvStdin.Close();
-									return;
-								}
 
-								SendError(200, "Summon ImageMagick to convert a picture file.<br>"+
-								"Usage: /!convert/?src=filename.ext&dest=gif&type=image/gif<br>"+
-								"or: /!convert/?url=https://example.com/filename.ext&dest=gif&type=image/gif");
-								break;
-							case "/!file/":
-								string FileName, MimeType="text/plain";
-								Match FindName = Regex.Match(RequestURL.Query, @"(name)=([^&]+)");
-								Match FindMime = Regex.Match(RequestURL.Query, @"(type)=([^&]+)");
+									SendError(200, "Summon ImageMagick to convert a picture file.<br>"+
+									"Usage: /!convert/?src=filename.ext&dest=gif&type=image/gif<br>"+
+									"or: /!convert/?url=https://example.com/filename.ext&dest=gif&type=image/gif");
+									break;
+								case "/!file/":
+									string FileName, MimeType="text/plain";
+									Match FindName = Regex.Match(RequestURL.Query, @"(name)=([^&]+)");
+									Match FindMime = Regex.Match(RequestURL.Query, @"(type)=([^&]+)");
 
-								if (FindMime.Success)
-									MimeType = FindMime.Groups[2].Value;
+									if (FindMime.Success)
+										MimeType = FindMime.Groups[2].Value;
 
-								if (FindName.Success)
-								{
-									FileName = FindName.Groups[2].Value;
-
-									if (new FileInfo(FileName).DirectoryName != Directory.GetCurrentDirectory())
+									if (FindName.Success)
 									{
-										SendError(200, "Cannot access to files outside Proxy's directory");
+										FileName = FindName.Groups[2].Value;
+
+										if (new FileInfo(FileName).DirectoryName != Directory.GetCurrentDirectory())
+										{
+											SendError(200, "Cannot access to files outside Proxy's directory");
+											return;
+										}
+									
+										SendFile(FileName, MimeType);
 										return;
 									}
-									
-									SendFile(FileName, MimeType);
+									SendError(200, "Get a local file.<br>Usage: /!file/?name=filename.ext&type=text/plain");
 									return;
-								}
-								SendError(200, "Get a local file.<br>Usage: /!file/?name=filename.ext&type=text/plain");
-								return;
-							case "/!clear/":
-								int FilesDeleted = 0;
-								foreach (FileInfo file in (new DirectoryInfo(Directory.GetCurrentDirectory())).EnumerateFiles("*.tmp"))
-								{
-									try { file.Delete(); FilesDeleted++; }
-									catch { }
-								}
-								SendError(200, FilesDeleted + " temporary files have been deleted.");
-								return;
-							case "/!pac/":
-							case "/auto/":
-							case "/auto":
-							case "/auto.pac":
-							case "/wpad.dat":
-							case "/wpad.da":
-								//Proxy Auto-Config
-								Console.WriteLine("{0}\t<Return PAC/WPAD script.", GetTime(BeginTime));
-								string PacString =
-								@"function FindProxyForURL(url, host) {" +
-								@"if (url.substring(0, 5) == ""http:"")" +
-								@"{ return ""PROXY "+ ConfigFile.DefaultHostName + ":"+ConfigFile.Port+@"""; }" +
-								@"else { return ""DIRECT""; }"+
-								@"} /*WebOne PAC*/";
-								byte[] Buffer = Encoding.Default.GetBytes(PacString);
-								try
-								{
-									ClientResponse.StatusCode = 200;
-									ClientResponse.ProtocolVersion = new Version(1, 0);
+								case "/!clear/":
+									int FilesDeleted = 0;
+									foreach (FileInfo file in (new DirectoryInfo(Directory.GetCurrentDirectory())).EnumerateFiles("*.tmp"))
+									{
+										try { file.Delete(); FilesDeleted++; }
+										catch { }
+									}
+									SendError(200, FilesDeleted + " temporary files have been deleted.");
+									return;
+								case "/!pac/":
+								case "/auto/":
+								case "/auto":
+								case "/auto.pac":
+								case "/wpad.dat":
+								case "/wpad.da":
+									//Proxy Auto-Config
+									Console.WriteLine("{0}\t<Return PAC/WPAD script.", GetTime(BeginTime));
+									string PacString =
+									@"function FindProxyForURL(url, host) {" +
+									@"if (url.substring(0, 5) == ""http:"")" +
+									@"{ return ""PROXY "+ ConfigFile.DefaultHostName + ":"+ConfigFile.Port+@"""; }" +
+									@"else { return ""DIRECT""; }"+
+									@"} /*WebOne PAC*/";
+									byte[] Buffer = Encoding.Default.GetBytes(PacString);
+									try
+									{
+										ClientResponse.StatusCode = 200;
+										ClientResponse.ProtocolVersion = new Version(1, 0);
 
-									ClientResponse.ContentType = "application/x-ns-proxy-autoconfig";
-									ClientResponse.ContentLength64 = PacString	.Length;
-									ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
-									ClientResponse.OutputStream.Close();
-								}
-								catch
-								{
-									Console.WriteLine("{0}\t<!Cannot return PAC.", GetTime(BeginTime));
-								}
-								return;
-							default:
-								SendError(200, "Unknown internal URL: " + RequestURL.PathAndQuery);
-								break;
+										ClientResponse.ContentType = "application/x-ns-proxy-autoconfig";
+										ClientResponse.ContentLength64 = PacString	.Length;
+										ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
+										ClientResponse.OutputStream.Close();
+									}
+									catch
+									{
+										Console.WriteLine("{0}\t<!Cannot return PAC.", GetTime(BeginTime));
+									}
+									return;
+								default:
+									SendError(200, "Unknown internal URL: " + RequestURL.PathAndQuery);
+									break;
+							}
+							return;
 						}
-						return;
+						catch (Exception ex)
+						{
+							Console.WriteLine("{0}\t Internal server error: {1}", GetTime(BeginTime), ex.ToString());
+							#if DEBUG	
+							SendError(500, "Internal server error: <b>" + ex.Message + "</b><br>" + ex.GetType().ToString() + " " + ex.StackTrace.Replace("\n","<br>"));
+							#else
+							SendError(500, "WebOne cannot process the request because <b>" + ex.Message + "</b>.");
+							#endif
+						}
 					}
 					//local proxy mode: http://localhost/http://example.com/indexr.shtml
 					if (RequestURL.LocalPath.StartsWith("/http:") || RequestURL.AbsoluteUri.StartsWith("/https:"))

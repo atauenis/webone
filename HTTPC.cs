@@ -138,20 +138,7 @@ namespace WebOne
 					webResponse.Close();
 			}*/
 		}
-
-		/// <summary>
-		/// Get default headers
-		/// </summary>
-		/// <returns>Accept-Language: ru-RU,ru;
-		/// Accept-Encoding: gzip, deflate</returns>
-		public static WebHeaderCollection GetHeader()
-		{
-			WebHeaderCollection Headers = new WebHeaderCollection();
-			Headers = new WebHeaderCollection();
-			//Headers.Add("Accept-Language", "ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3");
-			Headers.Add("Accept-Encoding", "gzip, deflate");
-			return Headers;
-		}
+		
 
 		public static bool AcceptAllCertifications(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certification, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors)
 		{
@@ -173,9 +160,9 @@ namespace WebOne
 			string Accept = Headers["Accept"];
 			string ContentLength = Headers["Content-Length"];
 			string ContentType = Headers["Content-Type"];
-			//string Expect = Headers["Expect"];
-			//string Date = Headers["Date"];
-			//string IfModifiedSince = Headers["If-Modified-Since"];
+			string Expect = Headers["Expect"];
+			string Date = Headers["Date"];
+			string IfModifiedSince = Headers["If-Modified-Since"];
 			string Range = Headers["Range"];
 			
 			foreach (string str in HeaderBanList) { Headers.Remove(str); }
@@ -186,16 +173,18 @@ namespace WebOne
 			HWR.Accept = Accept ?? "*/*";
 			if (ContentLength != null) HWR.ContentLength = long.Parse(ContentLength);
 			if (ContentType != null) HWR.ContentType = ContentType;
-			//todo: add Expect, Date, IfModifiedSince
+			if (Expect != null) HWR.Expect = Expect;
+			if (Date != null) HWR.Date = DateTime.Parse(Date);
+			if (IfModifiedSince != null) HWR.IfModifiedSince = DateTime.Parse(IfModifiedSince);
 			if (Range != null) AddRangeHeader(Range, HWR);
 		}
 
 		/// <summary>
-		/// Make Range header for MakeHeaders()
+		/// Process Range header for AddHeaders()
 		/// </summary>
-		/// <param name="RangeHeader">Range: header</param>
+		/// <param name="RangeHeader">Range header string</param>
 		/// <param name="HWR">HttpWebRequest object</param>
-		private void AddRangeHeader(string RangeHeader, HttpWebRequest HWR)
+		void AddRangeHeader(string RangeHeader, HttpWebRequest HWR)
 		{
 			//see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range
 			string Unit = RangeHeader.Substring(0, RangeHeader.IndexOf("="));
@@ -220,6 +209,9 @@ namespace WebOne
 		}
 	}
 
+	/// <summary>
+	/// Decoded HTTP response
+	/// </summary>
 	public class HttpResponse
 	{
 		//probably need to be thrown away
@@ -266,35 +258,11 @@ namespace WebOne
 		public string StatusDescription { get; private set; }
 		//public bool SupportsHeaders { get; private set; }
 		public HttpWebResponse Instance { get; private set; }
-		private byte[] rawContent;
-		public byte[] RawContent
-		{
-			get 
-			{
-				if (rawContent == null) rawContent = ReadFully(Stream);
-				return rawContent;
-			}
-			set
-			{
-				rawContent = value;
-			} 
-		}
 		public Stream Stream { get; private set; }
 
 
 		private Stream GetStream() {
 			return Decompress(this.Instance);
-		}
-
-		private static byte[] ReadFully(Stream input)
-		{
-			//can be called only once per session because NetworkStreams cannot seek or re-read again
-			//Console.Write("Reading response...");
-			using (MemoryStream ms = new MemoryStream())
-			{
-				input.CopyTo(ms);
-				return ms.ToArray();
-			}
 		}
 
 		private Stream Decompress(HttpWebResponse webResponse)
