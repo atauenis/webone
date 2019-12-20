@@ -172,6 +172,8 @@ namespace WebOne
 
 									if (FindSrcUrl.Success)
 										SrcUrl = Uri.UnescapeDataString(FindSrcUrl.Groups[2].Value);
+										//BUG: sometimes URL gets unescaped when opening via WMP
+										//     (mostly via UI, and all load retries via FF plugin, strange but 1st plugin's attempt is valid)
 
 									if (FindDest.Success)
 										Dest = Uri.UnescapeDataString(FindDest.Groups[2].Value);
@@ -307,6 +309,7 @@ namespace WebOne
 									//run converter
 									ProcessStartInfo ConvProcInfo = null;
 									Process ConvProc = null;
+									float ConvCpuLoad = 0;
 									if (Src != "")
 									try
 									{
@@ -338,6 +341,7 @@ namespace WebOne
 											#endif
 											new Task(() => { while (ConvStdin.CanRead) { } if(!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine(); }).Start();
 											new Task(() => { while (ClientResponse.StatusCode != 500) { } if(!ConvProc.HasExited) ConvProc.Kill(); }).Start();
+											new Task(() => { while (!ConvProc.HasExited) { CheckIdle(ref ConvCpuLoad, ref ConvProc); }}).Start();
 											SendStream(ConvProc.StandardOutput.BaseStream, DestMime, false);
 											ConvProc.WaitForExit();
 											ClientResponse.Close();
@@ -355,8 +359,9 @@ namespace WebOne
 												#endif
 												new Task(() => { ConvStdin.CopyTo(ConvProc.StandardInput.BaseStream); }).Start();
 												new Task(() => { while (ConvStdin.CanRead) { } if(!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine(); }).Start();
-												new Task(() => { while (ClientResponse.StatusCode != 500) { } if(!ConvProc.HasExited) ConvProc.Kill(); }).Start();
 											}
+											new Task(() => { while (ClientResponse.StatusCode != 500) { } if (!ConvProc.HasExited) ConvProc.Kill(); }).Start();
+											new Task(() => { while (!ConvProc.HasExited) { CheckIdle(ref ConvCpuLoad, ref ConvProc); }}).Start();
 											ConvProc.WaitForExit();
 
 											if (!File.Exists(DestName)) throw new Exception("Convertion failed - no result found");
@@ -1137,6 +1142,67 @@ namespace WebOne
 			}
 
 			return str;
+		}
+
+		/// <summary>
+		/// Get CPU load for process
+		/// </summary>
+		/// <param name="process">The process object</param>
+		/// <returns>CPU usage in percents</returns>
+		private double GetUsage(Process process)
+		{
+			//thx to: https://stackoverflow.com/a/49064915/7600726
+			//see also https://www.mono-project.com/archived/mono_performance_counters/
+
+			if (process.HasExited) return double.MinValue;
+
+			// Preparing variable for application instance name
+			string name = "";
+
+			foreach (string instance in new PerformanceCounterCategory("Process").GetInstanceNames())
+			{
+				if (process.HasExited) return double.MinValue;
+				if (instance.StartsWith(process.ProcessName))
+				{
+					using (PerformanceCounter processId = new PerformanceCounter("Process", "ID Process", instance, true))
+					{
+						if (process.Id == (int)processId.RawValue)
+						{
+							name = instance;
+							break;
+						}
+					}
+				}
+			}
+
+			PerformanceCounter cpu = new PerformanceCounter("Process", "% Processor Time", name, true);
+
+			// Getting first initial values
+			cpu.NextValue();
+
+			// Creating delay to get correct values of CPU usage during next query
+			Thread.Sleep(500);
+
+			if (process.HasExited) return double.MinValue;
+			return Math.Round(cpu.NextValue() / Environment.ProcessorCount, 2);
+		}
+
+		/// <summary>
+		/// Check process for idle mode and kill it if yes
+		/// </summary>
+		/// <param name="AverageLoad">Average process load</param>
+		/// <param name="Proc">Which process</param>
+		private void CheckIdle(ref float AverageLoad, ref Process Proc)
+		{
+			Thread.Sleep(1000);
+			AverageLoad = (float)(AverageLoad + GetUsage(Proc)) / 2;
+
+			if (Math.Round(AverageLoad, 2) <= 0 && !Proc.HasExited)
+			{
+				//the process is counting crows. Fire!
+				Proc.Kill();
+				Console.WriteLine("\n{0}\t Idle process killed.", GetTime(BeginTime));
+			}
 		}
 
 	}
