@@ -27,6 +27,10 @@ namespace WebOne
 			if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Authenticate = ConfigFile.Authenticate; //else load config file (пусть прочухается static class)
 #pragma warning restore CS1717 // Назначение выполнено для той же переменной
 
+			ServicePointManager.DefaultConnectionLimit = int.MaxValue;
+			//https://qna.habr.com/q/696033
+			//https://github.com/atauenis/webone/issues/2
+
 			Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + Port;
 
 			try

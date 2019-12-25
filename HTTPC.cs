@@ -17,6 +17,7 @@ namespace WebOne
 	class HTTPC
 	{
 		//based on http://www.cyberforum.ru/post8143282.html
+		//todo: IMPORTANT: get off unneed types
 
 		private const string UA_Mozilla = "Mozilla/5.0 (Windows NT 4.0; WOW64; rv:99.0) Gecko/20100101 Firefox/99.0";
 		private string[] HeaderBanList = { "Proxy-Connection", "Accept", "Connection", "Content-Length", "Content-Type", "Expect", "Date", "Host", "If-Modified-Since", "Range", "Referer", "Transfer-Encoding", "User-Agent", "Accept-Encoding", "Accept-Charset" };
@@ -53,6 +54,7 @@ namespace WebOne
 
 				HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(Host);
 				AddHeaders(Headers, webRequest);
+				webRequest.ServicePoint.ConnectionLimit = int.MaxValue;
 
 				webRequest.Method = Method;
 				webRequest.AllowAutoRedirect = AllowAutoRedirect;
@@ -61,7 +63,7 @@ namespace WebOne
 				webRequest.KeepAlive = true;
 				webRequest.ServicePoint.Expect100Continue = false;
 
-				webResponse = (HttpWebResponse)webRequest.GetResponse();
+				webResponse = (HttpWebResponse)webRequest.GetResponse(); //todo: IMPORTANT. This must be disposeable!
 				return new HttpResponse(webResponse);
 			}
 			catch (Exception)
@@ -105,6 +107,7 @@ namespace WebOne
 
 				HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(Host);
 				AddHeaders(Headers, webRequest);
+				webRequest.ServicePoint.ConnectionLimit = int.MaxValue;
 
 				webRequest.Method = Method;
 				webRequest.AllowAutoRedirect = AllowAutoRedirect;
@@ -125,7 +128,7 @@ namespace WebOne
 					RequestStream.Close();
 				}
 
-				webResponse = (HttpWebResponse)webRequest.GetResponse();
+				webResponse = (HttpWebResponse)webRequest.GetResponse(); //todo: IMPORTANT. This must be disposeable!
 				return new HttpResponse(webResponse);
 			}
 			catch (Exception)
@@ -175,7 +178,8 @@ namespace WebOne
 			if (ContentType != null) HWR.ContentType = ContentType;
 			if (Expect != null) HWR.Expect = Expect;
 			if (Date != null) HWR.Date = DateTime.Parse(Date);
-			if (IfModifiedSince != null) HWR.IfModifiedSince = DateTime.Parse(IfModifiedSince);
+			DateTime IfModifiedSinceDT;
+			if (IfModifiedSince != null && DateTime.TryParse(IfModifiedSince, out IfModifiedSinceDT)) HWR.IfModifiedSince = IfModifiedSinceDT;
 			if (Range != null) AddRangeHeader(Range, HWR);
 		}
 
