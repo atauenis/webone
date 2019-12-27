@@ -11,10 +11,10 @@ using static WebOne.Program;
 
 namespace WebOne
 {
-/// <summary>
-/// Modern HTTP(S) client.
-/// </summary>
-	class HTTPC
+	/// <summary>
+	/// Modern HTTP(S) client.
+	/// </summary>
+	class HTTPC : IDisposable
 	{
 		//based on http://www.cyberforum.ru/post8143282.html
 		//todo: IMPORTANT: get off unneed types
@@ -22,10 +22,9 @@ namespace WebOne
 		private const string UA_Mozilla = "Mozilla/5.0 (Windows NT 4.0; WOW64; rv:99.0) Gecko/20100101 Firefox/99.0";
 		private string[] HeaderBanList = { "Proxy-Connection", "Accept", "Connection", "Content-Length", "Content-Type", "Expect", "Date", "Host", "If-Modified-Since", "Range", "Referer", "Transfer-Encoding", "User-Agent", "Accept-Encoding", "Accept-Charset" };
 		HttpWebResponse webResponse = null;
+		DateTime BeginTime = new DateTime(1970, 01, 01, 00, 00, 00);
 
-		~HTTPC() {
-			if (webResponse != null) webResponse.Close();
-		}
+		~HTTPC() { Dispose(); }
 
 		/// <summary>
 		/// Perform a GET-like request (content retrieve)
@@ -37,8 +36,9 @@ namespace WebOne
 		/// <param name="AllowAutoRedirect">Allow 302 redirection handling in .NET FW or not</param>
 		/// <param name="BeginTime">Initial time (for log)</param>
 		/// <returns>Server's response.</returns>
-		public HttpResponse GET(string Host, CookieContainer CC, WebHeaderCollection Headers, string Method, bool AllowAutoRedirect, DateTime BeginTime)
+		public HttpClientResponse GET(string Host, CookieContainer CC, WebHeaderCollection Headers, string Method, bool AllowAutoRedirect, DateTime BeginTime)
 		{
+			this.BeginTime = BeginTime;
 			try
 			{
 				foreach (string SslHost in ConfigFile.ForceHttps)
@@ -64,18 +64,12 @@ namespace WebOne
 				webRequest.ServicePoint.Expect100Continue = false;
 
 				webResponse = (HttpWebResponse)webRequest.GetResponse(); //todo: IMPORTANT. This must be disposeable!
-				return new HttpResponse(webResponse);
+				return new HttpClientResponse(webResponse, webRequest);
 			}
 			catch (Exception)
 			{
 				throw;
 			}
-			/*finally
-			{
-				if (webResponse != null)
-					webResponse.Close();
-			}*/
-
 		}
 
 
@@ -90,8 +84,9 @@ namespace WebOne
 		/// <param name="AllowAutoRedirect">Allow 302 redirection handling in .NET FW or not</param>
 		/// <param name="BeginTime">Initial time (for log)</param>
 		/// <returns></returns>
-		public HttpResponse POST(string Host, CookieContainer CC, Stream BodyStream, WebHeaderCollection Headers, string Method, bool AllowAutoRedirect, DateTime BeginTime)
+		public HttpClientResponse POST(string Host, CookieContainer CC, Stream BodyStream, WebHeaderCollection Headers, string Method, bool AllowAutoRedirect, DateTime BeginTime)
 		{
+			this.BeginTime = BeginTime;
 			try
 			{
 				foreach (string SslHost in ConfigFile.ForceHttps)
@@ -115,12 +110,6 @@ namespace WebOne
 				webRequest.ProtocolVersion = HttpVersion.Version11;
 				webRequest.KeepAlive = true;
 				webRequest.ServicePoint.Expect100Continue = false;
-				/*try
-				{
-					webRequest.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(AcceptAllCertifications);
-				}
-				catch (MissingMethodException) { }*/
-				webRequest.AllowAutoRedirect = Program.CheckString(Host, ConfigFile.InternalRedirectOn);
 
 				using (var RequestStream = new StreamWriter(webRequest.GetRequestStream()))
 				{
@@ -129,17 +118,12 @@ namespace WebOne
 				}
 
 				webResponse = (HttpWebResponse)webRequest.GetResponse(); //todo: IMPORTANT. This must be disposeable!
-				return new HttpResponse(webResponse);
+				return new HttpClientResponse(webResponse, webRequest);
 			}
 			catch (Exception)
 			{
 				throw;
 			}
-			/*finally
-			{
-				if (webResponse != null)
-					webResponse.Close();
-			}*/
 		}
 		
 
@@ -211,17 +195,29 @@ namespace WebOne
 				HWR.AddRange(Unit, int.Parse(FromTo[0]), int.Parse(FromTo[1]));
 			}
 		}
+
+		public void Dispose()
+		{
+			#if DEBUG
+				Console.WriteLine("{0}\t Destruct HTTPC.", GetTime(BeginTime));
+			#endif
+			if (webResponse != null) webResponse.Close();
+			if (webResponse != null) webResponse.Dispose();
+		}
 	}
 
 	/// <summary>
 	/// Decoded HTTP response
 	/// </summary>
-	public class HttpResponse
+	public class HttpClientResponse
 	{
 		//probably need to be thrown away
 		//except Decompress function
-		public HttpResponse(HttpWebResponse webResponse)
+		public HttpClientResponse(HttpWebResponse webResponse, HttpWebRequest webRequest)
 		{
+			this.HTTPwebRequest = webRequest;
+			this.HTTPwebResponse = webResponse;
+
 			this.CharacterSet = webResponse.CharacterSet;
 			this.ContentEncoding = webResponse.ContentEncoding;
 			this.ContentLength = webResponse.ContentLength;
@@ -246,6 +242,8 @@ namespace WebOne
 			this.Stream = GetStream();
 		}
 
+		public HttpWebRequest HTTPwebRequest { get; private set; }
+		public HttpWebResponse HTTPwebResponse { get; private set; }
 		public string CharacterSet { get; private set; }
 		public string ContentEncoding { get; private set; }
 		public long ContentLength { get; private set; }

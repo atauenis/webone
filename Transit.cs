@@ -30,7 +30,7 @@ namespace WebOne
 		static string LastContentType = "not-a-carousel";
 		bool ShouldRedirectInNETFW = false;
 
-		HttpResponse response;
+		HttpClientResponse response;
 		int ResponseCode = 502;
 		string ResponseBody = ":(";
 		Stream TransitStream = null;
@@ -559,188 +559,189 @@ namespace WebOne
 
 				//make reply
 				//SendError(200, "Okay, bro! Open " + RequestURL);
-				HTTPC https = new HTTPC();
-				bool StWrong = false; //break operation if something is wrong.
+				using (HTTPC https = new HTTPC()) { 
+					bool StWrong = false; //break operation if something is wrong.
 
-				if (RequestURL.AbsoluteUri.Contains("??")) { StWrong = true; SendError(400, "Too many questions."); }
-				if (RequestURL.AbsoluteUri.Length == 0) { StWrong = true; SendError(400, "Empty URL."); }
-				if (RequestURL.AbsoluteUri == "") return;
+					if (RequestURL.AbsoluteUri.Contains("??")) { StWrong = true; SendError(400, "Too many questions."); }
+					if (RequestURL.AbsoluteUri.Length == 0) { StWrong = true; SendError(400, "Empty URL."); }
+					if (RequestURL.AbsoluteUri == "") return;
 
-				try
-				{
-					int CL = 0;
-					if (ClientRequest.Headers["Content-Length"] != null) CL = Int32.Parse(ClientRequest.Headers["Content-Length"]);
+					try
+					{
+						int CL = 0;
+						if (ClientRequest.Headers["Content-Length"] != null) CL = Int32.Parse(ClientRequest.Headers["Content-Length"]);
 
-					//send HTTPS request to destination server
-					WebHeaderCollection whc = new WebHeaderCollection();
-					foreach(string h in ClientRequest.Headers.Keys) {
-						whc.Add(h, ClientRequest.Headers[h]);
+						//send HTTPS request to destination server
+						WebHeaderCollection whc = new WebHeaderCollection();
+						foreach(string h in ClientRequest.Headers.Keys) {
+							whc.Add(h, ClientRequest.Headers[h]);
+						}
+						SendRequest(https, ClientRequest.HttpMethod, whc, CL);
 					}
-					SendRequest(https, ClientRequest.HttpMethod, whc, CL);
-				}
-				catch (WebException wex)
-				{
-					if (wex.Response == null) ResponseCode = 502;
-					else ResponseCode = (int)(wex.Response as HttpWebResponse).StatusCode;
-					if (ResponseCode == 502) Console.WriteLine("{0}\t Cannot load this page: {1}.", GetTime(BeginTime), wex.Status);
-					else Console.WriteLine("{0}\t Web exception: {1} {2}.", GetTime(BeginTime), ResponseCode, (wex.Response as HttpWebResponse).StatusCode);
+					catch (WebException wex)
+					{
+						if (wex.Response == null) ResponseCode = 502;
+						else ResponseCode = (int)(wex.Response as HttpWebResponse).StatusCode;
+						if (ResponseCode == 502) Console.WriteLine("{0}\t Cannot load this page: {1}.", GetTime(BeginTime), wex.Status);
+						else Console.WriteLine("{0}\t Web exception: {1} {2}.", GetTime(BeginTime), ResponseCode, (wex.Response as HttpWebResponse).StatusCode);
 
-					ContentType = "text/html";
-					string err = ": " + wex.Status.ToString();
-#if DEBUG
-					ResponseBody = "<html><body>Cannot load this page" + err + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + Program.GetInfoString() + "</body></html>";
-#else
-					ResponseBody = "<html><title>WebOne: " + wex.Status + "</title><body><h1>Cannot load this page</h1><p><big>" + wex.Message + ".</big></p>Status: " + wex.Status + "<br>URL: " + RequestURL.AbsoluteUri + GetInfoString() + "</body></html>";
-#endif
+						ContentType = "text/html";
+						string err = ": " + wex.Status.ToString();
+	#if DEBUG
+						ResponseBody = "<html><body>Cannot load this page" + err + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + Program.GetInfoString() + "</body></html>";
+	#else
+						ResponseBody = "<html><title>WebOne: " + wex.Status + "</title><body><h1>Cannot load this page</h1><p><big>" + wex.Message + ".</big></p>Status: " + wex.Status + "<br>URL: " + RequestURL.AbsoluteUri + GetInfoString() + "</body></html>";
+	#endif
 
-					//check if archived copy can be retreived instead
-					bool Archived = false;
-					if (ConfigFile.SearchInArchive)
-						if ((wex.Status == WebExceptionStatus.NameResolutionFailure) ||
-							(wex.Response != null && (wex.Response as HttpWebResponse).StatusCode == HttpStatusCode.NotFound))
-						{
-							try
+						//check if archived copy can be retreived instead
+						bool Archived = false;
+						if (ConfigFile.SearchInArchive)
+							if ((wex.Status == WebExceptionStatus.NameResolutionFailure) ||
+								(wex.Response != null && (wex.Response as HttpWebResponse).StatusCode == HttpStatusCode.NotFound))
 							{
-								Console.WriteLine("{0}\t Look in Archive.org...", GetTime(BeginTime));
-								HttpWebRequest ArchiveRequest = (HttpWebRequest)WebRequest.Create("https://archive.org/wayback/available?url=" + RequestURL.AbsoluteUri);
-								ArchiveRequest.UserAgent = "WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-								ArchiveRequest.Method = "GET";
-								string ArchiveResponse = "";
-								MemoryStream ms = new MemoryStream();
-								ArchiveRequest.GetResponse().GetResponseStream().CopyTo(ms);
-								ArchiveResponse = Encoding.UTF8.GetString(ms.ToArray());
-								string ArchiveURL = "";
-
-								//parse archive.org json reply
-								if (ArchiveResponse.Contains(@"""available"": true"))
+								try
 								{
-									Archived = true;
-									Match ArchiveMatch = Regex.Match(ArchiveResponse, @"""url"": ""http://web.archive.org/.*"","); ;
-									if (ArchiveMatch.Success)
+									Console.WriteLine("{0}\t Look in Archive.org...", GetTime(BeginTime));
+									HttpWebRequest ArchiveRequest = (HttpWebRequest)WebRequest.Create("https://archive.org/wayback/available?url=" + RequestURL.AbsoluteUri);
+									ArchiveRequest.UserAgent = "WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+									ArchiveRequest.Method = "GET";
+									string ArchiveResponse = "";
+									MemoryStream ms = new MemoryStream();
+									ArchiveRequest.GetResponse().GetResponseStream().CopyTo(ms);
+									ArchiveResponse = Encoding.UTF8.GetString(ms.ToArray());
+									string ArchiveURL = "";
+
+									//parse archive.org json reply
+									if (ArchiveResponse.Contains(@"""available"": true"))
 									{
-										Console.WriteLine("{0}\t Available.", GetTime(BeginTime));
-										ArchiveURL = ArchiveMatch.Value.Substring(8, ArchiveMatch.Value.IndexOf(@""",") - 8);
-										ResponseBody = "<html><body><h1>Server not found</h2>But an <a href=" + ArchiveURL + ">archived copy</a> is available! Redirecting to it...</body></html>";
-										ClientResponse.AddHeader("Location", ArchiveURL);
-										SendError(302, ResponseBody);
-										return;
+										Archived = true;
+										Match ArchiveMatch = Regex.Match(ArchiveResponse, @"""url"": ""http://web.archive.org/.*"","); ;
+										if (ArchiveMatch.Success)
+										{
+											Console.WriteLine("{0}\t Available.", GetTime(BeginTime));
+											ArchiveURL = ArchiveMatch.Value.Substring(8, ArchiveMatch.Value.IndexOf(@""",") - 8);
+											ResponseBody = "<html><body><h1>Server not found</h2>But an <a href=" + ArchiveURL + ">archived copy</a> is available! Redirecting to it...</body></html>";
+											ClientResponse.AddHeader("Location", ArchiveURL);
+											SendError(302, ResponseBody);
+											return;
+										}
+										else
+										{
+											Archived = false;
+											Console.WriteLine("{0}\t Available, but somewhere.", GetTime(BeginTime));
+										}
 									}
 									else
 									{
-										Archived = false;
-										Console.WriteLine("{0}\t Available, but somewhere.", GetTime(BeginTime));
+										Console.WriteLine("{0}\t No snapshots.", GetTime(BeginTime));
+										if (RequestURL.AbsoluteUri.StartsWith("http://web.archive.org/web/") && ConfigFile.ShortenArchiveErrors)
+										{
+											string ErrMsg =
+											"<p><b>The Wayback Machine has not archived that URL.</b></p>" +
+											"<p>This page is not available on the web because page does not exist<br>" +
+											"Try to slightly change the URL.</p>" +
+											"<small><i>You see this message because ShortenArchiveErrors option is enabled.</i></small>";
+											SendError(404, ErrMsg);
+											Archived = true;
+										}
 									}
 								}
-								else
+								catch (Exception ArchiveException)
 								{
-									Console.WriteLine("{0}\t No snapshots.", GetTime(BeginTime));
-									if (RequestURL.AbsoluteUri.StartsWith("http://web.archive.org/web/") && ConfigFile.ShortenArchiveErrors)
+									ResponseBody = String.Format("<html><body><b>Server not found and a Web Archive error occured.</b><br>{0}</body></html>", ArchiveException.Message.Replace("\n", "<br>"));
+								}
+							}
+
+						//check if there are any response and the error isn't fatal
+						if (wex.Response != null)
+						{
+							for (int i = 0; i < wex.Response.Headers.Count; ++i)
+							{
+								string header = wex.Response.Headers.GetKey(i);
+								foreach (string value in wex.Response.Headers.GetValues(i))
+								{
+									if (!header.StartsWith("Content-") &&
+									!header.StartsWith("Connection") &&
+									!header.StartsWith("Transfer-Encoding") &&
+									!header.StartsWith("Access-Control-Allow-Methods") &&
+									!header.StartsWith("Strict-Transport-Security") &&
+									!header.StartsWith("Content-Security-Policy") &&
+									!header.StartsWith("Upgrade-Insecure-Requests") &&
+									!(header.StartsWith("Vary") && value.Contains("Upgrade-Insecure-Requests")))
 									{
-										string ErrMsg =
-										"<p><b>The Wayback Machine has not archived that URL.</b></p>" +
-										"<p>This page is not available on the web because page does not exist<br>" +
-										"Try to slightly change the URL.</p>" +
-										"<small><i>You see this message because ShortenArchiveErrors option is enabled.</i></small>";
-										SendError(404, ErrMsg);
-										Archived = true;
+										ClientResponse.AddHeader(header, value.Replace("; secure", "").Replace("https://", "http://"));
 									}
 								}
 							}
-							catch (Exception ArchiveException)
-							{
-								ResponseBody = String.Format("<html><body><b>Server not found and a Web Archive error occured.</b><br>{0}</body></html>", ArchiveException.Message.Replace("\n", "<br>"));
-							}
+							ContentType = wex.Response.ContentType;
+							MakeOutput((HttpStatusCode)ResponseCode, wex.Response.GetResponseStream(),wex.Response.ContentType, wex.Response.ContentLength);
 						}
-
-					//check if there are any response and the error isn't fatal
-					if (wex.Response != null)
-					{
-						for (int i = 0; i < wex.Response.Headers.Count; ++i)
-						{
-							string header = wex.Response.Headers.GetKey(i);
-							foreach (string value in wex.Response.Headers.GetValues(i))
-							{
-								if (!header.StartsWith("Content-") &&
-								!header.StartsWith("Connection") &&
-								!header.StartsWith("Transfer-Encoding") &&
-								!header.StartsWith("Access-Control-Allow-Methods") &&
-								!header.StartsWith("Strict-Transport-Security") &&
-								!header.StartsWith("Content-Security-Policy") &&
-								!header.StartsWith("Upgrade-Insecure-Requests") &&
-								!(header.StartsWith("Vary") && value.Contains("Upgrade-Insecure-Requests")))
-								{
-									ClientResponse.AddHeader(header, value.Replace("; secure", "").Replace("https://", "http://"));
-								}
-							}
-						}
-						ContentType = wex.Response.ContentType;
-						MakeOutput((HttpStatusCode)ResponseCode, wex.Response.GetResponseStream(),wex.Response.ContentType, wex.Response.ContentLength);
-					}
-					#if DEBUG
-					else if (!Archived)
-						Console.WriteLine("{0}\t Failed: {1}.", GetTime(BeginTime), ResponseCode);
-					#endif
-				}
-				catch (UriFormatException)
-				{
-					StWrong = true;
-					SendError(400, "The URL <b>" + RequestURL.AbsoluteUri + "</b> is not valid.");
-				}
-				catch (Exception ex)
-				{
-					StWrong = true;
-					Console.WriteLine("{0}\t ============GURU MEDITATION:\n{1}\nOn URL '{2}', Method '{3}'. Returning 500.============", GetTime(BeginTime), ex.ToString(), RequestURL.AbsoluteUri, ClientRequest.HttpMethod);
-					SendError(500, "Guru meditaion at URL " + RequestURL.AbsoluteUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace.Replace("\n", "\n<br>") + "</i>");
-				}
-
-				//try to return...
-				try
-				{
-					if (!StWrong)
-					{
-						ClientResponse.ProtocolVersion = new Version(1, 0);
-						ClientResponse.StatusCode = ResponseCode;
-						ClientResponse.AddHeader("Via", "HTTP/1.0 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
-
-
-						if (CheckString(ContentType, ConfigFile.TextTypes) || ContentType == "")
-						{
-							ClientResponse.AddHeader("Content-Type", ContentType);
-						}
-						else
-						{
-							ClientResponse.AddHeader("Content-Type", ContentType);
-						}
-
-						if (TransitStream == null)
-						{
-							byte[] RespBuffer;
-							RespBuffer = (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(ResponseBody).ToArray();
-
-							if(ClientResponse.ContentLength64 > 300*1024) Console.WriteLine("{0}\t Sending binary.", GetTime(BeginTime));
-							ClientResponse.OutputStream.Write(RespBuffer, 0, RespBuffer.Length);
-						}
-						else
-						{
-							TransitStream.CopyTo(ClientResponse.OutputStream);
-						}
-						ClientResponse.OutputStream.Close();
 						#if DEBUG
-						Console.WriteLine("{0}\t Document sent.", GetTime(BeginTime));
+						else if (!Archived)
+							Console.WriteLine("{0}\t Failed: {1}.", GetTime(BeginTime), ResponseCode);
 						#endif
 					}
-					#if DEBUG
-					else Console.WriteLine("{0}\t Abnormal return (something was wrong).", GetTime(BeginTime));
-					#endif
-				}
-				catch (Exception ex)
-				{
-					if (!ConfigFile.HideClientErrors)
+					catch (UriFormatException)
+					{
+						StWrong = true;
+						SendError(400, "The URL <b>" + RequestURL.AbsoluteUri + "</b> is not valid.");
+					}
+					catch (Exception ex)
+					{
+						StWrong = true;
+						Console.WriteLine("{0}\t ============GURU MEDITATION:\n{1}\nOn URL '{2}', Method '{3}'. Returning 500.============", GetTime(BeginTime), ex.ToString(), RequestURL.AbsoluteUri, ClientRequest.HttpMethod);
+						SendError(500, "Guru meditaion at URL " + RequestURL.AbsoluteUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace.Replace("\n", "\n<br>") + "</i>");
+					}
+
+					//try to return...
+					try
+					{
+						if (!StWrong)
+						{
+							ClientResponse.ProtocolVersion = new Version(1, 0);
+							ClientResponse.StatusCode = ResponseCode;
+							ClientResponse.AddHeader("Via", "HTTP/1.0 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
+
+
+							if (CheckString(ContentType, ConfigFile.TextTypes) || ContentType == "")
+							{
+								ClientResponse.AddHeader("Content-Type", ContentType);
+							}
+							else
+							{
+								ClientResponse.AddHeader("Content-Type", ContentType);
+							}
+
+							if (TransitStream == null)
+							{
+								byte[] RespBuffer;
+								RespBuffer = (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(ResponseBody).ToArray();
+
+								if(ClientResponse.ContentLength64 > 300*1024) Console.WriteLine("{0}\t Sending binary.", GetTime(BeginTime));
+								ClientResponse.OutputStream.Write(RespBuffer, 0, RespBuffer.Length);
+							}
+							else
+							{
+								TransitStream.CopyTo(ClientResponse.OutputStream);
+							}
+							ClientResponse.OutputStream.Close();
+							#if DEBUG
+							Console.WriteLine("{0}\t Document sent.", GetTime(BeginTime));
+							#endif
+						}
 						#if DEBUG
-						Console.WriteLine("{0}\t<Can't return reply. " + ex.Message + ex.StackTrace, GetTime(BeginTime));
-						#else
-						Console.WriteLine("{0}\t<Can't return reply. " + ex.Message, GetTime(BeginTime));
+						else Console.WriteLine("{0}\t Abnormal return (something was wrong).", GetTime(BeginTime));
 						#endif
+					}
+					catch (Exception ex)
+					{
+						if (!ConfigFile.HideClientErrors)
+							#if DEBUG
+							Console.WriteLine("{0}\t<Can't return reply. " + ex.Message + ex.StackTrace, GetTime(BeginTime));
+							#else
+							Console.WriteLine("{0}\t<Can't return reply. " + ex.Message, GetTime(BeginTime));
+							#endif
+					}
 				}
 			}
 			catch(Exception E)
