@@ -191,8 +191,6 @@ namespace WebOne
 										Args2 = Uri.UnescapeDataString(FindArg2.Groups[2].Value);
 
 									if (Src == "CON:") throw new ArgumentException("Bad source file name");
-									if (CheckString(SrcUrl, ConfigFile.ForceHttps))
-										SrcUrl = new UriBuilder(SrcUrl) { Scheme = "https" }.Uri.ToString();
 
 									//prepare temporary file names
 									int Rnd = new Random().Next();
@@ -271,18 +269,6 @@ namespace WebOne
 											try
 											{ 
 												Console.WriteLine("{0}\t>Downloading source stream...", GetTime(BeginTime));
-												/*WebClient WC = new WebClient(); //not HttpClient because it's appear in .net 4.0
-												WC.Headers.Add("User-agent", GetUserAgent(ClientRequest.Headers["User-agent"]));
-												Exception WCerr = null;
-
-												WC.OpenReadAsync(new Uri(SrcUrl)); //not OpenReadTaskAsync for compatibility with WinXP
-												WC.OpenReadCompleted += (object sender, OpenReadCompletedEventArgs e) =>
-												{
-													if (e.Error != null) { WCerr = e.Error; return; }
-													if (ConvStdin is MemoryStream) ConvStdin = e.Result;
-												};
-												while (ConvStdin is MemoryStream && WCerr == null) { }
-												if (WCerr != null) throw WCerr.InnerException ?? WCerr;*/
 
 												HttpClientResponse HCR = SrcDloader.GET(
 													SrcUrl,
@@ -292,12 +278,11 @@ namespace WebOne
 													true,
 													BeginTime
 												);
-												HCR.Stream.CopyTo(ConvStdin);
-												//17.12.2019, AT: new bug: "WebException: Удаленный сервер возвратил ошибку: (403) Запрещено." on ViewTube video downloadings
+												
+												ConvStdin = HCR.Stream;
 
 												Src = "CON:";
 												#if DEBUG
-												//Console.WriteLine("{0}\t Stream begin: {1} ({2}).", GetTime(BeginTime), WC.ResponseHeaders["Content-type"] ?? "no content type", WC.ResponseHeaders["Content-length"] ?? "endless");
 												Console.WriteLine("{0}\t Stream begin: {1} ({2}).", GetTime(BeginTime), HCR.ContentType ?? "no content type", HCR.ContentLength);
 												#endif
 
