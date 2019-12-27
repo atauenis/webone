@@ -344,5 +344,8 @@ ASALocalRun/
 *.mkv
 *.mts
 *.mp4
-/EXE/WebOne 0.9.2 Full (Russian comments)*
+/EXE/WebOne * Full*
 /viewtube
+/EXE/*ff*
+/EXE/webone.conf.rus
+/EXE/webone.conf.full
