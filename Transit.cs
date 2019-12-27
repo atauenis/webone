@@ -229,6 +229,7 @@ namespace WebOne
 
 									Stream ConvStdin = new MemoryStream();
 									MemoryStream ConvStdout = new MemoryStream();
+									HTTPC SrcDloader = new HTTPC();
 
 									//download source if need
 									if (SrcUrl != "" && !SelfDownload)
@@ -239,7 +240,20 @@ namespace WebOne
 											try
 											{
 												Console.WriteLine("{0}\t>Downloading source...", GetTime(BeginTime));
-												new WebClient() { Headers=new WebHeaderCollection() { "User-agent: " + GetUserAgent(ClientRequest.Headers["User-agent"]) } }.DownloadFile(SrcUrl, TmpFile);
+												using(HTTPC TmpFileDloader = new HTTPC())
+												{
+													HttpClientResponse HCR = TmpFileDloader.GET(
+														SrcUrl,
+														new CookieContainer(),
+														new WebHeaderCollection() { "User-agent: " + GetUserAgent(ClientRequest.Headers["User-agent"]) },
+														"GET",
+														true,
+														BeginTime
+													);
+													FileStream TmpFileStream = File.OpenWrite(TmpFile);
+													HCR.Stream.CopyTo(TmpFileStream);
+													TmpFileStream.Close();
+												}
 												Src = TmpFile;
 											}
 											catch (Exception DownloadEx)
@@ -257,7 +271,7 @@ namespace WebOne
 											try
 											{ 
 												Console.WriteLine("{0}\t>Downloading source stream...", GetTime(BeginTime));
-												WebClient WC = new WebClient(); //not HttpClient because it's appear in .net 4.0
+												/*WebClient WC = new WebClient(); //not HttpClient because it's appear in .net 4.0
 												WC.Headers.Add("User-agent", GetUserAgent(ClientRequest.Headers["User-agent"]));
 												Exception WCerr = null;
 
@@ -268,11 +282,23 @@ namespace WebOne
 													if (ConvStdin is MemoryStream) ConvStdin = e.Result;
 												};
 												while (ConvStdin is MemoryStream && WCerr == null) { }
-												if (WCerr != null) throw WCerr.InnerException ?? WCerr;
+												if (WCerr != null) throw WCerr.InnerException ?? WCerr;*/
+
+												HttpClientResponse HCR = SrcDloader.GET(
+													SrcUrl,
+													new CookieContainer(),
+													new WebHeaderCollection() { "User-agent: " + GetUserAgent(ClientRequest.Headers["User-agent"]) },
+													"GET",
+													true,
+													BeginTime
+												);
+												HCR.Stream.CopyTo(ConvStdin);
+												//17.12.2019, AT: new bug: "WebException: Удаленный сервер возвратил ошибку: (403) Запрещено." on ViewTube video downloadings
 
 												Src = "CON:";
 												#if DEBUG
-												Console.WriteLine("{0}\t Stream begin: {1} ({2}).", GetTime(BeginTime), WC.ResponseHeaders["Content-type"] ?? "no content type", WC.ResponseHeaders["Content-length"] ?? "endless");
+												//Console.WriteLine("{0}\t Stream begin: {1} ({2}).", GetTime(BeginTime), WC.ResponseHeaders["Content-type"] ?? "no content type", WC.ResponseHeaders["Content-length"] ?? "endless");
+												Console.WriteLine("{0}\t Stream begin: {1} ({2}).", GetTime(BeginTime), HCR.ContentType ?? "no content type", HCR.ContentLength);
 												#endif
 
 											}
@@ -340,7 +366,7 @@ namespace WebOne
 											Console.WriteLine("{0}\t Reading stdout...", GetTime(BeginTime));
 											#endif
 											new Task(() => { while (ConvStdin.CanRead) { } if(!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine(); }).Start();
-											new Task(() => { while (ClientResponse.StatusCode != 500) { } if(!ConvProc.HasExited) ConvProc.Kill(); }).Start();
+											new Task(() => { while (!ConvProc.HasExited) { if (ClientResponse.StatusCode == 500) { if (!ConvProc.HasExited) { ConvProc.Kill(); } } } }).Start();
 											new Task(() => { while (!ConvProc.HasExited) { CheckIdle(ref ConvCpuLoad, ref ConvProc); }}).Start();
 											SendStream(ConvProc.StandardOutput.BaseStream, DestMime, false);
 											ConvProc.WaitForExit();
@@ -348,6 +374,8 @@ namespace WebOne
 
 											if (SrcUrl != "") File.Delete(TmpFile);
 											ConvStdin.Close();
+
+											if (UseStdin) SrcDloader.Dispose();
 											return;
 										}
 										else
@@ -360,8 +388,8 @@ namespace WebOne
 												new Task(() => { ConvStdin.CopyTo(ConvProc.StandardInput.BaseStream); }).Start();
 												new Task(() => { while (ConvStdin.CanRead) { } if(!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine(); }).Start();
 											}
-											new Task(() => { while (ClientResponse.StatusCode != 500) { } if (!ConvProc.HasExited) ConvProc.Kill(); }).Start();
-											new Task(() => { while (!ConvProc.HasExited) { CheckIdle(ref ConvCpuLoad, ref ConvProc); }}).Start();
+												new Task(() => { while (!ConvProc.HasExited) { if (ClientResponse.StatusCode == 500) { if (!ConvProc.HasExited) { ConvProc.Kill(); } } } }).Start();
+												new Task(() => { while (!ConvProc.HasExited) { CheckIdle(ref ConvCpuLoad, ref ConvProc); }}).Start();
 											ConvProc.WaitForExit();
 
 											if (!File.Exists(DestName)) throw new Exception("Convertion failed - no result found");
@@ -370,6 +398,8 @@ namespace WebOne
 
 											if (SrcUrl != "") File.Delete(TmpFile);
 											ConvStdin.Close();
+
+											if (UseStdin) SrcDloader.Dispose();
 											return;
 										}
 									}
