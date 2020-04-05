@@ -277,10 +277,13 @@ namespace WebOne
 		private Stream Decompress(HttpWebResponse webResponse)
 		{
 			Stream responseStream = webResponse.GetResponseStream();
-			if (webResponse.ContentEncoding.ToLower().Contains("gzip"))
-				responseStream = new GZipStream(responseStream, CompressionMode.Decompress);
-			else if (webResponse.ContentEncoding.ToLower().Contains("deflate"))
-				responseStream = new DeflateStream(responseStream, CompressionMode.Decompress);
+			if (webResponse.ContentEncoding != null)
+			{
+				if (webResponse.ContentEncoding.ToLower().Contains("gzip"))
+					responseStream = new GZipStream(responseStream, CompressionMode.Decompress);
+				else if (webResponse.ContentEncoding.ToLower().Contains("deflate"))
+					responseStream = new DeflateStream(responseStream, CompressionMode.Decompress);
+			}
 
 			return responseStream;
 		}

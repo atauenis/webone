@@ -9,10 +9,7 @@ WebOne HTTP Proxy Server is working by default on port 80 and is compatible even
 
 The program's settings are in the __webone.conf__ file (but any other file can be used too).
 
-Stable binaries are in the __EXE__ folder of this repository. Latest source code can be always found in the __master__ branch of [Git repository](https://github.com/atauenis/webone).
-
-Windows 7 (2008 R2) SP1+ and .NET Framework 4.6+ are required on server PC.
-Probably should work in Mono too.
+Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET Core 3.1 are required on server PC. See [.NET Core 3.1 System Requirements](https://github.com/dotnet/core/blob/master/release-notes/3.1/3.1-supported-os.md).
 
 Administrator privileges are required. Don't forget to allow incoming traffic to Port 80 in system firewall.
 
@@ -24,16 +21,18 @@ The server can be started even on public hosts. But don't forget to enable passw
 
 See [WebOne wiki](https://github.com/atauenis/webone/wiki) for complete list of features and full documentation.
 
+Latest source code can be always found in the __master__ branch of [Git repository](https://github.com/atauenis/webone). Pull requests are welcome!
+
 ### Описание по-русски
 __WebOne__ - прокси-сервер HTTP, позволяющий открывать современные сайты на старых браузерах. Он снимает шифрование HTTPS и меняет кодировку с UTF-8 на указанную в настройках (например, на ANSI). Также прокси умеет понижать версии js-фреймворков настолько, насколько это возможно простой заменой оных на более старые. Доступны функции по замене участков контента (например, тяжёлых скриптов) на более удобоваримые старыми браузерами и перенаправлению битых ссылок на архивные копии. Для совсем старинных браузеров имеется конвертор png/webp графики в gif. Им же можно сжимать слишком тяжёлые jpeg картинки. Также доступна функция конвертирования видео с YouTube в любой удобный кодек.
 
-Этот прокси-сервер необходимо запускать на современном ПК с .NET Framework 4.6, IP адрес которого нужно указать в настройках устаревшего веб-обозревателя. Порт по умолчанию 80, тип прокси HTTP 1.0 (или же можно указать путь к скрипту автоматической настройки: http://proxyhost:port/auto.pac).
+Этот прокси-сервер необходимо запускать на современном ПК с .NET Core 3.1, IP адрес которого нужно указать в настройках устаревшего веб-обозревателя. Порт по умолчанию 80, тип прокси HTTP 1.0 (или же можно указать путь к скрипту автоматической настройки: http://proxyhost:port/auto.pac).
 
 Для запуска необходимы права администратора.
 
-Настройки прокси-сервера хранятся в файле __webone.conf__ в каталоге с программой. Для использования другого файла, запускайте прокси с параметром "webone.exe _config_file_name.ext_".
+Системы Windows XP/2003 больше не поддерживаются после WebOne 0.9.3. Увы, но прокси наполовину обычный современный браузер, и только на вторую половину сервер для раритетов.
 
-В папке __EXE__ репозитория размещены готовые сборки для Windows 7 SP1+. Теоретически, они должны работать и в Mono (Linux).
+Настройки прокси-сервера хранятся в файле __webone.conf__ в каталоге с программой. Для использования другого файла, запускайте прокси с параметром "webone.exe _config_file_name.ext_".
 
 Для запуска необходимо минимум 3 файла: webone.exe, webone.conf и convert.exe. Также можно сохранить файл logo.webp для проверки ImageMagick. Для конвертации видеофайлов или просмотра YouTube на устаревших ПК в каталог желательно положить ffmpeg.exe, youtube-dl.exe и скрипт yt.bat.
 

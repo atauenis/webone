@@ -349,3 +349,5 @@ ASALocalRun/
 /EXE/*ff*
 /EXE/webone.conf.rus
 /EXE/webone.conf.full
+/bin-old
+/obj-old

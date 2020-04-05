@@ -1172,7 +1172,9 @@ namespace WebOne
 		/// </summary>
 		/// <param name="process">The process object</param>
 		/// <returns>CPU usage in percents</returns>
-		private double GetUsage(Process process)
+		// UNDONE!!! Transition from .NET FW to .NET Core!
+		private double GetUsage(Process process) { throw new NotImplementedException("Надо переписать для NET Core!"); }
+		/*private double GetUsage(Process process)
 		{
 			//thx to: https://stackoverflow.com/a/49064915/7600726
 			//see also https://www.mono-project.com/archived/mono_performance_counters/
@@ -1208,7 +1210,7 @@ namespace WebOne
 
 			if (process.HasExited) return double.MinValue;
 			return Math.Round(cpu.NextValue() / Environment.ProcessorCount, 2);
-		}
+		}*/
 
 		/// <summary>
 		/// Check process for idle mode and kill it if yes

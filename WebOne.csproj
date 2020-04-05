@@ -1,92 +1,87 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{1F741BA4-2C9F-42F7-A600-4B20F4FD90CF}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>WebOne</RootNamespace>
-    <AssemblyName>WebOne</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Authors>Alexander Tauenis</Authors>
+    <Version>0.10.0</Version>
+    <RepositoryUrl>https://github.com/atauenis/webone/</RepositoryUrl>
+    <Company>World</Company>
+    <Product>WebOne HTTP Proxy Server</Product>
+    <RepositoryType>GitHub</RepositoryType>
+    <AssemblyVersion>0.10.0</AssemblyVersion>
+    <FileVersion>0.10.0</FileVersion>
     <StartupObject>WebOne.Program</StartupObject>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
+    <Compile Remove="avconv\**" />
+    <Compile Remove="bin-old\**" />
+    <Compile Remove="docs\**" />
+    <Compile Remove="EXE\**" />
+    <Compile Remove="ImageMagic\**" />
+    <Compile Remove="Netscape\**" />
+    <Compile Remove="obj-old\**" />
+    <Compile Remove="Screenshots\**" />
+    <Compile Remove="viewtube\**" />
+    <EmbeddedResource Remove="avconv\**" />
+    <EmbeddedResource Remove="bin-old\**" />
+    <EmbeddedResource Remove="docs\**" />
+    <EmbeddedResource Remove="EXE\**" />
+    <EmbeddedResource Remove="ImageMagic\**" />
+    <EmbeddedResource Remove="Netscape\**" />
+    <EmbeddedResource Remove="obj-old\**" />
+    <EmbeddedResource Remove="Screenshots\**" />
+    <EmbeddedResource Remove="viewtube\**" />
+    <None Remove="avconv\**" />
+    <None Remove="bin-old\**" />
+    <None Remove="docs\**" />
+    <None Remove="EXE\**" />
+    <None Remove="ImageMagic\**" />
+    <None Remove="Netscape\**" />
+    <None Remove="obj-old\**" />
+    <None Remove="Screenshots\**" />
+    <None Remove="viewtube\**" />
+    <None Include="LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="ConfigFile.cs" />
-    <Compile Include="HTTPC.cs" />
-    <Compile Include="HTTPServer.cs" />
-    <Compile Include="Transit.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <None Remove="convert.txt" />
+    <None Remove="FAQ.rus.txt" />
+    <None Remove="Firefox 3.6 CE - Ярлык.lnk" />
+    <None Remove="HIEW32.EXE.lnk" />
+    <None Remove="logo.webp" />
+    <None Remove="netscape - Ярлык.lnk" />
+    <None Remove="Netscape.rar" />
+    <None Remove="Readme-YtBat.txt" />
+    <None Remove="webone-youtube-dl.zip" />
+    <None Remove="yt.bat" />
   </ItemGroup>
+
   <ItemGroup>
-    <None Include="App.config" />
-    <None Include="webone.conf">
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="convert.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="LICENSE-ImageMagick.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="yt.bat">
+    <None Update="LICENSE.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="README.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="webone.conf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="convert.exe">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="LICENSE-ImageMagick.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="logo.webp">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="LICENSE.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>
