@@ -9,6 +9,40 @@ using System.Threading.Tasks;
 
 namespace WebOne
 {
+	/* TODO list for v0.9.4 alpha/beta
+
+	0. Fix "Сбой установки соединения из-за неожиданного формата пакета" on SSL
+	https://social.msdn.microsoft.com/Forums/en-US/e8807c4c-72b6-4254-ae64-45c2743b181e/ssltls-the-handshake-failed-due-to-an-unexpected-packet-format-mercury-for-win32-pop3?forum=ncl
+		- ServerCertificateValidationCallback	=	COMPLETE, not helped
+
+	1. Fix "authentication failed because the remote party has closed the transport stream"
+
+	2. Headers on requests to ForceHttps domains:
+	origin: httpS://www.vogons.org
+	referer: httpS://www.vogons.org/index.php
+	sec-fetch-mode: navigate
+	sec-fetch-site: same-origin
+	sec-fetch-user: ?1
+	upgrade-insecure-requests: 1
+	
+	(https://developer.mozilla.org/ru/docs/Web/HTTP/CORS)
+
+	3. Secure Referers on ForceHttps:
+	referer: httpS://www.vogons.org/index.php
+
+	4. Kill strict-transport-security response header
+
+	5. Add ability to add request headers sec-fetch-*
+
+	6. Fix "cannot load <temp file name>, it is in use by another process"
+
+	
+	Plans for 0.10.0
+	0. Release after 0.9.4beta
+	1. Move to .NET Core
+	2. New syntax of patch rules
+	3. Cache and log (sniffer) for debugging purposes
+	*/
 	public static class Program
 	{
 		public static string ConfigFileName = "webone.conf";
@@ -18,7 +52,7 @@ namespace WebOne
 		static void Main(string[] args)
 		{
 			Console.Title = "WebOne";
-			Console.WriteLine("WebOne HTTP Proxy Server {0}.\n(C) 2019 Alexander Tauenis.\nhttps://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
+			Console.WriteLine("WebOne HTTP Proxy Server {0}.\n(C) https://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
 
 			int Port = -1;
 			try { Port = Convert.ToInt32(args[0]); if (args.Length > 1) ConfigFileName = args[1]; }

@@ -601,11 +601,13 @@ namespace WebOne
 						else Console.WriteLine("{0}\t Web exception: {1} {2}.", GetTime(BeginTime), ResponseCode, (wex.Response as HttpWebResponse).StatusCode);
 
 						ContentType = "text/html";
+#if DEBUG
 						string err = ": " + wex.Status.ToString();
-	#if DEBUG
 						ResponseBody = "<html><body>Cannot load this page" + err + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + Program.GetInfoString() + "</body></html>";
-	#else
-						ResponseBody = "<html><title>WebOne: " + wex.Status + "</title><body><h1>Cannot load this page</h1><p><big>" + wex.Message + ".</big></p>Status: " + wex.Status + "<br>URL: " + RequestURL.AbsoluteUri + GetInfoString() + "</body></html>";
+#else
+						string NiceErrMsg = "<p><big>" + wex.Message + ".</big></p>Status: " + wex.Status;
+						if (wex.InnerException != null) NiceErrMsg = "<p><big>" + wex.Message + "<br>" + wex.InnerException.Message + ".</big></p>Status: " + wex.Status + " + " + wex.InnerException.GetType().ToString();
+						ResponseBody = "<html><title>WebOne: " + wex.Status + "</title><body><h1>Cannot load this page</h1>" + NiceErrMsg + "<br>URL: " + RequestURL.AbsoluteUri + GetInfoString() + "</body></html>";
 	#endif
 
 						//check if archived copy can be retreived instead

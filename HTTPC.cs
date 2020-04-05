@@ -62,6 +62,7 @@ namespace WebOne
 				webRequest.ProtocolVersion = HttpVersion.Version11;
 				webRequest.KeepAlive = true;
 				webRequest.ServicePoint.Expect100Continue = false;
+				webRequest.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(CheckServerCertificate);
 
 				webResponse = (HttpWebResponse)webRequest.GetResponse(); //todo: IMPORTANT. This must be disposeable!
 				return new HttpClientResponse(webResponse, webRequest);
@@ -110,6 +111,7 @@ namespace WebOne
 				webRequest.ProtocolVersion = HttpVersion.Version11;
 				webRequest.KeepAlive = true;
 				webRequest.ServicePoint.Expect100Continue = false;
+				webRequest.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(CheckServerCertificate);
 
 				using (var RequestStream = new StreamWriter(webRequest.GetRequestStream()))
 				{
@@ -127,10 +129,15 @@ namespace WebOne
 		}
 		
 
-		public static bool AcceptAllCertifications(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certification, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors)
+		/// <summary>
+		/// Check remote HTTPS server certificate
+		/// </summary>
+		/// <returns></returns>
+		public static bool CheckServerCertificate(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certification, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors)
 		{
-			if (sslPolicyErrors != System.Net.Security.SslPolicyErrors.None) Console.WriteLine("SSL policy error " + sslPolicyErrors.ToString() + ", да и в рот оно любись.");
-			return true;
+			if (sslPolicyErrors == System.Net.Security.SslPolicyErrors.None)
+				return true;
+			throw new Exception("SSL Policy Error: " + sslPolicyErrors.ToString());
 		}
 
 

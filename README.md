@@ -12,7 +12,7 @@ The program's settings are in the __webone.conf__ file (but any other file can b
 Stable binaries are in the __EXE__ folder of this repository. Latest source code can be always found in the __master__ branch of [Git repository](https://github.com/atauenis/webone).
 
 Windows 7 (2008 R2) SP1+ and .NET Framework 4.6+ are required on server PC.
-Probably should work in Mono too. It also can be run in WinXP/2003/POSready, but these systems have some TLS problems, so it is better to use a newer OS with latest updates.
+Probably should work in Mono too.
 
 Administrator privileges are required. Don't forget to allow incoming traffic to Port 80 in system firewall.
 
@@ -33,7 +33,7 @@ __WebOne__ - прокси-сервер HTTP, позволяющий открыв
 
 Настройки прокси-сервера хранятся в файле __webone.conf__ в каталоге с программой. Для использования другого файла, запускайте прокси с параметром "webone.exe _config_file_name.ext_".
 
-В папке __EXE__ репозитория размещены готовые сборки для Windows 7 SP1+. Теоретически, они должны работать и в Mono (Linux). Сервер также запускается и с .NET 4.0 (Windows XP/2003), но тогда будут те же ограничения по работе с SSL/TLS, что и у устаревшего фреймворка. В случае ошибок TLS возможно отображение ошибки "_Неожиданный EOF или 0 байт из транспортного потока_" или _SecureChannelFailure "Не удалось создать защищённый канал"_. Поэтому рекомендуется использовать более современную ОС.
+В папке __EXE__ репозитория размещены готовые сборки для Windows 7 SP1+. Теоретически, они должны работать и в Mono (Linux).
 
 Для запуска необходимо минимум 3 файла: webone.exe, webone.conf и convert.exe. Также можно сохранить файл logo.webp для проверки ImageMagick. Для конвертации видеофайлов или просмотра YouTube на устаревших ПК в каталог желательно положить ffmpeg.exe, youtube-dl.exe и скрипт yt.bat.
 
