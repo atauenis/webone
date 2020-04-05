@@ -522,6 +522,11 @@ namespace WebOne
 						RequestURL = new Uri("http" + RequestURL.AbsoluteUri.Substring(4));
 				}
 
+				//make referer secure if need
+				if (RequestURL.Host == new Uri(RefererUri ?? "about:blank").Host)
+					if (RequestURL.AbsoluteUri.StartsWith("https://") && !RefererUri.StartsWith("https://"))
+						RefererUri = "https" + RefererUri.Substring(4);
+
 				//check for too new frameworks & replace with older versions
 				foreach (string str in ConfigFile.FixableURLs)
 				{
