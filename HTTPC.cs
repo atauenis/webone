@@ -235,7 +235,7 @@ namespace WebOne
 			this.Headers = webResponse.Headers;
 			if (this.Headers["Content-Encoding"] != null) this.Headers["Content-Encoding"] = "identity";
 			//this.IsMutuallyAuthenticated = webResponse.IsMutuallyAuthenticated;
-			this.LastModified = webResponse.LastModified;
+			try { this.LastModified = webResponse.LastModified; } catch { }
 			this.Method = webResponse.Method;
 			this.ProtocolVersion = webResponse.ProtocolVersion;
 			this.ResponseUri = webResponse.ResponseUri;
