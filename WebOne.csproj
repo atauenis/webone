@@ -54,7 +54,6 @@
     <None Remove="FAQ.rus.txt" />
     <None Remove="Firefox 3.6 CE - Ярлык.lnk" />
     <None Remove="HIEW32.EXE.lnk" />
-    <None Remove="logo.webp" />
     <None Remove="netscape - Ярлык.lnk" />
     <None Remove="Netscape.rar" />
     <None Remove="Readme-YtBat.txt" />
@@ -79,6 +78,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="LICENSE.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="logo.webp">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="README.md">

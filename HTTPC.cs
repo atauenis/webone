@@ -39,6 +39,7 @@ namespace WebOne
 		public HttpClientResponse GET(string Host, CookieContainer CC, WebHeaderCollection Headers, string Method, bool AllowAutoRedirect, DateTime BeginTime)
 		{
 			this.BeginTime = BeginTime;
+			HttpWebRequest webRequest = null;
 			try
 			{
 				foreach (string SslHost in ConfigFile.ForceHttps)
@@ -52,7 +53,7 @@ namespace WebOne
 					}
 				}
 
-				HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(Host);
+				webRequest = (HttpWebRequest)WebRequest.Create(Host);
 				AddHeaders(Headers, webRequest);
 				webRequest.ServicePoint.ConnectionLimit = int.MaxValue;
 
@@ -67,9 +68,10 @@ namespace WebOne
 				webResponse = (HttpWebResponse)webRequest.GetResponse(); //todo: IMPORTANT. This must be disposeable!
 				return new HttpClientResponse(webResponse, webRequest);
 			}
-			catch (Exception)
+			catch (WebException ex)
 			{
-				throw;
+				if(ex.Response == null) throw;
+				return new HttpClientResponse((HttpWebResponse)ex.Response, webRequest);
 			}
 		}
 

@@ -761,11 +761,14 @@ namespace WebOne
 								byte[] RespBuffer;
 								RespBuffer = (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(ResponseBody).ToArray();
 
-								if(ClientResponse.ContentLength64 > 300*1024) Console.WriteLine("{0}\t Sending binary.", GetTime(BeginTime));
+								ClientResponse.ContentLength64 = RespBuffer.Length;
+
+								if (ClientResponse.ContentLength64 > 300*1024) Console.WriteLine("{0}\t Sending binary.", GetTime(BeginTime));
 								ClientResponse.OutputStream.Write(RespBuffer, 0, RespBuffer.Length);
 							}
 							else
 							{
+								if(TransitStream.CanSeek) ClientResponse.ContentLength64 = TransitStream.Length;
 								TransitStream.CopyTo(ClientResponse.OutputStream);
 							}
 							ClientResponse.OutputStream.Close();
@@ -863,6 +866,7 @@ namespace WebOne
 				}
 			}
 
+			//process response headers
 			for (int i = 0; i < response.Headers.Count; ++i)
 			{
 				string header = response.Headers.GetKey(i);
