@@ -230,9 +230,16 @@ namespace WebOne
 									Port = Convert.ToInt32(ParamValue);
 									break;
 								case "OutputEncoding":
+									//.net core migration:
+									//https://stackoverflow.com/questions/37870084/net-core-doesnt-know-about-windows-1252-how-to-fix
+									//https://www.cyberforum.ru/csharp-beginners/thread2589843.html
+									//https://docs.microsoft.com/en-us/dotnet/api/system.text.codepagesencodingprovider.getencoding?view=netcore-3.1#System_Text_CodePagesEncodingProvider_GetEncoding_System_String_
+
 									if (ParamValue == "Windows" || ParamValue == "Win" || ParamValue == "ANSI")
 									{
-										OutputEncoding = Encoding.Default;
+										//OutputEncoding = Encoding.Default;
+										OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(1251);
+										Console.WriteLine("Notice: This version of .NET Core cannot detect OS code page. Assuming Win1251.");
 										continue;
 									}
 									else if (ParamValue == "0" || ParamValue == "AsIs")
@@ -242,7 +249,15 @@ namespace WebOne
 									}
 									else
 									{
-										try { OutputEncoding = Encoding.GetEncoding(ParamValue); }
+										try
+										{
+											//OutputEncoding = Encoding.GetEncoding(ParamValue); 
+											OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(ParamValue);
+											if (OutputEncoding == null)
+												try { OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(int.Parse(ParamValue)); } catch { }
+											if (OutputEncoding == null)
+											{ Console.WriteLine("Warning: Unknown codepage {0}, using AsIs. See MSDN 'Encoding.GetEncodings Method' article for list of valid encodings.", ParamValue, null, ConfigFile.DefaultHostName, Port); };
+										}
 										catch (ArgumentException) { Console.WriteLine("Warning: Bad codepage {0}, using {1}. Get list of available encodings at http://{2}:{3}/!codepages/.", ParamValue, OutputEncoding.EncodingName, ConfigFile.DefaultHostName, Port); }
 									}
 									continue;

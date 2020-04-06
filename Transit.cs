@@ -141,15 +141,37 @@ namespace WebOne
 								case "/!codepages/":
 									string codepages = "The following code pages are available: <br>\n" +
 													   "<table><tr><td><b>Name</b></td><td><b>#</b></td><td><b>Description</b></td></tr>\n";
-									codepages += "<tr><td><b>AsIs</b></td><td>0</td><td>Leave page's code page as is</td></tr>\n";
+									codepages += "<tr><td><b>AsIs</b></td><td>0</td><td>Leave code pages as is</td></tr>\n";
+									Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+									bool IsOutputEncodingListed = false;
 									foreach (EncodingInfo cp in Encoding.GetEncodings())
 									{
-										if (Encoding.Default.EncodingName.Contains(" ") && cp.DisplayName.Contains(Encoding.Default.EncodingName.Substring(0, Encoding.Default.EncodingName.IndexOf(" "))))
-											codepages += "<tr><td><b><u>" + cp.Name + "</u></b></td><td><u>" + cp.CodePage + "</u></td><td><u>" + cp.DisplayName + (cp.CodePage == Encoding.Default.CodePage ? "</u> (<i>system default</i>)" : "</u>") + "</td></tr>\n";
+										codepages += "<tr><td>";
+
+										/*if (Encoding.Default.EncodingName.Contains(" ") && cp.DisplayName.Contains(Encoding.Default.EncodingName.Substring(0, Encoding.Default.EncodingName.IndexOf(" "))))
+											codepages += "<b><u>" + cp.Name + "</u></b></td><td><u>" + cp.CodePage + "</u></td><td><u>" + cp.DisplayName + (cp.CodePage == Encoding.Default.CodePage ? "</u> (<i>system default</i>)" : "</u>");
 										else
-											codepages += "<tr><td><b>" + cp.Name + "</b></td><td>" + cp.CodePage + "</td><td>" + cp.DisplayName + "</td></tr>\n";
+											codepages += "<b>" + cp.Name + "</b></td><td>" + cp.CodePage + "</td><td>" + cp.DisplayName;*/
+
+										codepages += "<b>" + cp.Name + "</b></td><td>" + cp.CodePage + "</td><td>" + cp.DisplayName;
+
+
+										if (ConfigFile.OutputEncoding != null && cp.CodePage == ConfigFile.OutputEncoding.CodePage)
+										{
+											codepages += " <b>(Current)</b>";
+											IsOutputEncodingListed = true;
+										}
+
+										codepages += "</td></tr>\n";
 									}
-									codepages += "</table><br>Use any of these. Underlined are for your locale.";
+									//codepages += "</table><br>Use any of these. Underlined are for your locale.";
+									codepages += "</table><br>Use any of these or from <a href=http://docs.microsoft.com/en-us/dotnet/api/system.text.encoding.getencodings?view=netcore-3.1>Microsoft documentation</a>.";
+
+									if (!IsOutputEncodingListed && ConfigFile.OutputEncoding != null)
+										codepages += "<br>Current output encoding: <b>" + ConfigFile.OutputEncoding.WebName + "</b> &quot;" + ConfigFile.OutputEncoding.EncodingName + "&quot; (# " + ConfigFile.OutputEncoding.CodePage + ").";
+									if (ConfigFile.OutputEncoding == null)
+										codepages += "<br>Current output encoding: <b>same as source</b>.";
+
 									SendError(200, codepages);
 									break;
 								case "/!img-test/":
@@ -1037,14 +1059,14 @@ namespace WebOne
 				ClientResponse.ProtocolVersion = new Version(1, 0);
 
 				ClientResponse.ContentType = "text/html";
-				ClientResponse.ContentLength64 = Html.Length;
+				ClientResponse.ContentLength64 = Buffer.Length;
 				ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
 				ClientResponse.OutputStream.Close();
 			}
-			catch
+			catch(Exception ex)
 			{
 				if(!ConfigFile.HideClientErrors)
-				Console.WriteLine("{0}\t<!Cannot return code {1}.", GetTime(BeginTime), Code);
+				Console.WriteLine("{0}\t<!Cannot return code {1}. {2}: {3}", GetTime(BeginTime), Code, ex.GetType(), ex.Message);
 			}
 		}
 
@@ -1172,9 +1194,8 @@ namespace WebOne
 		/// </summary>
 		/// <param name="process">The process object</param>
 		/// <returns>CPU usage in percents</returns>
-		// UNDONE!!! Transition from .NET FW to .NET Core!
-		private double GetUsage(Process process) { throw new NotImplementedException("Надо переписать для NET Core!"); }
-		/*private double GetUsage(Process process)
+		// UNDONE: UNTESTED - Transition from .NET FW to .NET Core!
+		private double GetUsage(Process process)
 		{
 			//thx to: https://stackoverflow.com/a/49064915/7600726
 			//see also https://www.mono-project.com/archived/mono_performance_counters/
@@ -1210,7 +1231,7 @@ namespace WebOne
 
 			if (process.HasExited) return double.MinValue;
 			return Math.Round(cpu.NextValue() / Environment.ProcessorCount, 2);
-		}*/
+		}
 
 		/// <summary>
 		/// Check process for idle mode and kill it if yes
