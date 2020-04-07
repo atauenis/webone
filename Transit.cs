@@ -30,7 +30,7 @@ namespace WebOne
 		static string LastContentType = "not-a-carousel";
 		bool ShouldRedirectInNETFW = false;
 
-		HttpClientResponse response;
+		HttpOperation operation;
 		int ResponseCode = 502;
 		string ResponseBody = ":(";
 		Stream TransitStream = null;
@@ -148,6 +148,7 @@ namespace WebOne
 									{
 										codepages += "<tr><td>";
 
+										//don't work since transfer to .Net Core:
 										/*if (Encoding.Default.EncodingName.Contains(" ") && cp.DisplayName.Contains(Encoding.Default.EncodingName.Substring(0, Encoding.Default.EncodingName.IndexOf(" "))))
 											codepages += "<b><u>" + cp.Name + "</u></b></td><td><u>" + cp.CodePage + "</u></td><td><u>" + cp.DisplayName + (cp.CodePage == Encoding.Default.CodePage ? "</u> (<i>system default</i>)" : "</u>");
 										else
@@ -262,7 +263,7 @@ namespace WebOne
 												Console.WriteLine("{0}\t>Downloading source...", GetTime(BeginTime));
 												using(HTTPC TmpFileDloader = new HTTPC())
 												{
-													HttpClientResponse HCR = TmpFileDloader.GET(
+													HttpOperation TmpFileDlOperation = TmpFileDloader.GET(
 														SrcUrl,
 														new CookieContainer(),
 														new WebHeaderCollection() { "User-agent: " + GetUserAgent(ClientRequest.Headers["User-agent"]) },
@@ -271,7 +272,7 @@ namespace WebOne
 														BeginTime
 													);
 													FileStream TmpFileStream = File.OpenWrite(TmpFile);
-													HCR.Stream.CopyTo(TmpFileStream);
+													TmpFileDlOperation.Stream.CopyTo(TmpFileStream);
 													TmpFileStream.Close();
 												}
 												Src = TmpFile;
@@ -292,7 +293,7 @@ namespace WebOne
 											{ 
 												Console.WriteLine("{0}\t>Downloading source stream...", GetTime(BeginTime));
 
-												HttpClientResponse HCR = SrcDloader.GET(
+												HttpOperation SrcDlOperation = SrcDloader.GET(
 													SrcUrl,
 													new CookieContainer(),
 													new WebHeaderCollection() { "User-agent: " + GetUserAgent(ClientRequest.Headers["User-agent"]) },
@@ -301,11 +302,11 @@ namespace WebOne
 													BeginTime
 												);
 												
-												ConvStdin = HCR.Stream;
+												ConvStdin = SrcDlOperation.Stream;
 
 												Src = "CON:";
 												#if DEBUG
-												Console.WriteLine("{0}\t Stream begin: {1} ({2}).", GetTime(BeginTime), HCR.ContentType ?? "no content type", HCR.ContentLength);
+												Console.WriteLine("{0}\t Stream begin: {1} ({2}).", GetTime(BeginTime), SrcDlOperation.Response.ContentType ?? "no content type", SrcDlOperation.Response.ContentLength);
 												#endif
 
 											}
@@ -697,6 +698,7 @@ namespace WebOne
 							}
 
 						//check if there are any response and the error isn't fatal
+						//todo: move to HTTPC.GET / HTTPC.POST (catch WebException wex + if wex.Response is present don't throw)
 						if (wex.Response != null)
 						{
 							for (int i = 0; i < wex.Response.Headers.Count; ++i)
@@ -827,26 +829,26 @@ namespace WebOne
 					{
 						//try to download (GET, HEAD, WebDAV download, etc)
 						Console.WriteLine("{0}\t>Downloading content...", GetTime(BeginTime));
-						response = https.GET(RequestURL.AbsoluteUri, new CookieContainer(), RequestHeaderCollection, RequestMethod, AllowAutoRedirect, BeginTime);
-						MakeOutput(response.StatusCode, response.Stream, response.ContentType, response.ContentLength);
+						operation = https.GET(RequestURL.AbsoluteUri, new CookieContainer(), RequestHeaderCollection, RequestMethod, AllowAutoRedirect, BeginTime);
+						MakeOutput(operation);
 						break;
 					}
 					else
 					{
 						//try to upload (POST, PUT, WebDAV, etc)
 						Console.WriteLine("{0}\t>Uploading {1}K of {2}...", GetTime(BeginTime), Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024, RequestHeaderCollection["Content-Type"]);
-						response = https.POST(RequestURL.AbsoluteUri, new CookieContainer(), ClientRequest.InputStream, RequestHeaderCollection, RequestMethod, AllowAutoRedirect, BeginTime);
-						MakeOutput(response.StatusCode, response.Stream, response.ContentType, response.ContentLength);
+						operation = https.POST(RequestURL.AbsoluteUri, new CookieContainer(), ClientRequest.InputStream, RequestHeaderCollection, RequestMethod, AllowAutoRedirect, BeginTime);
+						MakeOutput(operation);
 						break;
 					}
 			}
 
-			ResponseCode = (int)response.StatusCode;
+			ResponseCode = (int)operation.Response.StatusCode;
 
 			//check for security upgrade
 			if (ResponseCode == 301 || ResponseCode == 302 || ResponseCode == 308)
 			{
-				if (RequestURL.AbsoluteUri == (response.Headers["Location"] ?? "nowhere").Replace("https://", "http://")
+				if (RequestURL.AbsoluteUri == (operation.ResponseHeaders["Location"] ?? "nowhere").Replace("https://", "http://")
 					&& !CheckString(RequestURL.AbsoluteUri, ConfigFile.InternalRedirectOn))
 				{
 					Console.WriteLine("{0}\t>Reload secure...", GetTime(BeginTime));
@@ -867,10 +869,10 @@ namespace WebOne
 			}
 
 			//process response headers
-			for (int i = 0; i < response.Headers.Count; ++i)
+			for (int i = 0; i < operation.ResponseHeaders.Count; ++i)
 			{
-				string header = response.Headers.GetKey(i);
-				foreach (string value in response.Headers.GetValues(i))
+				string header = operation.ResponseHeaders.GetKey(i);
+				foreach (string value in operation.ResponseHeaders.GetValues(i))
 				{
 					if (!header.StartsWith("Content-") &&
 					!header.StartsWith("Connection") &&
@@ -951,6 +953,16 @@ namespace WebOne
 		/// <summary>
 		/// Prepare response body for tranfer to client
 		/// </summary>
+		/// <param name="Operation">HttpOperation which describes the source response</param>
+		/// <returns>ResponseBuffer+ResponseBody for texts or TransitStream for binaries</returns>
+		private void MakeOutput(HttpOperation Operation)
+		{
+			MakeOutput(Operation.Response.StatusCode, Operation.Stream, Operation.Response.ContentType, Operation.Response.ContentLength);
+		}
+
+		/// <summary>
+		/// Prepare response body for tranfer to client
+		/// </summary>
 		/// <param name="StatusCode">HTTP Status code</param>
 		/// <param name="ResponseStream">Stream of response body</param>
 		/// <param name="ContentType">HTTP Content-Type</param>
@@ -970,7 +982,7 @@ namespace WebOne
 					string Redirect = "http://" + ConfigFile.DefaultHostName + "/!convert/";
 					if (ConfigFile.FixableTypesActions[str].ContainsKey("Redirect")) Redirect = ConfigFile.FixableTypesActions[str]["Redirect"];
 					Redirect = ProcessUriMasks(Redirect, RequestURL.AbsoluteUri);
-					
+
 					string IfUrl = ".*";
 					if (ConfigFile.FixableTypesActions[str].ContainsKey("IfUrl")) IfUrl = ConfigFile.FixableTypesActions[str]["IfUrl"];
 
@@ -1006,9 +1018,9 @@ namespace WebOne
 					//if don't touch codepage (OutputEncoding=AsIs)
 					ResponseBody = Encoding.Default.GetString(RawContent);
 					ResponseBody = ProcessBody(ResponseBody);
-					#if DEBUG
+#if DEBUG
 					Console.WriteLine("{0}\t Body maked.", GetTime(BeginTime));
-					#endif
+#endif
 					return;
 				}
 
@@ -1028,8 +1040,8 @@ namespace WebOne
 			}
 			else
 			{
-				if(response != null)
-					Console.WriteLine("{0}\t {1} {2}. Body {3}K of {4} [Binary].", GetTime(BeginTime), (int)StatusCode, StatusCode, response.ContentLength / 1024, ContentType);
+				if (operation != null)
+					Console.WriteLine("{0}\t {1} {2}. Body {3}K of {4} [Binary].", GetTime(BeginTime), (int)StatusCode, StatusCode, operation.Response.ContentLength / 1024, ContentType);
 				else
 					Console.WriteLine("{0}\t {1} {2}. Body is {3} [Binary], incomplete.", GetTime(BeginTime), (int)StatusCode, StatusCode, ContentType);
 
@@ -1040,8 +1052,8 @@ namespace WebOne
 			Console.WriteLine("{0}\t Body maked.", GetTime(BeginTime));
 #endif
 			return;
-		}
 
+		}
 
 		/// <summary>
 		/// Send a HTTP error to client

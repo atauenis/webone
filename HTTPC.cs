@@ -17,7 +17,6 @@ namespace WebOne
 	class HTTPC : IDisposable
 	{
 		//based on http://www.cyberforum.ru/post8143282.html
-		//todo: IMPORTANT: get off unneed types
 
 		private const string UA_Mozilla = "Mozilla/5.0 (Windows NT 4.0; WOW64; rv:99.0) Gecko/20100101 Firefox/99.0";
 		private string[] HeaderBanList = { "Proxy-Connection", "Accept", "Connection", "Content-Length", "Content-Type", "Expect", "Date", "Host", "If-Modified-Since", "Range", "Referer", "Transfer-Encoding", "User-Agent", "Accept-Encoding", "Accept-Charset" };
@@ -36,7 +35,7 @@ namespace WebOne
 		/// <param name="AllowAutoRedirect">Allow 302 redirection handling in .NET FW or not</param>
 		/// <param name="BeginTime">Initial time (for log)</param>
 		/// <returns>Server's response.</returns>
-		public HttpClientResponse GET(string Host, CookieContainer CC, WebHeaderCollection Headers, string Method, bool AllowAutoRedirect, DateTime BeginTime)
+		public HttpOperation GET(string Host, CookieContainer CC, WebHeaderCollection Headers, string Method, bool AllowAutoRedirect, DateTime BeginTime)
 		{
 			this.BeginTime = BeginTime;
 			HttpWebRequest webRequest = null;
@@ -65,13 +64,13 @@ namespace WebOne
 				webRequest.ServicePoint.Expect100Continue = false;
 				webRequest.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(CheckServerCertificate);
 
-				webResponse = (HttpWebResponse)webRequest.GetResponse(); //todo: IMPORTANT. This must be disposeable!
-				return new HttpClientResponse(webResponse, webRequest);
+				webResponse = (HttpWebResponse)webRequest.GetResponse();
+				return new HttpOperation(webResponse, webRequest);
 			}
 			catch (WebException ex)
 			{
 				if(ex.Response == null) throw;
-				return new HttpClientResponse((HttpWebResponse)ex.Response, webRequest);
+				return new HttpOperation((HttpWebResponse)ex.Response, webRequest);
 			}
 		}
 
@@ -87,7 +86,7 @@ namespace WebOne
 		/// <param name="AllowAutoRedirect">Allow 302 redirection handling in .NET FW or not</param>
 		/// <param name="BeginTime">Initial time (for log)</param>
 		/// <returns></returns>
-		public HttpClientResponse POST(string Host, CookieContainer CC, Stream BodyStream, WebHeaderCollection Headers, string Method, bool AllowAutoRedirect, DateTime BeginTime)
+		public HttpOperation POST(string Host, CookieContainer CC, Stream BodyStream, WebHeaderCollection Headers, string Method, bool AllowAutoRedirect, DateTime BeginTime)
 		{
 			this.BeginTime = BeginTime;
 			try
@@ -121,8 +120,8 @@ namespace WebOne
 					RequestStream.Close();
 				}
 
-				webResponse = (HttpWebResponse)webRequest.GetResponse(); //todo: IMPORTANT. This must be disposeable!
-				return new HttpClientResponse(webResponse, webRequest);
+				webResponse = (HttpWebResponse)webRequest.GetResponse();
+				return new HttpOperation(webResponse, webRequest);
 			}
 			catch (Exception)
 			{
@@ -148,7 +147,7 @@ namespace WebOne
 
 
 		/// <summary>
-		/// Readd non-easy headers
+		/// Readd non-easy headers to request
 		/// </summary>
 		/// <param name="Headers">Raw request header collection</param>
 		/// <param name="HWR">HttpWebRequest object</param>
@@ -222,64 +221,51 @@ namespace WebOne
 	/// <summary>
 	/// Decoded HTTP response
 	/// </summary>
-	public class HttpClientResponse
+	public class HttpOperation
 	{
-		//probably need to be thrown away
-		//except Decompress function
-		public HttpClientResponse(HttpWebResponse webResponse, HttpWebRequest webRequest)
+		/* Plans on future:
+		 * 1. Переделать с результата работы HTTPC на контейнер для операции с участием HTTPC.
+		 * 2. Сделать состояния операции: составление/отправка/ожидание/есть ответ.
+		 * 3. Make disposing.
+		 * 4. Научить обрабатывать ошибки HTTP 100-999, но кидаться Exception на ошибки сети.
+		 */
+		public HttpOperation(HttpWebResponse webResponse, HttpWebRequest webRequest)
 		{
-			this.HTTPwebRequest = webRequest;
-			this.HTTPwebResponse = webResponse;
+			this.Request = webRequest;
+			this.Response = webResponse;
 
-			this.CharacterSet = webResponse.CharacterSet;
-			this.ContentEncoding = webResponse.ContentEncoding;
-			this.ContentLength = webResponse.ContentLength;
-			this.ContentType = webResponse.ContentType;
-			this.Cookies = webResponse.Cookies;
-			this.Headers = webResponse.Headers;
-			if (this.Headers["Content-Encoding"] != null) this.Headers["Content-Encoding"] = "identity";
-			//this.IsMutuallyAuthenticated = webResponse.IsMutuallyAuthenticated;
-			try { this.LastModified = webResponse.LastModified; } catch { }
-			this.Method = webResponse.Method;
-			this.ProtocolVersion = webResponse.ProtocolVersion;
-			this.ResponseUri = webResponse.ResponseUri;
-			this.Server = webResponse.Server;
-			this.StatusCode = webResponse.StatusCode;
-			this.StatusDescription = webResponse.StatusDescription;
-			/*try
-			{
-				this.SupportsHeaders = webResponse.SupportsHeaders;
-			}
-			catch (MissingMethodException) { }*/
-			this.Instance = webResponse;
-			this.Stream = GetStream();
+			this.ResponseHeaders = webResponse.Headers;
+			if (this.ResponseHeaders["Content-Encoding"] != null) this.ResponseHeaders["Content-Encoding"] = "identity";
+			this.Stream = Decompress(this.Response);
 		}
 
-		public HttpWebRequest HTTPwebRequest { get; private set; }
-		public HttpWebResponse HTTPwebResponse { get; private set; }
-		public string CharacterSet { get; private set; }
-		public string ContentEncoding { get; private set; }
-		public long ContentLength { get; private set; }
-		public string ContentType { get; private set; }
-		public CookieCollection Cookies { get; private set; }
-		public WebHeaderCollection Headers { get; private set; }
-		//public bool IsMutuallyAuthenticated { get; private set; }
-		public DateTime LastModified { get; private set; }
-		public string Method { get; private set; }
-		public Version ProtocolVersion { get; private set; }
-		public Uri ResponseUri { get; private set; }
-		public string Server { get; private set; }
-		public HttpStatusCode StatusCode { get; private set; }
-		public string StatusDescription { get; private set; }
-		//public bool SupportsHeaders { get; private set; }
-		public HttpWebResponse Instance { get; private set; }
+
+		/// <summary>
+		/// Source HttpWebRequest
+		/// </summary>
+		public HttpWebRequest Request { get; private set; }
+		
+		/// <summary>
+		/// Source HttpWebResponse <!--(if any)-->
+		/// </summary>
+		public HttpWebResponse Response { get; private set; }
+		
+		/// <summary>
+		/// Corrected response headers <!--(if any)-->
+		/// </summary>
+		public WebHeaderCollection ResponseHeaders { get; private set; }
+		
+		/// <summary>
+		/// Decompressed response data stream <!--(if any)-->
+		/// </summary>
 		public Stream Stream { get; private set; }
 
 
-		private Stream GetStream() {
-			return Decompress(this.Instance);
-		}
-
+		/// <summary>
+		/// Get HTTP data stream in readable view (decompressed if need)
+		/// </summary>
+		/// <param name="webResponse">Response which containing the stream</param>
+		/// <returns>Http Stream/GZipStream/DeflateStream with data</returns>
 		private Stream Decompress(HttpWebResponse webResponse)
 		{
 			Stream responseStream = webResponse.GetResponseStream();
