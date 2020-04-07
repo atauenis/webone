@@ -630,10 +630,10 @@ namespace WebOne
 						ContentType = "text/html";
 #if DEBUG
 						string err = ": " + wex.Status.ToString();
-						ResponseBody = "<html><body>Cannot load this page" + err + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + Program.GetInfoString() + "</body></html>";
+						ResponseBody = "<html><title>WebOne error</title><body>Cannot load this page" + err + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + Program.GetInfoString() + "</body></html>";
 #else
 						string NiceErrMsg = "<p><big>" + wex.Message + ".</big></p>Status: " + wex.Status;
-						if (wex.InnerException != null) NiceErrMsg = "<p><big>" + wex.Message + "<br>" + wex.InnerException.Message + ".</big></p>Status: " + wex.Status + " + " + wex.InnerException.GetType().ToString();
+						if (wex.InnerException != null && wex.Status != WebExceptionStatus.UnknownError) NiceErrMsg = " <p><big>" + wex.Message + "<br>" + wex.InnerException.Message + ".</big></p>Status: " + wex.Status + " + " + wex.InnerException.GetType().ToString();
 						ResponseBody = "<html><title>WebOne: " + wex.Status + "</title><body><h1>Cannot load this page</h1>" + NiceErrMsg + "<br>URL: " + RequestURL.AbsoluteUri + GetInfoString() + "</body></html>";
 	#endif
 

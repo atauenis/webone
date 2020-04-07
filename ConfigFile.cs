@@ -113,6 +113,11 @@ namespace WebOne
 		/// </summary>
 		public static string DefaultHostName = Environment.MachineName;
 
+		/// <summary>
+		/// Break network operations when remote TLS certificate is bad
+		/// </summary>
+		public static bool ValidateCertificates = true;
+
 		static ConfigFile()
 		{
 			//ConfigFileName = "webone.conf";
@@ -190,7 +195,7 @@ namespace WebOne
 								Console.WriteLine("Warning: The special section {0} is not implemented in this build.", Section);
 								continue;
 						}
-						continue;
+						//continue; //statement cannot be reached
 					}
 
 					int BeginValue = CfgFile[i].IndexOf("=");//regular sections
@@ -287,6 +292,9 @@ namespace WebOne
 									{ if (LocIP.ToString() == DefaultHostName) ValidHostName = true; }
 									if (!ValidHostName) Console.WriteLine("Warning: DefaultHostName setting is not applicable to this computer!");
 									continue;
+								case "ValidateCertificates":
+									ValidateCertificates = ToBoolean(ParamValue);
+									continue;
 								default:
 									Console.WriteLine("Warning: Unknown server option: " + ParamName);
 									break;
@@ -311,6 +319,12 @@ namespace WebOne
 			Console.WriteLine("{0} load complete.", ConfigFileName);
 		}
 
+		/// <summary>
+		/// Convert string "true/false" or similar to bool true/false
+		/// </summary>
+		/// <param name="s">One of these strings: 1/0, y/n, yes/no, on/off, enable/disable, true/false</param>
+		/// <returns>Boolean true/false</returns>
+		/// <exception cref="InvalidCastException">Throws if the <paramref name="s"/> is not 1/0/y/n/yes/no/on/off/enable/disable/true/false</exception>
 		public static bool ToBoolean(this string s)
 		{
 			//from https://stackoverflow.com/posts/21864625/revisions

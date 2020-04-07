@@ -135,11 +135,15 @@ namespace WebOne
 		/// Check remote HTTPS server certificate
 		/// </summary>
 		/// <returns></returns>
-		public static bool CheckServerCertificate(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certification, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors)
+		public bool CheckServerCertificate(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certification, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors)
 		{
+			if (sslPolicyErrors != System.Net.Security.SslPolicyErrors.None)
+				Console.WriteLine("{0}\t Danger: {1}", GetTime(BeginTime), sslPolicyErrors.ToString());
+
+			if (!ConfigFile.ValidateCertificates) return true;
 			if (sslPolicyErrors == System.Net.Security.SslPolicyErrors.None)
 				return true;
-			throw new Exception("SSL Policy Error: " + sslPolicyErrors.ToString());
+			throw new Exception("TLS Policy Error(s): " + sslPolicyErrors.ToString());
 		}
 
 
