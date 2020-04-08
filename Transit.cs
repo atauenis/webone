@@ -97,7 +97,7 @@ namespace WebOne
 					string[] PacUrls = { "/auto/", "/auto", "/auto.pac", "/wpad.dat", "/wpad.da" }; //Netscape PAC/Microsoft WPAD
 					foreach (string PacUrl in PacUrls) { if (RequestURL.LocalPath == PacUrl) { PAC = true; break; } }
 
-					if (RequestURL.PathAndQuery.StartsWith("/!") || PAC)
+					if (RequestURL.PathAndQuery.StartsWith("/!") || PAC || RequestURL.AbsolutePath == "/")
 					{
 						try
 						{ 
@@ -105,6 +105,7 @@ namespace WebOne
 							Console.WriteLine("{0}\t Internal: {1} ", GetTime(BeginTime), RequestURL.PathAndQuery);
 							switch (RequestURL.AbsolutePath.ToLower())
 							{
+								case "/":
 								case "/!":
 								case "/!/":
 									string HelpString = "This is <b>" + Environment.MachineName + ":" + ConfigFile.Port + "</b>.<br>";
