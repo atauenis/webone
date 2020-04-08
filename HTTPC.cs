@@ -12,137 +12,189 @@ using static WebOne.Program;
 namespace WebOne
 {
 	/// <summary>
-	/// Modern HTTP(S) client.
+	/// HTTP download/upload operation client
 	/// </summary>
-	class HTTPC : IDisposable
+	public class HttpOperation : IDisposable
 	{
-		//based on http://www.cyberforum.ru/post8143282.html
-
-		private const string UA_Mozilla = "Mozilla/5.0 (Windows NT 4.0; WOW64; rv:99.0) Gecko/20100101 Firefox/99.0";
-		private string[] HeaderBanList = { "Proxy-Connection", "Accept", "Connection", "Content-Length", "Content-Type", "Expect", "Date", "Host", "If-Modified-Since", "Range", "Referer", "Transfer-Encoding", "User-Agent", "Accept-Encoding", "Accept-Charset" };
-		HttpWebResponse webResponse = null;
-		DateTime BeginTime = new DateTime(1970, 01, 01, 00, 00, 00);
-
-		~HTTPC() { Dispose(); }
+		private readonly string UA_Mozilla = "Mozilla/5.0 (Windows NT 4.0; WOW64; rv:99.0) Gecko/20100101 Firefox/99.0";
+		private readonly string[] HeaderBanList = 
+		{
+			"Proxy-Connection", 
+			"Accept", 
+			"Connection", 
+			"Content-Length", 
+			"Content-Type", 
+			"Expect", 
+			"Date", 
+			"Host", 
+			"If-Modified-Since", 
+			"Range", 
+			"Referer", 
+			"Transfer-Encoding", 
+			"User-Agent", 
+			"Accept-Encoding", 
+			"Accept-Charset" 
+		};
 
 		/// <summary>
-		/// Perform a GET-like request (content retrieve)
+		/// Prepare to do an HTTP operation
 		/// </summary>
-		/// <param name="Host">URL</param>
-		/// <param name="CC">Cookie container</param>
-		/// <param name="Headers">HTTP headers</param>
-		/// <param name="Method">HTTP method (GET by default)</param>
-		/// <param name="AllowAutoRedirect">Allow 302 redirection handling in .NET FW or not</param>
-		/// <param name="BeginTime">Initial time (for log)</param>
-		/// <returns>Server's response.</returns>
-		public HttpOperation GET(string Host, CookieContainer CC, WebHeaderCollection Headers, string Method, bool AllowAutoRedirect, DateTime BeginTime)
+		/// <param name="BeginTime"></param>
+		public HttpOperation(DateTime BeginTime)
 		{
 			this.BeginTime = BeginTime;
-			HttpWebRequest webRequest = null;
+			ResetRequest();
+		}
+
+		~HttpOperation()
+		{
+			Dispose();
+		}
+
+		/// <summary>
+		/// URL of resource to be accessed
+		/// </summary>
+		public string URL;
+
+		/// <summary>
+		/// HTTP Method
+		/// </summary>
+		public string Method;
+
+		/// <summary>
+		/// Cookie container
+		/// </summary>
+		public CookieContainer Cookies;
+
+		/// <summary>
+		/// Request's headers
+		/// </summary>
+		public WebHeaderCollection RequestHeaders;
+
+		/// <summary>
+		/// Request's data stream (raw)
+		/// </summary>
+		public Stream RequestStream;
+
+		/// <summary>
+		/// Allow 302 redirection handling in .NET FW or not
+		/// </summary>
+		public bool AllowAutoRedirect = false;
+
+		/// <summary>
+		/// Initial time (for log)
+		/// </summary>
+		public DateTime BeginTime;
+
+		/// <summary>
+		/// Source HttpWebRequest
+		/// </summary>
+		public HttpWebRequest Request { get; private set; }
+		
+		/// <summary>
+		/// Source HttpWebResponse <!--(if any)-->
+		/// </summary>
+		public HttpWebResponse Response { get; private set; }
+		
+		/// <summary>
+		/// Corrected response headers <!--(if any)-->
+		/// </summary>
+		public WebHeaderCollection ResponseHeaders { get; private set; }
+		
+		/// <summary>
+		/// Decompressed response data stream <!--(if any)-->
+		/// </summary>
+		public Stream ResponseStream { get; private set; }
+
+		/// <summary>
+		/// Unload current request (and response) to free resources for next request
+		/// </summary>
+		public void ResetRequest()
+		{
+			if (Response != null) Response.Close();
+			if (Response != null) Response.Dispose();
+
+			URL = null;
+			Request = null;
+
+			Response = null;
+			ResponseHeaders = null;
+			ResponseStream = null;
+		}
+
+		public void Dispose()
+		{
+#if DEBUG
+			Console.WriteLine("{0}\t Destruct HttpOperation.", GetTime(BeginTime));
+#endif
+			ResetRequest();
+			RequestHeaders = null;
+			RequestStream = null;
+		}
+
+		/// <summary>
+		/// Perform a HTTP request (content retreive or upload) on this operation
+		/// </summary>
+		public void SendRequest()
+		{
+			foreach (string SslHost in ConfigFile.ForceHttps)
+			{
+				if (URL.Substring(7).StartsWith(SslHost))
+				{
+					URL = "https" + URL.Substring(4);
+#if DEBUG
+					Console.WriteLine("{0}\t Willfully secure request.", GetTime(BeginTime));
+#endif
+				}
+			}
+
+			Request = (HttpWebRequest)WebRequest.Create(URL);
+			AddHeaders(RequestHeaders, Request);
+			Request.ServicePoint.ConnectionLimit = int.MaxValue;
+
+			Request.Method = Method;
+			Request.AllowAutoRedirect = AllowAutoRedirect;
+			Request.CookieContainer = Cookies;
+			Request.ProtocolVersion = HttpVersion.Version11;
+			Request.KeepAlive = true;
+			Request.ServicePoint.Expect100Continue = false;
+			Request.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(CheckServerCertificate);
+
+			if(RequestStream != null)
+			{
+				//if POST or upload
+				using (var BodyWriter = new StreamWriter(Request.GetRequestStream()))
+				{
+					RequestStream.CopyTo(BodyWriter.BaseStream);
+					BodyWriter.Close();
+				}
+			}
+		}
+
+		/// <summary>
+		/// Retreive server response on active HTTP request
+		/// </summary>
+		public void GetResponse()
+		{
+			if (Request == null) throw new InvalidOperationException("The request must be sent before its response can be get");
 			try
 			{
-				foreach (string SslHost in ConfigFile.ForceHttps)
-				{
-					if (Host.Substring(7).StartsWith(SslHost))
-					{
-						Host = "https" + Host.Substring(4);
-#if DEBUG
-						Console.WriteLine("{0}\t Willfully secure request.", GetTime(BeginTime));
-#endif
-					}
-				}
-
-				webRequest = (HttpWebRequest)WebRequest.Create(Host);
-				AddHeaders(Headers, webRequest);
-				webRequest.ServicePoint.ConnectionLimit = int.MaxValue;
-
-				webRequest.Method = Method;
-				webRequest.AllowAutoRedirect = AllowAutoRedirect;
-				webRequest.CookieContainer = CC;
-				webRequest.ProtocolVersion = HttpVersion.Version11;
-				webRequest.KeepAlive = true;
-				webRequest.ServicePoint.Expect100Continue = false;
-				webRequest.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(CheckServerCertificate);
-
-				webResponse = (HttpWebResponse)webRequest.GetResponse();
-				return new HttpOperation(webResponse, webRequest);
+				Response = (HttpWebResponse)Request.GetResponse();
+				ResponseHeaders = Response.Headers;
+				if (ResponseHeaders["Content-Encoding"] != null) ResponseHeaders["Content-Encoding"] = "identity";
+				ResponseStream = Decompress(Response);
 			}
 			catch (WebException ex)
 			{
-				if(ex.Response == null) throw;
-				return new HttpOperation((HttpWebResponse)ex.Response, webRequest);
+				if (ex.Response == null) throw;
+				Response = (HttpWebResponse)ex.Response;
+
+				ResponseHeaders = Response.Headers;
+				if (ResponseHeaders["Content-Encoding"] != null) ResponseHeaders["Content-Encoding"] = "identity";
+				ResponseStream = Decompress(Response);
+
 			}
-		}
 
-
-		/// <summary>
-		/// Perform a POST-like request (content upload)
-		/// </summary>
-		/// <param name="Host">URL</param>
-		/// <param name="CC">Cookie Container</param>
-		/// <param name="BodyStream">Stream of request's body</param>
-		/// <param name="Headers">HTTP headers</param>
-		/// <param name="Method">HTTP method (POST by default)</param>
-		/// <param name="AllowAutoRedirect">Allow 302 redirection handling in .NET FW or not</param>
-		/// <param name="BeginTime">Initial time (for log)</param>
-		/// <returns></returns>
-		public HttpOperation POST(string Host, CookieContainer CC, Stream BodyStream, WebHeaderCollection Headers, string Method, bool AllowAutoRedirect, DateTime BeginTime)
-		{
-			this.BeginTime = BeginTime;
-			try
-			{
-				foreach (string SslHost in ConfigFile.ForceHttps)
-				{
-					if (Host.Substring(7).StartsWith(SslHost))
-					{
-						Host = "https" + Host.Substring(4);
-						#if DEBUG
-						Console.WriteLine("{0}\t Willfully secure request.", GetTime(BeginTime));
-						#endif
-					}
-				}
-
-				HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(Host);
-				AddHeaders(Headers, webRequest);
-				webRequest.ServicePoint.ConnectionLimit = int.MaxValue;
-
-				webRequest.Method = Method;
-				webRequest.AllowAutoRedirect = AllowAutoRedirect;
-				webRequest.CookieContainer = CC;
-				webRequest.ProtocolVersion = HttpVersion.Version11;
-				webRequest.KeepAlive = true;
-				webRequest.ServicePoint.Expect100Continue = false;
-				webRequest.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(CheckServerCertificate);
-
-				using (var RequestStream = new StreamWriter(webRequest.GetRequestStream()))
-				{
-					BodyStream.CopyTo(RequestStream.BaseStream);
-					RequestStream.Close();
-				}
-
-				webResponse = (HttpWebResponse)webRequest.GetResponse();
-				return new HttpOperation(webResponse, webRequest);
-			}
-			catch (Exception)
-			{
-				throw;
-			}
-		}
-		
-
-		/// <summary>
-		/// Check remote HTTPS server certificate
-		/// </summary>
-		/// <returns></returns>
-		public bool CheckServerCertificate(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certification, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors)
-		{
-			if (sslPolicyErrors != System.Net.Security.SslPolicyErrors.None)
-				Console.WriteLine("{0}\t Danger: {1}", GetTime(BeginTime), sslPolicyErrors.ToString());
-
-			if (!ConfigFile.ValidateCertificates) return true;
-			if (sslPolicyErrors == System.Net.Security.SslPolicyErrors.None)
-				return true;
-			throw new Exception("TLS Policy Error(s): " + sslPolicyErrors.ToString());
 		}
 
 
@@ -163,7 +215,7 @@ namespace WebOne
 			string Date = Headers["Date"];
 			string IfModifiedSince = Headers["If-Modified-Since"];
 			string Range = Headers["Range"];
-			
+
 			foreach (string str in HeaderBanList) { Headers.Remove(str); }
 			HWR.Headers = Headers;
 
@@ -208,65 +260,27 @@ namespace WebOne
 			}
 		}
 
-		public void Dispose()
+		/// <summary>
+		/// Check remote HTTPS server certificate
+		/// </summary>
+		/// <returns></returns>
+		bool CheckServerCertificate(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certification, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors)
 		{
-			#if DEBUG
-				Console.WriteLine("{0}\t Destruct HTTPC.", GetTime(BeginTime));
-			#endif
-			if (webResponse != null) webResponse.Close();
-			if (webResponse != null) webResponse.Dispose();
+			if (sslPolicyErrors != System.Net.Security.SslPolicyErrors.None)
+				Console.WriteLine("{0}\t Danger: {1}", GetTime(BeginTime), sslPolicyErrors.ToString());
+
+			if (!ConfigFile.ValidateCertificates) return true;
+			if (sslPolicyErrors == System.Net.Security.SslPolicyErrors.None)
+				return true;
+			throw new Exception("TLS Policy Error(s): " + sslPolicyErrors.ToString());
 		}
-	}
-
-	/// <summary>
-	/// Decoded HTTP response
-	/// </summary>
-	public class HttpOperation
-	{
-		/* Plans on future:
-		 * 1. Переделать с результата работы HTTPC на контейнер для операции с участием HTTPC.
-		 * 2. Сделать состояния операции: составление/отправка/ожидание/есть ответ.
-		 * 3. Make disposing.
-		 * 4. Научить обрабатывать ошибки HTTP 100-999, но кидаться Exception на ошибки сети.
-		 */
-		public HttpOperation(HttpWebResponse webResponse, HttpWebRequest webRequest)
-		{
-			this.Request = webRequest;
-			this.Response = webResponse;
-
-			this.ResponseHeaders = webResponse.Headers;
-			if (this.ResponseHeaders["Content-Encoding"] != null) this.ResponseHeaders["Content-Encoding"] = "identity";
-			this.Stream = Decompress(this.Response);
-		}
-
-
-		/// <summary>
-		/// Source HttpWebRequest
-		/// </summary>
-		public HttpWebRequest Request { get; private set; }
-		
-		/// <summary>
-		/// Source HttpWebResponse <!--(if any)-->
-		/// </summary>
-		public HttpWebResponse Response { get; private set; }
-		
-		/// <summary>
-		/// Corrected response headers <!--(if any)-->
-		/// </summary>
-		public WebHeaderCollection ResponseHeaders { get; private set; }
-		
-		/// <summary>
-		/// Decompressed response data stream <!--(if any)-->
-		/// </summary>
-		public Stream Stream { get; private set; }
-
 
 		/// <summary>
 		/// Get HTTP data stream in readable view (decompressed if need)
 		/// </summary>
 		/// <param name="webResponse">Response which containing the stream</param>
 		/// <returns>Http Stream/GZipStream/DeflateStream with data</returns>
-		private Stream Decompress(HttpWebResponse webResponse)
+		Stream Decompress(HttpWebResponse webResponse)
 		{
 			Stream responseStream = webResponse.GetResponseStream();
 			if (webResponse.ContentEncoding != null)

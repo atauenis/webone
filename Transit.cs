@@ -251,37 +251,50 @@ namespace WebOne
 
 									Stream ConvStdin = new MemoryStream();
 									MemoryStream ConvStdout = new MemoryStream();
-									HTTPC SrcDloader = new HTTPC();
 
 									//download source if need
 									if (SrcUrl != "" && !SelfDownload)
 									{
+										/*HttpOperation SrcDlOperation = new HttpOperation(BeginTime)
+										{
+											URL = SrcUrl,
+											Method = (operation != null ? operation.Method : "GET"),
+											RequestHeaders = (operation != null ? operation.RequestHeaders : new WebHeaderCollection()),
+											AllowAutoRedirect = true
+										};*/
+
+										HttpOperation SrcDlOperation = operation ?? new HttpOperation(BeginTime); //for future when this will be inside common code, not in 302 result processor
+										SrcDlOperation.ResetRequest();
+										SrcDlOperation.URL = SrcUrl;
+										SrcDlOperation.Method = (operation != null ? operation.Method : "GET");
+										SrcDlOperation.RequestHeaders = (operation != null ? operation.RequestHeaders : new WebHeaderCollection());
+										SrcDlOperation.AllowAutoRedirect = true;
+
 										if (!UseStdin)
 										{
 											//download source to tmp file
 											try
 											{
+#if DEBUG
+												Console.WriteLine("{0}\t>Downloading source (connecting)...", GetTime(BeginTime));
+#else
 												Console.WriteLine("{0}\t>Downloading source...", GetTime(BeginTime));
-												using(HTTPC TmpFileDloader = new HTTPC())
-												{
-													HttpOperation TmpFileDlOperation = TmpFileDloader.GET(
-														SrcUrl,
-														new CookieContainer(),
-														new WebHeaderCollection() { "User-agent: " + GetUserAgent(ClientRequest.Headers["User-agent"]) },
-														"GET",
-														true,
-														BeginTime
-													);
-													FileStream TmpFileStream = File.OpenWrite(TmpFile);
-													TmpFileDlOperation.Stream.CopyTo(TmpFileStream);
-													TmpFileStream.Close();
-												}
+#endif
+												SrcDlOperation.SendRequest();
+#if DEBUG
+												Console.WriteLine("{0}\t>Downloading source (receiving)...", GetTime(BeginTime));
+#endif
+												SrcDlOperation.GetResponse();
+												FileStream TmpFileStream = File.OpenWrite(TmpFile);
+												SrcDlOperation.ResponseStream.CopyTo(TmpFileStream);
+												TmpFileStream.Close();
 												Src = TmpFile;
 											}
 											catch (Exception DownloadEx)
 											{
 												Console.WriteLine("{0}\t Can't download source: {1}.", GetTime(BeginTime), (DownloadEx.InnerException ?? DownloadEx).Message);
 												SendError(500, "Cannot download:<br>" + (DownloadEx.InnerException ?? DownloadEx).ToString().Replace("\n", "<BR>"));
+												SrcDlOperation.Dispose();
 												return;
 											}
 										}
@@ -291,33 +304,33 @@ namespace WebOne
 											//test: http://localhost/!convert/?url=http%3A%2F%2Fcommondatastorage.googleapis.com%2Fgtv-videos-bucket%2Fsample%2FBigBuckBunny.mp4&util=../avconv&arg=-vcodec%20wmv1%20-acodec%20wmav1%20-f%20asf&type=video/x-ms-asf
 											//or http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4 via proxy
 											try
-											{ 
+											{
+#if DEBUG
+												Console.WriteLine("{0}\t>Downloading source stream (connecting)...", GetTime(BeginTime));
+#else
 												Console.WriteLine("{0}\t>Downloading source stream...", GetTime(BeginTime));
-
-												HttpOperation SrcDlOperation = SrcDloader.GET(
-													SrcUrl,
-													new CookieContainer(),
-													new WebHeaderCollection() { "User-agent: " + GetUserAgent(ClientRequest.Headers["User-agent"]) },
-													"GET",
-													true,
-													BeginTime
-												);
-												
-												ConvStdin = SrcDlOperation.Stream;
-
+#endif
+												SrcDlOperation.SendRequest();
+#if DEBUG
+												Console.WriteLine("{0}\t>Downloading source stream (receiving)...", GetTime(BeginTime));
+#endif
+												SrcDlOperation.GetResponse();
+												ConvStdin = SrcDlOperation.ResponseStream;
 												Src = "CON:";
-												#if DEBUG
+#if DEBUG
 												Console.WriteLine("{0}\t Stream begin: {1} ({2}).", GetTime(BeginTime), SrcDlOperation.Response.ContentType ?? "no content type", SrcDlOperation.Response.ContentLength);
-												#endif
+#endif
 
 											}
 											catch (Exception DlStreamEx)
 											{
 												Console.WriteLine("{0}\t Can't download source: {1}.", GetTime(BeginTime), (DlStreamEx.InnerException ?? DlStreamEx).Message);
 												SendError(500, "Source stream error:<br>" + (DlStreamEx.InnerException ?? DlStreamEx).ToString().Replace("\n", "<BR>"));
+												SrcDlOperation.Dispose();
 												return;
 											}
 										}
+										SrcDlOperation.Dispose();
 									}
 									else if(!SelfDownload)
 									{
@@ -365,15 +378,15 @@ namespace WebOne
 										{
 											if(UseStdin)
 											{ 
-												#if DEBUG
+#if DEBUG
 												Console.WriteLine("{0}\t Writing stdin...", GetTime(BeginTime));
-												#endif
+#endif
 												new Task(() => { try { ConvStdin.CopyTo(ConvProc.StandardInput.BaseStream); } catch { } }).Start();
 											}
 
-											#if DEBUG
+#if DEBUG
 											Console.WriteLine("{0}\t Reading stdout...", GetTime(BeginTime));
-											#endif
+#endif
 											new Task(() => { while (ConvStdin.CanRead) { } if(!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine(); }).Start();
 											new Task(() => { while (!ConvProc.HasExited) { if (ClientResponse.StatusCode == 500) { if (!ConvProc.HasExited) { ConvProc.Kill(); } } } }).Start();
 											new Task(() => { while (!ConvProc.HasExited) { CheckIdle(ref ConvCpuLoad, ref ConvProc); }}).Start();
@@ -383,17 +396,15 @@ namespace WebOne
 
 											if (SrcUrl != "") File.Delete(TmpFile);
 											ConvStdin.Close();
-
-											if (UseStdin) SrcDloader.Dispose();
 											return;
 										}
 										else
 										{
 											if(UseStdin)
 											{ 
-												#if DEBUG
+#if DEBUG
 												Console.WriteLine("{0}\t Writing stdin...", GetTime(BeginTime));
-												#endif
+#endif
 												new Task(() => { ConvStdin.CopyTo(ConvProc.StandardInput.BaseStream); }).Start();
 												new Task(() => { while (ConvStdin.CanRead) { } if(!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine(); }).Start();
 											}
@@ -407,8 +418,6 @@ namespace WebOne
 
 											if (SrcUrl != "") File.Delete(TmpFile);
 											ConvStdin.Close();
-
-											if (UseStdin) SrcDloader.Dispose();
 											return;
 										}
 									}
@@ -495,11 +504,11 @@ namespace WebOne
 						catch (Exception ex)
 						{
 							Console.WriteLine("{0}\t Internal server error: {1}", GetTime(BeginTime), ex.ToString());
-							#if DEBUG	
+#if DEBUG
 							SendError(500, "Internal server error: <b>" + ex.Message + "</b><br>" + ex.GetType().ToString() + " " + ex.StackTrace.Replace("\n","<br>"));
-							#else
+#else
 							SendError(500, "WebOne cannot process the request because <b>" + ex.Message + "</b>.");
-							#endif
+#endif
 						}
 					}
 					//local proxy mode: http://localhost/http://example.com/indexr.shtml
@@ -603,7 +612,7 @@ namespace WebOne
 
 				//make reply
 				//SendError(200, "Okay, bro! Open " + RequestURL);
-				using (HTTPC https = new HTTPC()) { 
+				//using (HTTPC https = new HTTPC()) { 
 					bool StWrong = false; //break operation if something is wrong.
 
 					if (RequestURL.AbsoluteUri.Contains("??")) { StWrong = true; SendError(400, "Too many questions."); }
@@ -620,7 +629,7 @@ namespace WebOne
 						foreach(string h in ClientRequest.Headers.Keys) {
 							whc.Add(h, ClientRequest.Headers[h]);
 						}
-						SendRequest(https, ClientRequest.HttpMethod, whc, CL);
+						SendRequest(operation, ClientRequest.HttpMethod, whc, CL);
 					}
 					catch (WebException wex)
 					{
@@ -637,7 +646,7 @@ namespace WebOne
 						string NiceErrMsg = "<p><big>" + wex.Message + ".</big></p>Status: " + wex.Status;
 						if (wex.InnerException != null && wex.Status != WebExceptionStatus.UnknownError) NiceErrMsg = " <p><big>" + wex.Message + "<br>" + wex.InnerException.Message + ".</big></p>Status: " + wex.Status + " + " + wex.InnerException.GetType().ToString();
 						ResponseBody = "<html><title>WebOne: " + wex.Status + "</title><body><h1>Cannot load this page</h1>" + NiceErrMsg + "<br>URL: " + RequestURL.AbsoluteUri + GetInfoString() + "</body></html>";
-	#endif
+#endif
 
 						//check if archived copy can be retreived instead
 						bool Archived = false;
@@ -697,36 +706,6 @@ namespace WebOne
 									ResponseBody = String.Format("<html><body><b>Server not found and a Web Archive error occured.</b><br>{0}</body></html>", ArchiveException.Message.Replace("\n", "<br>"));
 								}
 							}
-
-						//check if there are any response and the error isn't fatal
-						//todo: move to HTTPC.GET / HTTPC.POST (catch WebException wex + if wex.Response is present don't throw)
-						if (wex.Response != null)
-						{
-							for (int i = 0; i < wex.Response.Headers.Count; ++i)
-							{
-								string header = wex.Response.Headers.GetKey(i);
-								foreach (string value in wex.Response.Headers.GetValues(i))
-								{
-									if (!header.StartsWith("Content-") &&
-									!header.StartsWith("Connection") &&
-									!header.StartsWith("Transfer-Encoding") &&
-									!header.StartsWith("Access-Control-Allow-Methods") &&
-									!header.StartsWith("Strict-Transport-Security") &&
-									!header.StartsWith("Content-Security-Policy") &&
-									!header.StartsWith("Upgrade-Insecure-Requests") &&
-									!(header.StartsWith("Vary") && value.Contains("Upgrade-Insecure-Requests")))
-									{
-										ClientResponse.AddHeader(header, value.Replace("; secure", "").Replace("https://", "http://"));
-									}
-								}
-							}
-							ContentType = wex.Response.ContentType;
-							MakeOutput((HttpStatusCode)ResponseCode, wex.Response.GetResponseStream(),wex.Response.ContentType, wex.Response.ContentLength);
-						}
-						#if DEBUG
-						else if (!Archived)
-							Console.WriteLine("{0}\t Failed: {1}.", GetTime(BeginTime), ResponseCode);
-						#endif
 					}
 					catch (UriFormatException)
 					{
@@ -775,34 +754,36 @@ namespace WebOne
 								TransitStream.CopyTo(ClientResponse.OutputStream);
 							}
 							ClientResponse.OutputStream.Close();
-							#if DEBUG
+#if DEBUG
 							Console.WriteLine("{0}\t Document sent.", GetTime(BeginTime));
-							#endif
+#endif
 						}
-						#if DEBUG
+#if DEBUG
 						else Console.WriteLine("{0}\t Abnormal return (something was wrong).", GetTime(BeginTime));
-						#endif
+#endif
 					}
 					catch (Exception ex)
 					{
 						if (!ConfigFile.HideClientErrors)
-							#if DEBUG
+#if DEBUG
 							Console.WriteLine("{0}\t<Can't return reply. " + ex.Message + ex.StackTrace, GetTime(BeginTime));
-							#else
+#else
 							Console.WriteLine("{0}\t<Can't return reply. " + ex.Message, GetTime(BeginTime));
-							#endif
+#endif
 					}
-				}
+				//}
 			}
 			catch(Exception E)
 			{
 				string time = GetTime(BeginTime);
 				Console.WriteLine("{0}\t A error has been catched: {1}\n{0}\t Please report to author.", time, E.ToString().Replace("\n", "\n{0}\t "));
 				SendError(500, "An error occured: " + E.ToString().Replace("\n", "\n<BR>"));
+				if (operation != null) operation.Dispose();
 			}
-			#if DEBUG
+			if (operation != null) operation.Dispose();
+#if DEBUG
 			Console.WriteLine("{0}\t End process.", GetTime(BeginTime));
-			#endif
+#endif
 		}
 
 		/// <summary>
@@ -813,7 +794,7 @@ namespace WebOne
 		/// <param name="RequestHeaderCollection">Request headers</param>
 		/// <param name="Content_Length">Request content length</param>
 		/// <returns>Response status code (and the Response in shared variable)</returns>
-		private void SendRequest(HTTPC https, string RequestMethod, WebHeaderCollection RequestHeaderCollection, int Content_Length)
+		private void SendRequest(HttpOperation HTTPO, string RequestMethod, WebHeaderCollection RequestHeaderCollection, int Content_Length)
 		{
 			bool AllowAutoRedirect = CheckString(RequestURL.AbsoluteUri, ConfigFile.InternalRedirectOn);
 			if (!AllowAutoRedirect) AllowAutoRedirect = ShouldRedirectInNETFW;
@@ -826,11 +807,24 @@ namespace WebOne
 					Console.WriteLine("{0}\t Wrong method.", GetTime(BeginTime));
 					return;
 				default:
+					operation = new HttpOperation(BeginTime);
 					if (Content_Length == 0)
 					{
 						//try to download (GET, HEAD, WebDAV download, etc)
+#if DEBUG
+						Console.WriteLine("{0}\t>Downloading content (connecting)...", GetTime(BeginTime));
+#else
 						Console.WriteLine("{0}\t>Downloading content...", GetTime(BeginTime));
-						operation = https.GET(RequestURL.AbsoluteUri, new CookieContainer(), RequestHeaderCollection, RequestMethod, AllowAutoRedirect, BeginTime);
+#endif
+						operation.URL = RequestURL.AbsoluteUri;
+						operation.Method = RequestMethod;
+						operation.RequestHeaders = RequestHeaderCollection;
+						operation.AllowAutoRedirect = AllowAutoRedirect;
+						operation.SendRequest();
+#if DEBUG
+						Console.WriteLine("{0}\t>Downloading content (receiving)...", GetTime(BeginTime));
+#endif
+						operation.GetResponse();
 						MakeOutput(operation);
 						break;
 					}
@@ -838,7 +832,21 @@ namespace WebOne
 					{
 						//try to upload (POST, PUT, WebDAV, etc)
 						Console.WriteLine("{0}\t>Uploading {1}K of {2}...", GetTime(BeginTime), Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024, RequestHeaderCollection["Content-Type"]);
-						operation = https.POST(RequestURL.AbsoluteUri, new CookieContainer(), ClientRequest.InputStream, RequestHeaderCollection, RequestMethod, AllowAutoRedirect, BeginTime);
+#if DEBUG
+						Console.WriteLine("{0}\t>Uploading {1}K of {2} (connecting)...", GetTime(BeginTime), Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024, RequestHeaderCollection["Content-Type"]);
+#else
+						Console.WriteLine("{0}\t>Uploading {1}K of {2}...", GetTime(BeginTime), Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024, RequestHeaderCollection["Content-Type"]);
+#endif
+						operation.URL = RequestURL.AbsoluteUri;
+						operation.Method = RequestMethod;
+						operation.RequestHeaders = RequestHeaderCollection;
+						operation.RequestStream = ClientRequest.InputStream;
+						operation.AllowAutoRedirect = AllowAutoRedirect;
+						operation.SendRequest();
+#if DEBUG
+						Console.WriteLine("{0}\t>Uploading content (receiving)...", GetTime(BeginTime));
+#endif
+						operation.GetResponse();
 						MakeOutput(operation);
 						break;
 					}
@@ -849,14 +857,14 @@ namespace WebOne
 			//check for security upgrade
 			if (ResponseCode == 301 || ResponseCode == 302 || ResponseCode == 308)
 			{
-				if (RequestURL.AbsoluteUri == (operation.ResponseHeaders["Location"] ?? "nowhere").Replace("https://", "http://")
+				if (RequestURL.AbsoluteUri == ((operation.ResponseHeaders ?? new WebHeaderCollection())["Location"] ?? "nowhere").Replace("https://", "http://")
 					&& !CheckString(RequestURL.AbsoluteUri, ConfigFile.InternalRedirectOn))
 				{
 					Console.WriteLine("{0}\t>Reload secure...", GetTime(BeginTime));
 
 					RequestURL = new Uri(RequestURL.AbsoluteUri.Replace("http://", "https://"));
 					TransitStream = null;
-					SendRequest(https, RequestMethod, RequestHeaderCollection, Content_Length);
+					SendRequest(operation, RequestMethod, RequestHeaderCollection, Content_Length);
 
 					//add to ForceHttp list
 					List<string> ForceHttpsList = ConfigFile.ForceHttps.ToList<string>();
@@ -870,6 +878,7 @@ namespace WebOne
 			}
 
 			//process response headers
+			if(operation.ResponseHeaders != null)
 			for (int i = 0; i < operation.ResponseHeaders.Count; ++i)
 			{
 				string header = operation.ResponseHeaders.GetKey(i);
@@ -958,7 +967,7 @@ namespace WebOne
 		/// <returns>ResponseBuffer+ResponseBody for texts or TransitStream for binaries</returns>
 		private void MakeOutput(HttpOperation Operation)
 		{
-			MakeOutput(Operation.Response.StatusCode, Operation.Stream, Operation.Response.ContentType, Operation.Response.ContentLength);
+			MakeOutput(Operation.Response.StatusCode, Operation.ResponseStream, Operation.Response.ContentType, Operation.Response.ContentLength);
 		}
 
 		/// <summary>
