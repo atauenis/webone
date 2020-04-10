@@ -99,9 +99,9 @@ namespace WebOne
 		public static bool ShortenArchiveErrors = false;
 
 		/// <summary>
-		/// List of enabled format converters
+		/// List of enabled file format converters
 		/// </summary>
-		public static string[] Converters = { "magick %SRC% %ARG1% %DEST% %ARG2%", "convert %SRC% %ARG1% %DEST% %ARG2%" };
+		public static List<Converter> Converters = new List<Converter>();
 
 		/// <summary>
 		/// User-agent string of the Proxy
@@ -188,8 +188,7 @@ namespace WebOne
 								InternalRedirectOn = StringListConstructor.ToArray();
 								continue;
 							case "Converters":
-								StringListConstructor.Add(CfgFile[i]);
-								Converters = StringListConstructor.ToArray();
+								Converters.Add(new Converter(CfgFile[i]));
 								continue;
 							default:
 								Console.WriteLine("Warning: The special section {0} is not implemented in this build.", Section);

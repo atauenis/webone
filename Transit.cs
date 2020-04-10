@@ -216,12 +216,95 @@ namespace WebOne
 
 									if (Src == "CON:") throw new ArgumentException("Bad source file name");
 
-									if (RunConverter(FindSrcUrl.Success,Src,SrcUrl,Dest,DestMime,Converter,Args1,Args2))
-										return;
-									
-									SendError(200, "Summon ImageMagick to convert a picture file.<br>"+
-									"Usage: /!convert/?src=filename.ext&dest=gif&type=image/gif<br>"+
-									"or: /!convert/?url=https://example.com/filename.ext&dest=gif&type=image/gif");
+									//detect info page requestion
+									if (!FindSrcUrl.Success && !FindSrc.Success)
+									{
+										SendError(200, "<big>Here you can summon ImageMagick to convert a picture file</big>.<br>" +
+										"<p>Usage: /!convert/?url=https://example.com/filename.ext&dest=gif&type=image/gif<br>" +
+										"or: /!convert/?src=filename.ext&dest=gif&type=image/gif</p>" +
+										"<p>See <a href=\"http://github.com/atauenis/webone/wiki\">WebOne wiki</a> for help on this.</p>");
+										break;
+									}
+
+									//find converter and use it
+									foreach(Converter Cvt in ConfigFile.Converters)
+									{
+										if(Cvt.Executable == Converter)
+										{
+											HttpOperation HOper = new HttpOperation(BeginTime);
+											Stream SrcStream;
+
+											//find source file placement
+											if (FindSrcUrl.Success)
+											{
+												//download source file
+												try
+												{
+													HOper.URL = SrcUrl;
+													HOper.Method = "GET";
+													HOper.RequestHeaders = new WebHeaderCollection();
+#if DEBUG
+													Console.WriteLine("{0}\t>Downloading source stream (connecting)...", GetTime(BeginTime));
+#else
+													Console.WriteLine("{0}\t>Downloading source stream...", GetTime(BeginTime));
+#endif
+													HOper.SendRequest();
+#if DEBUG
+													Console.WriteLine("{0}\t>Downloading source stream (receiving)...", GetTime(BeginTime));
+#endif
+													HOper.GetResponse();
+													SrcStream = HOper.ResponseStream;
+												}
+												catch (Exception DlEx)
+												{
+													Console.WriteLine("{0}\t Converter cannot download source: {1}", GetTime(BeginTime), DlEx.Message);
+													SendError(503,
+														"<p><big><b>Converter cannot download the source</b>: " + DlEx.Message + "</big></p>" +
+														"Source URL: " + SrcUrl);
+													return;
+												}
+											}
+											else
+											{
+												//open local source file
+												SrcUrl = "http://0.0.0.0/localfile";
+												try
+												{
+													if (!File.Exists(Src)) throw new FileNotFoundException("No such file: " + Src);
+													SrcStream = File.OpenRead(Src);
+												}
+												catch (Exception OpenEx)
+												{
+													Console.WriteLine("{0}\t Converter cannot open source: {1}", GetTime(BeginTime), OpenEx.Message);
+													SendError(503,
+														"<p><big><b>Converter cannot open the source</b>: " + OpenEx.Message + "</big></p>" +
+														"Source URL: " + SrcUrl);
+													return;
+												}
+											}
+
+											//go to converter
+											try
+											{
+												//run converter & return result
+												SendStream(Cvt.Run(BeginTime, SrcStream, Args1, Args2, Dest, SrcUrl), DestMime, true);
+												return;
+											}
+											catch(Exception CvtEx)
+											{
+												Console.WriteLine("{0}\t Converter error: {1}", GetTime(BeginTime), CvtEx.Message);
+												SendError(502, 
+													"<p><big><b>Converter error</b>: " + CvtEx.Message + "</big></p>" +
+													"Source URL: " + SrcUrl + "<br>" +
+													"Utility: " + Cvt.Executable);
+												return;
+											}
+										}
+									}
+
+									SendError(503, "<big>Converter &quot;<b>" + Converter + "</b>&quot; is unknown</big>.<br>" +
+									"<p>This converter is not listed in configuration file.</p>" +
+									"<p>See <a href=\"http://github.com/atauenis/webone/wiki\">WebOne wiki</a> for help on this.</p>");
 									break;
 								case "/!file/":
 									string FileName, MimeType="text/plain";
@@ -438,7 +521,6 @@ namespace WebOne
 #endif
 
 					//check if archived copy can be retreived instead
-					bool Archived = false;
 					if (ConfigFile.SearchInArchive)
 						if ((wex.Status == WebExceptionStatus.NameResolutionFailure) ||
 							(wex.Response != null && (wex.Response as HttpWebResponse).StatusCode == HttpStatusCode.NotFound))
@@ -458,7 +540,6 @@ namespace WebOne
 								//parse archive.org json reply
 								if (ArchiveResponse.Contains(@"""available"": true"))
 								{
-									Archived = true;
 									Match ArchiveMatch = Regex.Match(ArchiveResponse, @"""url"": ""http://web.archive.org/.*"","); ;
 									if (ArchiveMatch.Success)
 									{
@@ -471,7 +552,6 @@ namespace WebOne
 									}
 									else
 									{
-										Archived = false;
 										Console.WriteLine("{0}\t Available, but somewhere.", GetTime(BeginTime));
 									}
 								}
@@ -486,7 +566,6 @@ namespace WebOne
 										"Try to slightly change the URL.</p>" +
 										"<small><i>You see this message because ShortenArchiveErrors option is enabled.</i></small>";
 										SendError(404, ErrMsg);
-										Archived = true;
 									}
 								}
 							}
@@ -941,74 +1020,11 @@ namespace WebOne
 			}
 		}
 
-
-		/// <summary>
-		/// Fill %masks% on an URI template
-		/// </summary>
-		/// <param name="MaskedURL">URI template</param>
-		/// <param name="PossibleURL">Previous URI (for "%URL%" mask and similar)</param>
-		/// <returns>Ready URL</returns>
-		private string ProcessUriMasks(string MaskedURL, string PossibleURL = "http://webone.github.io:80/index.htm")
-		{
-			string str = MaskedURL;
-			string URL = null;
-			if (CheckString(PossibleURL, ConfigFile.ForceHttps))
-				URL = new UriBuilder(PossibleURL) { Scheme = "https" }.Uri.ToString();
-			else
-				URL = PossibleURL;
-
-			str = str.Replace("%URL%", URL);
-			str = str.Replace("%Url%", Uri.EscapeDataString(URL));
-			str = str.Replace("%ProxyHost%", Environment.MachineName);
-			str = str.Replace("%ProxyPort%", ConfigFile.Port.ToString());
-			str = str.Replace("%Proxy%", ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString());
-
-			UriBuilder builder = new UriBuilder(URL);
-
-			if (str.Contains("%UrlNoDomain%"))
-			{
-				builder.Host = "butaforia-" +  new Random().Next().ToString();
-				str = str.Replace("%UrlNoDomain%", builder.Uri.ToString().Replace(builder.Host + ":" + builder.Port,"").Replace(builder.Scheme + "://",""));
-				builder = new UriBuilder(URL);
-			}
-
-			if (str.Contains("%UrlNoPort%"))
-			{
-				builder.Port = new Random().Next(1, 65535);
-				str = str.Replace("%UrlNoPort%", builder.Uri.ToString().Replace(":" + builder.Port.ToString(), ""));
-				builder = new UriBuilder(URL);
-			}
-
-			if (str.Contains("%UrlNoQuery%"))
-			{
-				builder.Query = "?noquery=" + new Random().Next().ToString();
-				str = str.Replace("%UrlNoQuery%", builder.Uri.ToString().Replace(builder.Query, ""));
-				builder = new UriBuilder(URL);
-			}
-
-			if (str.Contains("%UrlHttps%"))
-			{
-				builder.Scheme = "https";
-				str = str.Replace("%UrlHttps%", builder.Uri.ToString());
-				builder = new UriBuilder(URL);
-			}
-
-			if (str.Contains("%UrlHttp%"))
-			{
-				builder.Scheme = "http";
-				str = str.Replace("%UrlHttp%", builder.Uri.ToString());
-				builder = new UriBuilder(URL);
-			}
-
-			return str;
-		}
-
 		/// <summary>
 		/// Get CPU load for process
 		/// </summary>
 		/// <param name="process">The process object</param>
 		/// <returns>CPU usage in percents</returns>
-		// UNDONE: UNTESTED - Transition from .NET FW to .NET Core!
 		private double GetUsage(Process process)
 		{
 			//thx to: https://stackoverflow.com/a/49064915/7600726
@@ -1063,237 +1079,6 @@ namespace WebOne
 				Proc.Kill();
 				Console.WriteLine("\n{0}\t Idle process killed.", GetTime(BeginTime));
 			}
-		}
-
-		/// <summary>
-		/// Run particular converter and send its result to client as stream
-		/// </summary>
-		/// <param name="SrcUrlPresent">Presence of source URL</param>
-		/// <param name="Src">Source file name</param>
-		/// <param name="SrcUrl">Source URL</param>
-		/// <param name="Dest">Destination file type</param>
-		/// <param name="DestMime">Destination MIME type</param>
-		/// <param name="Converter">Converter executable file name</param>
-		/// <param name="Args1">First set of converter arguments</param>
-		/// <param name="Args2">Second set of converter arguments</param>
-		/// <returns>Returns true if anything returned or false if not</returns>
-		private bool RunConverter(bool SrcUrlPresent, string Src, string SrcUrl, string Dest, string DestMime, string Converter, string Args1, string Args2)
-		{
-			//prepare temporary file names
-			int Rnd = new Random().Next();
-			string DestName = "convert-" + Rnd + "." + Dest;
-			string TmpFile = "orig-" + Rnd + ".tmp"; //for downloaded original if any
-			//if (FindSrcUrl.Success) Src = TmpFile;
-			if(SrcUrlPresent) Src = TmpFile;
-
-			//prepare converter name
-			string ConvCmdLine = string.Format("{0} {1} {2} {3}", Src, Args1, DestName, Args2);
-			bool HasConverter = false, UseStdout = true, UseStdin = true, SelfDownload = false;
-			foreach (string Cvt in ConfigFile.Converters)
-			{
-				//todo: make parsing paying attention to quotes, not simply by space character
-				if (Cvt.IndexOf(" ") < 0) break;
-				string CvtName = Cvt.Substring(0, Cvt.IndexOf(" "));
-				if (CvtName == Converter)
-				{
-					HasConverter = true;
-					if (Cvt.Contains("%DEST%")) UseStdout = false;
-					if (Cvt.Contains("%SRC%")) UseStdin = false;
-					SelfDownload = Cvt.Contains("%SRCURL%");
-
-					Converter = CvtName;
-					ConvCmdLine = ProcessUriMasks(Cvt, SrcUrl != "" ? SrcUrl : "http://webone.github.io/index.htm").Substring(Cvt.IndexOf(" ") + 1)
-					.Replace("%SRC%", Src)
-					.Replace("%ARG1%", Args1)
-					.Replace("%DEST%", DestName)
-					.Replace("%ARG2%", Args2)
-					.Replace("%DESTEXT%", Dest)
-					.Replace("%SRCURL%", SrcUrl);
-				}
-			}
-			if (!HasConverter) throw new ArgumentException("Converter '" + Converter + "' is not allowed");
-
-			Stream ConvStdin = new MemoryStream();
-			MemoryStream ConvStdout = new MemoryStream();
-
-			//download source if need
-			if (SrcUrl != "" && !SelfDownload)
-			{
-				/*HttpOperation SrcDlOperation = new HttpOperation(BeginTime)
-				{
-					URL = SrcUrl,
-					Method = (operation != null ? operation.Method : "GET"),
-					RequestHeaders = (operation != null ? operation.RequestHeaders : new WebHeaderCollection()),
-					AllowAutoRedirect = true
-				};*/
-
-				HttpOperation SrcDlOperation = operation ?? new HttpOperation(BeginTime); //for future when this will be inside common code, not in 302 result processor
-				SrcDlOperation.ResetRequest();
-				SrcDlOperation.URL = SrcUrl;
-				SrcDlOperation.Method = (operation != null ? operation.Method : "GET");
-				SrcDlOperation.RequestHeaders = (operation != null ? operation.RequestHeaders : new WebHeaderCollection());
-				SrcDlOperation.AllowAutoRedirect = true;
-
-				if (!UseStdin)
-				{
-					//download source to tmp file
-					try
-					{
-#if DEBUG
-						Console.WriteLine("{0}\t>Downloading source (connecting)...", GetTime(BeginTime));
-#else
-												Console.WriteLine("{0}\t>Downloading source...", GetTime(BeginTime));
-#endif
-						SrcDlOperation.SendRequest();
-#if DEBUG
-						Console.WriteLine("{0}\t>Downloading source (receiving)...", GetTime(BeginTime));
-#endif
-						SrcDlOperation.GetResponse();
-						FileStream TmpFileStream = File.OpenWrite(TmpFile);
-						SrcDlOperation.ResponseStream.CopyTo(TmpFileStream);
-						TmpFileStream.Close();
-						Src = TmpFile;
-					}
-					catch (Exception DownloadEx)
-					{
-						Console.WriteLine("{0}\t Can't download source: {1}.", GetTime(BeginTime), (DownloadEx.InnerException ?? DownloadEx).Message);
-						SendError(500, "Cannot download:<br>" + (DownloadEx.InnerException ?? DownloadEx).ToString().Replace("\n", "<BR>"));
-						SrcDlOperation.Dispose();
-						return true;
-					}
-				}
-				else
-				{
-					//download source file to a Stream
-					//test: http://localhost/!convert/?url=http%3A%2F%2Fcommondatastorage.googleapis.com%2Fgtv-videos-bucket%2Fsample%2FBigBuckBunny.mp4&util=../avconv&arg=-vcodec%20wmv1%20-acodec%20wmav1%20-f%20asf&type=video/x-ms-asf
-					//or http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4 via proxy
-					try
-					{
-#if DEBUG
-						Console.WriteLine("{0}\t>Downloading source stream (connecting)...", GetTime(BeginTime));
-#else
-												Console.WriteLine("{0}\t>Downloading source stream...", GetTime(BeginTime));
-#endif
-						SrcDlOperation.SendRequest();
-#if DEBUG
-						Console.WriteLine("{0}\t>Downloading source stream (receiving)...", GetTime(BeginTime));
-#endif
-						SrcDlOperation.GetResponse();
-						ConvStdin = SrcDlOperation.ResponseStream;
-						Src = "CON:";
-#if DEBUG
-						Console.WriteLine("{0}\t Stream begin: {1} ({2}).", GetTime(BeginTime), SrcDlOperation.Response.ContentType ?? "no content type", SrcDlOperation.Response.ContentLength);
-#endif
-
-					}
-					catch (Exception DlStreamEx)
-					{
-						Console.WriteLine("{0}\t Can't download source: {1}.", GetTime(BeginTime), (DlStreamEx.InnerException ?? DlStreamEx).Message);
-						SendError(500, "Source stream error:<br>" + (DlStreamEx.InnerException ?? DlStreamEx).ToString().Replace("\n", "<BR>"));
-						SrcDlOperation.Dispose();
-						return true;
-					}
-				}
-				SrcDlOperation.Dispose();
-			}
-			else if (!SelfDownload)
-			{
-				//open local
-				if (UseStdin)
-				{
-					//load source file to a FileStream
-					try
-					{
-						ConvStdin = new FileStream(Src, FileMode.Open, FileAccess.Read);
-						ConvStdin.Position = 0;
-						Src = "CON:";
-					}
-					catch (Exception StreamEx)
-					{
-						Console.WriteLine("{0}\t Cannot open src file: {1}.", GetTime(BeginTime), (StreamEx.InnerException ?? StreamEx).Message);
-						SendError(500, "Cannot open source file:<br>" + (StreamEx.InnerException ?? StreamEx).Message.ToString().Replace("\n", "<BR>"));
-						return true; ;
-					}
-				}
-				//else it is already in ConvCmdLine
-			}
-
-			//run converter
-			ProcessStartInfo ConvProcInfo = null;
-			Process ConvProc = null;
-			float ConvCpuLoad = 0;
-			if (Src != "")
-				try
-				{
-					if (!File.Exists(Src) && Src != "CON:" && !SelfDownload) throw new FileNotFoundException("Source file not found");
-
-					Console.WriteLine("{0}\t Converting: {1} {2}...", GetTime(BeginTime), Converter, ConvCmdLine);
-
-					ConvProcInfo = new ProcessStartInfo();
-					ConvProcInfo.FileName = Converter;
-					ConvProcInfo.Arguments = ConvCmdLine;
-					ConvProcInfo.StandardOutputEncoding = Encoding.GetEncoding("latin1");//important part; thx to https://stackoverflow.com/a/5446177/7600726
-					ConvProcInfo.RedirectStandardOutput = true;
-					ConvProcInfo.RedirectStandardInput = true;
-					ConvProcInfo.UseShellExecute = false;
-					ConvProc = Process.Start(ConvProcInfo);
-
-					if (UseStdout)
-					{
-						if (UseStdin)
-						{
-#if DEBUG
-							Console.WriteLine("{0}\t Writing stdin...", GetTime(BeginTime));
-#endif
-							new Task(() => { try { ConvStdin.CopyTo(ConvProc.StandardInput.BaseStream); } catch { } }).Start();
-						}
-
-#if DEBUG
-						Console.WriteLine("{0}\t Reading stdout...", GetTime(BeginTime));
-#endif
-						new Task(() => { while (ConvStdin.CanRead) { } if (!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine(); }).Start();
-						new Task(() => { while (!ConvProc.HasExited) { if (ClientResponse.StatusCode == 500) { if (!ConvProc.HasExited) { ConvProc.Kill(); } } } }).Start();
-						new Task(() => { while (!ConvProc.HasExited) { CheckIdle(ref ConvCpuLoad, ref ConvProc); } }).Start();
-						SendStream(ConvProc.StandardOutput.BaseStream, DestMime, false);
-						ConvProc.WaitForExit();
-						ClientResponse.Close();
-
-						if (SrcUrl != "") File.Delete(TmpFile);
-						ConvStdin.Close();
-						return true;
-					}
-					else
-					{
-						if (UseStdin)
-						{
-#if DEBUG
-							Console.WriteLine("{0}\t Writing stdin...", GetTime(BeginTime));
-#endif
-							new Task(() => { ConvStdin.CopyTo(ConvProc.StandardInput.BaseStream); }).Start();
-							new Task(() => { while (ConvStdin.CanRead) { } if (!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine(); }).Start();
-						}
-						new Task(() => { while (!ConvProc.HasExited) { if (ClientResponse.StatusCode == 500) { if (!ConvProc.HasExited) { ConvProc.Kill(); } } } }).Start();
-						new Task(() => { while (!ConvProc.HasExited) { CheckIdle(ref ConvCpuLoad, ref ConvProc); } }).Start();
-						ConvProc.WaitForExit();
-
-						if (!File.Exists(DestName)) throw new Exception("Convertion failed - no result found");
-						SendFile(DestName, DestMime);
-						File.Delete(DestName);
-
-						if (SrcUrl != "") File.Delete(TmpFile);
-						ConvStdin.Close();
-						return true;
-					}
-				}
-				catch (Exception ConvEx)
-				{
-					if (ConvProc != null && !ConvProc.HasExited) ConvProc.Kill();
-					Console.WriteLine("{0}\t Can't convert: {1}.", GetTime(BeginTime), ConvEx.Message);
-					SendError(500, "Cannot convert:<br>" + ConvEx.ToString().Replace("\n", "<BR>"));
-					ConvStdin.Close();
-					return true;
-				}
-			return false;
 		}
 	}
 }
