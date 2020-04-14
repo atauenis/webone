@@ -35,6 +35,7 @@ namespace WebOne
 		string ResponseBody = ":(";
 		Stream TransitStream = null;
 		string ContentType = "text/plain";
+		Encoding ContentEncoding = Encoding.Default;
 
 
 		/// <summary>
@@ -612,7 +613,7 @@ namespace WebOne
 						if (TransitStream == null)
 						{
 							byte[] RespBuffer;
-							RespBuffer = (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(ResponseBody).ToArray();
+							RespBuffer = (ConfigFile.OutputEncoding ?? ContentEncoding).GetBytes(ResponseBody).ToArray();
 
 							ClientResponse.ContentLength64 = RespBuffer.Length;
 
@@ -893,10 +894,12 @@ namespace WebOne
 				byte[] RawContent = null;
 				RawContent = ReadAllBytes(ResponseStream);
 
+				ContentEncoding = FindContentCharset(RawContent);
+
 				if (ConfigFile.OutputEncoding == null)
 				{
 					//if don't touch codepage (OutputEncoding=AsIs)
-					ResponseBody = Encoding.Default.GetString(RawContent);
+					ResponseBody = ContentEncoding.GetString(RawContent);
 					ResponseBody = ProcessBody(ResponseBody);
 #if DEBUG
 					Console.WriteLine("{0}\t Body maked.", GetTime(BeginTime));
@@ -905,12 +908,12 @@ namespace WebOne
 				}
 
 				bool ForceUTF8 = ContentType.ToLower().Contains("utf-8");
-				if (!ForceUTF8 && RawContent.Length > 0) ForceUTF8 = RawContent[0] == Encoding.UTF8.GetPreamble()[0];
+				if (!ForceUTF8 && RawContent.Length > 0) ForceUTF8 = ContentEncoding == Encoding.UTF8;
 				foreach (string utf8url in ConfigFile.ForceUtf8) { if (Regex.IsMatch(RequestURL.AbsoluteUri, utf8url)) ForceUTF8 = true; }
 				//todo: add fix for "invalid range in character class" at www.yandex.ru with Firefox 3.6 if OutputEncoding!=AsIs
 
 				if (ForceUTF8) ResponseBody = Encoding.UTF8.GetString(RawContent);
-				else ResponseBody = Encoding.Default.GetString(RawContent);
+				else ResponseBody = ContentEncoding.GetString(RawContent);
 
 				if (Regex.IsMatch(ResponseBody, @"<meta.*UTF-8.*>", RegexOptions.IgnoreCase)) { ResponseBody = Encoding.UTF8.GetString(RawContent); }
 
@@ -936,6 +939,52 @@ namespace WebOne
 		}
 
 		/// <summary>
+		/// Detect and return file encoding
+		/// </summary>
+		/// <param name="RawContent">The file as byte array</param>
+		/// <returns>Code page</returns>
+		private Encoding FindContentCharset(byte[] RawContent)
+		{
+			if (RawContent.Length < 1) return Encoding.UTF8;
+			//check for UTF magic bytes
+			if (RawContent[0] == Encoding.UTF8.GetPreamble()[0]) return Encoding.UTF8;
+			if (RawContent[0] == Encoding.Unicode.GetPreamble()[0]) return Encoding.Unicode;
+			if (RawContent[0] == Encoding.BigEndianUnicode.GetPreamble()[0]) return Encoding.BigEndianUnicode;
+			if (RawContent[0] == Encoding.UTF32.GetPreamble()[0]) return Encoding.UTF32;
+
+			//get ANSI charset
+			Encoding WindowsEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ANSICodePage);
+
+			//find Meta Charset tag
+			string Content = Encoding.Default.GetString(RawContent);
+			Match MetaCharset = Regex.Match(Content, "<meta .*charset=.*>", RegexOptions.IgnoreCase);
+			if (!MetaCharset.Success) return WindowsEncoding;
+
+			Match CharsetMatch = Regex.Match(MetaCharset.Value, "charset=.*['\"]", RegexOptions.IgnoreCase);
+			if (!CharsetMatch.Success) return WindowsEncoding;
+
+			//parse tag
+			string Charset = CharsetMatch.Value["charset=".Length..].Replace("\"", "");
+			switch (Charset.ToLower())
+			{
+				case "utf-7":
+					return Encoding.UTF7;
+				case "utf-8":
+					return Encoding.UTF8;
+				case "utf-16":
+				case "utf-16le":
+					return Encoding.Unicode;
+				case "utf-16be":
+					return Encoding.BigEndianUnicode;
+				case "utf-32":
+				case "utf-32le":
+					return Encoding.UTF32;
+			}
+
+			return CodePagesEncodingProvider.Instance.GetEncoding(Charset) ?? Encoding.UTF8;
+		}
+
+		/// <summary>
 		/// Send a HTTP error to client
 		/// </summary>
 		/// <param name="Code">HTTP Status code</param>
@@ -946,9 +995,13 @@ namespace WebOne
 			Text += GetInfoString();
 			string CodeStr = Code.ToString() + " " + ((HttpStatusCode)Code).ToString();
 			string Refresh = "";
-			if (ClientResponse.Headers["Refresh"] != null) Refresh = "<META HTTP-EQUIV=REFRESH CONTENT="+ ClientResponse.Headers["Refresh"] +">";
+			if (ClientResponse.Headers["Refresh"] != null) Refresh = "<META HTTP-EQUIV=\"REFRESH\" CONTENT=\""+ ClientResponse.Headers["Refresh"] +"\">";
 			string Html = "<html>" + Refresh + "<body><h1>" + CodeStr + "</h1>" + Text + "</body></html>";
-			byte[] Buffer = Encoding.Default.GetBytes(Html);
+
+			if ((ConfigFile.OutputEncoding ?? Encoding.Default) != Encoding.Default)
+				Html = ConfigFile.OutputEncoding.GetString(Encoding.Default.GetBytes(Html));
+
+			byte[] Buffer = (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(Html);
 			try
 			{
 				ClientResponse.StatusCode = Code;
@@ -1020,67 +1073,6 @@ namespace WebOne
 				int ErrNo = 500;
 				if (ex is FileNotFoundException) ErrNo = 404;
 				SendError(ErrNo, "Cannot retreive stream.<br>" + ex.ToString().Replace("\n", "<br>"));
-			}
-		}
-
-		/// <summary>
-		/// Get CPU load for process
-		/// </summary>
-		/// <param name="process">The process object</param>
-		/// <returns>CPU usage in percents</returns>
-		private double GetUsage(Process process)
-		{
-			//thx to: https://stackoverflow.com/a/49064915/7600726
-			//see also https://www.mono-project.com/archived/mono_performance_counters/
-
-			if (process.HasExited) return double.MinValue;
-
-			// Preparing variable for application instance name
-			string name = "";
-
-			foreach (string instance in new PerformanceCounterCategory("Process").GetInstanceNames())
-			{
-				if (process.HasExited) return double.MinValue;
-				if (instance.StartsWith(process.ProcessName))
-				{
-					using (PerformanceCounter processId = new PerformanceCounter("Process", "ID Process", instance, true))
-					{
-						if (process.Id == (int)processId.RawValue)
-						{
-							name = instance;
-							break;
-						}
-					}
-				}
-			}
-
-			PerformanceCounter cpu = new PerformanceCounter("Process", "% Processor Time", name, true);
-
-			// Getting first initial values
-			cpu.NextValue();
-
-			// Creating delay to get correct values of CPU usage during next query
-			Thread.Sleep(500);
-
-			if (process.HasExited) return double.MinValue;
-			return Math.Round(cpu.NextValue() / Environment.ProcessorCount, 2);
-		}
-
-		/// <summary>
-		/// Check process for idle mode and kill it if yes
-		/// </summary>
-		/// <param name="AverageLoad">Average process load</param>
-		/// <param name="Proc">Which process</param>
-		private void CheckIdle(ref float AverageLoad, ref Process Proc)
-		{
-			Thread.Sleep(1000);
-			AverageLoad = (float)(AverageLoad + GetUsage(Proc)) / 2;
-
-			if (Math.Round(AverageLoad, 2) <= 0 && !Proc.HasExited)
-			{
-				//the process is counting crows. Fire!
-				Proc.Kill();
-				Console.WriteLine("\n{0}\t Idle process killed.", GetTime(BeginTime));
 			}
 		}
 	}
