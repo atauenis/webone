@@ -259,8 +259,33 @@ namespace WebOne
 											OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(ParamValue);
 											if (OutputEncoding == null)
 												try { OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(int.Parse(ParamValue)); } catch { }
+
+											if (OutputEncoding == null && ParamValue.ToLower().StartsWith("utf"))
+											{
+												switch (ParamValue.ToLower())
+												{
+													case "utf-7":
+														OutputEncoding = Encoding.UTF7;
+														break;
+													case "utf-8":
+														OutputEncoding = Encoding.UTF8;
+														break;
+													case "utf-16":
+													case "utf-16le":
+														OutputEncoding = Encoding.Unicode;
+														break;
+													case "utf-16be":
+														OutputEncoding = Encoding.BigEndianUnicode;
+														break;
+													case "utf-32":
+													case "utf-32le":
+														OutputEncoding = Encoding.UTF32;
+														break;
+												}
+											}
+											
 											if (OutputEncoding == null)
-											{ Console.WriteLine("Warning: Unknown codepage {0}, using AsIs. See MSDN 'Encoding.GetEncodings Method' article for list of valid encodings.", ParamValue, null, ConfigFile.DefaultHostName, Port); };
+											{ Console.WriteLine("Warning: Unknown codepage {0}, using AsIs. See MSDN 'Encoding.GetEncodings Method' article for list of valid encodings.", ParamValue); };
 										}
 										catch (ArgumentException) { Console.WriteLine("Warning: Bad codepage {0}, using {1}. Get list of available encodings at http://{2}:{3}/!codepages/.", ParamValue, OutputEncoding.EncodingName, ConfigFile.DefaultHostName, Port); }
 									}
