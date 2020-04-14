@@ -86,8 +86,11 @@ namespace WebOne
 
 				//check for local or internal URL
 				bool IsLocalhost = false;
-				var LocalIPs = Dns.GetHostEntry(Environment.MachineName).AddressList;
-				foreach (IPAddress LocIP in LocalIPs) if (RequestURL.Host == LocIP.ToString()) IsLocalhost = true;
+
+				foreach (IPAddress address in Dns.GetHostAddresses(Environment.MachineName))
+					if (RequestURL.Host.ToLower() == address.ToString().ToLower())
+						IsLocalhost = true;
+
 				if (RequestURL.Host.ToLower() == "localhost" || RequestURL.Host.ToLower() == Environment.MachineName.ToLower() || RequestURL.Host == "127.0.0.1" || RequestURL.Host.ToLower() == "wpad" || RequestURL.Host.ToLower() == ConfigFile.DefaultHostName.ToLower() || RequestURL.Host == "")
 					IsLocalhost = true;
 
@@ -114,8 +117,8 @@ namespace WebOne
 									HelpString += "Available security: <b>" + ServicePointManager.SecurityProtocol + "</b> (" + (int)ServicePointManager.SecurityProtocol + ").<br>";
 
 									HelpString += "<h2>Aliases:</h2><ul>";
-									foreach (IPAddress LocIP in Dns.GetHostEntry(Environment.MachineName).AddressList)
-									{ HelpString += "<li>" + (LocIP.ToString() == ConfigFile.DefaultHostName ? "<b>" + LocIP.ToString() + "</b>" : LocIP.ToString()) + ":" + ConfigFile.Port + "</li>"; }
+									foreach (IPAddress address in Dns.GetHostAddresses(Environment.MachineName))
+									{ HelpString += "<li>" + (address.ToString() == ConfigFile.DefaultHostName ? "<b>" + address.ToString() + "</b>" : address.ToString()) + ":" + ConfigFile.Port + "</li>"; }
 									HelpString += "</ul>";
 									HelpString += "</ul>";
 
