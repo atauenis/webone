@@ -234,16 +234,25 @@ namespace WebOne
 									Port = Convert.ToInt32(ParamValue);
 									break;
 								case "OutputEncoding":
-									//.net core migration:
-									//https://stackoverflow.com/questions/37870084/net-core-doesnt-know-about-windows-1252-how-to-fix
-									//https://www.cyberforum.ru/csharp-beginners/thread2589843.html
-									//https://docs.microsoft.com/en-us/dotnet/api/system.text.codepagesencodingprovider.getencoding?view=netcore-3.1#System_Text_CodePagesEncodingProvider_GetEncoding_System_String_
-
 									if (ParamValue == "Windows" || ParamValue == "Win" || ParamValue == "ANSI")
 									{
-										//OutputEncoding = Encoding.Default;
-										OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(1251);
-										Console.WriteLine("Notice: This version of .NET Core cannot detect OS code page. Assuming Win1251.");
+										//OutputEncoding = Encoding.Default; //.NET 4.0
+										OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ANSICodePage);
+										continue;
+									}
+									else if (ParamValue == "DOS" || ParamValue == "OEM")
+									{
+										OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
+										continue;
+									}
+									else if (ParamValue == "Mac" || ParamValue == "Apple")
+									{
+										OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.MacCodePage);
+										continue;
+									}
+									else if (ParamValue == "EBCDIC" || ParamValue == "IBM")
+									{
+										OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.EBCDICCodePage);
 										continue;
 									}
 									else if (ParamValue == "0" || ParamValue == "AsIs")
