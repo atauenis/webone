@@ -502,9 +502,21 @@ namespace WebOne
 
 					//send HTTPS request to destination server
 					WebHeaderCollection whc = new WebHeaderCollection();
-					foreach(string h in ClientRequest.Headers.Keys) {
-						whc.Add(h, ClientRequest.Headers[h]);
+
+					if(RequestURL.Scheme.ToLower() == "https")
+					{
+						foreach(string h in ClientRequest.Headers.Keys) {
+							whc.Add(h, ClientRequest.Headers[h].Replace("http://", "https://"));
+						}
 					}
+					else
+					{
+						foreach(string h in ClientRequest.Headers.Keys) {
+							whc.Add(h, ClientRequest.Headers[h]);
+						}
+					}
+					if (whc["upgrade-insecure-requests"] == null) whc.Add("upgrade-insecure-requests: 1");
+
 					SendRequest(operation, ClientRequest.HttpMethod, whc, CL);
 				}
 				catch (WebException wex)

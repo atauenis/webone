@@ -27,6 +27,7 @@ namespace WebOne
 	 *     sec-fetch-user: ?1
 	 *     upgrade-insecure-requests: 1
 	 *     (https://developer.mozilla.org/ru/docs/Web/HTTP/CORS)
+	 *     - SEMI COMPLETE, added support for Secure headers
 	 * 5. [ok] Secure Referers on ForceHttps
 	 * 6. [ok] Kill strict-transport-security response header
 	 * 7. [ok] Fix "cannot load <temp file name>, it is in use by another process"
@@ -44,7 +45,7 @@ namespace WebOne
 		static void Main(string[] args)
 		{
 			Console.Title = "WebOne";
-			Console.WriteLine("WebOne HTTP Proxy Server {0}.\n(C) https://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
+			Console.WriteLine("WebOne HTTP Proxy Server {0}-Alpha 2.\n(C) https://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
 
 			int Port = -1;
 			try { Port = Convert.ToInt32(args[0]); if (args.Length > 1) ConfigFileName = args[1]; }
