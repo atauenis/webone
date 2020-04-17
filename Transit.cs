@@ -969,7 +969,7 @@ namespace WebOne
 
 			//find Meta Charset tag
 			string Content = Encoding.Default.GetString(RawContent);
-			Match MetaCharset = Regex.Match(Content, "<meta .*charset=.*>", RegexOptions.IgnoreCase);
+			Match MetaCharset = Regex.Match(Content, "<meta http-equiv .*charset=.*>", RegexOptions.IgnoreCase);
 			if (!MetaCharset.Success) return WindowsEncoding;
 
 			Match CharsetMatch = Regex.Match(MetaCharset.Value, "charset=.*['\"]", RegexOptions.IgnoreCase);
