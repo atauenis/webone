@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -75,6 +76,10 @@ namespace WebOne
 		}
 
 
+		/// <summary>
+		/// Make info string (footer) for message pages
+		/// </summary>
+		/// <returns>HTML: WebOne vX.Y.Z on Windows NT 6.2.9200 Service Pack 6</returns>
 		public static string GetInfoString() {
 			return "<hr>WebOne Proxy Server " + Assembly.GetExecutingAssembly().GetName().Version + "<br>on " + Environment.OSVersion.VersionString;
 		}
@@ -191,6 +196,21 @@ namespace WebOne
 			.Replace("%Original%", ClientUA ?? "Mozilla/5.0 (Kundryuchy-Leshoz)")
 			.Replace("%WOVer%", Assembly.GetExecutingAssembly().GetName().Version.ToString())
 			.Replace("%WOSystem%", Environment.OSVersion.Platform.ToString());
+		}
+
+		/// <summary>
+		/// Get all server IP addresses
+		/// </summary>
+		/// <returns>All IPv4/IPv6 addresses of this machine</returns>
+		public static IPAddress[] GetLocalIPAddresses()
+		{
+			List<IPAddress> IPs = new List<IPAddress>();
+			foreach ((NetworkInterface Netif, UnicastIPAddressInformation ipa) in
+							 from NetworkInterface Netif in NetworkInterface.GetAllNetworkInterfaces()
+							 from ipa in Netif.GetIPProperties().UnicastAddresses
+							 select (Netif, ipa))
+				IPs.Add(ipa.Address);
+			return IPs.ToArray();
 		}
 	}
 }

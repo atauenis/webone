@@ -88,7 +88,7 @@ namespace WebOne
 				//check for local or internal URL
 				bool IsLocalhost = false;
 
-				foreach (IPAddress address in Dns.GetHostAddresses(Environment.MachineName))
+				foreach (IPAddress address in GetLocalIPAddresses())
 					if (RequestURL.Host.ToLower() == address.ToString().ToLower())
 						IsLocalhost = true;
 
@@ -118,15 +118,15 @@ namespace WebOne
 									HelpString += "Available security: <b>" + ServicePointManager.SecurityProtocol + "</b> (" + (int)ServicePointManager.SecurityProtocol + ").<br>";
 
 									HelpString += "<h2>Aliases:</h2><ul>";
-									foreach (IPAddress address in Dns.GetHostAddresses(Environment.MachineName))
-									{ HelpString += "<li>" + (address.ToString() == ConfigFile.DefaultHostName ? "<b>" + address.ToString() + "</b>" : address.ToString()) + ":" + ConfigFile.Port + "</li>"; }
+									foreach (IPAddress address in GetLocalIPAddresses())
+										{ HelpString += "<li>" + (address.ToString() == ConfigFile.DefaultHostName ? "<b>" + address.ToString() + "</b>" : address.ToString()) + ":" + ConfigFile.Port + "</li>"; }
 									HelpString += "</ul>";
 									HelpString += "</ul>";
 
 									HelpString += "<p>Client IP: <b>" + ClientRequest.RemoteEndPoint + "</b>.</p>";
 
 									HelpString += "<h2>Internal URLs:</h2><ul>" +
-												  "<li><a href='/!codepages/'>/!codepages/</a> - list of available encodings for OutputEncoding setting</li>" +
+									//			  "<li><a href='/!codepages/'>/!codepages/</a> - list of available encodings for OutputEncoding setting</li>" +
 												  "<li><a href='/!img-test/'>/!img-test/</a> - test if ImageMagick is working</li>" +
 												  "<li><a href='/!convert/'>/!convert/</a> - run a file format converter (<a href='/!convert/?src=logo.webp&dest=gif&type=image/gif'>demo</a>)</li>" +
 												  "<li><a href='/!file/'>/!file/</a> - get a file from WebOne working directory (<a href='/!file/?name=webone.conf&type=text/plain'>demo</a>)</li>" +

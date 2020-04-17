@@ -321,7 +321,7 @@ namespace WebOne
 								case "DefaultHostName":
 									DefaultHostName = ParamValue.Replace("%HostName%", Environment.MachineName);
 									bool ValidHostName = (Environment.MachineName.ToLower() == DefaultHostName.ToLower());
-									if (!ValidHostName) foreach (System.Net.IPAddress LocIP in System.Net.Dns.GetHostEntry(Environment.MachineName).AddressList)
+									if (!ValidHostName) foreach (System.Net.IPAddress LocIP in Program.GetLocalIPAddresses())
 									{ if (LocIP.ToString() == DefaultHostName) ValidHostName = true; }
 									if (!ValidHostName) Console.WriteLine("Warning: DefaultHostName setting is not applicable to this computer!");
 									continue;
