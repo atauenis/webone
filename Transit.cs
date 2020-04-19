@@ -516,6 +516,10 @@ namespace WebOne
 						}
 					}
 					if (whc["upgrade-insecure-requests"] == null) whc.Add("upgrade-insecure-requests: 1");
+					if (whc["Origin"] == null & whc["Referer"] != null) whc.Add("Origin: " + new Uri(whc["Referer"]).Scheme + "://" + new Uri(whc["Referer"]).Host);
+					/*if (whc["sec-fetch-mode"] == null) whc.Add("sec-fetch-mode: navigate");
+					if (whc["sec-fetch-site"] == null) whc.Add("sec-fetch-site: same-origin");
+					if (whc["sec-fetch-user"] == null) whc.Add("sec-fetch-user: ?1");*/
 
 					SendRequest(operation, ClientRequest.HttpMethod, whc, CL);
 				}
