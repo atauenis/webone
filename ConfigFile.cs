@@ -14,6 +14,8 @@ namespace WebOne
 	{
 		static string ConfigFileName = Program.ConfigFileName;
 		static List<string> StringListConstructor = new List<string>();
+		static List<List<string>> RawEditSets = new List<List<string>>();
+		static int LastRawEditSet = -1;
 
 		static string[] SpecialSections = { "ForceHttps", "TextTypes", "ForceUtf8", "InternalRedirectOn", "Converters" };
 
@@ -67,7 +69,6 @@ namespace WebOne
 		/// </summary>
 		public static Dictionary<string, Dictionary<string, string>> FixableTypesActions = new Dictionary<string, Dictionary<string, string>>();
 
-
 		/// <summary>
 		/// List of possible content patches
 		/// </summary>
@@ -118,6 +119,11 @@ namespace WebOne
 		/// </summary>
 		public static bool ValidateCertificates = true;
 
+		/// <summary>
+		/// List of possible traffic editing rule sets
+		/// </summary>
+		public static List<EditSet> EditRules = new List<EditSet>();
+
 		static ConfigFile()
 		{
 			//ConfigFileName = "webone.conf";
@@ -161,6 +167,13 @@ namespace WebOne
 							Console.WriteLine("Warning: ContentPatchFind sections are no longer supported. See wiki.");
 						}
 
+						if (Section.StartsWith("Edit:"))
+						{
+							LastRawEditSet++;
+							RawEditSets.Add(new List<string>());
+							RawEditSets[LastRawEditSet].Add("OnUrl=" + Section.Substring("Edit:".Length)); //may became optional in future
+						}
+
 						continue;
 					}
 
@@ -202,7 +215,7 @@ namespace WebOne
 					string ParamName = CfgFile[i].Substring(0, BeginValue);
 					string ParamValue = CfgFile[i].Substring(BeginValue + 1);
 					//Console.WriteLine("{0}.{1}={2}", Section, ParamName, ParamValue);
-					
+
 					//Console.WriteLine(Section);
 					if (Section.StartsWith("FixableURL"))
 					{
@@ -224,6 +237,12 @@ namespace WebOne
 						continue;
 					}
 
+					if (Section.StartsWith("Edit:"))
+					{
+						if (RawEditSets.Count > 0)
+							RawEditSets[LastRawEditSet].Add(CfgFile[i]);
+						continue;
+					}
 
 					switch (Section)
 					{
@@ -339,6 +358,16 @@ namespace WebOne
 					}
 
 				}
+
+				i++;
+				foreach (List<string> RawEdit in RawEditSets)
+				{
+					EditRules.Add(new EditSet(RawEdit));
+				}
+
+				AddLegacyFixableURLs();
+				AddLegacyFixableTypes();
+				AddLegacyContentPatches();
 			}
 			catch(Exception ex) {
 				#if DEBUG
@@ -374,6 +403,104 @@ namespace WebOne
 				+ string.Join(",", trueStrings)
 				+ " and "
 				+ string.Join(",", falseStrings));
+		}
+
+		/// <summary>
+		/// Convert legacy FixableURL sections to new syntax (edit sets)
+		/// </summary>
+		private static void AddLegacyFixableURLs()
+		{
+			foreach(string FixUrl in FixableURLs)
+			{
+				List<string> RawES = new List<string>();
+				RawES.Add("OnUrl="+FixUrl);
+
+				foreach (KeyValuePair<string, string> FixUrlAct in FixableUrlActions[FixUrl])
+				{
+					switch (FixUrlAct.Key.ToLower())
+					{
+						case "validmask":
+							RawES.Add("IgnoreUrl=" + FixUrlAct.Value);
+							continue;
+						case "redirect":
+							RawES.Add("AddRedirect=" + FixUrlAct.Value);
+							continue;
+						case "internal":
+							if(FixUrlAct.Value.ToLower() == "yes" && FixableUrlActions[FixUrl].ContainsKey("Redirect"))
+							RawES.Add("AddInternalRedirect=" + FixableUrlActions[FixUrl]["Redirect"]);
+							continue;
+						default:
+							Console.WriteLine("Unknown legacy FixableURL option: {0}", FixUrlAct.Key);
+							continue;
+					}
+				}
+				EditRules.Add(new EditSet(RawES));
+			}
+		}
+
+		/// <summary>
+		/// Convert legacy FixableType sections to new syntax (edit sets)
+		/// </summary>
+		private static void AddLegacyFixableTypes()
+		{
+			foreach (string FixT in FixableTypes)
+			{
+				List<string> RawES = new List<string>();
+				RawES.Add("OnContentType=" + FixT);
+
+				foreach (KeyValuePair<string, string> FixTAct in FixableTypesActions[FixT])
+				{
+					switch (FixTAct.Key.ToLower())
+					{
+						case "ifurl":
+							RawES.Add("OnUrl=" + FixTAct.Value);
+							continue;
+						case "noturl":
+							RawES.Add("IgnoreUrl=" + FixTAct.Value);
+							continue;
+						case "redirect":
+							RawES.Add("AddRedirect=" + FixTAct.Value);
+							continue;
+						default:
+							Console.WriteLine("Unknown legacy FixableType option: {0}", FixTAct.Key);
+							continue;
+					}
+				}
+				EditRules.Add(new EditSet(RawES));
+			}
+		}
+
+
+		/// <summary>
+		/// Convert legacy ContentPatch sections to new syntax (edit sets)
+		/// </summary>
+		private static void AddLegacyContentPatches()
+		{
+			foreach (string Patch in ContentPatches)
+			{
+				List<string> RawES = new List<string>();
+				RawES.Add("AddFind=" + Patch);
+
+				foreach (KeyValuePair<string, string> PatchAct in ContentPatchActions[Patch])
+				{
+					switch (PatchAct.Key.ToLower())
+					{
+						case "replace":
+							RawES.Add("AddReplace=" + PatchAct.Value);
+							continue;
+						case "ifurl":
+							RawES.Add("OnUrl=" + PatchAct.Value);
+							continue;
+						case "iftype":
+							RawES.Add("OnContentType=" + PatchAct.Value);
+							continue;
+						default:
+							Console.WriteLine("Unknown legacy ContentPatch option: {0}", PatchAct.Key);
+							continue;
+					}
+				}
+				EditRules.Add(new EditSet(RawES));
+			}
 		}
 	}
 }
