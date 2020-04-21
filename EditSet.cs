@@ -90,6 +90,28 @@ namespace WebOne
 
             if (UrlMasks.Count == 0) UrlMasks.Add(".*");
         }
+
+
+        //test functions
+        public override string ToString()
+        {
+            string Str = "[Edit:"+UrlMasks[0]+"]\n";
+            if (UrlMasks.Count > 1) Str += "OnUrl=" + ReadStrings(UrlMasks);
+            if (UrlIgnoreMasks.Count > 1) Str += "IgnoreUrl=" + ReadStrings(UrlIgnoreMasks);
+            if (ContentTypeMasks.Count > 1) Str += "OnContentType=" + ReadStrings(ContentTypeMasks);
+            foreach (var edit in Edits) Str += edit.Key + "=" + edit.Value + "\n";
+            return Str;
+        }
+
+        /// <summary>
+        /// Convert an List of strings to a multiline string
+        /// </summary>
+        private string ReadStrings(List<string> Strings)
+        {
+            string Str = "";
+            foreach (string str in Strings) Str += str + "\n";
+            return Str;
+        }
     }
 
 }

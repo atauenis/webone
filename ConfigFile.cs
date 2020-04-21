@@ -435,6 +435,7 @@ namespace WebOne
 					}
 				}
 				EditRules.Add(new EditSet(RawES));
+				//Console.WriteLine(new EditSet(RawES));
 			}
 		}
 
@@ -467,6 +468,7 @@ namespace WebOne
 					}
 				}
 				EditRules.Add(new EditSet(RawES));
+				//Console.WriteLine(new EditSet(RawES));
 			}
 		}
 
@@ -500,6 +502,7 @@ namespace WebOne
 					}
 				}
 				EditRules.Add(new EditSet(RawES));
+				//Console.WriteLine(new EditSet(RawES));
 			}
 		}
 	}
