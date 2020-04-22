@@ -17,8 +17,9 @@ namespace WebOne
 	 *     https://social.msdn.microsoft.com/Forums/en-US/e8807c4c-72b6-4254-ae64-45c2743b181e/ssltls-the-handshake-failed-due-to-an-unexpected-packet-format-mercury-for-win32-pop3?forum=ncl
 	 * 	   - ServerCertificateValidationCallback	=	COMPLETE, not helped
 	 * 	   - move to .Net Core	=	COMPLETE, probably helped
-	 * 3. Fix "authentication failed because the remote party has closed the transport stream"
+	 * 3. [ok] Fix "authentication failed because the remote party has closed the transport stream"
 	 *     - appear only on converters
+	 *     - use seamless converting	=	COMPLETE
 	 * 4. [ok] Headers on requests to ForceHttps domains:
 	 * 	   origin: httpS://www.vogons.org
 	 *     referer: httpS://www.vogons.org/index.php
@@ -32,8 +33,9 @@ namespace WebOne
 	 * 6. [ok] Kill strict-transport-security response header
 	 * 7. [ok] Fix "cannot load <temp file name>, it is in use by another process"
 	 *     - move to .Net Core	=	COMPLETE, probably helped
-	 * 8. New syntax of patch rules [may be in 0.11.0]
-	 * 9. Cache and log (sniffer) for debugging purposes [may be in 0.11.0] 
+	 * 8. [ok] New syntax of patch rules
+	 * 9. Translit support (cyr-lat, greek-lat, chinese-lat, etc)
+	 *10. Cache and log (sniffer) for debugging purposes [may be in 0.11.0] 
 	 * 
 	*/
 	public static class Program
@@ -93,6 +95,39 @@ namespace WebOne
 		/// <param name="For">Pattern to find</param>
 		public static bool CheckString(string What, string[] For) {
 			foreach (string str in For) { if (What.Contains(str)) return true; }
+			return false;
+		}
+
+		/// <summary>
+		/// Check a string array for containing a pattern
+		/// </summary>
+		/// <param name="Where">Where the search should be do</param>
+		/// <param name="For">Pattern to find</param>
+		public static bool CheckString(string[] Where, string For)
+		{
+			foreach (string str in Where) { if (str.Contains(For)) return true; }
+			return false;
+		}
+
+		/// <summary>
+		/// Check a string for containing a something from list of RegExp patterns
+		/// </summary>
+		/// <param name="What">What string should be checked</param>
+		/// <param name="For">Pattern to find</param>
+		public static bool CheckStringRegExp(string What, string[] For)
+		{
+			foreach (string str in For) { if (System.Text.RegularExpressions.Regex.IsMatch(What, str)) return true; }
+			return false;
+		}
+
+		/// <summary>
+		/// Check a string array for containing a RegExp pattern
+		/// </summary>
+		/// <param name="Where">Where the search should be do</param>
+		/// <param name="For">Pattern to find</param>
+		public static bool CheckStringRegExp(string[] Where, string For)
+		{
+			foreach (string str in Where) { if (System.Text.RegularExpressions.Regex.IsMatch(str, For)) return true; }
 			return false;
 		}
 

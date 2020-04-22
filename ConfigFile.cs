@@ -448,6 +448,7 @@ namespace WebOne
 			{
 				List<string> RawES = new List<string>();
 				RawES.Add("OnContentType=" + FixT);
+				RawES.Add("OnCode=2");
 
 				foreach (KeyValuePair<string, string> FixTAct in FixableTypesActions[FixT])
 				{
@@ -482,6 +483,7 @@ namespace WebOne
 			{
 				List<string> RawES = new List<string>();
 				RawES.Add("AddFind=" + Patch);
+				RawES.Add("OnCode=2");
 
 				foreach (KeyValuePair<string, string> PatchAct in ContentPatchActions[Patch])
 				{

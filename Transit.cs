@@ -29,6 +29,7 @@ namespace WebOne
 		static HttpStatusCode LastCode = HttpStatusCode.OK;
 		static string LastContentType = "not-a-carousel";
 		bool ShouldRedirectInNETFW = false;
+		List<EditSet> EditSets = new List<EditSet>();
 
 		HttpOperation operation;
 		int ResponseCode = 502;
@@ -437,52 +438,6 @@ namespace WebOne
 					if (RequestURL.AbsoluteUri.StartsWith("https://") && !RefererUri.StartsWith("https://"))
 						RefererUri = "https" + RefererUri.Substring(4);
 
-				//check for too new frameworks & replace with older versions
-				foreach (string str in ConfigFile.FixableURLs)
-				{
-					if (Regex.Match(RequestURL.AbsoluteUri, str).Success)
-					{
-						try
-						{
-							string ValidMask = "";
-							if (ConfigFile.FixableUrlActions[str].ContainsKey("ValidMask")) ValidMask = ConfigFile.FixableUrlActions[str]["ValidMask"];
-
-							string Redirect = "about:mozilla";
-							if (ConfigFile.FixableUrlActions[str].ContainsKey("Redirect")) Redirect = ConfigFile.FixableUrlActions[str]["Redirect"];
-
-							string InternalRedirect = "no";
-							if (ConfigFile.FixableUrlActions[str].ContainsKey("Internal")) InternalRedirect = ConfigFile.FixableUrlActions[str]["Internal"];
-
-							if (ValidMask == "" || !Regex.Match(RequestURL.AbsoluteUri, ValidMask).Success)
-							{
-								string NewURL = ProcessUriMasks(Redirect, RequestURL.AbsoluteUri);
-								
-								ShouldRedirectInNETFW = ConfigFile.ToBoolean(InternalRedirect);
-
-								if (!ShouldRedirectInNETFW)
-								{
-									Console.WriteLine("{0}\t Fix to {1}", GetTime(BeginTime), NewURL);
-									ClientResponse.AddHeader("Location", NewURL);
-									SendError(302, "Брось каку!");
-									return;
-								}
-								else
-								{
-									Console.WriteLine("{0}\t Fix to {1} internally", GetTime(BeginTime), NewURL);
-									RequestURL = new Uri(NewURL);
-								}
-							}
-						}
-						catch (Exception rex)
-						{
-							Console.WriteLine("{0}\t Cannot redirect! {1}", GetTime(BeginTime), rex.Message);
-							SendError(200, rex.ToString().Replace("\n", "\n<br>"));
-							return;
-						}
-					}
-				}
-
-
 				LastURL = RequestURL.AbsoluteUri;
 				LastContentType = "unknown/unknown"; //will be populated in MakeOutput
 				LastCode = HttpStatusCode.OK; //same
@@ -495,14 +450,24 @@ namespace WebOne
 				if (RequestURL.AbsoluteUri.Length == 0) { StWrong = true; SendError(400, "Empty URL."); }
 				if (RequestURL.AbsoluteUri == "") return;
 
+				//check for available edit sets
+				foreach (EditSet set in ConfigFile.EditRules)
+				{
+					if (CheckStringRegExp(RequestURL.AbsoluteUri, set.UrlMasks.ToArray()) && !CheckStringRegExp(RequestURL.AbsoluteUri, set.UrlIgnoreMasks.ToArray()))
+					{
+						EditSets.Add(set);
+					}
+				}
+
 				try
 				{
 					int CL = 0;
 					if (ClientRequest.Headers["Content-Length"] != null) CL = Int32.Parse(ClientRequest.Headers["Content-Length"]);
 
-					//send HTTPS request to destination server
+					//make and send HTTPS request to destination server
 					WebHeaderCollection whc = new WebHeaderCollection();
 
+					//prepare headers
 					if(RequestURL.Scheme.ToLower() == "https")
 					{
 						foreach(string h in ClientRequest.Headers.Keys) {
@@ -515,12 +480,34 @@ namespace WebOne
 							whc.Add(h, ClientRequest.Headers[h]);
 						}
 					}
-					if (whc["upgrade-insecure-requests"] == null) whc.Add("upgrade-insecure-requests: 1");
 					if (whc["Origin"] == null & whc["Referer"] != null) whc.Add("Origin: " + new Uri(whc["Referer"]).Scheme + "://" + new Uri(whc["Referer"]).Host);
-					/*if (whc["sec-fetch-mode"] == null) whc.Add("sec-fetch-mode: navigate");
-					if (whc["sec-fetch-site"] == null) whc.Add("sec-fetch-site: same-origin");
-					if (whc["sec-fetch-user"] == null) whc.Add("sec-fetch-user: ?1");*/
 
+					//perform edits on the request
+					foreach(EditSet Set in EditSets)
+					{
+						if(Set.IsForRequest)
+						foreach(KeyValuePair<string, string> Edit in Set.Edits)
+						{
+							switch (Edit.Key)
+							{
+								case "AddInternalRedirect":
+									Console.WriteLine("{0}\t Fix to {1} internally", GetTime(BeginTime), Edit.Value);
+									RequestURL = new Uri(Edit.Value);
+									break;
+								case "AddRedirect":
+									Console.WriteLine("{0}\t Fix to {1}", GetTime(BeginTime), Edit.Value);
+									ClientResponse.AddHeader("Location", Edit.Value);
+									SendError(302, "Брось каку!");
+									return;
+								case "AddHeader":
+									//Console.WriteLine("{0}\t Add request header: {1}", GetTime(BeginTime), Edit.Value);
+									if (whc[Edit.Value.Substring(0, Edit.Value.IndexOf(": "))] == null) whc.Add(ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+									break;
+							}
+						}
+					}
+
+					//send the request
 					SendRequest(operation, ClientRequest.HttpMethod, whc, CL);
 				}
 				catch (WebException wex)
@@ -739,6 +726,7 @@ namespace WebOne
 					}
 			}
 
+			//todo: this may be moved to MakeOutput!
 			ResponseCode = (int)operation.Response.StatusCode;
 
 			//check for security upgrade
@@ -814,6 +802,7 @@ namespace WebOne
 
 			//content patching
 			int patched = 0;
+			//undone: add here new EditSet based content patching
 			foreach (string mask in ConfigFile.ContentPatches)
 			{
 				string IfURL = ".*";
@@ -868,35 +857,90 @@ namespace WebOne
 		private void MakeOutput(HttpStatusCode StatusCode, Stream ResponseStream, string ContentType, long ContentLength)
 		{
 			this.ContentType = ContentType;
+			string SrcContentType = ContentType;
 
-			//check for need of converting
-			foreach (string str in ConfigFile.FixableTypes)
+			//perform edits on the response: common tasks for all bin/text
+			string Converter = null;
+			string ConvertDest = "";
+			string ConvertArg1 = "";
+			string ConvertArg2 = "";
+			string Redirect = null;
+
+			foreach (EditSet Set in EditSets)
 			{
-				if (Regex.Match(ContentType, str).Success)
+				if (Set.ContentTypeMasks.Count == 0 || CheckStringRegExp(Set.ContentTypeMasks.ToArray(), ContentType))
 				{
-					bool Need = true;
-
-					string Redirect = "http://" + ConfigFile.DefaultHostName + "/!convert/";
-					if (ConfigFile.FixableTypesActions[str].ContainsKey("Redirect")) Redirect = ConfigFile.FixableTypesActions[str]["Redirect"];
-					Redirect = ProcessUriMasks(Redirect, RequestURL.AbsoluteUri);
-
-					string IfUrl = ".*";
-					if (ConfigFile.FixableTypesActions[str].ContainsKey("IfUrl")) IfUrl = ConfigFile.FixableTypesActions[str]["IfUrl"];
-
-					string NotUrl = "";
-					if (ConfigFile.FixableTypesActions[str].ContainsKey("NotUrl")) NotUrl = ConfigFile.FixableTypesActions[str]["NotUrl"];
-
-					Need = Regex.IsMatch(RequestURL.AbsoluteUri, IfUrl);
-					Need = !Regex.IsMatch(RequestURL.AbsoluteUri, NotUrl);
-
-					if (Need)
+					if (CheckHttpStatusCode(Set.OnCode, operation.Response.StatusCode))
 					{
-						Console.WriteLine("{0}\t {1} {2}. Body {3}K of {4} [Need to convert].", GetTime(BeginTime), (int)StatusCode, StatusCode, ContentLength / 1024, ContentType);
-						ClientResponse.AddHeader("Location", Redirect);
-						SendError(302, "Need to convert this.");
-						return;
+						foreach (KeyValuePair<string, string> Edit in Set.Edits)
+						{
+							switch (Edit.Key)
+							{
+								case "AddConvert":
+									Converter = Edit.Value;
+									break;
+								case "AddConvertDest":
+									ConvertDest = Edit.Value;
+									break;
+								case "AddConvertArg1":
+									ConvertArg1 = Edit.Value;
+									break;
+								case "AddConvertArg2":
+									ConvertArg2 = Edit.Value;
+									break;
+								case "AddResponseHeader":
+									Console.WriteLine("{0}\t Add response header: {1}", GetTime(BeginTime), Edit.Value);
+									operation.ResponseHeaders.Add(Edit.Value);
+									if (Edit.Value.StartsWith("Content-Type: ")) ContentType = Edit.Value.Substring("Content-Type: ".Length);
+									break;
+								case "AddRedirect":
+									Console.WriteLine("{0}\t Add redirect: {1}", GetTime(BeginTime), ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+									Redirect = ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
+									break;
+							}
+						}
 					}
+				}
+			}
 
+			//check for edit: AddRedirect
+			if (Redirect != null)
+			{
+				Console.WriteLine("{0}\t {1} {2}. Body {3}K of {4} [Need to redirect].", GetTime(BeginTime), (int)StatusCode, StatusCode, ContentLength / 1024, SrcContentType);
+				ClientResponse.AddHeader("Location", Redirect);
+				SendError(302, "Redirect requested.");
+				return;
+			}
+
+			//check for edit: AddConvert
+			if (Converter != null)
+			{
+				Console.WriteLine("{0}\t {1} {2}. Body {3}K of {4} [Wants {5}].", GetTime(BeginTime), (int)StatusCode, StatusCode, ContentLength / 1024, SrcContentType, Converter);
+
+				try
+				{
+					foreach (Converter Cvt in ConfigFile.Converters)
+					{
+						if (Cvt.Executable == Converter)
+						{
+							SendStream(Cvt.Run(BeginTime, ResponseStream, ConvertArg1, ConvertArg1, ConvertDest, RequestURL.AbsoluteUri), ContentType, true);
+							return;
+						}
+					}
+					SendError(503, "<big>Converter &quot;<b>" + Converter + "</b>&quot; is unknown</big>.<br>" +
+					"<p>This converter is not well listed in configuration file.</p>" +
+					"<p>See <a href=\"http://github.com/atauenis/webone/wiki\">WebOne wiki</a> for help on this.</p>");
+					return;
+				}
+				catch(Exception ConvertEx)
+				{
+					Console.WriteLine("{0}\t On-fly converter error: {1}", GetTime(BeginTime), ConvertEx.Message);
+					SendError(502,
+						"<p><big><b>Converter error</b>: " + ConvertEx.Message + "</big></p>" +
+						"Source URL: " + RequestURL.AbsoluteUri + "<br>" +
+						"Utility: " + Converter + "<br>"+
+						"Mode: seamless from '" + SrcContentType + "' to '" + ContentType + "'");
+					return;
 				}
 			}
 
@@ -998,6 +1042,30 @@ namespace WebOne
 			}
 
 			return CodePagesEncodingProvider.Instance.GetEncoding(Charset) ?? Encoding.UTF8;
+		}
+
+		/// <summary>
+		/// Check HTTP status code for compliance with expectations in Set of edits
+		/// </summary>
+		/// <param name="ExpectedCode">Expected code from Set of edits</param>
+		/// <param name="RealCode">Real HTTP status code</param>
+		/// <returns>true if the code is in compliance with Set of edits, false if not</returns>
+		private bool CheckHttpStatusCode(int? ExpectedCode, HttpStatusCode RealCode)
+		{
+			if (ExpectedCode != null &&
+			(
+				(ExpectedCode == (int)RealCode) ||
+				(ExpectedCode == 0 && (int)RealCode < 300) ||
+				(ExpectedCode == 2 && (int)RealCode < 300 && (int)RealCode > 199) ||
+				(ExpectedCode == 3 && (int)RealCode < 400 && (int)RealCode > 299) ||
+				(ExpectedCode == 4 && (int)RealCode > 399)
+			)
+			|| ExpectedCode == null
+		   )
+				return true;
+			else
+				return false;
+
 		}
 
 		/// <summary>

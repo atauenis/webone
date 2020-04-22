@@ -27,6 +27,11 @@ namespace WebOne
         public List<string> ContentTypeMasks { get; set; }
 
         /// <summary>
+        /// Mask (exact) of HTTP status code where the Set would be used
+        /// </summary>
+        public int? OnCode { get; set; }
+
+        /// <summary>
         /// Flag that indicates that the edits can be performed at time of HTTP Request (before get of response)
         /// </summary>
         public bool IsForRequest { get; set; }
@@ -63,6 +68,9 @@ namespace WebOne
                     case "OnUrl":
                         UrlMasks.Add(ParamValue);
                         continue;
+                    case "OnCode":
+                        OnCode = int.Parse(ParamValue);
+                        continue;
                     case "IgnoreUrl":
                         UrlIgnoreMasks.Add(ParamValue);
                         continue;
@@ -90,7 +98,6 @@ namespace WebOne
 
             if (UrlMasks.Count == 0) UrlMasks.Add(".*");
         }
-
 
         //test functions
         public override string ToString()
