@@ -99,24 +99,14 @@ namespace WebOne
             if (UrlMasks.Count == 0) UrlMasks.Add(".*");
         }
 
-        //test functions
+        //test function
         public override string ToString()
         {
             string Str = "[Edit:"+UrlMasks[0]+"]\n";
-            if (UrlMasks.Count > 1) Str += "OnUrl=" + ReadStrings(UrlMasks);
-            if (UrlIgnoreMasks.Count > 1) Str += "IgnoreUrl=" + ReadStrings(UrlIgnoreMasks);
-            if (ContentTypeMasks.Count > 1) Str += "OnContentType=" + ReadStrings(ContentTypeMasks);
+            if (UrlMasks.Count > 1) for(int i = 1; i < UrlMasks.Count; i++) Str += "OnUrl=" + UrlMasks[i] + "\n";
+            foreach (var imask in UrlIgnoreMasks) Str += "IgnoreUrl=" + "=" + imask + "\n";
+            foreach (var ctmask in ContentTypeMasks) Str += "OnContentType=" + "=" + ctmask + "\n";
             foreach (var edit in Edits) Str += edit.Key + "=" + edit.Value + "\n";
-            return Str;
-        }
-
-        /// <summary>
-        /// Convert an List of strings to a multiline string
-        /// </summary>
-        private string ReadStrings(List<string> Strings)
-        {
-            string Str = "";
-            foreach (string str in Strings) Str += str + "\n";
             return Str;
         }
     }
