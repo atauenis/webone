@@ -802,34 +802,42 @@ namespace WebOne
 
 			//content patching
 			int patched = 0;
-			//undone: add here new EditSet based content patching
-			foreach (string mask in ConfigFile.ContentPatches)
+			List<string> Finds = new List<string>();
+			List<string> Replacions = new List<string>();
+
+			//find edits
+			foreach (EditSet Set in EditSets)
 			{
-				string IfURL = ".*";
-				if (ConfigFile.ContentPatchActions[mask].ContainsKey("IfURL"))
-					IfURL = ConfigFile.ContentPatchActions[mask]["IfURL"];
-
-				string IfType = ".*";
-				if (ConfigFile.ContentPatchActions[mask].ContainsKey("IfType"))
-					IfType = ConfigFile.ContentPatchActions[mask]["IfType"];
-
-				string Replace = "<!--Removed by WebOne:$&End-->";
-				if (ConfigFile.ContentPatchActions[mask].ContainsKey("Replace"))
-					Replace = ConfigFile.ContentPatchActions[mask]["Replace"];
-
-				if (Regex.IsMatch(RequestURL.AbsoluteUri, IfURL) && Regex.IsMatch(ContentType, IfType))
+				if (Set.ContentTypeMasks.Count == 0 || CheckStringRegExp(ContentType, Set.ContentTypeMasks.ToArray()))
 				{
-					try
-					{
-						Body = Regex.Replace(Body, mask, Replace, RegexOptions.Singleline);
-						patched++;
-					}
-					catch (Exception rex)
-					{
-						Console.WriteLine("{0}\t Cannot make edit: {1}!", GetTime(BeginTime), rex.Message);
+					if (CheckHttpStatusCode(Set.OnCode, operation.Response.StatusCode))
+					{ 
+						foreach (KeyValuePair<string, string> Edit in Set.Edits)
+						{
+							switch (Edit.Key)
+							{
+								case "AddFind":
+									Finds.Add(Edit.Value);
+									break;
+								case "AddReplace":
+									Replacions.Add(Edit.Value);
+									break;
+							}
+						}
 					}
 				}
 			}
+
+			//do edits
+			if (Finds.Count != Replacions.Count)
+				Console.WriteLine("{0}\t Invalid amount of Find/Replace!", GetTime(BeginTime));
+				//todo: add warning to constructor of EditSet
+			else if(Finds.Count > 0)
+				for (int i = 0; i < Finds.Count; i++)
+				{
+					Body = Regex.Replace(Body, Finds[i], Replacions[i], RegexOptions.Singleline);
+					patched++;
+				}
 
 			if (patched > 0) Console.WriteLine("{0}\t {1} patch(-es) applied...", GetTime(BeginTime), patched);
 			return Body;
