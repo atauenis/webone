@@ -19,6 +19,8 @@ To start proxy on Linux, enter server's DNS name or IP in `DefaultHostName` fiel
 $ sudo dotnet WebOne.dll
 ```
 
+On Windows simply run `WebOne.exe`.
+
 
 Working of WebOne can be checked via server diagnostics page at http://proxyhost:port/!/.
 
