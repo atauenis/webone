@@ -840,6 +840,16 @@ namespace WebOne
 				}
 
 			if (patched > 0) Console.WriteLine("{0}\t {1} patch(-es) applied...", GetTime(BeginTime), patched);
+
+			//do transliteration if need
+			if(ConfigFile.TranslitTable.Count > 0)
+			{
+				foreach(var Letter in ConfigFile.TranslitTable)
+				{
+					Body = Body.Replace(Letter.Key, Letter.Value);
+				}
+			}
+
 			return Body;
 		}
 

@@ -34,7 +34,7 @@ namespace WebOne
 	 * 7. [ok] Fix "cannot load <temp file name>, it is in use by another process"
 	 *     - move to .Net Core	=	COMPLETE, probably helped
 	 * 8. [ok] New syntax of patch rules
-	 * 9. Translit support (cyr-lat, greek-lat, chinese-lat, etc)
+	 * 9. [ok] Translit support (cyr-lat, greek-lat, chinese-lat, etc)
 	 *10. Cache and log (sniffer) for debugging purposes [may be in 0.11.0] 
 	 * 
 	*/
@@ -47,7 +47,7 @@ namespace WebOne
 		static void Main(string[] args)
 		{
 			Console.Title = "WebOne";
-			Console.WriteLine("WebOne HTTP Proxy Server {0}-Beta 1pre.\n(C) https://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
+			Console.WriteLine("WebOne HTTP Proxy Server {0}\n(C) https://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
 
 			int Port = -1;
 			try { Port = Convert.ToInt32(args[0]); if (args.Length > 1) ConfigFileName = args[1]; }

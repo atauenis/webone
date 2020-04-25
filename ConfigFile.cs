@@ -50,32 +50,32 @@ namespace WebOne
 		public static string Authenticate = "";
 
 		/// <summary>
-		/// List of URLs that should be always 302ed
+		/// (Legacy) List of URLs that should be always 302ed
 		/// </summary>
 		public static List<string> FixableURLs = new List<string>();
 
 		/// <summary>
-		/// Dictionary of URLs that should be always 302ed if they're looks like too new JS frameworks
+		/// (Legacy) Dictionary of URLs that should be always 302ed if they're looks like too new JS frameworks
 		/// </summary>
 		public static Dictionary<string, Dictionary<string, string>> FixableUrlActions =  new Dictionary<string, Dictionary<string, string>>();
 
 		/// <summary>
-		/// List of Content-Types that should be always 302ed
+		/// (Legacy) List of Content-Types that should be always 302ed
 		/// </summary>
 		public static List<string> FixableTypes = new List<string>();
 
 		/// <summary>
-		/// Dictionary of Content-Types that should be always 302ed to converter
+		/// (Legacy) Dictionary of Content-Types that should be always 302ed to converter
 		/// </summary>
 		public static Dictionary<string, Dictionary<string, string>> FixableTypesActions = new Dictionary<string, Dictionary<string, string>>();
 
 		/// <summary>
-		/// List of possible content patches
+		/// (Legacy) List of possible content patches
 		/// </summary>
 		public static List<string> ContentPatches = new List<string>();
 
 		/// <summary>
-		/// Dictionary of possible content patches
+		/// (Legacy) Dictionary of possible content patches
 		/// </summary>
 		public static Dictionary<string, Dictionary<string, string>> ContentPatchActions = new Dictionary<string, Dictionary<string, string>>();
 
@@ -123,6 +123,11 @@ namespace WebOne
 		/// List of possible traffic editing rule sets
 		/// </summary>
 		public static List<EditSet> EditRules = new List<EditSet>();
+
+		/// <summary>
+		/// Table for alphabet transliteration
+		/// </summary>
+		public static List<KeyValuePair<string, string>> TranslitTable = new List<KeyValuePair<string, string>>();
 
 		static ConfigFile()
 		{
@@ -351,6 +356,9 @@ namespace WebOne
 									Console.WriteLine("Warning: Unknown server option: " + ParamName);
 									break;
 							}
+							break;
+						case "Translit":
+							TranslitTable.Add(new KeyValuePair<string, string>(ParamName, ParamValue));
 							break;
 						default:
 							Console.WriteLine("Warning: Unknown section: " + Section);
