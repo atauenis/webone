@@ -491,12 +491,12 @@ namespace WebOne
 							switch (Edit.Key)
 							{
 								case "AddInternalRedirect":
-									Console.WriteLine("{0}\t Fix to {1} internally", GetTime(BeginTime), Edit.Value);
+									Console.WriteLine("{0}\t Fix to {1} internally", GetTime(BeginTime), ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
 									RequestURL = new Uri(Edit.Value);
 									break;
 								case "AddRedirect":
-									Console.WriteLine("{0}\t Fix to {1}", GetTime(BeginTime), Edit.Value);
-									ClientResponse.AddHeader("Location", Edit.Value);
+									Console.WriteLine("{0}\t Fix to {1}", GetTime(BeginTime), ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+									ClientResponse.AddHeader("Location", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
 									SendError(302, "Брось каку!");
 									return;
 								case "AddHeader":
@@ -897,8 +897,8 @@ namespace WebOne
 									ConvertArg2 = Edit.Value;
 									break;
 								case "AddResponseHeader":
-									Console.WriteLine("{0}\t Add response header: {1}", GetTime(BeginTime), Edit.Value);
-									operation.ResponseHeaders.Add(Edit.Value);
+									Console.WriteLine("{0}\t Add response header: {1}", GetTime(BeginTime), ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+									operation.ResponseHeaders.Add(ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
 									if (Edit.Value.StartsWith("Content-Type: ")) ContentType = Edit.Value.Substring("Content-Type: ".Length);
 									break;
 								case "AddRedirect":
