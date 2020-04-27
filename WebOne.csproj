@@ -15,6 +15,28 @@
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <SelfContained>False</SelfContained>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'@(DebDotNetDependencies)' == '' AND '$(TargetFramework)' == 'netcoreapp3.1'"> 
+	<DebDotNetDependencies Include="dotnet-runtime-3.1" /> 
+  </ItemGroup> 
+
+  <ItemGroup Condition="'@(RpmDotNetDependency)' == '' AND '$(TargetFramework)' == 'netcoreapp3.1'"> 
+	<RpmDotNetDependency Include="dotnet-runtime-3.1" Version="" /> 
+  </ItemGroup> 
+
+  <ItemGroup>
+    <DebDependency Include="ffmpeg" />
+    <DebDependency Include="imagemagick-6.q16" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <RpmDependency Include="ffmpeg" />
+    <RpmDependency Include="imagemagick-6.q16" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Remove="avconv\**" />
     <Compile Remove="bin-old\**" />
