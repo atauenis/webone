@@ -941,7 +941,7 @@ namespace WebOne
 					{
 						if (Cvt.Executable == Converter)
 						{
-							SendStream(Cvt.Run(BeginTime, ResponseStream, ConvertArg1, ConvertArg1, ConvertDest, RequestURL.AbsoluteUri), ContentType, true);
+							SendStream(Cvt.Run(BeginTime, ResponseStream, ConvertArg1, ConvertArg2, ConvertDest, RequestURL.AbsoluteUri), ContentType, true);
 							return;
 						}
 					}
