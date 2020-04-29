@@ -237,13 +237,13 @@ namespace WebOne
 										if(Cvt.Executable == Converter)
 										{
 											HttpOperation HOper = new HttpOperation(BeginTime);
-											Stream SrcStream;
+											Stream SrcStream = null;
 
 											//find source file placement
 											if (FindSrcUrl.Success)
 											{
 												//download source file
-												try
+												if (!Cvt.SelfDownload) try
 												{
 													HOper.URL = SrcUrl;
 													HOper.Method = "GET";
@@ -273,7 +273,7 @@ namespace WebOne
 											{
 												//open local source file
 												SrcUrl = "http://0.0.0.0/localfile";
-												try
+												if (!Cvt.SelfDownload) try
 												{
 													if (!File.Exists(Src)) throw new FileNotFoundException("No such file: " + Src);
 													SrcStream = File.OpenRead(Src);
@@ -941,7 +941,13 @@ namespace WebOne
 					{
 						if (Cvt.Executable == Converter)
 						{
-							SendStream(Cvt.Run(BeginTime, ResponseStream, ConvertArg1, ConvertArg2, ConvertDest, RequestURL.AbsoluteUri), ContentType, true);
+							if(!Cvt.SelfDownload)
+								SendStream(Cvt.Run(BeginTime, ResponseStream, ConvertArg1, ConvertArg2, ConvertDest, RequestURL.AbsoluteUri), ContentType, true);
+							else
+							{
+								SendStream(Cvt.Run(BeginTime, null, ConvertArg1, ConvertArg2, ConvertDest, RequestURL.AbsoluteUri), ContentType, true);
+								Console.WriteLine("{0}\t '{1}' will download the source again.", GetTime(BeginTime), Converter);
+							}
 							return;
 						}
 					}

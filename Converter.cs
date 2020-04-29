@@ -53,7 +53,7 @@ namespace WebOne
 			if (!CommandLine.Contains("%DEST%")) UseStdout = true;
 			if (!CommandLine.Contains("%SRC%")) UseStdin = true;
 			SelfDownload = CommandLine.Contains("%SRCURL%");
-			if (UseStdin && SelfDownload) throw new Exception("Converter cannot self download and use STDIN at same time");
+			//if (UseStdin && SelfDownload) throw new Exception("Converter cannot self download and use STDIN at same time"); //bug #7
 		}
 
 		/// <summary>
@@ -138,6 +138,7 @@ namespace WebOne
 				//new Task(() => { while (!ConvProc.HasExited) { CheckIdle(ref ConvCpuLoad, ref ConvProc); } }).Start();
 				//SendStream(ConvProc.StandardOutput.BaseStream, DestMime, false);
 
+				//undone: куча null внутри тасков, сдуру отключил остановку. Короче, надо добавить проверку. На батниках нет ни процесса, и толком потока.
 				new Task(() =>
 				{
 					new Task(() =>
