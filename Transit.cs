@@ -30,6 +30,7 @@ namespace WebOne
 		static string LastContentType = "not-a-carousel";
 		bool ShouldRedirectInNETFW = false;
 		List<EditSet> EditSets = new List<EditSet>();
+		bool Stop = false;
 
 		HttpOperation operation;
 		int ResponseCode = 502;
@@ -726,6 +727,8 @@ namespace WebOne
 					}
 			}
 
+			if (Stop) return; //if converting has occur and the request should not be processed next
+
 			//todo: this may be moved to MakeOutput!
 			ResponseCode = (int)operation.Response.StatusCode;
 
@@ -896,6 +899,7 @@ namespace WebOne
 							{
 								case "AddConvert":
 									Converter = Edit.Value;
+									Stop = true;
 									break;
 								case "AddConvertDest":
 									ConvertDest = Edit.Value;
@@ -946,7 +950,7 @@ namespace WebOne
 							else
 							{
 								SendStream(Cvt.Run(BeginTime, null, ConvertArg1, ConvertArg2, ConvertDest, RequestURL.AbsoluteUri), ContentType, true);
-								Console.WriteLine("{0}\t '{1}' will download the source again.", GetTime(BeginTime), Converter);
+								//if(operation.Response != null) Console.WriteLine("{0}\t '{1}' will download the source again.", GetTime(BeginTime), Converter); //for future
 							}
 							return;
 						}

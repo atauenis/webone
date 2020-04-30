@@ -53,7 +53,7 @@ namespace WebOne
 			if (!CommandLine.Contains("%DEST%")) UseStdout = true;
 			if (!CommandLine.Contains("%SRC%")) UseStdin = true;
 			SelfDownload = CommandLine.Contains("%SRCURL%");
-			//if (UseStdin && SelfDownload) throw new Exception("Converter cannot self download and use STDIN at same time"); //bug #7
+			if (UseStdin && SelfDownload) UseStdin = false;
 		}
 
 		/// <summary>
@@ -75,7 +75,7 @@ namespace WebOne
 			string SourceTmpFile = "convert-" + Rnd + ".orig.tmp";
 			string DestinationTmpFile = "convert-" + Rnd + ".conv." + DestinationType;
 
-			if (!UseStdin)
+			if (!UseStdin && !SelfDownload)
 			{
 				//the converter input is Temporary File; save it
 				FileStream TmpFileStream = File.OpenWrite(SourceTmpFile);
@@ -138,10 +138,9 @@ namespace WebOne
 				//new Task(() => { while (!ConvProc.HasExited) { CheckIdle(ref ConvCpuLoad, ref ConvProc); } }).Start();
 				//SendStream(ConvProc.StandardOutput.BaseStream, DestMime, false);
 
-				//undone: куча null внутри тасков, сдуру отключил остановку. Короче, надо добавить проверку. На батниках нет ни процесса, и толком потока.
 				new Task(() =>
 				{
-					new Task(() =>
+					if(InputStream != null) new Task(() =>
 					{
 						while (InputStream.CanRead && !ConvProc.HasExited) { }; if (!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine();
 					}).Start();
@@ -158,7 +157,7 @@ namespace WebOne
 					Console.WriteLine("{0}\t Waiting for finish of converting...", GetTime(BeginTime));
 #endif
 					ConvProc.WaitForExit();
-					InputStream.Close();
+					if(InputStream != null) InputStream.Close();
 #if DEBUG
 					Console.WriteLine("{0}\t Converting end.", GetTime(BeginTime));
 #endif

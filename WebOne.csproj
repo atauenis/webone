@@ -78,9 +78,7 @@
     <None Remove="HIEW32.EXE.lnk" />
     <None Remove="netscape - Ярлык.lnk" />
     <None Remove="Netscape.rar" />
-    <None Remove="Readme-YtBat.txt" />
     <None Remove="webone-youtube-dl.zip" />
-    <None Remove="yt.bat" />
   </ItemGroup>
 
   <ItemGroup>
@@ -109,6 +107,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="webone.conf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="yt.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
