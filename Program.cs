@@ -249,7 +249,7 @@ namespace WebOne
 					break;
 				case PlatformID.Win32NT:
 					DefaultConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + @"\webone.conf";
-					SkeletonConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + @"\webone.conf"; //there are no skeleton file on Win32
+					SkeletonConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + @"\webone.conf.skel";
 					UserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\WebOne\webone.conf";
 					CommonConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + @"\WebOne\webone.conf";
 					break;
@@ -278,8 +278,8 @@ namespace WebOne
 			try
 			{
 				//1. Common config directory
-				Console.WriteLine("Info: default configuration file is now: {0}.", CommonConfigFile);
 				File.Copy(SkeletonConfigFile, CommonConfigFile);
+				Console.WriteLine("Info: default configuration file is now: {0}.", CommonConfigFile);
 				return CommonConfigFile;
 			}
 			catch
@@ -287,8 +287,8 @@ namespace WebOne
 				try
 				{
 					//2. User config directory
-					Console.WriteLine("Info: default configuration file is now: {0}.", UserConfigFile);
 					File.Copy(SkeletonConfigFile, UserConfigFile);
+					Console.WriteLine("Info: default configuration file is now: {0}.", UserConfigFile);
 					return UserConfigFile;
 				}
 				catch 
@@ -297,7 +297,7 @@ namespace WebOne
 					if (!File.Exists(SkeletonConfigFile))
 					{
 						Console.WriteLine("Warning: there are no configuration file and no skeleton for it!");
-						return DefaultConfigFile;
+						return CurrentDirConfigFile;
 					}
 					Console.WriteLine("Warning: please copy webone.conf.skel to webone.conf.");
 					return SkeletonConfigFile; 
