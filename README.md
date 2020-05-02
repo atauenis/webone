@@ -7,7 +7,7 @@ The proxy is an adapter between the modern Web and old software. It is designed 
 
 WebOne HTTP Proxy Server is working by default on port 80 and is compatible even with Netscape Navigator 3. Set IP address or hostname of PC with WebOne as HTTP proxy server (or set http://proxyhost:port/auto.pac as Automatic proxy configuration URL) in old browser's settings and begin WWW surfing again. There also a local mode (http://proxyhost:port/http://domain/filename.ext) for browsers that cannot work with proxies.
 
-The program's settings are in the __webone.conf__ file (but any other file can be used too).
+The program's settings are in the __webone.conf__ file (but any other file name can be used too).
 
 Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET Core 3.1 are required on server PC. See [.NET Core 3.1 System Requirements](https://github.com/dotnet/core/blob/master/release-notes/3.1/3.1-supported-os.md).
 
@@ -20,7 +20,6 @@ $ sudo dotnet WebOne.dll
 ```
 
 On Windows simply run `WebOne.exe`.
-
 
 Working of WebOne can be checked via server diagnostics page at http://proxyhost:port/!/.
 

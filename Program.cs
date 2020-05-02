@@ -10,48 +10,25 @@ using System.Threading.Tasks;
 
 namespace WebOne
 {
-	/* TODO list for v0.10
-	 * 
-	 * 1. [ok] Move to .NET Core.
-	 * 2. [ok] Fix "Сбой установки соединения из-за неожиданного формата пакета" on SSL
-	 *     https://social.msdn.microsoft.com/Forums/en-US/e8807c4c-72b6-4254-ae64-45c2743b181e/ssltls-the-handshake-failed-due-to-an-unexpected-packet-format-mercury-for-win32-pop3?forum=ncl
-	 * 	   - ServerCertificateValidationCallback	=	COMPLETE, not helped
-	 * 	   - move to .Net Core	=	COMPLETE, probably helped
-	 * 3. [ok] Fix "authentication failed because the remote party has closed the transport stream"
-	 *     - appear only on converters
-	 *     - use seamless converting	=	COMPLETE
-	 * 4. [ok] Headers on requests to ForceHttps domains:
-	 * 	   origin: httpS://www.vogons.org
-	 *     referer: httpS://www.vogons.org/index.php
-	 *     sec-fetch-mode: navigate
-	 *     sec-fetch-site: same-origin
-	 *     sec-fetch-user: ?1
-	 *     upgrade-insecure-requests: 1
-	 *     (https://developer.mozilla.org/ru/docs/Web/HTTP/CORS)
-	 *     - COMPLETE
-	 * 5. [ok] Secure Referers on ForceHttps
-	 * 6. [ok] Kill strict-transport-security response header
-	 * 7. [ok] Fix "cannot load <temp file name>, it is in use by another process"
-	 *     - move to .Net Core	=	COMPLETE, probably helped
-	 * 8. [ok] New syntax of patch rules
-	 * 9. [ok] Translit support (cyr-lat, greek-lat, chinese-lat, etc)
-	 *10. Cache and log (sniffer) for debugging purposes [may be in 0.11.0] 
-	 * 
-	*/
 	public static class Program
 	{
-		public static string ConfigFileName = "webone.conf";
+		public static string ConfigFileName = "**auto**webone.conf";
 
 		public static int Load = 0;
 
 		static void Main(string[] args)
 		{
 			Console.Title = "WebOne";
-			Console.WriteLine("WebOne HTTP Proxy Server {0}\n(C) https://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
+			Console.WriteLine("WebOne HTTP Proxy Server {0}-pre\n(C) https://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
 
+			//process command line arguments
 			int Port = -1;
 			try { Port = Convert.ToInt32(args[0]); if (args.Length > 1) ConfigFileName = args[1]; }
 			catch { if(args.Length > 0) ConfigFileName = args[0]; }
+
+			ConfigFileName = GetDefaultConfigurationFile();
+
+			//load configuration file
 #pragma warning disable CS1717 // Назначение выполнено для той же переменной - workaround to call ConfigFile constructor
 			if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Authenticate = ConfigFile.Authenticate; //else load config file (пусть прочухается static class)
 #pragma warning restore CS1717 // Назначение выполнено для той же переменной
@@ -247,6 +224,87 @@ namespace WebOne
 							 select (Netif, ipa))
 				IPs.Add(ipa.Address);
 			return IPs.ToArray();
+		}
+
+		/// <summary>
+		/// Find and/or create default webone.conf
+		/// </summary>
+		/// <returns>Path to default configuration file</returns>
+		public static string GetDefaultConfigurationFile()
+		{
+			string CurrentDirConfigFile = "webone.conf";
+			string DefaultConfigFile = "";  //  webone.conf       (in app's directory)
+			string SkeletonConfigFile = ""; //  webone.conf.skel  (too)
+			string UserConfigFile = "";     //  ~/.config/WebOne/webone.conf
+			string CommonConfigFile = "";   //  /etc/WebOne/webone.conf
+
+			switch (Environment.OSVersion.Platform)
+			{
+				default:
+				case PlatformID.Unix:
+					DefaultConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + "/webone.conf";
+					SkeletonConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + "/webone.conf.skel";
+					UserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.config/WebOne/webone.conf";
+					CommonConfigFile = "/etc/WebOne/webone.conf";
+					break;
+				case PlatformID.Win32NT:
+					DefaultConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + @"\webone.conf";
+					SkeletonConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + @"\webone.conf"; //there are no skeleton file on Win32
+					UserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\WebOne\webone.conf";
+					CommonConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + @"\WebOne\webone.conf";
+					break;
+			}
+
+#if DEBUG
+			UserConfigFile = DefaultConfigFile; //debug versions weren't deb/rpm-packaged so they can use old-style WebOne.conf placement
+#endif
+
+			//try to load custom configuration file (if any)
+			if (ConfigFileName != "**auto**webone.conf") return ConfigFileName;
+
+			//try to load webone.conf from current directory
+			if (File.Exists(CurrentDirConfigFile)) return CurrentDirConfigFile;
+
+			//try to load webone.conf from application's directory
+			if (File.Exists(DefaultConfigFile)) return DefaultConfigFile;
+
+			//try to load webone.conf from user configuration directory
+			if (File.Exists(UserConfigFile)) return UserConfigFile;
+
+			//try to load webone.conf from common configuration directory
+			if (File.Exists(CommonConfigFile)) return CommonConfigFile;
+
+			//if there are no config files, try to create from skeleton
+			try
+			{
+				//1. Common config directory
+				Console.WriteLine("Info: default configuration file is now: {0}.", CommonConfigFile);
+				File.Copy(SkeletonConfigFile, CommonConfigFile);
+				return CommonConfigFile;
+			}
+			catch
+			{
+				try
+				{
+					//2. User config directory
+					Console.WriteLine("Info: default configuration file is now: {0}.", UserConfigFile);
+					File.Copy(SkeletonConfigFile, UserConfigFile);
+					return UserConfigFile;
+				}
+				catch 
+				{
+					//3. Return skeleton file
+					if (!File.Exists(SkeletonConfigFile))
+					{
+						Console.WriteLine("Warning: there are no configuration file and no skeleton for it!");
+						return DefaultConfigFile;
+					}
+					Console.WriteLine("Warning: please copy webone.conf.skel to webone.conf.");
+					return SkeletonConfigFile; 
+				}
+			}
+			//Probably need to add an "Quick setup" interface for configuring webone.conf from skeleton.
+			//E.g. ask user for DefaultHostName, OutputEncoding and Translit.
 		}
 	}
 }
