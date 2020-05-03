@@ -337,12 +337,12 @@ namespace WebOne
 									return;
 								case "/!clear/":
 									int FilesDeleted = 0;
-									foreach (FileInfo file in (new DirectoryInfo(Directory.GetCurrentDirectory())).EnumerateFiles("*.tmp"))
+									foreach (FileInfo file in (new DirectoryInfo(ConfigFile.TemporaryDirectory)).EnumerateFiles("convert-*.*"))
 									{
 										try { file.Delete(); FilesDeleted++; }
 										catch { }
 									}
-									SendError(200, FilesDeleted + " temporary files have been deleted.");
+									SendError(200, "<b>" + FilesDeleted + "</b> temporary files have been deleted in <i>" + ConfigFile.TemporaryDirectory + "</i>.");
 									return;
 								case "/!pac/":
 								case "/auto/":

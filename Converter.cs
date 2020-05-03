@@ -72,8 +72,8 @@ namespace WebOne
 				throw new InvalidOperationException("The converter " + Executable + " can only download the content self");
 
 			int Rnd = new Random().Next();
-			string SourceTmpFile = "convert-" + Rnd + ".orig.tmp";
-			string DestinationTmpFile = "convert-" + Rnd + ".conv." + DestinationType;
+			string SourceTmpFile = ConfigFile.TemporaryDirectory + "convert-" + Rnd + ".orig.tmp";
+			string DestinationTmpFile = ConfigFile.TemporaryDirectory + "convert-" + Rnd + ".conv." + DestinationType;
 
 			if (!UseStdin && !SelfDownload)
 			{

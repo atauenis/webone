@@ -129,6 +129,11 @@ namespace WebOne
 		/// </summary>
 		public static List<KeyValuePair<string, string>> TranslitTable = new List<KeyValuePair<string, string>>();
 
+		/// <summary>
+		/// Temporary files' directory
+		/// </summary>
+		public static string TemporaryDirectory = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar;
+
 		static ConfigFile()
 		{
 			//ConfigFileName = "webone.conf";
@@ -351,6 +356,10 @@ namespace WebOne
 									continue;
 								case "ValidateCertificates":
 									ValidateCertificates = ToBoolean(ParamValue);
+									continue;
+								case "TemporaryDirectory":
+									if (ParamValue.ToUpper() == "%TEMP%" || ParamValue == "$TEMP" || ParamValue == "$TMPDIR") TemporaryDirectory = Path.GetTempPath();
+									else TemporaryDirectory = ParamValue;
 									continue;
 								default:
 									Console.WriteLine("Warning: Unknown server option: " + ParamName);
