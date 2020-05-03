@@ -31,6 +31,7 @@ namespace WebOne
 		bool ShouldRedirectInNETFW = false;
 		List<EditSet> EditSets = new List<EditSet>();
 		bool Stop = false;
+		bool LocalMode = false;
 
 		HttpOperation operation;
 		int ResponseCode = 502;
@@ -393,14 +394,17 @@ namespace WebOne
 					//local proxy mode: http://localhost/http://example.com/indexr.shtml
 					if (RequestURL.LocalPath.StartsWith("/http:") || RequestURL.AbsoluteUri.StartsWith("/https:"))
 					{
-						RequestURL = new Uri(RequestURL.LocalPath.Replace("/http:/", "http://"));
+						RequestURL = new Uri(RequestURL.LocalPath.Substring(1) + RequestURL.Query);
 						Console.WriteLine("{0}\t Local: {1}", GetTime(BeginTime), RequestURL);
+						LocalMode = true;
 					}
 					else
 					{
 						//dirty local mode, try to use last used host: http://localhost/favicon.ico
 						RequestURL = new Uri("http://" + new Uri(LastURL).Host + RequestURL.LocalPath);
+						if (RequestURL.Host == "999.999.999.999") { SendError(404, "The proxy server cannot guess domain name."); return; }
 						Console.WriteLine("{0}\t Dirty local: {1}", GetTime(BeginTime), RequestURL);
+						LocalMode = true;
 					}
 				}
 
@@ -852,6 +856,10 @@ namespace WebOne
 					Body = Body.Replace(Letter.Key, Letter.Value);
 				}
 			}
+
+			//fix the body if it will be deliveried through Local mode
+			if(LocalMode)
+			Body = Body.Replace("http://", "http://" + ConfigFile.DefaultHostName + "/http://");
 
 			return Body;
 		}
