@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -20,11 +20,11 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'@(DebDotNetDependencies)' == '' AND '$(TargetFramework)' == 'netcoreapp3.1'"> 
-	<DebDotNetDependencies Include="dotnet-runtime-3.1" /> 
+    <DebDotNetDependencies Include="dotnet-runtime-3.1" /> 
   </ItemGroup> 
 
   <ItemGroup Condition="'@(RpmDotNetDependency)' == '' AND '$(TargetFramework)' == 'netcoreapp3.1'"> 
-	<RpmDotNetDependency Include="dotnet-runtime-3.1" Version="" /> 
+    <RpmDotNetDependency Include="dotnet-runtime-3.1" Version="" /> 
   </ItemGroup> 
 
   <ItemGroup>
@@ -36,6 +36,43 @@
     <RpmDependency Include="ffmpeg" />
     <RpmDependency Include="imagemagick-6.q16" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <PostInstallScript><![CDATA[
+#!/bin/bash
+WOConfDir=/etc/WebOne/
+WOConfFile=/etc/WebOne/webone.conf
+WOConfFileSkel=/usr/share/WebOne/webone.conf.skel
+
+if [ -f "$WOConfFileSkel" ]; then
+  rm $WOConfFileSkel
+fi
+
+mv /usr/share/WebOne/webone.conf $WOConfFileSkel
+
+if [ ! -d "$WOConfDir" ]; then
+  mkdir $WOConfDir
+fi
+
+if [ ! -f "$WOConfFile" ]
+then
+  echo "$WOConfFileSkel -> $WOConfFile"
+  cp $WOConfFileSkel $WOConfFile
+else
+  echo "Keeping old $WOConfFile. See wiki for changes in this version."
+fi
+  ]]></PostInstallScript>
+  <PreRemoveScript><![CDATA[
+#!/bin/bash
+WOConfFileSkel=/usr/share/WebOne/webone.conf.skel
+
+if [ -f "$WOConfFileSkel" ]; then
+  rm $WOConfFileSkel
+fi
+  ]]></PreRemoveScript>
+  <!--ToDo: add PostRemoveScript for handle purge (rm -r /etc/WebOne) -->
+  <!--ToDo: add Conffiles when dotnet-deb be able to add such -->
+  </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="avconv\**" />
@@ -74,9 +111,9 @@
   <ItemGroup>
     <None Remove="convert.txt" />
     <None Remove="FAQ.rus.txt" />
-    <None Remove="Firefox 3.6 CE - Ярлык.lnk" />
+    <None Remove="Firefox 3.6 CE - РЇСЂР»С‹Рє.lnk" />
     <None Remove="HIEW32.EXE.lnk" />
-    <None Remove="netscape - Ярлык.lnk" />
+    <None Remove="netscape - РЇСЂР»С‹Рє.lnk" />
     <None Remove="Netscape.rar" />
     <None Remove="webone-youtube-dl.zip" />
   </ItemGroup>
