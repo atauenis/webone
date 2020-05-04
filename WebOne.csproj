@@ -153,6 +153,9 @@ fi
     <None Update="LICENSE-ImageMagick.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+	<None Update="LICENSE-ffmpeg.txt">
+		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	</None>
     <None Update="yt.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
