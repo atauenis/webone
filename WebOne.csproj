@@ -13,10 +13,14 @@
     <FileVersion>0.10.1</FileVersion>
     <StartupObject>WebOne.Program</StartupObject>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <Configurations>Debug;Release;ReleaseWin32</Configurations>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU' OR '$(Configuration)|$(Platform)'=='ReleaseWin32|AnyCPU'">
     <SelfContained>False</SelfContained>
+    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
+    <DebugType>None</DebugType>
+    <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
 
   <ItemGroup Condition="'@(DebDotNetDependencies)' == '' AND '$(TargetFramework)' == 'netcoreapp3.1'"> 
@@ -128,22 +132,25 @@ fi
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="LICENSE.txt">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="webone.conf">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="README.md">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+	<None Update="logo.webp">
+		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	</None>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWin32|AnyCPU' OR '$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <None Update="convert.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="LICENSE-ImageMagick.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="LICENSE.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="logo.webp">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="README.md">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="webone.conf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="yt.bat">
