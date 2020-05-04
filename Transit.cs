@@ -121,8 +121,13 @@ namespace WebOne
 									HelpString += "Available security: <b>" + ServicePointManager.SecurityProtocol + "</b> (" + (int)ServicePointManager.SecurityProtocol + ").<br>";
 
 									HelpString += "<h2>Aliases:</h2><ul>";
+									bool EvidentAlias = false;
 									foreach (IPAddress address in GetLocalIPAddresses())
-										{ HelpString += "<li>" + (address.ToString() == ConfigFile.DefaultHostName ? "<b>" + address.ToString() + "</b>" : address.ToString()) + ":" + ConfigFile.Port + "</li>"; }
+									{
+										HelpString += "<li>" + (address.ToString() == ConfigFile.DefaultHostName ? "<b>" + address.ToString() + "</b>" : address.ToString()) + ":" + ConfigFile.Port + "</li>";
+										if(!EvidentAlias) EvidentAlias = address.ToString() == ConfigFile.DefaultHostName;
+									}
+									if (!EvidentAlias) HelpString += "<li><b>" + ConfigFile.DefaultHostName + "</b>:" + ConfigFile.Port + "</li>";
 									HelpString += "</ul>";
 									HelpString += "</ul>";
 
