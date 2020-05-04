@@ -147,235 +147,246 @@ namespace WebOne
 				string Section = "";
 				for (i = 0; i < CfgFile.Count(); i++)
 				{
-					if (CfgFile[i] == "") continue; //empty lines
-					if (CfgFile[i].StartsWith(";")) continue; //comments
-					if (CfgFile[i].StartsWith("[")) //section
+					try
 					{
-						Section = CfgFile[i].Substring(1, CfgFile[i].Length - 2);
-						StringListConstructor.Clear();
-
-						if (Section.StartsWith("FixableURL:")) 
+						if (CfgFile[i] == "") continue; //empty lines
+						if (CfgFile[i].StartsWith(";")) continue; //comments
+						if (CfgFile[i].StartsWith("[")) //section
 						{
-							FixableURLs.Add(Section.Substring(11));
-							FixableUrlActions.Add(Section.Substring(11), new Dictionary<string, string>());
+							Section = CfgFile[i].Substring(1, CfgFile[i].Length - 2);
+							StringListConstructor.Clear();
+
+							if (Section.StartsWith("FixableURL:"))
+							{
+								FixableURLs.Add(Section.Substring(11));
+								FixableUrlActions.Add(Section.Substring(11), new Dictionary<string, string>());
+							}
+
+							if (Section.StartsWith("FixableType:"))
+							{
+								FixableTypes.Add(Section.Substring(12));
+								FixableTypesActions.Add(Section.Substring(12), new Dictionary<string, string>());
+							}
+
+							if (Section.StartsWith("ContentPatch:"))
+							{
+								ContentPatches.Add(Section.Substring(13));
+								ContentPatchActions.Add(Section.Substring(13), new Dictionary<string, string>());
+							}
+
+							if (Section.StartsWith("ContentPatchFind:"))
+							{
+								Console.WriteLine("Warning: ContentPatchFind sections are no longer supported. See wiki.");
+							}
+
+							if (Section.StartsWith("Edit:"))
+							{
+								LastRawEditSet++;
+								RawEditSets.Add(new List<string>());
+								RawEditSets[LastRawEditSet].Add("OnUrl=" + Section.Substring("Edit:".Length)); //may became optional in future
+							}
+
+							continue;
 						}
 
-						if (Section.StartsWith("FixableType:"))
+
+						//Console.WriteLine(Section);
+						if (Program.CheckString(Section, SpecialSections)) //special sections (patterns, lists, etc)
 						{
-							FixableTypes.Add(Section.Substring(12));
-							FixableTypesActions.Add(Section.Substring(12), new Dictionary<string, string>());
+							//Console.WriteLine("{0}+={1}", Section, CfgFile[i]);
+							switch (Section)
+							{
+								case "ForceHttps":
+									StringListConstructor.Add(CfgFile[i]);
+									ForceHttps = StringListConstructor.ToArray();
+									continue;
+								case "TextTypes":
+									StringListConstructor.Add(CfgFile[i]);
+									TextTypes = StringListConstructor.ToArray();
+									continue;
+								case "ForceUtf8":
+									StringListConstructor.Add(CfgFile[i]);
+									ForceUtf8 = StringListConstructor.ToArray();
+									continue;
+								case "InternalRedirectOn":
+									StringListConstructor.Add(CfgFile[i]);
+									InternalRedirectOn = StringListConstructor.ToArray();
+									continue;
+								case "Converters":
+									Converters.Add(new Converter(CfgFile[i]));
+									continue;
+								default:
+									Console.WriteLine("Warning: The special section {0} is not implemented in this build.", Section);
+									continue;
+							}
+							//continue; //statement cannot be reached
+						}
+
+						int BeginValue = CfgFile[i].IndexOf("=");//regular sections
+						if (BeginValue < 1) continue; //bad line
+						string ParamName = CfgFile[i].Substring(0, BeginValue);
+						string ParamValue = CfgFile[i].Substring(BeginValue + 1);
+						//Console.WriteLine("{0}.{1}={2}", Section, ParamName, ParamValue);
+
+						//Console.WriteLine(Section);
+						if (Section.StartsWith("FixableURL"))
+						{
+							//Console.WriteLine("URL Fix rule: {0}/{1} = {2}",Section.Substring(11),ParamName,ParamValue);
+							FixableUrlActions[Section.Substring(11)].Add(ParamName, ParamValue);
+							continue;
+						}
+
+						if (Section.StartsWith("FixableType"))
+						{
+							FixableTypesActions[Section.Substring(12)].Add(ParamName, ParamValue);
+							continue;
 						}
 
 						if (Section.StartsWith("ContentPatch:"))
 						{
-							ContentPatches.Add(Section.Substring(13));
-							ContentPatchActions.Add(Section.Substring(13), new Dictionary<string, string>());
-						}
-
-						if (Section.StartsWith("ContentPatchFind:"))
-						{
-							Console.WriteLine("Warning: ContentPatchFind sections are no longer supported. See wiki.");
+							if (!ContentPatches.Contains(Section.Substring(13))) ContentPatches.Add(Section.Substring(13));
+							ContentPatchActions[Section.Substring(13)].Add(ParamName, ParamValue);
+							continue;
 						}
 
 						if (Section.StartsWith("Edit:"))
 						{
-							LastRawEditSet++;
-							RawEditSets.Add(new List<string>());
-							RawEditSets[LastRawEditSet].Add("OnUrl=" + Section.Substring("Edit:".Length)); //may became optional in future
+							if (RawEditSets.Count > 0)
+								RawEditSets[LastRawEditSet].Add(CfgFile[i]);
+							continue;
 						}
 
-						continue;
-					}
-
-
-					//Console.WriteLine(Section);
-					if (Program.CheckString(Section, SpecialSections)) //special sections (patterns, lists, etc)
-					{
-						//Console.WriteLine("{0}+={1}", Section, CfgFile[i]);
 						switch (Section)
 						{
-							case "ForceHttps":
-								StringListConstructor.Add(CfgFile[i]);
-								ForceHttps = StringListConstructor.ToArray();
-								continue;
-							case "TextTypes":
-								StringListConstructor.Add(CfgFile[i]);
-								TextTypes = StringListConstructor.ToArray();
-								continue;
-							case "ForceUtf8":
-								StringListConstructor.Add(CfgFile[i]);
-								ForceUtf8 = StringListConstructor.ToArray();
-								continue;
-							case "InternalRedirectOn":
-								StringListConstructor.Add(CfgFile[i]);
-								InternalRedirectOn = StringListConstructor.ToArray();
-								continue;
-							case "Converters":
-								Converters.Add(new Converter(CfgFile[i]));
-								continue;
-							default:
-								Console.WriteLine("Warning: The special section {0} is not implemented in this build.", Section);
-								continue;
-						}
-						//continue; //statement cannot be reached
-					}
-
-					int BeginValue = CfgFile[i].IndexOf("=");//regular sections
-					if (BeginValue < 1) continue; //bad line
-					string ParamName = CfgFile[i].Substring(0, BeginValue);
-					string ParamValue = CfgFile[i].Substring(BeginValue + 1);
-					//Console.WriteLine("{0}.{1}={2}", Section, ParamName, ParamValue);
-
-					//Console.WriteLine(Section);
-					if (Section.StartsWith("FixableURL"))
-					{
-						//Console.WriteLine("URL Fix rule: {0}/{1} = {2}",Section.Substring(11),ParamName,ParamValue);
-						FixableUrlActions[Section.Substring(11)].Add(ParamName, ParamValue);
-						continue;
-					}
-
-					if (Section.StartsWith("FixableType"))
-					{
-						FixableTypesActions[Section.Substring(12)].Add(ParamName, ParamValue);
-						continue;
-					}
-
-					if (Section.StartsWith("ContentPatch:"))
-					{
-						if (!ContentPatches.Contains(Section.Substring(13))) ContentPatches.Add(Section.Substring(13));
-						ContentPatchActions[Section.Substring(13)].Add(ParamName, ParamValue);
-						continue;
-					}
-
-					if (Section.StartsWith("Edit:"))
-					{
-						if (RawEditSets.Count > 0)
-							RawEditSets[LastRawEditSet].Add(CfgFile[i]);
-						continue;
-					}
-
-					switch (Section)
-					{
-						case "Server":
-							switch (ParamName)
-							{
-								case "Port":
-									Port = Convert.ToInt32(ParamValue);
-									break;
-								case "OutputEncoding":
-									if (ParamValue == "Windows" || ParamValue == "Win" || ParamValue == "ANSI")
-									{
-										//OutputEncoding = Encoding.Default; //.NET 4.0
-										OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ANSICodePage);
-										continue;
-									}
-									else if (ParamValue == "DOS" || ParamValue == "OEM")
-									{
-										OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
-										continue;
-									}
-									else if (ParamValue == "Mac" || ParamValue == "Apple")
-									{
-										OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.MacCodePage);
-										continue;
-									}
-									else if (ParamValue == "EBCDIC" || ParamValue == "IBM")
-									{
-										OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.EBCDICCodePage);
-										continue;
-									}
-									else if (ParamValue == "0" || ParamValue == "AsIs")
-									{
-										OutputEncoding = null;
-										continue;
-									}
-									else
-									{
-										try
+							case "Server":
+								switch (ParamName)
+								{
+									case "Port":
+										Port = Convert.ToInt32(ParamValue);
+										break;
+									case "OutputEncoding":
+										if (ParamValue == "Windows" || ParamValue == "Win" || ParamValue == "ANSI")
 										{
-											//OutputEncoding = Encoding.GetEncoding(ParamValue); 
-											OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(ParamValue);
-											if (OutputEncoding == null)
-												try { OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(int.Parse(ParamValue)); } catch { }
-
-											if (OutputEncoding == null && ParamValue.ToLower().StartsWith("utf"))
-											{
-												switch (ParamValue.ToLower())
-												{
-													case "utf-7":
-														OutputEncoding = Encoding.UTF7;
-														break;
-													case "utf-8":
-														OutputEncoding = Encoding.UTF8;
-														break;
-													case "utf-16":
-													case "utf-16le":
-														OutputEncoding = Encoding.Unicode;
-														break;
-													case "utf-16be":
-														OutputEncoding = Encoding.BigEndianUnicode;
-														break;
-													case "utf-32":
-													case "utf-32le":
-														OutputEncoding = Encoding.UTF32;
-														break;
-												}
-											}
-											
-											if (OutputEncoding == null)
-											{ Console.WriteLine("Warning: Unknown codepage {0}, using AsIs. See MSDN 'Encoding.GetEncodings Method' article for list of valid encodings.", ParamValue); };
+											//OutputEncoding = Encoding.Default; //.NET 4.0
+											OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ANSICodePage);
+											continue;
 										}
-										catch (ArgumentException) { Console.WriteLine("Warning: Bad codepage {0}, using {1}. Get list of available encodings at http://{2}:{3}/!codepages/.", ParamValue, OutputEncoding.EncodingName, ConfigFile.DefaultHostName, Port); }
-									}
-									continue;
-								case "Authenticate":
-									Authenticate = ParamValue;
-									continue;
-								case "HideClientErrors":
-									HideClientErrors = ToBoolean(ParamValue);
-									continue;
-								case "SearchInArchive":
-									SearchInArchive = ToBoolean(ParamValue);
-									continue;
-								case "ShortenArchiveErrors":
-									ShortenArchiveErrors = ToBoolean(ParamValue);
-									continue;
-								case "SecurityProtocols":
-									try { System.Net.ServicePointManager.SecurityProtocol = (System.Net.SecurityProtocolType)(int.Parse(ParamValue)); }
-									catch (NotSupportedException) { Console.WriteLine("Warning: Bad TLS version {1} ({0}), using {2} ({2:D}).", ParamValue, (System.Net.SecurityProtocolType)(int.Parse(ParamValue)), System.Net.ServicePointManager.SecurityProtocol); };
-									continue;
-								case "UserAgent":
-									UserAgent = ParamValue;
-									continue;
-								case "DefaultHostName":
-									DefaultHostName = ParamValue.Replace("%HostName%", Environment.MachineName);
-									bool ValidHostName = (Environment.MachineName.ToLower() == DefaultHostName.ToLower());
-									if (!ValidHostName) foreach (System.Net.IPAddress LocIP in Program.GetLocalIPAddresses())
-									{ if (LocIP.ToString() == DefaultHostName) ValidHostName = true; }
-									if (!ValidHostName)
-									{ try { if (System.Net.Dns.GetHostEntry(DefaultHostName).AddressList.Count() > 0) ValidHostName = true; } catch { } }
-									if (!ValidHostName) Console.WriteLine("Warning: DefaultHostName setting is not applicable to this computer!");
-									continue;
-								case "ValidateCertificates":
-									ValidateCertificates = ToBoolean(ParamValue);
-									continue;
-								case "TemporaryDirectory":
-									if (ParamValue.ToUpper() == "%TEMP%" || ParamValue == "$TEMP" || ParamValue == "$TMPDIR") TemporaryDirectory = Path.GetTempPath();
-									else TemporaryDirectory = ParamValue;
-									continue;
-								default:
-									Console.WriteLine("Warning: Unknown server option: " + ParamName);
-									break;
-							}
-							break;
-						case "Translit":
-							TranslitTable.Add(new KeyValuePair<string, string>(ParamName, ParamValue));
-							break;
-						default:
-							Console.WriteLine("Warning: Unknown section: " + Section);
-							break;
-					}
+										else if (ParamValue == "DOS" || ParamValue == "OEM")
+										{
+											OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
+											continue;
+										}
+										else if (ParamValue == "Mac" || ParamValue == "Apple")
+										{
+											OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.MacCodePage);
+											continue;
+										}
+										else if (ParamValue == "EBCDIC" || ParamValue == "IBM")
+										{
+											OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.EBCDICCodePage);
+											continue;
+										}
+										else if (ParamValue == "0" || ParamValue == "AsIs")
+										{
+											OutputEncoding = null;
+											continue;
+										}
+										else
+										{
+											try
+											{
+												//OutputEncoding = Encoding.GetEncoding(ParamValue); 
+												OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(ParamValue);
+												if (OutputEncoding == null)
+													try { OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(int.Parse(ParamValue)); } catch { }
 
+												if (OutputEncoding == null && ParamValue.ToLower().StartsWith("utf"))
+												{
+													switch (ParamValue.ToLower())
+													{
+														case "utf-7":
+															OutputEncoding = Encoding.UTF7;
+															break;
+														case "utf-8":
+															OutputEncoding = Encoding.UTF8;
+															break;
+														case "utf-16":
+														case "utf-16le":
+															OutputEncoding = Encoding.Unicode;
+															break;
+														case "utf-16be":
+															OutputEncoding = Encoding.BigEndianUnicode;
+															break;
+														case "utf-32":
+														case "utf-32le":
+															OutputEncoding = Encoding.UTF32;
+															break;
+													}
+												}
+
+												if (OutputEncoding == null)
+												{ Console.WriteLine("Warning: Unknown codepage {0}, using AsIs. See MSDN 'Encoding.GetEncodings Method' article for list of valid encodings.", ParamValue); };
+											}
+											catch (ArgumentException) { Console.WriteLine("Warning: Bad codepage {0}, using {1}. Get list of available encodings at http://{2}:{3}/!codepages/.", ParamValue, OutputEncoding.EncodingName, ConfigFile.DefaultHostName, Port); }
+										}
+										continue;
+									case "Authenticate":
+										Authenticate = ParamValue;
+										continue;
+									case "HideClientErrors":
+										HideClientErrors = ToBoolean(ParamValue);
+										continue;
+									case "SearchInArchive":
+										SearchInArchive = ToBoolean(ParamValue);
+										continue;
+									case "ShortenArchiveErrors":
+										ShortenArchiveErrors = ToBoolean(ParamValue);
+										continue;
+									case "SecurityProtocols":
+										try { System.Net.ServicePointManager.SecurityProtocol = (System.Net.SecurityProtocolType)(int.Parse(ParamValue)); }
+										catch (NotSupportedException) { Console.WriteLine("Warning: Bad TLS version {1} ({0}), using {2} ({2:D}).", ParamValue, (System.Net.SecurityProtocolType)(int.Parse(ParamValue)), System.Net.ServicePointManager.SecurityProtocol); };
+										continue;
+									case "UserAgent":
+										UserAgent = ParamValue;
+										continue;
+									case "DefaultHostName":
+										DefaultHostName = ParamValue.Replace("%HostName%", Environment.MachineName);
+										bool ValidHostName = (Environment.MachineName.ToLower() == DefaultHostName.ToLower());
+										if (!ValidHostName) foreach (System.Net.IPAddress LocIP in Program.GetLocalIPAddresses())
+											{ if (LocIP.ToString() == DefaultHostName) ValidHostName = true; }
+										if (!ValidHostName)
+										{ try { if (System.Net.Dns.GetHostEntry(DefaultHostName).AddressList.Count() > 0) ValidHostName = true; } catch { } }
+										if (!ValidHostName) Console.WriteLine("Warning: DefaultHostName setting is not applicable to this computer!");
+										continue;
+									case "ValidateCertificates":
+										ValidateCertificates = ToBoolean(ParamValue);
+										continue;
+									case "TemporaryDirectory":
+										if (ParamValue.ToUpper() == "%TEMP%" || ParamValue == "$TEMP" || ParamValue == "$TMPDIR") TemporaryDirectory = Path.GetTempPath();
+										else TemporaryDirectory = ParamValue;
+										continue;
+									default:
+										Console.WriteLine("Warning: Unknown server option: " + ParamName);
+										break;
+								}
+								break;
+							case "Translit":
+								TranslitTable.Add(new KeyValuePair<string, string>(ParamName, ParamValue));
+								break;
+							default:
+								Console.WriteLine("Warning: Unknown section: " + Section);
+								break;
+						}
+
+					}
+					catch (Exception ex)
+					{
+						Console.WriteLine("Error on line {1}: {0}", ex.Message, i);
+#if DEBUG
+						Console.WriteLine("All next lines will be ignored. Invoking debugging.");
+						throw;
+#endif
+					}
 				}
 
 				i++;
@@ -390,10 +401,10 @@ namespace WebOne
 			}
 			catch(Exception ex) {
 				#if DEBUG
-				Console.WriteLine("Error on line {1}: {0}.\nGo to debugger.",ex.ToString(), i);
+				Console.WriteLine("Error in configuration file: {0}. Line {1}. Go to debugger.", ex.ToString(), i);
 				throw;
 				#else
-				Console.WriteLine("Error on line {1}: {0}.\nAll next lines are ignored.", ex.Message, i);
+				Console.WriteLine("Error in configuration file: {0}.\nAll next lines after {1} are ignored.", ex.Message, i);
 				#endif
 			}
 			if (i < 1) Console.WriteLine("Warning: curiously short file. Probably line endings are not valid for this OS.");
