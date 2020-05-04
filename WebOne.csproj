@@ -141,9 +141,9 @@ fi
     <None Update="README.md">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-	<None Update="logo.webp">
-		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	</None>
+    <None Update="logo.webp">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWin32|AnyCPU' OR '$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -151,12 +151,6 @@ fi
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="LICENSE-ImageMagick.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-	<None Update="LICENSE-ffmpeg.txt">
-		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	</None>
-    <None Update="yt.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
