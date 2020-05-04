@@ -277,7 +277,13 @@ namespace WebOne
 												SrcUrl = "http://0.0.0.0/localfile";
 												if (!Cvt.SelfDownload) try
 												{
-													if (!File.Exists(Src)) throw new FileNotFoundException("No such file: " + Src);
+													if (!File.Exists(Src))
+													{
+														if (File.Exists(new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + Src))
+															Src = new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + Src;
+														else
+															throw new FileNotFoundException("No such file: " + Src);
+													}
 													SrcStream = File.OpenRead(Src);
 												}
 												catch (Exception OpenEx)
@@ -325,9 +331,13 @@ namespace WebOne
 									{
 										FileName = FindName.Groups[2].Value;
 
-										if (new FileInfo(FileName).DirectoryName != Directory.GetCurrentDirectory())
+										if (!File.Exists(FileName))
+										{ FileName = new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + FileName; }
+
+										if (new FileInfo(FileName).DirectoryName != Directory.GetCurrentDirectory() &&
+											new FileInfo(FileName).DirectoryName != System.Reflection.Assembly.GetExecutingAssembly().Location)
 										{
-											SendError(200, "Cannot access to files outside Proxy's directory");
+											SendError(403, "Cannot access to files outside current and proxy installation directory");
 											return;
 										}
 									
