@@ -1,0 +1,73 @@
+Here was archive of WebOne HTTP Proxy Server binary releases.
+Now it is moved to https://github.com/atauenis/webone/releases page to optimise the Git repository and save both sources and binaries in same place.
+
+Get the latest stable version of WebOne in the Release Archive on GitHub.
+It is no longer limited to Windows, and can run on either Windows, GNU/Linux and Apple macOS.
+
+Old versions are preserved too:
+
+* https://github.com/atauenis/webone/releases/download/v0.10.0/WebOne.0.10.0.zip
+* https://github.com/atauenis/webone/releases/download/v0.10.0/WebOne.0.10.0.Full.zip
+
+* https://github.com/atauenis/webone/releases/download/v0.10.0a2/WebOne.0.10.0a2.zip
+
+* https://github.com/atauenis/webone/releases/download/v0.10.0a1/WebOne.0.10.0a1.zip
+
+* https://github.com/atauenis/webone/releases/download/v0.9.3/WebOne.0.9.3.zip
+* https://github.com/atauenis/webone/releases/download/v0.9.3/WebOne.0.9.3.Full.zip
+
+* https://github.com/atauenis/webone/releases/download/v0.9.2/WebOne.0.9.2.zip
+* https://github.com/atauenis/webone/releases/download/v0.9.2/WebOne.0.9.2.Full.7z
+* https://github.com/atauenis/webone/releases/download/v0.9.2/webone-youtube-dl.zip
+* https://github.com/atauenis/webone/releases/download/v0.9.2/viewtube-vbs.zip
+
+* https://github.com/atauenis/webone/releases/download/v0.9.1/WebOne.0.9.1.zip
+
+* https://github.com/atauenis/webone/releases/download/v0.9.0/WebOne.0.9.0.zip
+
+Older than 0.9.0: https://github.com/atauenis/webone/releases/tag/v0.9.0
+* [0.9.0](https://github.com/atauenis/webone/tree/9e12d63a2c618b4893c9bfaafa8dc8765df8af73/EXE)
+* [0.8.5](https://github.com/atauenis/webone/tree/2212e51bac432f52e9e3eaef41ea1df32a71f47f/EXE)
+* [0.8.1](https://github.com/atauenis/webone/tree/090082ea32294f1e917b170880edf74c88265eee/EXE)
+* [0.8.0](https://github.com/atauenis/webone/tree/a581f92e09ec49d95bc706af6d09721204693eb8/EXE)
+* [0.7.1](https://github.com/atauenis/webone/tree/b3feae15f17869977020191836ff8ad6515c46d8/EXE)
+* [0.7.0](https://github.com/atauenis/webone/tree/7b145bcb30065bf843322f90e2638ce6ca41bc0f/EXE)
+* [0.6.1](https://github.com/atauenis/webone/tree/7e5728a4b13b27518d472b25e592af48e39f4e12/EXE)
+* [0.6.0](https://github.com/atauenis/webone/tree/1359efc91a3bfceeea345f3d4bad51a7cdbb3fe2/EXE)
+* [0.5.0](https://github.com/atauenis/webone/tree/4ccfb51332a20c82b379e8b9c0dfac0b9ef93393/EXE)
+* [0.4.2](https://github.com/atauenis/webone/tree/4aeec54e9df19c1bba5c9ab9f270c00ab1b0c0c2/EXE)
+* [0.4.1](https://github.com/atauenis/webone/tree/f5a4fda44cb622e652cc44c2480d39c46cbb8ae4/EXE)
+* [0.4.0](https://github.com/atauenis/webone/tree/a8a2a431d2f21d5209bff422297a428cac680dbf/EXE)
+* [0.3.0](https://github.com/atauenis/webone/tree/d119edb79a46a411a2ae5e48ee6a7deb013dce02/EXE)
+* [0.2.1.1](https://github.com/atauenis/webone/tree/a465146c62f4a123b45bc55680ca616b74844935/EXE)
+* [0.2.1.0](https://github.com/atauenis/webone/tree/06cea6e8ee937cb92a8ff445edab9502eef22cb8/EXE)
+* [0.2.0.0](https://github.com/atauenis/webone/tree/57eb200a9491b3043a54b71ff594016a6661472e/EXE)
+* [0.1.8.3](https://github.com/atauenis/webone/tree/d72dc5addfbd594fa66fe278866ef5c467bfa8bf/EXE)
+* [0.1.8.2](https://github.com/atauenis/webone/tree/a37fdb12ab1c04574fedf2f0c43322c6c60c8806/EXE)
+* [0.1.8.1](https://github.com/atauenis/webone/tree/da4b82ca79dddbe1a10c6a4484e872ce07a4b4b5/EXE)
+* [0.1.8.0](https://github.com/atauenis/webone/tree/73f569cd18a1f5f35328d0c38d3fddd2f0fba289/EXE)
+* [0.1.7b](https://github.com/atauenis/webone/tree/66e7b250db1e8bd86f8fa081478e86e453675518/EXE)
+* [0.1.7a](https://github.com/atauenis/webone/tree/4fd16bef311360d55bce82afe7cc724382140355/EXE)
+* [0.1.7](https://github.com/atauenis/webone/tree/f2a4c6146f12e808d87836294b711378f5e44c88/EXE)
+* [0.1.6](https://github.com/atauenis/webone/tree/a478c4b9d9534b577cd942f49e1d7e2687f38d5c/EXE)
+* [0.1.5](https://github.com/atauenis/webone/tree/b4627fee9f258707befc5f3a15189084dc7f642f/EXE)
+* [0.1.0](https://github.com/atauenis/webone/tree/26d6bba453f6f864d88faedf61d8c447f0ba928e/EXE)
+* [0.1pre](https://github.com/atauenis/webone/tree/2d02e4d11036dbf0142bfaca935b0a058aff1a2b)
+
+History of this folder: 
+https://github.com/atauenis/webone/commits/master/EXE/
+
+History of WebOne.exe: 
+https://github.com/atauenis/webone/commits/master/EXE/WebOne.exe
+
+History of webone.conf: 
+https://github.com/atauenis/webone/commits/master/EXE/webone.conf
+
+History of README.md: 
+https://github.com/atauenis/webone/commits/master/EXE/README.md
+
+License files, and ImageMagick's v7.0.8.68 convert.exe and logo.webp were not modified in v0.9.0-0.10.0: 
+https://github.com/atauenis/webone/commits/master/EXE/LICENSE.txt
+
+---
+Alexander Tauenis. Author of WebOne. 5.05.2020.
