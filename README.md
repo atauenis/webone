@@ -40,7 +40,9 @@ See [WebOne wiki](https://github.com/atauenis/webone/wiki) for complete list of 
 ## Build
 Latest source code can be always found in the __master__ branch of [Git repository](https://github.com/atauenis/webone). Pull requests are welcome!
 
-To build packages or archives, use [dotnet-packaging](https://github.com/qmfrederik/dotnet-packaging/) add-on. Then use `dotnet publish` & `dotnet deb || dotnet rpm || dotnet zip` tools.
+To build packages or archives, install [dotnet-packaging](https://github.com/qmfrederik/dotnet-packaging/) add-on. With it the building is easy: use `dotnet publish` & `dotnet deb || dotnet rpm || dotnet zip` tools.
+
+Windows developers can utilize `Build.bat` script for cross-platform building. "Full" Win7SP1+ builds are made by hand by merging *ReleaseWin32* zip with content of `Win32-full` directory and some magic.
 
 # Описание по-русски
 __WebOne__ - прокси-сервер HTTP, позволяющий открывать современные сайты на старых браузерах. Своеобразный переходник между реальным Web 2.0 и историческим Web 1.0. 

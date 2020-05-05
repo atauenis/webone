@@ -19,7 +19,7 @@ namespace WebOne
 		static void Main(string[] args)
 		{
 			Console.Title = "WebOne";
-			Console.WriteLine("WebOne HTTP Proxy Server {0}-pre\n(C) https://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
+			Console.WriteLine("WebOne HTTP Proxy Server {0}\n(C) https://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
 
 			//process command line arguments
 			int Port = -1;
