@@ -9,15 +9,23 @@ WebOne HTTP Proxy Server is working by default on port 80 and is compatible even
 
 The program's settings are in the __webone.conf__ file (but any other file name can be used too).
 
-Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET Core 3.1 are required on server PC. See [.NET Core 3.1 System Requirements](https://github.com/dotnet/core/blob/master/release-notes/3.1/3.1-supported-os.md).
+## Server prerequisites
+Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET Core 3.1 Runtime are required on server PC. See [.NET Core 3.1 System Requirements](https://github.com/dotnet/core/blob/master/release-notes/3.1/3.1-supported-os.md).
 
 Administrator/root privileges are required. Don't forget to allow incoming traffic to Port 80 in system firewall.
 
-To start proxy on Linux, enter server's DNS name or IP in `DefaultHostName` field in __webone.conf__ and then run:
+Image and/or video format converting can be do via external utilities: `convert` (from ImageMagick), `ffmpeg`, `youtube-dl`.
+
+## Run
+To start proxy on Linux or macOS, enter server's DNS name or IP in `DefaultHostName` field in __webone.conf__ and then run:
 
 ```
-$ sudo dotnet WebOne.dll
+$ sudo WebOne                  if run from installed deb/rpm package
+or
+$ sudo dotnet WebOne.dll       if run from binary archive or after build
 ```
+
+*Note: if the Port number is set greater than 1024 (e.g. 8080), `sudo` is not need on Linux.*
 
 On Windows simply run `WebOne.exe`.
 
@@ -29,13 +37,16 @@ The server can be started even on public hosts. But don't forget to enable passw
 
 See [WebOne wiki](https://github.com/atauenis/webone/wiki) for complete list of features and full documentation.
 
-Latest source code can be always found in the __master__ branch of [Git repository](https://github.com/atauenis/webone). Pull requests and non-x86 ports are welcome!
+## Build
+Latest source code can be always found in the __master__ branch of [Git repository](https://github.com/atauenis/webone). Pull requests are welcome!
 
-### Описание по-русски
+To build packages or archives, use [dotnet-packaging](https://github.com/qmfrederik/dotnet-packaging/) add-on. Then use `dotnet publish` & `dotnet deb || dotnet rpm || dotnet zip` tools.
+
+# Описание по-русски
 __WebOne__ - прокси-сервер HTTP, позволяющий открывать современные сайты на старых браузерах. Своеобразный переходник между реальным Web 2.0 и историческим Web 1.0. 
 
 Он имеет следующие функции:
-* Снятие шифрования HTTPS и двухсторонее преобразование HTTPS 1.1 <-> HTTP 1.0.
+* Снятие шифрования HTTPS и двухстороннее преобразование HTTPS 1.1 <-> HTTP 1.0.
 * Замена кодировки в ответах серверов.
 * Подмена отдельных файлов (например, новых тяжёлых JS-фреймворков на более старые и лёгкие).
 * Корректирование частей текстового трафика (например, патчинг JS или XML/CDF/RSS).
@@ -50,8 +61,8 @@ __WebOne__ - прокси-сервер HTTP, позволяющий открыв
 
 Настройки прокси-сервера хранятся в файле __webone.conf__ в каталоге с программой или по адресу ``/var/WebOne/``, ``~/.config/WebOne/``, ``C:\Users\username\AppData\Roaming\WebOne\``, ``C:\ProgramData\WebOne\``. Для использования другого файла, запускайте прокси с параметром "webone.exe _config_file_name.ext_".
 
-На Linux используются конвертеры из пакетов __imagemagick__ (convert) и __ffmpeg__. В Windows-версии эти конвертеры прилагаются в Full-версии прокси-сервера.
+На Linux используются конвертеры из пакетов __imagemagick__ (convert) и __ffmpeg__. В Windows-версии прилагается конвертер **convert**, а в Full-версии дополнительно имеется **ffmpeg** и **youtube-dl** с вспомогательным скриптом для скачивания видео с YouTube (**yt.bat**).
 
-Проект открыт для желающих присоединиться к разработке.
+Проект открыт для всех желающих присоединиться к разработке.
 
 Подробная информация (на английском) в [wiki проекта](https://github.com/atauenis/webone/wiki).
