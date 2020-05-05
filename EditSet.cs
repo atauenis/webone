@@ -12,29 +12,34 @@ namespace WebOne
     class EditSet
     {
         /// <summary>
-        /// List of masks of URLs on which the Set whould be used
+        /// List of masks of URLs on which the Set whould be used [title and OnUrl]
         /// </summary>
         public List<string> UrlMasks { get; set; }
 
         /// <summary>
-        /// List of masks of URLs on which the Set would not be used
+        /// List of masks of URLs on which the Set would not be used [IgnoreUrl]
         /// </summary>
         public List<string> UrlIgnoreMasks { get; set; }
 
         /// <summary>
-        /// List of masks of MIME Content-Types on which the Set would be used
+        /// List of masks of MIME Content-Types on which the Set would be used [OnContentType]
         /// </summary>
         public List<string> ContentTypeMasks { get; set; }
 
         /// <summary>
-        /// Mask (exact) of HTTP status code where the Set would be used
+        /// Mask (exact) of HTTP status code where the Set would be used [OnCode]
         /// </summary>
         public int? OnCode { get; set; }
 
         /// <summary>
+        /// List of masks of HTTP request headers on which the Set would not be used [OnHeader]
+        /// </summary>
+        public List<string> HeaderMasks { get; set; }
+
+        /// <summary>
         /// Flag that indicates that the edits can be performed at time of HTTP Request (before get of response)
         /// </summary>
-        public bool IsForRequest { get; set; }
+        public bool IsForRequest { get; private set; }
 
         /// <summary>
         /// List of edits that would be performed on the need content
@@ -51,6 +56,7 @@ namespace WebOne
             UrlMasks = new List<string>();
             UrlIgnoreMasks = new List<string>();
             ContentTypeMasks = new List<string>();
+            HeaderMasks = new List<string>();
             Edits = new List<KeyValuePair<string, string>>();
             IsForRequest = false;
 
@@ -76,6 +82,9 @@ namespace WebOne
                         continue;
                     case "OnContentType":
                         ContentTypeMasks.Add(ParamValue);
+                        continue;
+                    case "OnHeader":
+                        HeaderMasks.Add(ParamValue);
                         continue;
                     default:
                         if (ParamName.StartsWith("Add"))
@@ -106,6 +115,7 @@ namespace WebOne
             if (UrlMasks.Count > 1) for(int i = 1; i < UrlMasks.Count; i++) Str += "OnUrl=" + UrlMasks[i] + "\n";
             foreach (var imask in UrlIgnoreMasks) Str += "IgnoreUrl=" + "=" + imask + "\n";
             foreach (var ctmask in ContentTypeMasks) Str += "OnContentType=" + "=" + ctmask + "\n";
+            foreach (var hmask in HeaderMasks) Str += "OnHeader=" + "=" + hmask + "\n";
             foreach (var edit in Edits) Str += edit.Key + "=" + edit.Value + "\n";
             return Str;
         }

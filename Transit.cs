@@ -473,9 +473,32 @@ namespace WebOne
 				//check for available edit sets
 				foreach (EditSet set in ConfigFile.EditRules)
 				{
-					if (CheckStringRegExp(RequestURL.AbsoluteUri, set.UrlMasks.ToArray()) && !CheckStringRegExp(RequestURL.AbsoluteUri, set.UrlIgnoreMasks.ToArray()))
+					if (CheckStringRegExp(RequestURL.AbsoluteUri, set.UrlMasks.ToArray()) &&
+						!CheckStringRegExp(RequestURL.AbsoluteUri, set.UrlIgnoreMasks.ToArray()))
 					{
-						EditSets.Add(set);
+						if (set.HeaderMasks.Count > 0 && ClientRequest.Headers != null)
+						{
+							//check if there are headers listed in OnHeader detection rules
+							bool HaveGoodMask = false;
+							foreach (string HdrMask in set.HeaderMasks)
+							{
+								foreach (string RqHdrName in ClientRequest.Headers.AllKeys)
+								{
+									string header = RqHdrName + ": " + ClientRequest.Headers[RqHdrName];
+									if (Regex.IsMatch(header, HdrMask)) 
+									{
+										HaveGoodMask = true;
+										EditSets.Add(set);
+										break;
+									}
+								}
+								if (HaveGoodMask) break;
+							}
+						}
+						else
+						{
+							EditSets.Add(set);
+						}
 					}
 				}
 
