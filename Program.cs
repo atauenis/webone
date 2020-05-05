@@ -28,10 +28,8 @@ namespace WebOne
 
 			ConfigFileName = GetDefaultConfigurationFile();
 
-			//load configuration file
-#pragma warning disable CS1717 // Назначение выполнено для той же переменной - workaround to call ConfigFile constructor
-			if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Authenticate = ConfigFile.Authenticate; //else load config file (пусть прочухается static class)
-#pragma warning restore CS1717 // Назначение выполнено для той же переменной
+			//load configuration file and set port number
+			if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Port = Port;
 
 			ServicePointManager.DefaultConnectionLimit = int.MaxValue;
 			//https://qna.habr.com/q/696033
