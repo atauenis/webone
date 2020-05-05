@@ -1,6 +1,7 @@
 @rem Requires https://github.com/qmfrederik/dotnet-packaging/
 @echo Building WebOne for Debian/Ubuntu, RedHat/CentOS and Windows...
 rmdir bin\Release /S
+rmdir bin\ReleaseWin32 /S
 dotnet restore
 dotnet publish -r linux-x64 -c Release --self-contained false
 dotnet deb --no-restore -c Release -r linux-x64
