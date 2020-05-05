@@ -42,7 +42,8 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <PostInstallScript><![CDATA[
+    <PostInstallScript>
+      <![CDATA[
 #!/bin/bash
 WOConfDir=/etc/WebOne/
 WOConfFile=/etc/WebOne/webone.conf
@@ -65,16 +66,33 @@ then
 else
   echo "Keeping old $WOConfFile. See wiki for changes in this version."
 fi
-  ]]></PostInstallScript>
-  <PreRemoveScript><![CDATA[
+      ]]>
+    </PostInstallScript>
+    <PreRemoveScript>
+      <![CDATA[
+#!/bin/bash
+killall WebOne || echo "WebOne is not running"
+      ]]>
+    </PreRemoveScript>
+    <PostRemoveScript>
+      <![CDATA[
 #!/bin/bash
 WOConfFileSkel=/usr/share/WebOne/webone.conf.skel
+WOConfDir=/etc/WebOne/
 
 if [ -f "$WOConfFileSkel" ]; then
   rm $WOConfFileSkel
 fi
-  ]]></PreRemoveScript>
-  <!--ToDo: add PostRemoveScript for handle purge (rm -r /etc/WebOne) -->
+
+case "$1" in
+  purge)
+    if [ -d "$WOConfDir" ]; then
+      rm -r $WOConfDir
+    fi
+  ;;
+esac
+      ]]>
+    </PostRemoveScript>
   <!--ToDo: add Conffiles when dotnet-deb be able to add such -->
   </PropertyGroup>
 
