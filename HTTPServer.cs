@@ -45,23 +45,21 @@ namespace WebOne
 		{
 			Load++;
 			UpdateStatistics();
-			DateTime BeginTime = DateTime.UtcNow;
-			#if DEBUG
-			Console.WriteLine("{0}\tGot a request.", BeginTime.ToString("HH:mm:ss.fff"));
-			#endif
+			LogWriter Logger = new LogWriter();
+			DateTime BeginTime = Logger.BeginTime;
+#if DEBUG
+			Logger.WriteLine("Got a request.");
+#endif
 			HttpListenerContext ctx = _listener.EndGetContext(ar);
 			_listener.BeginGetContext(ProcessRequest, null);
 			HttpListenerRequest req = ctx.Request;
-			#if DEBUG
-			Console.WriteLine("{0}\t>{1} {2}", GetTime(BeginTime), req.HttpMethod, req.RawUrl);
-#else
-			Console.WriteLine("{0}\t>{1} {2}", BeginTime.ToString("HH:mm:ss.fff"), req.HttpMethod, req.RawUrl);
-#endif
+			
+			Logger.WriteLine(">{0} {1}", req.HttpMethod, req.RawUrl);
 
 			HttpListenerResponse resp = ctx.Response;
-			Transit Tranzit = new Transit(req, resp, BeginTime);
+			Transit Tranzit = new Transit(req, resp, Logger);
 
-			Console.WriteLine("{0}\t<Done.", GetTime(BeginTime));
+			Logger.WriteLine("<Done.");
 			Load--;
 			UpdateStatistics();
 		}

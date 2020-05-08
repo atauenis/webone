@@ -4,13 +4,11 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Authors>Alexander Tauenis</Authors>
-    <Version>0.10.1</Version>
+    <Version>0.10.2</Version>
     <RepositoryUrl>https://github.com/atauenis/webone/</RepositoryUrl>
     <Company>World</Company>
     <Product>WebOne HTTP Proxy Server</Product>
     <RepositoryType>GitHub</RepositoryType>
-    <AssemblyVersion>0.10.1</AssemblyVersion>
-    <FileVersion>0.10.1</FileVersion>
     <StartupObject>WebOne.Program</StartupObject>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <Configurations>Debug;Release;ReleaseWin32</Configurations>

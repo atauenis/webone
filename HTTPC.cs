@@ -36,13 +36,15 @@ namespace WebOne
 			"Accept-Charset" 
 		};
 
+		private LogWriter Log;
+
 		/// <summary>
 		/// Prepare to do an HTTP operation
 		/// </summary>
-		/// <param name="BeginTime"></param>
-		public HttpOperation(DateTime BeginTime)
+		/// <param name="Log">Log writer for this operation</param>
+		public HttpOperation(LogWriter Log)
 		{
-			this.BeginTime = BeginTime;
+			this.Log = Log;
 			ResetRequest();
 		}
 
@@ -80,11 +82,6 @@ namespace WebOne
 		/// Allow 302 redirection handling in .NET FW or not
 		/// </summary>
 		public bool AllowAutoRedirect = false;
-
-		/// <summary>
-		/// Initial time (for log)
-		/// </summary>
-		public DateTime BeginTime;
 
 		/// <summary>
 		/// Source HttpWebRequest
@@ -125,7 +122,7 @@ namespace WebOne
 		public void Dispose()
 		{
 #if DEBUG
-			Console.WriteLine("{0}\t Destruct HttpOperation.", GetTime(BeginTime));
+			Log.WriteLine(" Destruct HttpOperation.");
 #endif
 			ResetRequest();
 			RequestHeaders = null;
@@ -143,7 +140,7 @@ namespace WebOne
 				{
 					URL = "https" + URL.Substring(4);
 #if DEBUG
-					Console.WriteLine("{0}\t Willfully secure request.", GetTime(BeginTime));
+					Log.WriteLine(" Willfully secure request.");
 #endif
 				}
 			}
@@ -267,7 +264,7 @@ namespace WebOne
 		bool CheckServerCertificate(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certification, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors)
 		{
 			if (sslPolicyErrors != System.Net.Security.SslPolicyErrors.None)
-				Console.WriteLine("{0}\t Danger: {1}", GetTime(BeginTime), sslPolicyErrors.ToString());
+				Log.WriteLine(" Danger: {0}", sslPolicyErrors.ToString());
 
 			if (!ConfigFile.ValidateCertificates) return true;
 			if (sslPolicyErrors == System.Net.Security.SslPolicyErrors.None)

@@ -59,14 +59,14 @@ namespace WebOne
 		/// <summary>
 		/// Run a converter (input: Stream; output: Stream)
 		/// </summary>
-		/// <param name="BeginTime">Time of operation start (for log)</param>
+		/// <param name="Log">Log writer for current convertion</param>
 		/// <param name="InputStream">Input stream with source content (or <see cref="null"/> if the converter can download itself)</param>
 		/// <param name="Args1">First set of converter arguments</param>
 		/// <param name="Args2">Second set of converter arguments</param>
 		/// <param name="DestinationType">Destination extension</param>
 		/// <param name="SrcUrl">Source content URL for converters which can download itself (or <see cref="null"/> for others)</param>
 		/// <returns>Stream with converted content</returns>
-		public Stream Run(DateTime BeginTime, Stream InputStream = null, string Args1 = "", string Args2 = "", string DestinationType = "tmp", string SrcUrl = null)
+		public Stream Run(LogWriter Log, Stream InputStream = null, string Args1 = "", string Args2 = "", string DestinationType = "tmp", string SrcUrl = null)
         {
 			if (SelfDownload && (InputStream != null || SrcUrl == null))
 				throw new InvalidOperationException("The converter " + Executable + " can only download the content self");
@@ -93,19 +93,19 @@ namespace WebOne
 			.Replace("%SRCURL%", SrcUrl ?? "http://webone.github.io/index.htm");
 
 			//run the converter
-			return RunConverter(BeginTime, ConvCommandLine, InputStream, SourceTmpFile, DestinationTmpFile);
+			return RunConverter(Log, ConvCommandLine, InputStream, SourceTmpFile, DestinationTmpFile);
 		}
 
 		/// <summary>
 		/// Run (really) the converter and get its result
 		/// </summary>
-		/// <param name="BeginTime">Time of operation start (for log)</param>
+		/// <param name="Log">Log writer for current convertion</param>
 		/// <param name="ConvCommandLine">Real command line (excluding executable file name)</param>
 		/// <param name="InputStream">Input stream with source content (or <see cref="null"/> if the converter can download itself)</param>
 		/// <param name="SourceTmpFile">Path to source temporary file (even if it doesn't exists)</param>
 		/// <param name="DestinationTmpFile">Path to destination temporary file (even if it doesn't exists)</param>
 		/// <returns>Stream with converted content (from stdout or a filestream)</returns>
-		private Stream RunConverter(DateTime BeginTime, string ConvCommandLine, Stream InputStream, string SourceTmpFile, string DestinationTmpFile)
+		private Stream RunConverter(LogWriter Log, string ConvCommandLine, Stream InputStream, string SourceTmpFile, string DestinationTmpFile)
 		{
 			//run the converter
 			ProcessStartInfo ConvProcInfo = new ProcessStartInfo();
@@ -116,7 +116,7 @@ namespace WebOne
 			ConvProcInfo.RedirectStandardInput = true;
 			ConvProcInfo.UseShellExecute = false;
 			Process ConvProc = Process.Start(ConvProcInfo);
-			Console.WriteLine("{0}\t Converting: {1} {2}...", GetTime(BeginTime), Executable, ConvCommandLine);
+			Log.WriteLine(" Converting: {0} {1}...", Executable, ConvCommandLine);
 			float ConvCpuLoad = 0;
 
 			if (UseStdout)
@@ -125,13 +125,13 @@ namespace WebOne
 				if (UseStdin)
 				{
 #if DEBUG
-					Console.WriteLine("{0}\t Writing stdin...", GetTime(BeginTime));
+					Log.WriteLine(" Writing stdin...");
 #endif
 					new Task(() => { try { InputStream.CopyTo(ConvProc.StandardInput.BaseStream); } catch { } }).Start();
 				}
 
 #if DEBUG
-				Console.WriteLine("{0}\t Reading stdout...", GetTime(BeginTime));
+				Log.WriteLine(" Reading stdout...");
 #endif
 				//new Task(() => { while (InputStream.CanRead) { } if (!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine(); }).Start();
 				//new Task(() => { while (!ConvProc.HasExited) { if (ClientResponse.StatusCode == 500) { if (!ConvProc.HasExited) { ConvProc.Kill(); } } } }).Start();
@@ -149,17 +149,17 @@ namespace WebOne
 					{
 						while (!ConvProc.HasExited)
 						{
-							CheckIdle(ref ConvCpuLoad, ref ConvProc, BeginTime);
+							CheckIdle(ref ConvCpuLoad, ref ConvProc, Log);
 						}
 					}).Start();
 
 #if DEBUG
-					Console.WriteLine("{0}\t Waiting for finish of converting...", GetTime(BeginTime));
+					Log.WriteLine(" Waiting for finish of converting...");
 #endif
 					ConvProc.WaitForExit();
 					if(InputStream != null) InputStream.Close();
 #if DEBUG
-					Console.WriteLine("{0}\t Converting end.", GetTime(BeginTime));
+					Log.WriteLine(" Converting end.");
 #endif
 					if (File.Exists(SourceTmpFile)) File.Delete(SourceTmpFile);
 					if (File.Exists(DestinationTmpFile)) File.Delete(DestinationTmpFile);
@@ -172,13 +172,13 @@ namespace WebOne
 				if (UseStdin)
 				{
 #if DEBUG
-					Console.WriteLine("{0}\t Writing stdin...", GetTime(BeginTime));
+					Log.WriteLine(" Writing stdin...");
 #endif
 					new Task(() => { try { InputStream.CopyTo(ConvProc.StandardInput.BaseStream); } catch { } }).Start();
 				}
 
 #if DEBUG
-				Console.WriteLine("{0}\t Waiting for converter...", GetTime(BeginTime));
+				Log.WriteLine(" Waiting for converter...");
 #endif
 				ConvProc.WaitForExit();
 				InputStream.Close();
@@ -236,7 +236,7 @@ namespace WebOne
 		/// </summary>
 		/// <param name="AverageLoad">Average process load</param>
 		/// <param name="Proc">Which process</param>
-		private void CheckIdle(ref float AverageLoad, ref Process Proc, DateTime BeginTime)
+		private void CheckIdle(ref float AverageLoad, ref Process Proc, LogWriter Log)
 		{
 			Thread.Sleep(1000);
 			AverageLoad = (float)(AverageLoad + GetUsage(Proc)) / 2;
@@ -245,7 +245,8 @@ namespace WebOne
 			{
 				//the process is counting crows. Fire!
 				Proc.Kill();
-				Console.WriteLine("\n{0}\t Idle process killed.", GetTime(BeginTime));
+				Console.WriteLine("\n");
+				Log.WriteLine(" Idle process killed.");
 			}
 		}
 	}

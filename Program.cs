@@ -19,7 +19,7 @@ namespace WebOne
 		static void Main(string[] args)
 		{
 			Console.Title = "WebOne";
-			Console.WriteLine("WebOne HTTP Proxy Server {0}\n(C) https://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
+			Console.WriteLine("WebOne HTTP Proxy Server {0} Alpha 1\n(C) https://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
 
 			//process command line arguments
 			int Port = -1;
@@ -30,6 +30,8 @@ namespace WebOne
 
 			//load configuration file and set port number
 			if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Port = Port;
+
+			if (!ConfigFile.HaveLogFile) LogAgent.OpenLogFile(null);
 
 			ServicePointManager.DefaultConnectionLimit = int.MaxValue;
 			//https://qna.habr.com/q/696033
@@ -117,9 +119,6 @@ namespace WebOne
 			TimeSpan difference = DateTime.UtcNow - BeginTime;
 			return BeginTime.ToString("HH:mm:ss.fff") + "+" + difference.Ticks;
 		}
-
-
-		/// <summary>
 		/// Read all bytes from a Stream (like StreamReader.ReadToEnd)
 		/// </summary>
 		/// <param name="stream">Source Stream</param>
@@ -304,5 +303,30 @@ namespace WebOne
 			//Probably need to add an "Quick setup" interface for configuring webone.conf from skeleton.
 			//E.g. ask user for DefaultHostName, OutputEncoding and Translit.
 		}
+
+		/// <summary>
+		/// Find default directory for log files
+		/// </summary>
+		public static string GetDefaultLogDirectory()
+		{
+			switch (Environment.OSVersion.Platform)
+			{
+				case PlatformID.Win32NT:
+					return Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+				case PlatformID.Unix:
+					return "/var/log";
+				default:
+					return Environment.CurrentDirectory;
+			}
+		}
+
+		/// <summary>
+		/// Get path of log file, after processing the %SYSLOGDIR% mask
+		/// </summary>
+		public static string GetLogFilePath(string RawPath)
+		{
+			return RawPath.Replace("%SYSLOGDIR%", GetDefaultLogDirectory());
+		}
+
 	}
 }

@@ -19,7 +19,7 @@ namespace WebOne
 	{
 		HttpListenerRequest ClientRequest;
 		HttpListenerResponse ClientResponse;
-		DateTime BeginTime;
+		LogWriter Log;
 
 
 		byte[] UTF8BOM = Encoding.UTF8.GetPreamble();
@@ -46,14 +46,13 @@ namespace WebOne
 		/// </summary>
 		/// <param name="ClientRequest">Request from HttpListener</param>
 		/// <param name="ClientResponse">Response for HttpListener</param>
-		/// <param name="BeginTime">Initial time (for log)</param>
-		public Transit(HttpListenerRequest ClientRequest, HttpListenerResponse ClientResponse, DateTime BeginTime)
+		public Transit(HttpListenerRequest ClientRequest, HttpListenerResponse ClientResponse, LogWriter Log)
 		{
 			this.ClientRequest = ClientRequest;
 			this.ClientResponse = ClientResponse;
-			this.BeginTime = BeginTime;
+			this.Log = Log;
 			#if DEBUG
-			Console.WriteLine("{0}\t Begin process.", GetTime(BeginTime));
+			Log.WriteLine(" Begin process.");
 			#endif
 			try
 			{
@@ -65,7 +64,7 @@ namespace WebOne
 				{
 					if (ClientRequest.Headers["Proxy-Authorization"] == null || ClientRequest.Headers["Proxy-Authorization"] == "")
 					{
-						Console.WriteLine("{0}\t Unauthorized client.", GetTime(BeginTime));
+						Log.WriteLine(" Unauthorized client.");
 						ClientResponse.AddHeader("Proxy-Authenticate", @"Basic realm=""Log in to WebOne""");
 						SendError(407, "Hello! This Web 2.0-to-1.0 proxy server is private. Please enter your credentials.");
 						return;
@@ -75,7 +74,7 @@ namespace WebOne
 						string auth = Encoding.Default.GetString(Convert.FromBase64String(ClientRequest.Headers["Proxy-Authorization"].Substring(6)));
 						if (auth != ConfigFile.Authenticate)
 						{
-							Console.WriteLine("{0}\t Incorrect login: '{1}'.", GetTime(BeginTime), auth);
+							Log.WriteLine(" Incorrect login: '{0}'.", auth);
 							ClientResponse.AddHeader("Proxy-Authenticate", @"Basic realm=""Your WebOne credentials are incorrect""");
 							SendError(407, "Your password is not correct. Please try again.");
 							return;
@@ -107,9 +106,9 @@ namespace WebOne
 					if (RequestURL.PathAndQuery.StartsWith("/!") || PAC || RequestURL.AbsolutePath == "/")
 					{
 						try
-						{ 
+						{
 							//internal URLs
-							Console.WriteLine("{0}\t Internal: {1} ", GetTime(BeginTime), RequestURL.PathAndQuery);
+							Log.WriteLine(" Internal: {0} ", RequestURL.PathAndQuery);
 							switch (RequestURL.AbsolutePath.ToLower())
 							{
 								case "/":
@@ -243,7 +242,7 @@ namespace WebOne
 									{
 										if(Cvt.Executable == Converter)
 										{
-											HttpOperation HOper = new HttpOperation(BeginTime);
+											HttpOperation HOper = new HttpOperation(Log);
 											Stream SrcStream = null;
 
 											//find source file placement
@@ -256,20 +255,20 @@ namespace WebOne
 													HOper.Method = "GET";
 													HOper.RequestHeaders = new WebHeaderCollection();
 #if DEBUG
-													Console.WriteLine("{0}\t>Downloading source stream (connecting)...", GetTime(BeginTime));
+													Log.WriteLine(">Downloading source stream (connecting)...");
 #else
-													Console.WriteLine("{0}\t>Downloading source stream...", GetTime(BeginTime));
+													Log.WriteLine(">Downloading source stream...");
 #endif
 													HOper.SendRequest();
 #if DEBUG
-													Console.WriteLine("{0}\t>Downloading source stream (receiving)...", GetTime(BeginTime));
+													Log.WriteLine(">Downloading source stream (receiving)...");
 #endif
 													HOper.GetResponse();
 													SrcStream = HOper.ResponseStream;
 												}
 												catch (Exception DlEx)
 												{
-													Console.WriteLine("{0}\t Converter cannot download source: {1}", GetTime(BeginTime), DlEx.Message);
+													Log.WriteLine(" Converter cannot download source: {0}", DlEx.Message);
 													SendError(503,
 														"<p><big><b>Converter cannot download the source</b>: " + DlEx.Message + "</big></p>" +
 														"Source URL: " + SrcUrl);
@@ -293,7 +292,7 @@ namespace WebOne
 												}
 												catch (Exception OpenEx)
 												{
-													Console.WriteLine("{0}\t Converter cannot open source: {1}", GetTime(BeginTime), OpenEx.Message);
+													Log.WriteLine(" Converter cannot open source: {0}", OpenEx.Message);
 													SendError(503,
 														"<p><big><b>Converter cannot open the source</b>: " + OpenEx.Message + "</big></p>" +
 														"Source URL: " + SrcUrl);
@@ -305,12 +304,12 @@ namespace WebOne
 											try
 											{
 												//run converter & return result
-												SendStream(Cvt.Run(BeginTime, SrcStream, Args1, Args2, Dest, SrcUrl), DestMime, true);
+												SendStream(Cvt.Run(Log, SrcStream, Args1, Args2, Dest, SrcUrl), DestMime, true);
 												return;
 											}
 											catch(Exception CvtEx)
 											{
-												Console.WriteLine("{0}\t Converter error: {1}", GetTime(BeginTime), CvtEx.Message);
+												Log.WriteLine(" Converter error: {0}", CvtEx.Message);
 												SendError(502, 
 													"<p><big><b>Converter error</b>: " + CvtEx.Message + "</big></p>" +
 													"Source URL: " + SrcUrl + "<br>" +
@@ -367,7 +366,7 @@ namespace WebOne
 								case "/wpad.dat":
 								case "/wpad.da":
 									//Proxy Auto-Config
-									Console.WriteLine("{0}\t<Return PAC/WPAD script.", GetTime(BeginTime));
+									Log.WriteLine("<Return PAC/WPAD script.");
 									string PacString =
 									@"function FindProxyForURL(url, host) {" +
 									@"if (url.substring(0, 5) == ""http:"")" +
@@ -387,7 +386,7 @@ namespace WebOne
 									}
 									catch
 									{
-										Console.WriteLine("{0}\t<!Cannot return PAC.", GetTime(BeginTime));
+										Log.WriteLine("Cannot return PAC!");
 									}
 									return;
 								default:
@@ -398,7 +397,7 @@ namespace WebOne
 						}
 						catch (Exception ex)
 						{
-							Console.WriteLine("{0}\t Internal server error: {1}", GetTime(BeginTime), ex.ToString());
+							Log.WriteLine("!Internal server error: {0}", ex.ToString());
 #if DEBUG
 							SendError(500, "Internal server error: <b>" + ex.Message + "</b><br>" + ex.GetType().ToString() + " " + ex.StackTrace.Replace("\n","<br>"));
 #else
@@ -410,7 +409,7 @@ namespace WebOne
 					if (RequestURL.LocalPath.StartsWith("/http:") || RequestURL.AbsoluteUri.StartsWith("/https:"))
 					{
 						RequestURL = new Uri(RequestURL.LocalPath.Substring(1) + RequestURL.Query);
-						Console.WriteLine("{0}\t Local: {1}", GetTime(BeginTime), RequestURL);
+						Log.WriteLine(" Local: {0}", RequestURL);
 						LocalMode = true;
 					}
 					else
@@ -418,7 +417,7 @@ namespace WebOne
 						//dirty local mode, try to use last used host: http://localhost/favicon.ico
 						RequestURL = new Uri("http://" + new Uri(LastURL).Host + RequestURL.LocalPath);
 						if (RequestURL.Host == "999.999.999.999") { SendError(404, "The proxy server cannot guess domain name."); return; }
-						Console.WriteLine("{0}\t Dirty local: {1}", GetTime(BeginTime), RequestURL);
+						Log.WriteLine(" Dirty local: {0}", RequestURL);
 						LocalMode = true;
 					}
 				}
@@ -428,7 +427,7 @@ namespace WebOne
 				string[] BadProtocols = { "ftp", "gopher", "wais" };
 				if (CheckString(RequestURL.Scheme, BadProtocols))
 				{
-					Console.WriteLine("{0}\t CERN Proxy request to {1} detected.", GetTime(BeginTime), RequestURL.Scheme.ToUpper());
+					Log.WriteLine(" CERN Proxy request to {0} detected.", RequestURL.Scheme.ToUpper());
 					ClientResponse.AddHeader("Upgrade", RequestURL.Scheme.ToUpper());
 					SendError(101, "Cannot work with " + RequestURL.Scheme.ToUpper() + " protocol. Please connect directly bypassing the proxy.");
 					return;
@@ -446,7 +445,7 @@ namespace WebOne
 				RequestURL.Host.ToLower() != Environment.MachineName.ToLower() &&
 				RequestURL.Host.ToLower() != ConfigFile.DefaultHostName.ToLower())
 				{
-					Console.WriteLine("{0}\t Carousel detected.", GetTime(BeginTime));
+					Log.WriteLine(" Carousel detected.");
 					if (!LastURL.StartsWith("https") && !RequestURL.AbsoluteUri.StartsWith("https")) //if http is gone, try https
 						RequestURL = new Uri("https" + RequestURL.AbsoluteUri.Substring(4));
 					if (LastURL.StartsWith("https")) //if can't use https, try again http
@@ -534,16 +533,16 @@ namespace WebOne
 							switch (Edit.Key)
 							{
 								case "AddInternalRedirect":
-									Console.WriteLine("{0}\t Fix to {1} internally", GetTime(BeginTime), ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+									Log.WriteLine(" Fix to {0} internally", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
 									RequestURL = new Uri(Edit.Value);
 									break;
 								case "AddRedirect":
-									Console.WriteLine("{0}\t Fix to {1}", GetTime(BeginTime), ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+									Log.WriteLine(" Fix to {0}", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
 									ClientResponse.AddHeader("Location", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
 									SendError(302, "Брось каку!");
 									return;
 								case "AddHeader":
-									//Console.WriteLine("{0}\t Add request header: {1}", GetTime(BeginTime), Edit.Value);
+									//Log.WriteLine(" Add request header: {0}", Edit.Value);
 									if (whc[Edit.Value.Substring(0, Edit.Value.IndexOf(": "))] == null) whc.Add(ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
 									break;
 							}
@@ -557,8 +556,8 @@ namespace WebOne
 				{
 					if (wex.Response == null) ResponseCode = 502;
 					else ResponseCode = (int)(wex.Response as HttpWebResponse).StatusCode;
-					if (ResponseCode == 502) Console.WriteLine("{0}\t Cannot load this page: {1}.", GetTime(BeginTime), wex.Status);
-					else Console.WriteLine("{0}\t Web exception: {1} {2}.", GetTime(BeginTime), ResponseCode, (wex.Response as HttpWebResponse).StatusCode);
+					if (ResponseCode == 502) Log.WriteLine(" Cannot load this page: {0}.", wex.Status);
+					else Log.WriteLine(" Web exception: {0} {1}.", ResponseCode, (wex.Response as HttpWebResponse).StatusCode);
 
 					ContentType = "text/html";
 #if DEBUG
@@ -577,7 +576,7 @@ namespace WebOne
 						{
 							try
 							{
-								Console.WriteLine("{0}\t Look in Archive.org...", GetTime(BeginTime));
+								Log.WriteLine(" Look in Archive.org...");
 								HttpWebRequest ArchiveRequest = (HttpWebRequest)WebRequest.Create("https://archive.org/wayback/available?url=" + RequestURL.AbsoluteUri);
 								ArchiveRequest.UserAgent = "WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
 								ArchiveRequest.Method = "GET";
@@ -593,7 +592,7 @@ namespace WebOne
 									Match ArchiveMatch = Regex.Match(ArchiveResponse, @"""url"": ""http://web.archive.org/.*"","); ;
 									if (ArchiveMatch.Success)
 									{
-										Console.WriteLine("{0}\t Available.", GetTime(BeginTime));
+										Log.WriteLine(" Available.");
 										ArchiveURL = ArchiveMatch.Value.Substring(8, ArchiveMatch.Value.IndexOf(@""",") - 8);
 										ResponseBody = "<html><body><h1>Server not found</h2>But an <a href=" + ArchiveURL + ">archived copy</a> is available! Redirecting to it...</body></html>";
 										ClientResponse.AddHeader("Location", ArchiveURL);
@@ -602,12 +601,12 @@ namespace WebOne
 									}
 									else
 									{
-										Console.WriteLine("{0}\t Available, but somewhere.", GetTime(BeginTime));
+										Log.WriteLine(" Available, but somewhere.");
 									}
 								}
 								else
 								{
-									Console.WriteLine("{0}\t No snapshots.", GetTime(BeginTime));
+									Log.WriteLine(" No snapshots.");
 									if (RequestURL.AbsoluteUri.StartsWith("http://web.archive.org/web/") && ConfigFile.ShortenArchiveErrors)
 									{
 										string ErrMsg =
@@ -633,7 +632,7 @@ namespace WebOne
 				catch (Exception ex)
 				{
 					StWrong = true;
-					Console.WriteLine("{0}\t ============GURU MEDITATION:\n{1}\nOn URL '{2}', Method '{3}'. Returning 500.============", GetTime(BeginTime), ex.ToString(), RequestURL.AbsoluteUri, ClientRequest.HttpMethod);
+					Log.WriteLine(" ============GURU MEDITATION:\n{1}\nOn URL '{2}', Method '{3}'. Returning 500.============", null, ex.ToString(), RequestURL.AbsoluteUri, ClientRequest.HttpMethod);
 					SendError(500, "Guru meditaion at URL " + RequestURL.AbsoluteUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace.Replace("\n", "\n<br>") + "</i>");
 				}
 
@@ -663,7 +662,7 @@ namespace WebOne
 
 							ClientResponse.ContentLength64 = RespBuffer.Length;
 
-							if (ClientResponse.ContentLength64 > 300*1024) Console.WriteLine("{0}\t Sending binary.", GetTime(BeginTime));
+							if (ClientResponse.ContentLength64 > 300*1024) Log.WriteLine(" Sending binary.");
 							ClientResponse.OutputStream.Write(RespBuffer, 0, RespBuffer.Length);
 						}
 						else
@@ -673,33 +672,32 @@ namespace WebOne
 						}
 						ClientResponse.OutputStream.Close();
 #if DEBUG
-						Console.WriteLine("{0}\t Document sent.", GetTime(BeginTime));
+						Log.WriteLine(" Document sent.");
 #endif
 					}
 #if DEBUG
-					else Console.WriteLine("{0}\t Abnormal return (something was wrong).", GetTime(BeginTime));
+					else Log.WriteLine(" Abnormal return (something was wrong).");
 #endif
 				}
 				catch (Exception ex)
 				{
 					if (!ConfigFile.HideClientErrors)
 #if DEBUG
-						Console.WriteLine("{0}\t<Can't return reply. " + ex.Message + ex.StackTrace, GetTime(BeginTime));
+						Log.WriteLine("<Can't return reply. " + ex.Message + ex.StackTrace);
 #else
-						Console.WriteLine("{0}\t<Can't return reply. " + ex.Message, GetTime(BeginTime));
+						Log.WriteLine("<Can't return reply. " + ex.Message);
 #endif
 				}
 			}
 			catch(Exception E)
 			{
-				string time = GetTime(BeginTime);
-				Console.WriteLine("{0}\t A error has been catched: {1}\n{0}\t Please report to author.", time, E.ToString().Replace("\n", "\n{0}\t "));
+				Log.WriteLine(" A error has been catched: {1}\n{0}\t Please report to author.", null, E.ToString().Replace("\n", "\n{0}\t "));
 				SendError(500, "An error occured: " + E.ToString().Replace("\n", "\n<BR>"));
 				if (operation != null) operation.Dispose();
 			}
 			if (operation != null) operation.Dispose();
 #if DEBUG
-			Console.WriteLine("{0}\t End process.", GetTime(BeginTime));
+			Log.WriteLine(" End process.");
 #endif
 		}
 
@@ -721,17 +719,17 @@ namespace WebOne
 				case "CONNECT":
 					string ProtocolReplacerJS = "<script>if (window.location.protocol != 'http:') { setTimeout(function(){window.location.protocol = 'http:'; window.location.reload();}, 1000); }</script>";
 					SendError(405, "The proxy does not know the " + RequestMethod + " method.<BR>Please use HTTP, not HTTPS.<BR>HSTS must be disabled." + ProtocolReplacerJS);
-					Console.WriteLine("{0}\t Wrong method.", GetTime(BeginTime));
+					Log.WriteLine(" Wrong method.");
 					return;
 				default:
-					operation = new HttpOperation(BeginTime);
+					operation = new HttpOperation(Log);
 					if (Content_Length == 0)
 					{
 						//try to download (GET, HEAD, WebDAV download, etc)
 #if DEBUG
-						Console.WriteLine("{0}\t>Downloading content (connecting)...", GetTime(BeginTime));
+						Log.WriteLine(">Downloading content (connecting)...");
 #else
-						Console.WriteLine("{0}\t>Downloading content...", GetTime(BeginTime));
+						Log.WriteLine(">Downloading content...");
 #endif
 						operation.URL = RequestURL.AbsoluteUri;
 						operation.Method = RequestMethod;
@@ -739,7 +737,7 @@ namespace WebOne
 						operation.AllowAutoRedirect = AllowAutoRedirect;
 						operation.SendRequest();
 #if DEBUG
-						Console.WriteLine("{0}\t>Downloading content (receiving)...", GetTime(BeginTime));
+						Log.WriteLine(">Downloading content (receiving)...");
 #endif
 						operation.GetResponse();
 						MakeOutput(operation);
@@ -748,11 +746,10 @@ namespace WebOne
 					else
 					{
 						//try to upload (POST, PUT, WebDAV, etc)
-						Console.WriteLine("{0}\t>Uploading {1}K of {2}...", GetTime(BeginTime), Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024, RequestHeaderCollection["Content-Type"]);
 #if DEBUG
-						Console.WriteLine("{0}\t>Uploading {1}K of {2} (connecting)...", GetTime(BeginTime), Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024, RequestHeaderCollection["Content-Type"]);
+						Log.WriteLine(">Uploading {0}K of {1} (connecting)...",Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024, RequestHeaderCollection["Content-Type"]);
 #else
-						Console.WriteLine("{0}\t>Uploading {1}K of {2}...", GetTime(BeginTime), Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024, RequestHeaderCollection["Content-Type"]);
+						Log.WriteLine(">Uploading {0}K of {1}...", Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024, RequestHeaderCollection["Content-Type"]);
 #endif
 						operation.URL = RequestURL.AbsoluteUri;
 						operation.Method = RequestMethod;
@@ -761,7 +758,7 @@ namespace WebOne
 						operation.AllowAutoRedirect = AllowAutoRedirect;
 						operation.SendRequest();
 #if DEBUG
-						Console.WriteLine("{0}\t>Uploading content (receiving)...", GetTime(BeginTime));
+						Log.WriteLine(">Uploading content (receiving)...");
 #endif
 						operation.GetResponse();
 						MakeOutput(operation);
@@ -780,7 +777,7 @@ namespace WebOne
 				if (RequestURL.AbsoluteUri == ((operation.ResponseHeaders ?? new WebHeaderCollection())["Location"] ?? "nowhere").Replace("https://", "http://")
 					&& !CheckString(RequestURL.AbsoluteUri, ConfigFile.InternalRedirectOn))
 				{
-					Console.WriteLine("{0}\t>Reload secure...", GetTime(BeginTime));
+					Log.WriteLine(">Reload secure...");
 
 					RequestURL = new Uri(RequestURL.AbsoluteUri.Replace("http://", "https://"));
 					TransitStream = null;
@@ -875,7 +872,7 @@ namespace WebOne
 
 			//do edits
 			if (Finds.Count != Replacions.Count)
-				Console.WriteLine("{0}\t Invalid amount of Find/Replace!", GetTime(BeginTime));
+				Log.WriteLine(" Invalid amount of Find/Replace!");
 				//todo: add warning to constructor of EditSet
 			else if(Finds.Count > 0)
 				for (int i = 0; i < Finds.Count; i++)
@@ -884,7 +881,7 @@ namespace WebOne
 					patched++;
 				}
 
-			if (patched > 0) Console.WriteLine("{0}\t {1} patch(-es) applied...", GetTime(BeginTime), patched);
+			if (patched > 0) Log.WriteLine(" {0} patch(-es) applied...", patched);
 
 			//do transliteration if need
 			if(ConfigFile.TranslitTable.Count > 0)
@@ -957,12 +954,12 @@ namespace WebOne
 									ConvertArg2 = Edit.Value;
 									break;
 								case "AddResponseHeader":
-									Console.WriteLine("{0}\t Add response header: {1}", GetTime(BeginTime), ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+									Log.WriteLine(" Add response header: {0}", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
 									operation.ResponseHeaders.Add(ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
 									if (Edit.Value.StartsWith("Content-Type: ")) ContentType = Edit.Value.Substring("Content-Type: ".Length);
 									break;
 								case "AddRedirect":
-									Console.WriteLine("{0}\t Add redirect: {1}", GetTime(BeginTime), ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+									Log.WriteLine(" Add redirect: {0}", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
 									Redirect = ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
 									break;
 							}
@@ -974,7 +971,7 @@ namespace WebOne
 			//check for edit: AddRedirect
 			if (Redirect != null)
 			{
-				Console.WriteLine("{0}\t {1} {2}. Body {3}K of {4} [Need to redirect].", GetTime(BeginTime), (int)StatusCode, StatusCode, ContentLength / 1024, SrcContentType);
+				Log.WriteLine(" {1} {2}. Body {3}K of {4} [Need to redirect].", null, (int)StatusCode, StatusCode, ContentLength / 1024, SrcContentType);
 				ClientResponse.AddHeader("Location", Redirect);
 				SendError(302, "Redirect requested.");
 				return;
@@ -983,7 +980,7 @@ namespace WebOne
 			//check for edit: AddConvert
 			if (Converter != null)
 			{
-				Console.WriteLine("{0}\t {1} {2}. Body {3}K of {4} [Wants {5}].", GetTime(BeginTime), (int)StatusCode, StatusCode, ContentLength / 1024, SrcContentType, Converter);
+				Log.WriteLine(" {1} {2}. Body {3}K of {4} [Wants {5}].", null, (int)StatusCode, StatusCode, ContentLength / 1024, SrcContentType, Converter);
 
 				try
 				{
@@ -992,11 +989,11 @@ namespace WebOne
 						if (Cvt.Executable == Converter)
 						{
 							if(!Cvt.SelfDownload)
-								SendStream(Cvt.Run(BeginTime, ResponseStream, ConvertArg1, ConvertArg2, ConvertDest, RequestURL.AbsoluteUri), ContentType, true);
+								SendStream(Cvt.Run(Log, ResponseStream, ConvertArg1, ConvertArg2, ConvertDest, RequestURL.AbsoluteUri), ContentType, true);
 							else
 							{
-								SendStream(Cvt.Run(BeginTime, null, ConvertArg1, ConvertArg2, ConvertDest, RequestURL.AbsoluteUri), ContentType, true);
-								//if(operation.Response != null) Console.WriteLine("{0}\t '{1}' will download the source again.", GetTime(BeginTime), Converter); //for future
+								SendStream(Cvt.Run(Log, null, ConvertArg1, ConvertArg2, ConvertDest, RequestURL.AbsoluteUri), ContentType, true);
+								//if(operation.Response != null) Log.WriteLine(" '{1}' will download the source again.", null, Converter); //for future
 							}
 							return;
 						}
@@ -1008,7 +1005,7 @@ namespace WebOne
 				}
 				catch(Exception ConvertEx)
 				{
-					Console.WriteLine("{0}\t On-fly converter error: {1}", GetTime(BeginTime), ConvertEx.Message);
+					Log.WriteLine(" On-fly converter error: {0}", ConvertEx.Message);
 					SendError(502,
 						"<p><big><b>Converter error</b>: " + ConvertEx.Message + "</big></p>" +
 						"Source URL: " + RequestURL.AbsoluteUri + "<br>" +
@@ -1024,7 +1021,7 @@ namespace WebOne
 			if (Program.CheckString(ContentType, ConfigFile.TextTypes))
 			{
 				//if server returns text, make edits
-				Console.WriteLine("{0}\t {1} {2}. Body {3}K of {4} [Text].", GetTime(BeginTime), (int)StatusCode, StatusCode, ContentLength / 1024, ContentType);
+				Log.WriteLine(" {1} {2}. Body {3}K of {4} [Text].", null, (int)StatusCode, StatusCode, ContentLength / 1024, ContentType);
 				byte[] RawContent = null;
 				RawContent = ReadAllBytes(ResponseStream);
 
@@ -1036,7 +1033,7 @@ namespace WebOne
 					ResponseBody = ContentEncoding.GetString(RawContent);
 					ResponseBody = ProcessBody(ResponseBody);
 #if DEBUG
-					Console.WriteLine("{0}\t Body maked.", GetTime(BeginTime));
+					Log.WriteLine(" Body maked.");
 #endif
 					return;
 				}
@@ -1058,15 +1055,15 @@ namespace WebOne
 			else
 			{
 				if (operation != null)
-					Console.WriteLine("{0}\t {1} {2}. Body {3}K of {4} [Binary].", GetTime(BeginTime), (int)StatusCode, StatusCode, operation.Response.ContentLength / 1024, ContentType);
+					Log.WriteLine(" {1} {2}. Body {3}K of {4} [Binary].", null, (int)StatusCode, StatusCode, operation.Response.ContentLength / 1024, ContentType);
 				else
-					Console.WriteLine("{0}\t {1} {2}. Body is {3} [Binary], incomplete.", GetTime(BeginTime), (int)StatusCode, StatusCode, ContentType);
+					Log.WriteLine(" {1} {2}. Body is {3} [Binary], incomplete.", null, (int)StatusCode, StatusCode, ContentType);
 
 				TransitStream = ResponseStream;
 				this.ContentType = ContentType;
 			}
 #if DEBUG
-			Console.WriteLine("{0}\t Body maked.", GetTime(BeginTime));
+			Log.WriteLine(" Body maked.");
 #endif
 			return;
 
@@ -1149,7 +1146,7 @@ namespace WebOne
 		/// <param name="Text">Text of message</param>
 		private void SendError(int Code, string Text = "")
 		{
-			Console.WriteLine("{0}\t<Return code {1}.", GetTime(BeginTime), Code);
+			Log.WriteLine("<Return code {0}.", Code);
 			Text += GetInfoString();
 			string CodeStr = Code.ToString() + " " + ((HttpStatusCode)Code).ToString();
 			string Refresh = "";
@@ -1173,7 +1170,7 @@ namespace WebOne
 			catch(Exception ex)
 			{
 				if(!ConfigFile.HideClientErrors)
-				Console.WriteLine("{0}\t<!Cannot return code {1}. {2}: {3}", GetTime(BeginTime), Code, ex.GetType(), ex.Message);
+					Log.WriteLine("<!Cannot return code {1}. {2}: {3}", null, Code, ex.GetType(), ex.Message);
 			}
 		}
 
@@ -1184,7 +1181,7 @@ namespace WebOne
 		/// <param name="ContentType">File's content-type.</param>
 		private void SendFile(string FileName, string ContentType)
 		{
-			Console.WriteLine("{0}\t<Send file {1}.", GetTime(BeginTime), FileName);
+			Log.WriteLine("<Send file {0}.", FileName);
 			try
 			{
 				ClientResponse.StatusCode = 200;
@@ -1213,9 +1210,9 @@ namespace WebOne
 		{
 			if (!Potok.CanRead) throw new ArgumentException("Cannot send write-only stream", "Potok");
 			if (Potok.CanSeek)
-				Console.WriteLine("{0}\t<Send stream with {2}K of {1}.", GetTime(BeginTime), ContentType, Potok.Length/1024);
+				Log.WriteLine("<Send stream with {2}K of {1}.", null, ContentType, Potok.Length/1024);
 			else
-				Console.WriteLine("{0}\t<Send {1} stream.", GetTime(BeginTime), ContentType);
+				Log.WriteLine("<Send {0} stream.", ContentType);
 			try
 			{
 				ClientResponse.StatusCode = 200;

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using static WebOne.Program;
 
 namespace WebOne
 {
@@ -133,6 +134,11 @@ namespace WebOne
 		/// Temporary files' directory
 		/// </summary>
 		public static string TemporaryDirectory = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar;
+
+		/// <summary>
+		/// Indicates is there are a LogFile or AppendLogFile directive in config file
+		/// </summary>
+		public static bool HaveLogFile = false;
 
 		static ConfigFile()
 		{
@@ -365,6 +371,14 @@ namespace WebOne
 										if (ParamValue.ToUpper() == "%TEMP%" || ParamValue == "$TEMP" || ParamValue == "$TMPDIR") TemporaryDirectory = Path.GetTempPath();
 										else TemporaryDirectory = ParamValue;
 										continue;
+									case "LogFile":
+										LogAgent.OpenLogFile(GetLogFilePath(ParamValue), false);
+										HaveLogFile = true;
+										continue;
+									case "AppendLogFile":
+										LogAgent.OpenLogFile(GetLogFilePath(ParamValue), true);
+										HaveLogFile = true;
+										continue;
 									default:
 										Console.WriteLine("Warning: Unknown server option: " + ParamName);
 										break;
@@ -407,6 +421,7 @@ namespace WebOne
 				Console.WriteLine("Error in configuration file: {0}.\nAll next lines after {1} are ignored.", ex.Message, i);
 				#endif
 			}
+
 			if (i < 1) Console.WriteLine("Warning: curiously short file. Probably line endings are not valid for this OS.");
 			Console.WriteLine("{0} load complete.", ConfigFileName);
 		}
