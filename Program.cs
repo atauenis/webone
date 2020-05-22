@@ -325,7 +325,8 @@ namespace WebOne
 		/// </summary>
 		public static string GetLogFilePath(string RawPath)
 		{
-			return RawPath.Replace("%SYSLOGDIR%", GetDefaultLogDirectory());
+			string LogFilePath = RawPath.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+			return LogFilePath.Replace("%SYSLOGDIR%", GetDefaultLogDirectory());
 		}
 
 	}

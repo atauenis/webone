@@ -54,7 +54,7 @@ namespace WebOne
 			_listener.BeginGetContext(ProcessRequest, null);
 			HttpListenerRequest req = ctx.Request;
 			
-			Logger.WriteLine(">{0} {1}", req.HttpMethod, req.RawUrl);
+			Logger.WriteLine(">{0} {1} ({2})", req.HttpMethod, req.RawUrl, req.RemoteEndPoint.Address);
 
 			HttpListenerResponse resp = ctx.Response;
 			Transit Tranzit = new Transit(req, resp, Logger);

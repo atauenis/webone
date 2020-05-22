@@ -52,7 +52,7 @@ namespace WebOne
 				{
 					LogStreamWriter = new StreamWriter(LogFileName, Append) { AutoFlush = true };
 
-					string StartMsg = string.Format("{0}\tWebOne {1} ({2}{3}, Core {4}) log started.",
+					string StartMsg = string.Format("{0}\tWebOne {1} ({2}{3}, Runtime {4}) log started.",
 						DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss"),
 						System.Reflection.Assembly.GetExecutingAssembly().GetName().Version,
 						Environment.OSVersion.Platform,
@@ -101,13 +101,23 @@ namespace WebOne
 		public void WriteLine(bool display, string format, params object[] arg)
 		{
 			string str;
+			string timestamp;
+
 			if (FirstTime)
+			{
+				timestamp = string.Format("{0}+0", BeginTime.ToString("HH:mm:ss.fff")); FirstTime = false; 
+			}
+			else
+			{ 
+				timestamp = GetTime(BeginTime); 
+			}
+			
+			if(timestamp.Length < 20) //15:55:58.283+7600010 = 20 character long
 			{
 				str = string.Format("{0}+0\t\t{1}", BeginTime.ToString("HH:mm:ss.fff"), string.Format(format, arg));
 				LogAgent.WriteLine(str, display, false);
 				str = string.Format("{0}+0\t{1}", BeginTime.ToString("HH:mm:ss.fff"), string.Format(format, arg));
 				LogAgent.WriteLine(str, false, true);
-				FirstTime = false;
 			}
 			else
 			{
