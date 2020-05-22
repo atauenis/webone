@@ -12,8 +12,9 @@ namespace WebOne
 {
 	public static class Program
 	{
-		public static string ConfigFileName = "**auto**webone.conf";
-
+		public const string ConfigFileAutoName = "**auto**webone.conf";
+		public static string ConfigFileName = ConfigFileAutoName;
+		public static int Port = -1;
 		public static int Load = 0;
 
 		static void Main(string[] args)
@@ -22,11 +23,8 @@ namespace WebOne
 			Console.WriteLine("WebOne HTTP Proxy Server {0} Alpha 1\n(C) https://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
 
 			//process command line arguments
-			int Port = -1;
-			try { Port = Convert.ToInt32(args[0]); if (args.Length > 1) ConfigFileName = args[1]; }
-			catch { if(args.Length > 0) ConfigFileName = args[0]; }
-
-			ConfigFileName = GetDefaultConfigurationFile();
+			ProcessCommandLine(args);
+			ConfigFileName = GetConfigurationFileName();
 
 			//load configuration file and set port number
 			if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Port = Port;
@@ -55,6 +53,63 @@ namespace WebOne
 			Console.ReadKey();
 		}
 
+		/// <summary>
+		/// Process command line arguments
+		/// </summary>
+		/// <param name="args">Array of WebOne.exe startup arguments</param>
+		private static void ProcessCommandLine(string[] args)
+		{
+			const string ArgUnnamed = "--wo-short";
+			string ArgName = ArgUnnamed;
+			string ArgValue = "";
+			List<KeyValuePair<string, string>> Args = new List<KeyValuePair<string, string>>();
+
+			KeyValuePair<string, string> LastArg = new KeyValuePair<string, string>();
+			bool LastWasValue = false;
+
+			foreach (string arg in args)
+			{
+				if (arg.StartsWith("-"))
+				{
+					LastWasValue = false;
+					LastArg = new KeyValuePair<string, string>(ArgName, ArgValue);
+					Args.Add(LastArg);
+
+					ArgName = arg;
+					ArgValue = "";
+					continue;
+				}
+				else
+				{
+					if (LastWasValue)
+					{
+						LastArg = new KeyValuePair<string, string>(ArgName, ArgValue);
+						Args.Add(LastArg);
+					}
+					ArgValue = arg;
+					LastWasValue = true;
+					continue;
+				}
+			}
+			LastArg = new KeyValuePair<string, string>(ArgName, ArgValue);
+			Args.Add(LastArg);
+
+			foreach (KeyValuePair<string, string> kvp in Args)
+			{
+				//Console.WriteLine("Arg: '{0}' = '{1}'", kvp.Key, kvp.Value);
+				switch (kvp.Key)
+				{
+					case ArgUnnamed:
+						if (kvp.Value == string.Empty) break;
+						try { Port = Convert.ToInt32(kvp.Value); Console.WriteLine("Using custom port {0}.", Port); }
+						catch { ConfigFileName = kvp.Value; }
+						break;
+					default:
+						Console.WriteLine("Unknown command line argument: {0}.", kvp.Key);
+						break;
+				}
+			}
+		}
 
 		/// <summary>
 		/// Make info string (footer) for message pages
@@ -116,7 +171,7 @@ namespace WebOne
 		/// <returns>The initial time and difference with the current time</returns>
 		public static string GetTime(DateTime BeginTime)
 		{
-			TimeSpan difference = DateTime.UtcNow - BeginTime;
+			TimeSpan difference = DateTime.Now - BeginTime;
 			return BeginTime.ToString("HH:mm:ss.fff") + "+" + difference.Ticks;
 		}
 		/// Read all bytes from a Stream (like StreamReader.ReadToEnd)
@@ -224,10 +279,10 @@ namespace WebOne
 		}
 
 		/// <summary>
-		/// Find and/or create default webone.conf
+		/// Find and/or create default or custom (whatever is need) webone.conf
 		/// </summary>
-		/// <returns>Path to default configuration file</returns>
-		public static string GetDefaultConfigurationFile()
+		/// <returns>Path to configuration file</returns>
+		public static string GetConfigurationFileName()
 		{
 			string CurrentDirConfigFile = "webone.conf";
 			string DefaultConfigFile = "";  //  webone.conf       (in app's directory)
@@ -257,7 +312,7 @@ namespace WebOne
 #endif
 
 			//try to load custom configuration file (if any)
-			if (ConfigFileName != "**auto**webone.conf") return ConfigFileName;
+			if (ConfigFileName != ConfigFileAutoName) return ConfigFileName;
 
 			//try to load webone.conf from current directory
 			if (File.Exists(CurrentDirConfigFile)) return CurrentDirConfigFile;

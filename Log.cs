@@ -53,7 +53,7 @@ namespace WebOne
 					LogStreamWriter = new StreamWriter(LogFileName, Append) { AutoFlush = true };
 
 					string StartMsg = string.Format("{0}\tWebOne {1} ({2}{3}, Runtime {4}) log started.",
-						DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss"),
+						DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
 						System.Reflection.Assembly.GetExecutingAssembly().GetName().Version,
 						Environment.OSVersion.Platform,
 						Environment.Is64BitOperatingSystem ? "-64" : "-32",
@@ -75,7 +75,7 @@ namespace WebOne
 	/// </summary>
 	public class LogWriter
 	{
-		public DateTime BeginTime = DateTime.UtcNow;
+		public DateTime BeginTime = DateTime.Now;
 
 		bool FirstTime = true;
 
