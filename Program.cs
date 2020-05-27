@@ -17,6 +17,10 @@ namespace WebOne
 		public static int Port = -1;
 		public static int Load = 0;
 
+		public const string CmdLineArgUnnamed = "--wo-short";
+		public static List<KeyValuePair<string, string>> CmdLineOptions = new List<KeyValuePair<string, string>>();
+
+
 		static void Main(string[] args)
 		{
 			Console.Title = "WebOne";
@@ -29,17 +33,21 @@ namespace WebOne
 			//load configuration file and set port number
 			if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Port = Port;
 
+			//process remaining command line arguments and override configuration file options
+			ProcessCommandLineOptions();
+
+			//enable log
 			if (!ConfigFile.HaveLogFile) LogAgent.OpenLogFile(null);
 
 			ServicePointManager.DefaultConnectionLimit = int.MaxValue;
 			//https://qna.habr.com/q/696033
 			//https://github.com/atauenis/webone/issues/2
 
-			Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + Port;
+			Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + ConfigFile.Port;
 
 			try
 			{
-				new HTTPServer(Port);
+				new HTTPServer(ConfigFile.Port);
 			}
 			catch(Exception ex)
 			{
@@ -59,8 +67,7 @@ namespace WebOne
 		/// <param name="args">Array of WebOne.exe startup arguments</param>
 		private static void ProcessCommandLine(string[] args)
 		{
-			const string ArgUnnamed = "--wo-short";
-			string ArgName = ArgUnnamed;
+			string ArgName = CmdLineArgUnnamed;
 			string ArgValue = "";
 			List<KeyValuePair<string, string>> Args = new List<KeyValuePair<string, string>>();
 
@@ -96,10 +103,25 @@ namespace WebOne
 
 			foreach (KeyValuePair<string, string> kvp in Args)
 			{
+				CmdLineOptions.Add(kvp);
 				//Console.WriteLine("Arg: '{0}' = '{1}'", kvp.Key, kvp.Value);
 				switch (kvp.Key)
 				{
-					case ArgUnnamed:
+					case "-l":
+					case "--log":
+					case "-t":
+					case "--tmp":
+					case "--temp":
+					case "-p":
+					case "--port":
+					case "--http-port":
+					case "-h":
+					case "--hostname":
+					case "--host":
+					case "--proxy-authenticate":
+						//will be processed in ProcessCommandLineOptions()
+						break;
+					case CmdLineArgUnnamed:
 						if (kvp.Value == string.Empty) break;
 						try { Port = Convert.ToInt32(kvp.Value); Console.WriteLine("Using custom port {0}.", Port); }
 						catch { ConfigFileName = kvp.Value; }
@@ -107,6 +129,53 @@ namespace WebOne
 					default:
 						Console.WriteLine("Unknown command line argument: {0}.", kvp.Key);
 						break;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Process command line options that overrides webone.conf
+		/// </summary>
+		private static void ProcessCommandLineOptions()
+		{
+			foreach (KeyValuePair<string, string> kvp in CmdLineOptions)
+			{
+				try
+				{
+					//Console.WriteLine("Opt: '{0}' = '{1}'", kvp.Key, kvp.Value);
+					switch (kvp.Key)
+					{
+						case "-l":
+						case "--log":
+							if (kvp.Value == "" || kvp.Value == "no") { ConfigFile.HaveLogFile = false; break; }
+							LogAgent.OpenLogFile(GetLogFilePath(kvp.Value), false);
+							ConfigFile.HaveLogFile = true;
+							break;
+						case "-t":
+						case "--tmp":
+						case "--temp":
+							if (kvp.Value.ToUpper() == "%TEMP%" || kvp.Value == "$TEMP" || kvp.Value == "$TMPDIR") ConfigFile.TemporaryDirectory = Path.GetTempPath();
+							else ConfigFile.TemporaryDirectory = kvp.Value;
+							break;
+						case "-p":
+						case "--port":
+						case "--http-port":
+							Port = Convert.ToInt32(kvp.Value);
+							ConfigFile.Port = Convert.ToInt32(kvp.Value);
+							break;
+						case "-h":
+						case "--hostname":
+						case "--host":
+							ConfigFile.DefaultHostName = kvp.Value;
+							break;
+						case "--proxy-authenticate":
+							ConfigFile.Authenticate = kvp.Value;
+							break;
+					}
+				}
+				catch(Exception ex)
+				{
+					Console.WriteLine("Warning: Wrong argument '{1} {2}': {0}.", ex.Message, kvp.Key, kvp.Value);
 				}
 			}
 		}
