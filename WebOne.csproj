@@ -36,7 +36,7 @@
 
   <ItemGroup>
     <RpmDependency Include="ffmpeg" />
-    <RpmDependency Include="imagemagick-6.q16" />
+	<RpmDependency Include="ImageMagick" />
   </ItemGroup>
 
   <PropertyGroup>
