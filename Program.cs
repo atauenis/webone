@@ -262,12 +262,13 @@ namespace WebOne
 		/// </summary>
 		/// <param name="MaskedURL">URI template</param>
 		/// <param name="PossibleURL">Previous URI (for "%URL%" mask and similar)</param>
+		/// <param name="DontTouchURL">Do not edit previous URI (%URL% mask) in any cases</param>
 		/// <returns>Ready URL</returns>
-		public static string ProcessUriMasks(string MaskedURL, string PossibleURL = "http://webone.github.io:80/index.htm")
+		public static string ProcessUriMasks(string MaskedURL, string PossibleURL = "http://webone.github.io:80/index.htm", bool DontTouchURL = false)
 		{
 			string str = MaskedURL;
 			string URL = null;
-			if (CheckString(PossibleURL, ConfigFile.ForceHttps))
+			if (CheckString(PossibleURL, ConfigFile.ForceHttps) && !DontTouchURL)
 				URL = new UriBuilder(PossibleURL) { Scheme = "https" }.Uri.ToString();
 			else
 				URL = PossibleURL;
