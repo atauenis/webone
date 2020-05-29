@@ -40,8 +40,8 @@ namespace WebOne
 		string ContentType = "text/plain";
 		Encoding ContentEncoding = Encoding.Default;
 
-		bool SniffHeaders = false;
-		string SniffPath = Directory.GetCurrentDirectory() + "spy-%URL%.log";
+		bool DumpHeaders = false;
+		string DumpPath = Directory.GetCurrentDirectory() + "spy-%URL%.log";
 
 		/// <summary>
 		/// Convert a Web 2.0 page to Web 1.0-like page.
@@ -390,7 +390,7 @@ namespace WebOne
 									{
 										Log.WriteLine("Cannot return PAC!");
 									}
-									SaveSniffLog();
+									SaveHeaderDump();
 									return;
 								default:
 									SendError(200, "Unknown internal URL: " + RequestURL.PathAndQuery);
@@ -537,7 +537,7 @@ namespace WebOne
 							{
 								case "AddInternalRedirect":
 									Log.WriteLine(" Fix to {0} internally", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
-										SaveSniffLog("Internal redirect to " + ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri) + "\nThen continue.");
+										SaveHeaderDump("Internal redirect to " + ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri) + "\nThen continue.");
 									RequestURL = new Uri(ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
 									break;
 								case "AddRedirect":
@@ -699,7 +699,7 @@ namespace WebOne
 				SendError(500, "An error occured: " + E.ToString().Replace("\n", "\n<BR>"));
 				if (operation != null) operation.Dispose();
 			}
-			SaveSniffLog();
+			SaveHeaderDump();
 			if (operation != null) operation.Dispose();
 #if DEBUG
 			Log.WriteLine(" End process.");
@@ -967,9 +967,9 @@ namespace WebOne
 									Log.WriteLine(" Add redirect: {0}", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
 									Redirect = ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
 									break;
-								case "AddSniffer":
-									SniffHeaders = true;
-									SniffPath = ProcessUriMasks(
+								case "AddHeaderDumping":
+									DumpHeaders = true;
+									DumpPath = ProcessUriMasks(
 										Edit.Value,
 										RequestURL.ToString().Replace(":", "-").Replace("/", "-").Replace("\\", "-").Replace("?", "-").Replace("*", "-"),
 										true
@@ -1153,14 +1153,14 @@ namespace WebOne
 		}
 
 		/// <summary>
-		/// Save sniffing log if need
+		/// Save header dump if need
 		/// </summary>
 		/// <param name="Epilogue">The epilogue (the finish) for log entry.</param>
-		private void SaveSniffLog(string Epilogue = "Complete.")
+		private void SaveHeaderDump(string Epilogue = "Complete.")
 		{
-			if (SniffHeaders == false) return;
+			if (DumpHeaders == false) return;
 
-			Log.WriteLine(" Save headers to: {0}", SniffPath);
+			Log.WriteLine(" Save headers to: {0}", DumpPath);
 			string SniffLog = string.Format("{0} request to {1} HTTP/{2}\n", ClientRequest.HttpMethod, RequestURL.ToString(), ClientRequest.ProtocolVersion);
 			foreach(string hdrname in ClientRequest.Headers.AllKeys)
 			{
@@ -1182,8 +1182,8 @@ namespace WebOne
 
 			try
 			{
-				if (File.Exists(SniffPath)) SniffLog = "\n\n---------\n\n" + SniffLog;
-				var SniffWriter = new StreamWriter(SniffPath, true);
+				if (File.Exists(DumpPath)) SniffLog = "\n\n---------\n\n" + SniffLog;
+				var SniffWriter = new StreamWriter(DumpPath, true);
 				SniffWriter.Write(SniffLog);
 				SniffWriter.Close();
 			}
@@ -1220,7 +1220,7 @@ namespace WebOne
 				ClientResponse.ContentLength64 = Buffer.Length;
 				ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
 				ClientResponse.OutputStream.Close();
-				SaveSniffLog("End is internal page: code " + Code + ", " + Text);
+				SaveHeaderDump("End is internal page: code " + Code + ", " + Text);
 			}
 			catch(Exception ex)
 			{
@@ -1253,7 +1253,7 @@ namespace WebOne
 				if (ex is FileNotFoundException) ErrNo = 404;
 				SendError(ErrNo, "Cannot open the file <i>" + FileName + "</i>.<br>" + ex.ToString().Replace("\n", "<br>"));
 			}
-			SaveSniffLog("End is file " + FileName);
+			SaveHeaderDump("End is file " + FileName);
 		}
 
 		/// <summary>
@@ -1285,7 +1285,7 @@ namespace WebOne
 				if (ex is FileNotFoundException) ErrNo = 404;
 				SendError(ErrNo, "Cannot retreive stream.<br>" + ex.ToString().Replace("\n", "<br>"));
 			}
-			SaveSniffLog("End is stream of " + ContentType);
+			SaveHeaderDump("End is stream of " + ContentType);
 		}
 	}
 }
