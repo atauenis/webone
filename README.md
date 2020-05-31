@@ -9,12 +9,17 @@ WebOne HTTP Proxy Server is working by default on port 80 and is compatible even
 
 The program's settings are in the __webone.conf__ file (but any other file name can be used too).
 
+See [WebOne wiki](https://github.com/atauenis/webone/wiki) for complete list of features and full documentation.
+
 ## Server prerequisites
 Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET Core 3.1 Runtime are required on server PC. See [.NET Core 3.1 System Requirements](https://github.com/dotnet/core/blob/master/release-notes/3.1/3.1-supported-os.md).
 
-Administrator/root privileges are required. Don't forget to allow incoming traffic to Port 80 in system firewall.
+Administrator/root privileges are required. Don't forget to allow incoming traffic to TCP port 80 in system firewall.
 
-Image and/or video format converting can be do via external utilities: `convert` (from ImageMagick), `ffmpeg`, `youtube-dl`.
+Image and/or video format converting is performing via external utilities: `convert` (from ImageMagick), `ffmpeg`, `youtube-dl`.
+
+## Install
+Manuals about how to set up a WebOne proxy on [Windows](https://github.com/atauenis/webone/wiki/Windows-installation) / [Linux](https://github.com/atauenis/webone/wiki/Linux-installation) / [MacOS](https://github.com/atauenis/webone/wiki/MacOS-X-installation) servers are in the Wiki.
 
 ## Run
 To start proxy on Linux or macOS, enter server's DNS name or IP in `DefaultHostName` field in __webone.conf__ and then run:
@@ -22,12 +27,14 @@ To start proxy on Linux or macOS, enter server's DNS name or IP in `DefaultHostN
 ```
 $ sudo WebOne                  if run from installed deb/rpm package
 or
-$ sudo dotnet WebOne.dll       if run from binary archive or after build
+$ sudo dotnet WebOne.dll       if run from binary archive
 ```
 
 *Note: if the Port number is set greater than 1024 (e.g. 8080), `sudo` is not need on Linux.*
 
 On Windows simply run `WebOne.exe`.
+
+On macOS use `WebOne` from zip archive (Mac binaries are experimental).
 
 Working of WebOne can be checked via server diagnostics page at http://proxyhost:port/!/.
 
@@ -35,10 +42,8 @@ Note that this app is not intended for daily use, as removing any encryption fro
 
 The server can be started even on public hosts. But don't forget to enable password protection in config file to make the proxy non-public.
 
-See [WebOne wiki](https://github.com/atauenis/webone/wiki) for complete list of features and full documentation.
-
 ## Build
-Latest source code can be always found in the __master__ branch of [Git repository](https://github.com/atauenis/webone). Pull requests are welcome!
+Latest source code can be always found in the __master__ branch of [Git repository](https://github.com/atauenis/webone). Forks and pull requests are welcome!
 
 To build packages or archives, install [dotnet-packaging](https://github.com/qmfrederik/dotnet-packaging/) add-on. With it the building is easy: use `dotnet publish` & `dotnet deb || dotnet rpm || dotnet zip` tools.
 
@@ -62,6 +67,8 @@ __WebOne__ - прокси-сервер HTTP, позволяющий открыв
 Для запуска необходимы права администратора или root.
 
 Настройки прокси-сервера хранятся в файле __webone.conf__ в каталоге с программой или по адресу ``/var/WebOne/``, ``~/.config/WebOne/``, ``C:\Users\username\AppData\Roaming\WebOne\``, ``C:\ProgramData\WebOne\``. Для использования другого файла, запускайте прокси с параметром "webone.exe _config_file_name.ext_".
+
+Файл протокола (__webone.log__) по умолчанию сохраняется по адресу ``/var/log/webone.log`` или `` C:\Users\username\AppData\Roaming\webone.log``.
 
 На Linux используются конвертеры из пакетов __imagemagick__ (convert) и __ffmpeg__. В Windows-версии прилагается конвертер **convert**, а в Full-версии дополнительно имеется **ffmpeg** и **youtube-dl** с вспомогательным скриптом для скачивания видео с YouTube (**yt.bat**).
 
