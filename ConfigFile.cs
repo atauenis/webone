@@ -189,7 +189,13 @@ namespace WebOne
 							{
 								LastRawEditSet++;
 								RawEditSets.Add(new List<string>());
-								RawEditSets[LastRawEditSet].Add("OnUrl=" + Section.Substring("Edit:".Length)); //may became optional in future
+								RawEditSets[LastRawEditSet].Add("OnUrl=" + Section.Substring("Edit:".Length));
+							}
+
+							if (Section == "Edit")
+							{
+								LastRawEditSet++;
+								RawEditSets.Add(new List<string>());
 							}
 
 							continue;
@@ -383,6 +389,10 @@ namespace WebOne
 										Console.WriteLine("Warning: Unknown server option: " + ParamName);
 										break;
 								}
+								break;
+							case "Edit":
+								if (RawEditSets.Count > 0)
+									RawEditSets[LastRawEditSet].Add(CfgFile[i]);
 								break;
 							case "Translit":
 								TranslitTable.Add(new KeyValuePair<string, string>(ParamName, ParamValue));
