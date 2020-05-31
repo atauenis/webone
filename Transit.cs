@@ -472,6 +472,8 @@ namespace WebOne
 				if (RequestURL.AbsoluteUri.Length == 0) { StWrong = true; SendError(400, "Empty URL."); }
 				if (RequestURL.AbsoluteUri == "") return;
 
+				if (RequestURL.AbsoluteUri.Contains(" ")) RequestURL = new Uri(RequestURL.AbsoluteUri.Replace(" ","%20")); //fix spaces in wrong-formed URLs
+
 				//check for available edit sets
 				foreach (EditSet set in ConfigFile.EditRules)
 				{
