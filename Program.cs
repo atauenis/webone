@@ -24,7 +24,7 @@ namespace WebOne
 		static void Main(string[] args)
 		{
 			Console.Title = "WebOne";
-			Console.WriteLine("WebOne HTTP Proxy Server {0} Alpha 1\n(C) https://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
+			Console.WriteLine("WebOne HTTP Proxy Server {0}\n(C) https://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
 
 			//process command line arguments
 			ProcessCommandLine(args);
@@ -76,7 +76,7 @@ namespace WebOne
 
 			foreach (string arg in args)
 			{
-				if (arg.StartsWith("-"))
+				if (arg.StartsWith("-") || arg.StartsWith("/"))
 				{
 					LastWasValue = false;
 					LastArg = new KeyValuePair<string, string>(ArgName, ArgValue);
@@ -107,19 +107,36 @@ namespace WebOne
 				//Console.WriteLine("Arg: '{0}' = '{1}'", kvp.Key, kvp.Value);
 				switch (kvp.Key)
 				{
+					case "/l":
 					case "-l":
 					case "--log":
+					case "/t":
 					case "-t":
 					case "--tmp":
 					case "--temp":
+					case "/p":
 					case "-p":
 					case "--port":
 					case "--http-port":
+					case "/h":
 					case "-h":
-					case "--hostname":
 					case "--host":
+					case "--hostname":
+					case "/a":
+					case "-a":
 					case "--proxy-authenticate":
+					case "--dump-headers":
+					case "--dump-requests":
 						//will be processed in ProcessCommandLineOptions()
+						break;
+					case "--help":
+					case "-?":
+					case "/?":
+						Console.WriteLine("All command line arguments can be found in WebOne Wiki:");
+						Console.WriteLine("https://github.com/atauenis/webone/wiki");
+						Console.WriteLine();
+						Console.WriteLine("Initially made by Alexander Tauenis. Moscow, Russian Federation.");
+						Environment.Exit(0);
 						break;
 					case CmdLineArgUnnamed:
 						if (kvp.Value == string.Empty) break;
@@ -145,31 +162,55 @@ namespace WebOne
 					//Console.WriteLine("Opt: '{0}' = '{1}'", kvp.Key, kvp.Value);
 					switch (kvp.Key)
 					{
+						case "/l":
 						case "-l":
 						case "--log":
 							if (kvp.Value == "" || kvp.Value == "no") { ConfigFile.HaveLogFile = false; break; }
 							LogAgent.OpenLogFile(GetLogFilePath(kvp.Value), false);
 							ConfigFile.HaveLogFile = true;
 							break;
+						case "/t":
 						case "-t":
 						case "--tmp":
 						case "--temp":
 							if (kvp.Value.ToUpper() == "%TEMP%" || kvp.Value == "$TEMP" || kvp.Value == "$TMPDIR") ConfigFile.TemporaryDirectory = Path.GetTempPath();
 							else ConfigFile.TemporaryDirectory = kvp.Value;
 							break;
+						case "/p":
 						case "-p":
 						case "--port":
 						case "--http-port":
 							Port = Convert.ToInt32(kvp.Value);
 							ConfigFile.Port = Convert.ToInt32(kvp.Value);
 							break;
+						case "/h":
 						case "-h":
-						case "--hostname":
 						case "--host":
+						case "--hostname":
 							ConfigFile.DefaultHostName = kvp.Value;
 							break;
+						case "/a":
+						case "-a":
 						case "--proxy-authenticate":
 							ConfigFile.Authenticate = kvp.Value;
+							break;
+						case "--dump-headers":
+							string HdrDmpPath = "dump-hd-%Url%.log";
+							if (kvp.Value != "") HdrDmpPath = kvp.Value;
+
+							Console.WriteLine("Will dump headers to: {0}.", HdrDmpPath);
+							List<string> HdrDumpRule = new List<string>();
+							HdrDumpRule.Add("AddHeaderDumping=" + HdrDmpPath);
+							ConfigFile.EditRules.Add(new EditSet(HdrDumpRule));
+							break;
+						case "--dump-requests":
+							string RqDmpPath = "dump-rq-%Url%.log";
+							if (kvp.Value != "") RqDmpPath = kvp.Value;
+
+							Console.WriteLine("Will dump headers & uploads's bodies to: {0}.", RqDmpPath);
+							List<string> RqDumpRule = new List<string>();
+							RqDumpRule.Add("AddRequestDumping=" + RqDmpPath);
+							ConfigFile.EditRules.Add(new EditSet(RqDumpRule));
 							break;
 					}
 				}
