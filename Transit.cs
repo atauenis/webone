@@ -41,7 +41,11 @@ namespace WebOne
 		Encoding ContentEncoding = Encoding.Default;
 
 		bool DumpHeaders = false;
-		string DumpPath = Directory.GetCurrentDirectory() + "spy-%URL%.log";
+		bool DumpRequestBody = false;
+		string DumpPath = "\0dump-%Url%.log";
+		string OriginalURL = "";
+		string DumpOfRequestBody = "Nothing dumped.";
+		WebHeaderCollection DumpOfHeaders = new WebHeaderCollection();
 
 		/// <summary>
 		/// Convert a Web 2.0 page to Web 1.0-like page.
@@ -515,43 +519,69 @@ namespace WebOne
 					WebHeaderCollection whc = new WebHeaderCollection();
 
 					//prepare headers
-					if(RequestURL.Scheme.ToLower() == "https")
+					if (RequestURL.Scheme.ToLower() == "https")
 					{
-						foreach(string h in ClientRequest.Headers.Keys) {
+						foreach (string h in ClientRequest.Headers.Keys)
+						{
 							whc.Add(h, ClientRequest.Headers[h].Replace("http://", "https://"));
 						}
 					}
 					else
 					{
-						foreach(string h in ClientRequest.Headers.Keys) {
+						foreach (string h in ClientRequest.Headers.Keys)
+						{
 							whc.Add(h, ClientRequest.Headers[h]);
 						}
 					}
 					if (whc["Origin"] == null & whc["Referer"] != null) whc.Add("Origin: " + new Uri(whc["Referer"]).Scheme + "://" + new Uri(whc["Referer"]).Host);
 
 					//perform edits on the request
-					foreach(EditSet Set in EditSets)
+					foreach (EditSet Set in EditSets)
 					{
-						if(Set.IsForRequest)
-						foreach(KeyValuePair<string, string> Edit in Set.Edits)
-						{
-							switch (Edit.Key)
+						if (Set.IsForRequest)
+							foreach (KeyValuePair<string, string> Edit in Set.Edits)
 							{
-								case "AddInternalRedirect":
-									Log.WriteLine(" Fix to {0} internally", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+								switch (Edit.Key)
+								{
+									case "AddInternalRedirect":
+										Log.WriteLine(" Fix to {0} internally", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
 										SaveHeaderDump("Internal redirect to " + ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri) + "\nThen continue.");
-									RequestURL = new Uri(ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
-									break;
-								case "AddRedirect":
-									Log.WriteLine(" Fix to {0}", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
-									ClientResponse.AddHeader("Location", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
-									SendError(302, "Брось каку!");
-									return;
-								case "AddHeader":
-									//Log.WriteLine(" Add request header: {0}", Edit.Value);
-									if (whc[Edit.Value.Substring(0, Edit.Value.IndexOf(": "))] == null) whc.Add(ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
-									break;
+										RequestURL = new Uri(ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+										break;
+									case "AddRedirect":
+										Log.WriteLine(" Fix to {0}", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+										ClientResponse.AddHeader("Location", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+										SendError(302, "Брось каку!");
+										return;
+									case "AddHeader":
+										//Log.WriteLine(" Add request header: {0}", Edit.Value);
+										if (whc[Edit.Value.Substring(0, Edit.Value.IndexOf(": "))] == null) whc.Add(ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+										break;
+									case "AddHeaderDumping":
+									case "AddRequestDumping":
+										DumpHeaders = true;
+										DumpPath = ProcessUriMasks(
+											Edit.Value,
+											RequestURL.ToString(),
+											true
+											);
+										DumpRequestBody = Edit.Key == "AddRequestDumping";
+										break;
+								}
 							}
+					}
+
+					//save dump of headers if need for debugging (a-la Chromium devtools Network tab)
+					if (DumpHeaders) {
+						OriginalURL = RequestURL.AbsoluteUri;
+						foreach (string hdrname in whc.AllKeys)
+						{
+							if (hdrname == "User-Agent")
+							{
+								DumpOfHeaders.Add("REAL-User-Agent", whc[hdrname]);
+								DumpOfHeaders.Add("SENT-User-Agent", GetUserAgent(whc[hdrname]));
+							}
+							else DumpOfHeaders.Add(hdrname, whc[hdrname]);
 						}
 					}
 
@@ -761,7 +791,18 @@ namespace WebOne
 						operation.URL = RequestURL.AbsoluteUri;
 						operation.Method = RequestMethod;
 						operation.RequestHeaders = RequestHeaderCollection;
-						operation.RequestStream = ClientRequest.InputStream;
+						if (!DumpRequestBody)
+							operation.RequestStream = ClientRequest.InputStream;
+						else
+						{
+							//if need to create a dump of request's body
+							MemoryStream RequestDumpStream = new MemoryStream();
+							ClientRequest.InputStream.CopyTo(RequestDumpStream);
+							RequestDumpStream.Position = 0;
+							DumpOfRequestBody = new StreamReader(RequestDumpStream).ReadToEnd();
+							RequestDumpStream.Position = 0;
+							operation.RequestStream = RequestDumpStream;
+						}
 						operation.AllowAutoRedirect = AllowAutoRedirect;
 						operation.SendRequest();
 #if DEBUG
@@ -970,12 +1011,14 @@ namespace WebOne
 									Redirect = ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
 									break;
 								case "AddHeaderDumping":
+								case "AddRequestDumping":
 									DumpHeaders = true;
 									DumpPath = ProcessUriMasks(
 										Edit.Value,
-										RequestURL.ToString().Replace(":", "-").Replace("/", "-").Replace("\\", "-").Replace("?", "-").Replace("*", "-"),
+										RequestURL.ToString(),
 										true
 										);
+									DumpRequestBody = Edit.Key == "AddRequestDumping";
 									break;
 							}
 						}
@@ -1160,15 +1203,23 @@ namespace WebOne
 		/// <param name="Epilogue">The epilogue (the finish) for log entry.</param>
 		private void SaveHeaderDump(string Epilogue = "Complete.")
 		{
-			if (DumpHeaders == false) return;
+			if (DumpHeaders == false || DumpPath.Contains ("\0")) return;
 
 			Log.WriteLine(" Save headers to: {0}", DumpPath);
 			string SniffLog = string.Format("{0} request to {1} HTTP/{2}\n", ClientRequest.HttpMethod, RequestURL.ToString(), ClientRequest.ProtocolVersion);
-			foreach(string hdrname in ClientRequest.Headers.AllKeys)
+			if (OriginalURL != RequestURL.AbsoluteUri) SniffLog += "Original URL was: " + OriginalURL + "\n";
+
+			foreach(string hdrname in DumpOfHeaders.AllKeys)
 			{
-				SniffLog += hdrname + ": " + ClientRequest.Headers[hdrname] + "\n";
+				SniffLog += hdrname + ": " + DumpOfHeaders[hdrname] + "\n";
 			}
-			SniffLog += ClientRequest.HasEntityBody ? "Body is hidden.\n\n" : "No body.\n\n";
+
+			if (DumpRequestBody)
+			{
+				SniffLog += ClientRequest.HasEntityBody ? "Body goes below. CAUTION: Private area!\n" + DumpOfRequestBody + "\n\n" : "No body.\n\n";
+			}
+			else { SniffLog += ClientRequest.HasEntityBody ? "Body is hidden.\n\n" : "No body.\n\n"; }
+			
 
 			if (ClientResponse != null)
 			{
@@ -1181,6 +1232,8 @@ namespace WebOne
 			else { SniffLog += "Custom response.\n"; }
 
 			SniffLog += Epilogue;
+
+			SniffLog = SniffLog.Replace("\n", "\r\n");
 
 			try
 			{
