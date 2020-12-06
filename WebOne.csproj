@@ -8,26 +8,37 @@
     <RepositoryUrl>https://github.com/atauenis/webone/</RepositoryUrl>
     <Company>World</Company>
     <Product>WebOne HTTP Proxy Server</Product>
-    <RepositoryType>GitHub</RepositoryType>
+	<RepositoryType>GitHub</RepositoryType>
     <StartupObject>WebOne.Program</StartupObject>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-    <Configurations>Debug;Release;ReleaseWin32</Configurations>
+    <Configurations>Debug;Release;ReleaseSC</Configurations>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU' OR '$(Configuration)|$(Platform)'=='ReleaseWin32|AnyCPU'">
-    <SelfContained>False</SelfContained>
+  <PropertyGroup Condition="'$(Configuration)'!='Debug'">
     <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
     <DebugType>None</DebugType>
     <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
 
-  <ItemGroup Condition="'@(DebDotNetDependencies)' == '' AND '$(TargetFramework)' == 'netcoreapp3.1'"> 
-    <DebDotNetDependencies Include="dotnet-runtime-3.1" /> 
-  </ItemGroup> 
+  <PropertyGroup Condition="'$(Configuration)'=='Release' AND '$(RuntimeIdentifier)'!='linux-arm'">
+    <SelfContained>False</SelfContained>
+  </PropertyGroup>
 
-  <ItemGroup Condition="'@(RpmDotNetDependency)' == '' AND '$(TargetFramework)' == 'netcoreapp3.1'"> 
-    <RpmDotNetDependency Include="dotnet-runtime-3.1" Version="" /> 
-  </ItemGroup> 
+  <PropertyGroup Condition="'$(Configuration)'=='Release' AND '$(RuntimeIdentifier)'=='linux-arm'">
+    <SelfContained>True</SelfContained>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='ReleaseSC'">
+    <SelfContained>True</SelfContained>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1' AND '$(RuntimeIdentifier)'!='linux-arm'">
+    <RpmDotNetDependency Include="dotnet-runtime-3.1" Version="" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1' AND '$(RuntimeIdentifier)'!='linux-arm'">
+    <DebDotNetDependencies Include="dotnet-runtime-3.1" /> 
+  </ItemGroup>
 
   <ItemGroup>
     <DebDependency Include="ffmpeg" />
@@ -36,7 +47,7 @@
 
   <ItemGroup>
     <RpmDependency Include="ffmpeg" />
-	<RpmDependency Include="ImageMagick" />
+    <RpmDependency Include="ImageMagick" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -162,7 +173,7 @@ esac
     </None>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWin32|AnyCPU' OR '$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+  <ItemGroup Condition="'$(RuntimeIdentifier)'=='win-x86' OR '$(RuntimeIdentifier)'=='win-x64' OR '$(RuntimeIdentifier)'=='win-arm'">
     <None Update="convert.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
