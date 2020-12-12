@@ -5,13 +5,15 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Authors>Alexander Tauenis</Authors>
     <Version>0.10.2</Version>
-    <RepositoryUrl>https://github.com/atauenis/webone/</RepositoryUrl>
     <Company>World</Company>
     <Product>WebOne HTTP Proxy Server</Product>
-	<RepositoryType>GitHub</RepositoryType>
+    <Description>HTTP 1.x proxy that makes old web browsers usable again in the Web 2.0 world.</Description>
+    <RepositoryType>GitHub</RepositoryType>
+    <RepositoryUrl>https://github.com/atauenis/webone/</RepositoryUrl>
     <StartupObject>WebOne.Program</StartupObject>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <Configurations>Debug;Release;ReleaseSC</Configurations>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm;linux-x64;linux-arm;osx-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'!='Debug'">
@@ -24,20 +26,16 @@
     <SelfContained>False</SelfContained>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Release' AND '$(RuntimeIdentifier)'=='linux-arm'">
+  <PropertyGroup Condition="'$(Configuration)'=='ReleaseSC' OR ('$(Configuration)'=='Release' AND '$(RuntimeIdentifier)'=='linux-arm')">
     <SelfContained>True</SelfContained>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)'=='ReleaseSC'">
-    <SelfContained>True</SelfContained>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1' AND '$(RuntimeIdentifier)'!='linux-arm'">
-    <RpmDotNetDependency Include="dotnet-runtime-3.1" Version="" />
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1' AND '$(RuntimeIdentifier)'!='linux-arm' AND '$(Configuration)'!='ReleaseSC'">
+    <DebDotNetDependencies Include="dotnet-runtime-3.1" /> 
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1' AND '$(RuntimeIdentifier)'!='linux-arm'">
-    <DebDotNetDependencies Include="dotnet-runtime-3.1" /> 
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1' AND '$(RuntimeIdentifier)'!='linux-arm' AND '$(Configuration)'!='ReleaseSC'">
+    <RpmDotNetDependency Include="dotnet-runtime-3.1" Version="" />
   </ItemGroup>
 
   <ItemGroup>
