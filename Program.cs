@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -43,18 +44,47 @@ namespace WebOne
 			//https://qna.habr.com/q/696033
 			//https://github.com/atauenis/webone/issues/2
 
+			//set console window title
 			Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + ConfigFile.Port;
 
-			try
+			for (int StartAttempts = 0; StartAttempts < 2; StartAttempts++)
 			{
-				new HTTPServer(ConfigFile.Port);
-			}
-			catch(Exception ex)
-			{
-				Console.WriteLine("Cannot start server: {0}!", ex.Message);
-				#if DEBUG
-				throw;
-				#endif
+				try
+				{
+					new HTTPServer(ConfigFile.Port);
+				}
+				catch (HttpListenerException ex)
+				{
+					Console.WriteLine("Cannot start server: {0}", ex.Message);
+					if (ex.NativeErrorCode != 5) break; //any error
+
+					if (ex.NativeErrorCode == 5 && Environment.OSVersion.Platform == PlatformID.Unix) //access denied @ *nix
+					{
+						Console.WriteLine();
+						Console.WriteLine(@"You need to use ""sudo WebOne"" or use Port greater than 1024.");
+						break;
+					}
+					if (ex.NativeErrorCode == 5 && Environment.OSVersion.Platform == PlatformID.Win32NT && StartAttempts == 0) //access denied @ Win32
+					{
+						Console.WriteLine();
+						Console.WriteLine("Seems that Windows has been blocked running WebOne with non-admin rights.");
+						Console.WriteLine("Read more in project's wiki:");
+						Console.WriteLine("https://github.com/atauenis/webone/wiki/Windows-installation#how-to-run-without-admin-privileges");
+						Console.Write("Do you want to add a Windows Network Shell rule to run WebOne with user rights? (Y/N)");
+						if (Console.ReadKey().Key == ConsoleKey.Y)
+						{
+							ConfigureWindowsNetShell(Port);
+							continue;
+						}
+						else
+							break;
+					}
+				}
+				catch(Exception ex)
+				{
+					Console.WriteLine("Server start failed: {0}", ex.Message);
+					break;
+				}
 			}
 
 			Console.WriteLine("Press any key to exit.");
@@ -493,6 +523,61 @@ namespace WebOne
 		{
 			string LogFilePath = RawPath.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
 			return LogFilePath.Replace("%SYSLOGDIR%", GetDefaultLogDirectory());
+		}
+
+		/// <summary>
+		/// Configure Windows Network Shell (netsh) to allow use TCP/IP <paramref name="Port"/> without admin rights and then open Windows Firewall
+		/// </summary>
+		/// <param name="Port">WebOne HTTP port number</param>
+		public static void ConfigureWindowsNetShell(int Port)
+		{
+			//fix for https://github.com/atauenis/webone/issues/14
+			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+				throw new InvalidOperationException("Only for MS Windows");
+
+			string address, NTdomain, NTuser;
+			address = string.Format("http://*:{0}/", Port);
+			NTdomain = Environment.UserDomainName;
+			NTuser = Environment.UserName;
+
+			Console.WriteLine();
+
+			Console.Write(" Do you want to add system rule allowing user {0} to run WebOne on port {1}? (Y/N)", "\"" + NTdomain + "\\" + NTuser + "\"", Port);
+			if (Console.ReadKey().Key == ConsoleKey.Y)
+			{
+				string args = string.Format(@"http add urlacl url={0}", address) + " user=\"" + NTdomain + "\\" + NTuser + "\"";
+				ProcessStartInfo psi;
+				psi = new ProcessStartInfo("netsh", args);
+				psi.Verb = "runas";
+				psi.CreateNoWindow = true;
+				psi.WindowStyle = ProcessWindowStyle.Hidden;
+				psi.UseShellExecute = true;
+
+				Console.WriteLine("\n Running as administrator: netsh " + args);
+				try { Process.Start(psi).WaitForExit(); Console.WriteLine(" OK."); }
+				catch(Exception ex) { Console.WriteLine(" Error: {0}",ex.Message); }
+			}
+			Console.WriteLine();
+
+			Console.Write(" Do you want to open port {0} in Windows Firewall for inbound connections? (Y/N)", Port);
+			if (Console.ReadKey().Key == ConsoleKey.Y)
+			{
+				string args = string.Format(@"advfirewall firewall add rule name=HTTP dir=in action=allow protocol=TCP localport={0}", Port);
+				ProcessStartInfo psi;
+				psi = new ProcessStartInfo("netsh", args);
+				psi.Verb = "runas";
+				psi.CreateNoWindow = true;
+				psi.WindowStyle = ProcessWindowStyle.Hidden;
+				psi.UseShellExecute = true;
+
+				Console.WriteLine("\n Running as administrator: netsh " + args);
+				try { Process.Start(psi).WaitForExit(); Console.WriteLine(" OK."); }
+				catch (Exception ex) { Console.WriteLine(" Error: {0}", ex.Message); }
+			}
+			Console.WriteLine();
+
+			Console.WriteLine("Windows Network Shell configuration completed.");
+			Console.WriteLine();
 		}
 
 	}

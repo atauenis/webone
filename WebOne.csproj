@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Authors>Alexander Tauenis</Authors>
-    <Version>0.10.2</Version>
+    <Version>0.10.3</Version>
     <Company>World</Company>
     <Product>WebOne HTTP Proxy Server</Product>
     <Description>HTTP 1.x proxy that makes old web browsers usable again in the Web 2.0 world.</Description>
