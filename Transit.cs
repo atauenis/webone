@@ -539,18 +539,29 @@ namespace WebOne
 					foreach (EditSet Set in EditSets)
 					{
 						if (Set.IsForRequest)
+						{
+							//if URL mask is single, allow use RegEx groups (if any) for replace
+							bool UseRegEx = (Set.UrlMasks.Count == 1 && new Regex(Set.UrlMasks[0]).GetGroupNames().Count() > 1);
+#if DEBUG
+							if(UseRegEx) Log.WriteLine(" RegExp groups are available on {0}.", Set.UrlMasks[0]);
+#endif
+
 							foreach (KeyValuePair<string, string> Edit in Set.Edits)
 							{
 								switch (Edit.Key)
 								{
 									case "AddInternalRedirect":
-										Log.WriteLine(" Fix to {0} internally", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
-										SaveHeaderDump("Internal redirect to " + ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri) + "\nThen continue.");
-										RequestURL = new Uri(ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+										string NewUrlInternal = UseRegEx ? ProcessUriMasks(new Regex(Set.UrlMasks[0]).Replace(RequestURL.AbsoluteUri, Edit.Value), RequestURL.AbsoluteUri)
+																		 : ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
+										Log.WriteLine(" Fix to {0} internally", NewUrlInternal);
+										SaveHeaderDump("Internal redirect to " + NewUrlInternal + "\nThen continue.");
+										RequestURL = new Uri(NewUrlInternal);
 										break;
 									case "AddRedirect":
-										Log.WriteLine(" Fix to {0}", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
-										ClientResponse.AddHeader("Location", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+										string NewUrl302 = UseRegEx ? ProcessUriMasks (new Regex(Set.UrlMasks[0]).Replace(RequestURL.AbsoluteUri, Edit.Value), RequestURL.AbsoluteUri)
+																	: ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
+										Log.WriteLine(" Fix to {0}", NewUrl302);
+										ClientResponse.AddHeader("Location", NewUrl302);
 										SendError(302, "Брось каку!");
 										return;
 									case "AddHeader":
@@ -569,6 +580,7 @@ namespace WebOne
 										break;
 								}
 							}
+						}
 					}
 
 					//save dump of headers if need for debugging (a-la Chromium devtools Network tab)
@@ -895,6 +907,7 @@ namespace WebOne
 			List<string> Finds = new List<string>();
 			List<string> Replacions = new List<string>();
 
+			//perform edits on the response body
 			//find edits
 			foreach (EditSet Set in EditSets)
 			{
@@ -978,6 +991,7 @@ namespace WebOne
 			string ConvertArg2 = "";
 			string Redirect = null;
 
+			//perform edits on the response
 			foreach (EditSet Set in EditSets)
 			{
 				if (Set.ContentTypeMasks.Count == 0 || CheckStringRegExp(Set.ContentTypeMasks.ToArray(), ContentType))
