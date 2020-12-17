@@ -142,9 +142,10 @@ namespace WebOne
 									//			  "<li><a href='/!codepages/'>/!codepages/</a> - list of available encodings for OutputEncoding setting</li>" +
 												  "<li><a href='/!img-test/'>/!img-test/</a> - test if ImageMagick is working</li>" +
 												  "<li><a href='/!convert/'>/!convert/</a> - run a file format converter (<a href='/!convert/?src=logo.webp&dest=gif&type=image/gif'>demo</a>)</li>" +
-												  "<li><a href='/!file/'>/!file/</a> - get a file from WebOne working directory (<a href='/!file/?name=webone.conf&type=text/plain'>demo</a>)</li>" +
-												  "<li><a href='/!clear/'>/!clear/</a> - remove temporary files in WebOne working directory</li>"+
-												  "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>"+
+												  //"<li><a href='/!file/'>/!file/</a> - get a file from WebOne working directory (<a href='/!file/?name=webone.conf&type=text/plain'>demo</a>)</li>" +
+												  "<li><a href=/!webone.conf>/!webone.conf</a> - see active WebOne configuration file</li>" +
+												  "<li><a href='/!clear/'>/!clear/</a> - remove temporary files in WebOne working directory</li>" +
+												  "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>" +
 												  "</ul>";
 
 									HelpString += "<h2>Headers sent by browser</h2><ul>";
@@ -330,7 +331,7 @@ namespace WebOne
 									"<p>See <a href=\"http://github.com/atauenis/webone/wiki\">WebOne wiki</a> for help on this.</p>");
 									break;
 								case "/!file/":
-									string FileName, MimeType="text/plain";
+									/*string FileName, MimeType="text/plain";
 									Match FindName = Regex.Match(RequestURL.Query, @"(name)=([^&]+)");
 									Match FindMime = Regex.Match(RequestURL.Query, @"(type)=([^&]+)");
 
@@ -344,8 +345,8 @@ namespace WebOne
 										if (!File.Exists(FileName))
 										{ FileName = new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + FileName; }
 
-										if (new FileInfo(FileName).DirectoryName != Directory.GetCurrentDirectory() &&
-											new FileInfo(FileName).DirectoryName != System.Reflection.Assembly.GetExecutingAssembly().Location)
+										if (Path.TrimEndingDirectorySeparator(new FileInfo(FileName).DirectoryName) != Path.TrimEndingDirectorySeparator(Directory.GetCurrentDirectory()) &&
+											Path.TrimEndingDirectorySeparator(new FileInfo(FileName).DirectoryName) != Path.TrimEndingDirectorySeparator(System.Reflection.Assembly.GetExecutingAssembly().Location))
 										{
 											SendError(403, "Cannot access to files outside current and proxy installation directory");
 											return;
@@ -355,6 +356,18 @@ namespace WebOne
 										return;
 									}
 									SendError(200, "Get a local file.<br>Usage: /!file/?name=filename.ext&type=text/plain");
+									return;
+									*/
+									SendError(403, "<del>Get a local file.<br>Usage: /!file/?name=filename.ext&type=text/plain</del>"+
+									"<br><b>Disabled in this version due to security reasons.</b>"+
+									"<br>To see used configuration file, open <a href=/!webone.conf>/!webone.conf</a>.");
+									return;
+								case "/!webone.conf":
+								case "/!webone.conf/":
+									if (ConfigFile.AllowConfigFileDisplay)
+										SendFile(ConfigFileName, "text/plain");
+									else
+										SendError(403, "Administrator has been hidden configuration file from Proxy's clients.");
 									return;
 								case "/!clear/":
 									int FilesDeleted = 0;

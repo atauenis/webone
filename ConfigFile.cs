@@ -140,6 +140,11 @@ namespace WebOne
 		/// </summary>
 		public static bool HaveLogFile = false;
 
+		/// <summary>
+		/// Allow or disallow clients see webone.conf content
+		/// </summary>
+		public static bool AllowConfigFileDisplay = true;
+
 		static ConfigFile()
 		{
 			//ConfigFileName = "webone.conf";
@@ -384,6 +389,9 @@ namespace WebOne
 									case "AppendLogFile":
 										LogAgent.OpenLogFile(GetLogFilePath(ParamValue), true);
 										HaveLogFile = true;
+										continue;
+									case "AllowConfigFileDisplay":
+										AllowConfigFileDisplay = ToBoolean(ParamValue);
 										continue;
 									default:
 										Console.WriteLine("Warning: Unknown server option: " + ParamName);
