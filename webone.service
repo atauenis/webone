@@ -1,0 +1,16 @@
+﻿[Unit]
+Description=WebOne HTTP Proxy Server
+Documentation=https://github.com/atauenis/webone/wiki/
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+ExecStart=/usr/local/bin/WebOne --daemon
+ReadWriteDirectories=-/var/log/
+TimeoutStopSec=0
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

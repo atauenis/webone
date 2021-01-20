@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Authors>Alexander Tauenis</Authors>
-    <Version>0.10.3</Version>
+    <Version>0.10.4</Version>
     <Company>World</Company>
     <Product>WebOne HTTP Proxy Server</Product>
     <Description>HTTP 1.x proxy that makes old web browsers usable again in the Web 2.0 world.</Description>
@@ -57,56 +57,25 @@
   <PropertyGroup>
     <PostInstallScript>
       <![CDATA[
-#!/bin/bash
-WOConfDir=/etc/WebOne/
-WOConfFile=/etc/WebOne/webone.conf
-WOConfFileSkel=/usr/share/WebOne/webone.conf.skel
-
-if [ -f "$WOConfFileSkel" ]; then
-  rm $WOConfFileSkel
-fi
-
-mv /usr/share/WebOne/webone.conf $WOConfFileSkel
-
-if [ ! -d "$WOConfDir" ]; then
-  mkdir $WOConfDir
-fi
-
-if [ ! -f "$WOConfFile" ]
-then
-  echo "$WOConfFileSkel -> $WOConfFile"
-  cp $WOConfFileSkel $WOConfFile
-else
-  echo "Keeping old $WOConfFile. See wiki for changes in this version."
+if [ command -v "systemctl" >/dev/null 2>&1 ]
+  systemctl daemon-reload
+  systemctl enable --now webone
+  touch /var/log/webone.log
+  chmod 666 /var/log/webone.log
 fi
       ]]>
     </PostInstallScript>
     <PreRemoveScript>
       <![CDATA[
-#!/bin/bash
-killall WebOne || echo "WebOne is not running"
+command -v systemctl >/dev/null 2>&1 && systemctl stop webone || { echo "systemctl not found. Continuing." >&2; }
+command -v killall >/dev/null 2>&1 && killall WebOne || { echo "killall not found. Continuing." >&2; }
       ]]>
     </PreRemoveScript>
     <PostRemoveScript>
       <![CDATA[
-#!/bin/bash
-WOConfFileSkel=/usr/share/WebOne/webone.conf.skel
-WOConfDir=/etc/WebOne/
-
-if [ -f "$WOConfFileSkel" ]; then
-  rm $WOConfFileSkel
-fi
-
-case "$1" in
-  purge)
-    if [ -d "$WOConfDir" ]; then
-      rm -r $WOConfDir
-    fi
-  ;;
-esac
+command -v systemctl >/dev/null 2>&1 && systemctl disable webone || { echo "systemctl not found. Continuing." >&2; }
       ]]>
     </PostRemoveScript>
-  <!--ToDo: add Conffiles when dotnet-deb be able to add such -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -166,15 +135,21 @@ esac
     <None Update="LICENSE.txt">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="webone.conf">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="README.md">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="logo.webp">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="webone.service" CopyToPublishDirectory="Always" LinuxFileMode="1755">
+        <LinuxPath>/etc/systemd/system/webone.service</LinuxPath>
+    </Content>
+    <Content Include="webone.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
+        <LinuxPath>/etc/WebOne/webone.conf</LinuxPath>
+    </Content>
   </ItemGroup>
 
   <ItemGroup Condition="'$(RuntimeIdentifier)'=='win-x86' OR '$(RuntimeIdentifier)'=='win-x64' OR '$(RuntimeIdentifier)'=='win-arm'">

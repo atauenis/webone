@@ -5,7 +5,7 @@ This is a HTTP 1.x proxy server that makes old web browsers and media players us
 
 The proxy is an adapter between the modern Web and old software. It is designed to run on an modern PC in same network with older computers.
 
-WebOne HTTP Proxy Server is working by default on port 80 and is compatible even with Netscape Navigator 3. Set IP address or hostname of PC with WebOne as HTTP proxy server (or set http://proxyhost:port/auto.pac as Automatic proxy configuration URL) in old browser's settings and begin WWW surfing again. There also a local mode (http://proxyhost:port/http://domain/filename.ext) for browsers that cannot work with proxies.
+WebOne HTTP Proxy Server is working by default on port 8080 and is compatible even with Netscape Navigator 3. Set IP address or hostname of PC with WebOne as HTTP proxy server (or set http://proxyhost:port/auto.pac as Automatic proxy configuration URL) in old browser's settings and begin WWW surfing again. There also a local mode (http://proxyhost:port/http://domain/filename.ext) for browsers that cannot work with proxies.
 
 The program's settings are in the __webone.conf__ file (but any other file name can be used too).
 
@@ -13,8 +13,6 @@ See [WebOne wiki](https://github.com/atauenis/webone/wiki) for complete list of 
 
 ## Server prerequisites
 Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET Core 3.1 Runtime are required on server PC. See [.NET Core 3.1 System Requirements](https://github.com/dotnet/core/blob/master/release-notes/3.1/3.1-supported-os.md).
-
-Administrator/root privileges are required. Don't forget to allow incoming traffic to TCP port 80 in system firewall.
 
 Image and/or video format converting is performing via external utilities: `convert` (from ImageMagick), `ffmpeg`, `youtube-dl`.
 
@@ -25,12 +23,12 @@ Manuals about how to set up a WebOne proxy on [Windows](https://github.com/ataue
 To start proxy on Linux or macOS, enter server's DNS name or IP in `DefaultHostName` field in __webone.conf__ and then run:
 
 ```
-$ sudo WebOne                  if run from installed deb/rpm package
+$ WebOne                  if run from installed deb/rpm package
 or
-$ sudo dotnet WebOne.dll       if run from binary archive
+$ dotnet WebOne.dll       if run from binary archive
 ```
 
-*Note: if the Port number is set greater than 1024 (e.g. 8080), `sudo` is not need on Linux.*
+*Note: if the Port number is set less than 1024 (e.g. 80), `sudo` is need on Linux/macOS.*
 
 On Windows simply run `WebOne.exe`.
 
@@ -60,11 +58,11 @@ __WebOne__ - прокси-сервер HTTP, позволяющий открыв
 * Конвертация или пережатие графических и видеофайлов, в том числе "на лету" (используя внешние конвертеры).
 * Переадресация с несуществующих адресов на Web Archive.
 
-Этот прокси-сервер необходимо запускать на современном ПК с .NET Core 3.1, IP адрес которого нужно указать в настройках устаревшего веб-обозревателя. Порт по умолчанию 80, тип прокси HTTP 1.0 (или же можно указать путь к скрипту автоматической настройки: http://proxyhost:port/auto.pac).
+Этот прокси-сервер необходимо запускать на современном ПК с .NET Core 3.1, IP адрес которого нужно указать в настройках устаревшего веб-обозревателя. Порт по умолчанию 8080, тип прокси HTTP 1.0 (или же можно указать путь к скрипту автоматической настройки: http://proxyhost:port/auto.pac).
 
 Системы Windows XP/2003 в качестве серверных больше не поддерживаются. Последняя версия прокси для .NET FW 4.0 была WebOne 0.9.3.
 
-Для запуска необходимы права администратора или root.
+Для запуска на порту с номером менее 1024 необходимы права администратора или root.
 
 Настройки прокси-сервера хранятся в файле __webone.conf__ в каталоге с программой или по адресу ``/var/WebOne/``, ``~/.config/WebOne/``, ``C:\Users\username\AppData\Roaming\WebOne\``, ``C:\ProgramData\WebOne\``. Для использования другого файла, запускайте прокси с параметром "webone.exe _config_file_name.ext_".
 
