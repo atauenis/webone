@@ -22,10 +22,12 @@ namespace WebOne
 		/// <param name="LogMessage">The message string.</param>
 		/// <param name="Display">Shall the message be displayed.</param>
 		/// <param name="Write">Shall the message be written.</param>
-		public static void WriteLine(string LogMessage, bool Display = true, bool Write = true)
+		/// <param name="DisplayText">The message string (which should be displayed if <paramref name="Display"/> is true).</param>
+		public static void WriteLine(string LogMessage, bool Display = true, bool Write = true, string DisplayText = "")
 		{
 			if (Display)
-				Console.WriteLine(LogMessage);
+				if (DisplayText == "") Console.WriteLine(LogMessage);
+				else Console.WriteLine(DisplayText);
 			if (Write && LogStreamWriter != null)
 			{
 				new Task(() =>
@@ -88,7 +90,7 @@ namespace WebOne
 		/// <seealso cref="Console.WriteLine(string, object)"/>
 		public void WriteLine(string format, params object[] arg)
 		{
-			WriteLine(true, format, arg);
+			WriteLine(true, true, format, arg);
 		}
 
 		/// <summary>
@@ -98,10 +100,11 @@ namespace WebOne
 		/// <param name="display">Shall the representation be displayed in the console window.</param>
 		/// <param name="format">A composite format string.</param>
 		/// <param name="arg">An array of objects to write using format.</param>
-		public void WriteLine(bool display, string format, params object[] arg)
+		public void WriteLine(bool display, bool displayTimestamp, string format, params object[] arg)
 		{
 			string str;
 			string timestamp;
+			string message = string.Format(format, arg);
 
 			if (FirstTime)
 			{
@@ -111,18 +114,29 @@ namespace WebOne
 			{ 
 				timestamp = GetTime(BeginTime); 
 			}
-			
-			if(timestamp.Length < 20) //15:55:58.283+7600010 = 20 character long
+
+			if(displayTimestamp) //e.g. ">GET http://example.com/ (127.0.0.1)"
 			{
-				str = string.Format("{0}+0\t\t{1}", BeginTime.ToString("HH:mm:ss.fff"), string.Format(format, arg));
-				LogAgent.WriteLine(str, display, false);
-				str = string.Format("{0}+0\t{1}", BeginTime.ToString("HH:mm:ss.fff"), string.Format(format, arg));
-				LogAgent.WriteLine(str, false, true);
+				if (timestamp.Length < 20) //15:55:58.283+7600010 = 20 character long
+				{
+					str = string.Format("{0}+0\t\t{1}", BeginTime.ToString("HH:mm:ss.fff"), message);
+					LogAgent.WriteLine(str, display, false);
+					str = string.Format("{0}+0\t{1}", BeginTime.ToString("HH:mm:ss.fff"), message);
+					LogAgent.WriteLine(str, false, true);
+				}
+				else
+				{
+					str = string.Format("{0}\t{1}", GetTime(BeginTime), message);
+					LogAgent.WriteLine(str, true, display);
+				}
 			}
-			else
+
+			else //e.g. "Starting server..."
 			{
-				str = string.Format("{0}\t{1}", GetTime(BeginTime), string.Format(format, arg));
-				LogAgent.WriteLine(str, display);
+				str = string.Format("{0}+0\t{1}", BeginTime.ToString("HH:mm:ss.fff"), message);
+
+				LogAgent.WriteLine(str, display, true, message);
+				return;
 			}
 		}
 	}

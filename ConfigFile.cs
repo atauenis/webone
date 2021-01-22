@@ -13,6 +13,7 @@ namespace WebOne
 	/// </summary>
 	static class ConfigFile
 	{
+		private static LogWriter Log = new LogWriter();
 		static string ConfigFileName = Program.ConfigFileName;
 		static List<string> StringListConstructor = new List<string>();
 		static List<List<string>> RawEditSets = new List<List<string>>();
@@ -148,11 +149,11 @@ namespace WebOne
 		static ConfigFile()
 		{
 			//ConfigFileName = "webone.conf";
-			Console.WriteLine("Using configuration file {0}.", ConfigFileName);
+			Log.WriteLine(true, false, "Using configuration file {0}.", ConfigFileName);
 			int i = 0;
 			try
 			{
-				if (!File.Exists(ConfigFileName)) { Console.WriteLine("{0}: no such config file. Using defaults.", ConfigFileName); return; };
+				if (!File.Exists(ConfigFileName)) { Log.WriteLine(true, false, "{0}: no such config file. Using defaults.", ConfigFileName); return; };
 				
 				string[] CfgFile = System.IO.File.ReadAllLines(ConfigFileName);
 				string Section = "";
@@ -187,7 +188,7 @@ namespace WebOne
 
 							if (Section.StartsWith("ContentPatchFind:"))
 							{
-								Console.WriteLine("Warning: ContentPatchFind sections are no longer supported. See wiki.");
+								Log.WriteLine(true, false, "Warning: ContentPatchFind sections are no longer supported. See wiki.");
 							}
 
 							if (Section.StartsWith("Edit:"))
@@ -207,10 +208,10 @@ namespace WebOne
 						}
 
 
-						//Console.WriteLine(Section);
+						//Log.WriteLine(true, false, Section);
 						if (Program.CheckString(Section, SpecialSections)) //special sections (patterns, lists, etc)
 						{
-							//Console.WriteLine("{0}+={1}", Section, CfgFile[i]);
+							//Log.WriteLine(true, false, "{0}+={1}", Section, CfgFile[i]);
 							switch (Section)
 							{
 								case "ForceHttps":
@@ -233,7 +234,7 @@ namespace WebOne
 									Converters.Add(new Converter(CfgFile[i]));
 									continue;
 								default:
-									Console.WriteLine("Warning: The special section {0} is not implemented in this build.", Section);
+									Log.WriteLine(true, false, "Warning: The special section {0} is not implemented in this build.", Section);
 									continue;
 							}
 							//continue; //statement cannot be reached
@@ -243,12 +244,12 @@ namespace WebOne
 						if (BeginValue < 1) continue; //bad line
 						string ParamName = CfgFile[i].Substring(0, BeginValue);
 						string ParamValue = CfgFile[i].Substring(BeginValue + 1);
-						//Console.WriteLine("{0}.{1}={2}", Section, ParamName, ParamValue);
+						//Log.WriteLine(true, false, "{0}.{1}={2}", Section, ParamName, ParamValue);
 
-						//Console.WriteLine(Section);
+						//Log.WriteLine(true, false, Section);
 						if (Section.StartsWith("FixableURL"))
 						{
-							//Console.WriteLine("URL Fix rule: {0}/{1} = {2}",Section.Substring(11),ParamName,ParamValue);
+							//Log.WriteLine(true, false, "URL Fix rule: {0}/{1} = {2}",Section.Substring(11),ParamName,ParamValue);
 							FixableUrlActions[Section.Substring(11)].Add(ParamName, ParamValue);
 							continue;
 						}
@@ -342,9 +343,9 @@ namespace WebOne
 												}
 
 												if (OutputEncoding == null)
-												{ Console.WriteLine("Warning: Unknown codepage {0}, using AsIs. See MSDN 'Encoding.GetEncodings Method' article for list of valid encodings.", ParamValue); };
+												{ Log.WriteLine(true, false, "Warning: Unknown codepage {0}, using AsIs. See MSDN 'Encoding.GetEncodings Method' article for list of valid encodings.", ParamValue); };
 											}
-											catch (ArgumentException) { Console.WriteLine("Warning: Bad codepage {0}, using {1}. Get list of available encodings at http://{2}:{3}/!codepages/.", ParamValue, OutputEncoding.EncodingName, ConfigFile.DefaultHostName, Port); }
+											catch (ArgumentException) { Log.WriteLine(true, false, "Warning: Bad codepage {0}, using {1}. Get list of available encodings at http://{2}:{3}/!codepages/.", ParamValue, OutputEncoding.EncodingName, ConfigFile.DefaultHostName, Port); }
 										}
 										continue;
 									case "Authenticate":
@@ -361,7 +362,7 @@ namespace WebOne
 										continue;
 									case "SecurityProtocols":
 										try { System.Net.ServicePointManager.SecurityProtocol = (System.Net.SecurityProtocolType)(int.Parse(ParamValue)); }
-										catch (NotSupportedException) { Console.WriteLine("Warning: Bad TLS version {1} ({0}), using {2} ({2:D}).", ParamValue, (System.Net.SecurityProtocolType)(int.Parse(ParamValue)), System.Net.ServicePointManager.SecurityProtocol); };
+										catch (NotSupportedException) { Log.WriteLine(true, false, "Warning: Bad TLS version {1} ({0}), using {2} ({2:D}).", ParamValue, (System.Net.SecurityProtocolType)(int.Parse(ParamValue)), System.Net.ServicePointManager.SecurityProtocol); };
 										continue;
 									case "UserAgent":
 										UserAgent = ParamValue;
@@ -373,7 +374,7 @@ namespace WebOne
 											{ if (LocIP.ToString() == DefaultHostName) ValidHostName = true; }
 										if (!ValidHostName)
 										{ try { if (System.Net.Dns.GetHostEntry(DefaultHostName).AddressList.Count() > 0) ValidHostName = true; } catch { } }
-										if (!ValidHostName) Console.WriteLine("Warning: DefaultHostName setting is not applicable to this computer!");
+										if (!ValidHostName) Log.WriteLine(true, false, "Warning: DefaultHostName setting is not applicable to this computer!");
 										continue;
 									case "ValidateCertificates":
 										ValidateCertificates = ToBoolean(ParamValue);
@@ -394,7 +395,7 @@ namespace WebOne
 										AllowConfigFileDisplay = ToBoolean(ParamValue);
 										continue;
 									default:
-										Console.WriteLine("Warning: Unknown server option: " + ParamName);
+										Log.WriteLine(true, false, "Warning: Unknown server option: " + ParamName);
 										break;
 								}
 								break;
@@ -406,16 +407,16 @@ namespace WebOne
 								TranslitTable.Add(new KeyValuePair<string, string>(ParamName, ParamValue));
 								break;
 							default:
-								Console.WriteLine("Warning: Unknown section: " + Section);
+								Log.WriteLine(true, false, "Warning: Unknown section: " + Section);
 								break;
 						}
 
 					}
 					catch (Exception ex)
 					{
-						Console.WriteLine("Error on line {1}: {0}", ex.Message, i);
+						Log.WriteLine(true, false, "Error on line {1}: {0}", ex.Message, i);
 #if DEBUG
-						Console.WriteLine("All next lines will be ignored. Invoking debugging.");
+						Log.WriteLine(true, false, "All next lines will be ignored. Invoking debugging.");
 						throw;
 #endif
 					}
@@ -433,15 +434,15 @@ namespace WebOne
 			}
 			catch(Exception ex) {
 				#if DEBUG
-				Console.WriteLine("Error in configuration file: {0}. Line {1}. Go to debugger.", ex.ToString(), i);
+				Log.WriteLine(true, false, "Error in configuration file: {0}. Line {1}. Go to debugger.", ex.ToString(), i);
 				throw;
 				#else
-				Console.WriteLine("Error in configuration file: {0}.\nAll next lines after {1} are ignored.", ex.Message, i);
+				Log.WriteLine(true, false, "Error in configuration file: {0}.\nAll next lines after {1} are ignored.", ex.Message, i);
 				#endif
 			}
 
-			if (i < 1) Console.WriteLine("Warning: curiously short file. Probably line endings are not valid for this OS.");
-			Console.WriteLine("{0} load complete.", ConfigFileName);
+			if (i < 1) Log.WriteLine(true, false, "Warning: curiously short file. Probably line endings are not valid for this OS.");
+			Log.WriteLine(true, false, "{0} load complete.", ConfigFileName);
 		}
 
 		/// <summary>
@@ -493,12 +494,12 @@ namespace WebOne
 							RawES.Add("AddInternalRedirect=" + FixableUrlActions[FixUrl]["Redirect"]);
 							continue;
 						default:
-							Console.WriteLine("Unknown legacy FixableURL option: {0}", FixUrlAct.Key);
+							Log.WriteLine(true, false, "Unknown legacy FixableURL option: {0}", FixUrlAct.Key);
 							continue;
 					}
 				}
 				EditRules.Add(new EditSet(RawES));
-				//Console.WriteLine(new EditSet(RawES));
+				//Log.WriteLine(true, false, new EditSet(RawES));
 			}
 		}
 
@@ -527,12 +528,12 @@ namespace WebOne
 							RawES.Add("AddRedirect=" + FixTAct.Value);
 							continue;
 						default:
-							Console.WriteLine("Unknown legacy FixableType option: {0}", FixTAct.Key);
+							Log.WriteLine(true, false, "Unknown legacy FixableType option: {0}", FixTAct.Key);
 							continue;
 					}
 				}
 				EditRules.Add(new EditSet(RawES));
-				//Console.WriteLine(new EditSet(RawES));
+				//Log.WriteLine(true, false, new EditSet(RawES));
 			}
 		}
 
@@ -562,12 +563,12 @@ namespace WebOne
 							RawES.Add("OnContentType=" + PatchAct.Value);
 							continue;
 						default:
-							Console.WriteLine("Unknown legacy ContentPatch option: {0}", PatchAct.Key);
+							Log.WriteLine(true, false, "Unknown legacy ContentPatch option: {0}", PatchAct.Key);
 							continue;
 					}
 				}
 				EditRules.Add(new EditSet(RawES));
-				//Console.WriteLine(new EditSet(RawES));
+				//Log.WriteLine(true, false, new EditSet(RawES));
 			}
 		}
 	}

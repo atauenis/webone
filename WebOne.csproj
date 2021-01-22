@@ -149,6 +149,7 @@ command -v systemctl >/dev/null 2>&1 && systemctl disable webone || { echo "syst
     </Content>
     <Content Include="webone.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
         <LinuxPath>/etc/WebOne/webone.conf</LinuxPath>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 

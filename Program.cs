@@ -13,6 +13,7 @@ namespace WebOne
 {
 	public static class Program
 	{
+		private static LogWriter Log = new LogWriter();
 		public const string ConfigFileAutoName = "**auto**webone.conf";
 		public static string ConfigFileName = ConfigFileAutoName;
 		public static int Port = -1;
@@ -46,6 +47,7 @@ namespace WebOne
 
 			//set console window title
 			Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + ConfigFile.Port;
+			Log.WriteLine(false, false, "Configured to http://{1}:{2}/, HTTP 1.0", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port);
 
 			for (int StartAttempts = 0; StartAttempts < 2; StartAttempts++)
 			{
@@ -55,40 +57,45 @@ namespace WebOne
 				}
 				catch (HttpListenerException ex)
 				{
-					Console.WriteLine("Cannot start server: {0}", ex.Message);
+					Log.WriteLine(true, false, "Cannot start server: {0}", ex.Message);
 					if (ex.NativeErrorCode != 5) break; //any error
 
-					if (ex.NativeErrorCode == 5 && Environment.OSVersion.Platform == PlatformID.Unix) //access denied @ *nix
+					if (true)
 					{
-						Console.WriteLine();
-						Console.WriteLine(@"You need to use ""sudo WebOne"" or use Port greater than 1024.");
-						break;
-					}
-					if (ex.NativeErrorCode == 5 && Environment.OSVersion.Platform == PlatformID.Win32NT && StartAttempts == 0) //access denied @ Win32
-					{
-						Console.WriteLine();
-						Console.WriteLine("Seems that Windows has been blocked running WebOne with non-admin rights.");
-						Console.WriteLine("Read more in project's wiki:");
-						Console.WriteLine("https://github.com/atauenis/webone/wiki/Windows-installation#how-to-run-without-admin-privileges");
-						Console.Write("Do you want to add a Windows Network Shell rule to run WebOne with user rights? (Y/N)");
-						if (Console.ReadKey().Key == ConsoleKey.Y)
+						if (ex.NativeErrorCode == 5 && Environment.OSVersion.Platform == PlatformID.Unix) //access denied @ *nix
 						{
-							ConfigureWindowsNetShell(Port);
-							continue;
-						}
-						else
+							Console.WriteLine();
+							Console.WriteLine(@"You need to use ""sudo WebOne"" or use Port greater than 1024.");
 							break;
+						}
+						if (ex.NativeErrorCode == 5 && Environment.OSVersion.Platform == PlatformID.Win32NT && StartAttempts == 0) //access denied @ Win32
+						{
+							Console.WriteLine();
+							Console.WriteLine("Seems that Windows has been blocked running WebOne with non-admin rights.");
+							Console.WriteLine("Read more in project's wiki:");
+							Console.WriteLine("https://github.com/atauenis/webone/wiki/Windows-installation#how-to-run-without-admin-privileges");
+							Console.Write("Do you want to add a Windows Network Shell rule to run WebOne with user rights? (Y/N)");
+							if (Console.ReadKey().Key == ConsoleKey.Y)
+							{
+								ConfigureWindowsNetShell(Port);
+								continue;
+							}
+							else
+								break;
+						}
 					}
 				}
 				catch(Exception ex)
 				{
-					Console.WriteLine("Server start failed: {0}", ex.Message);
+					Log.WriteLine(true, false, "Server start failed: {0}", ex.Message);
 					break;
 				}
 			}
 
 			Console.WriteLine("Press any key to exit.");
 			Console.ReadKey();
+
+			Log.WriteLine(false, false, "WebOne has been exited.");
 		}
 
 		/// <summary>
@@ -541,6 +548,7 @@ namespace WebOne
 			NTuser = Environment.UserName;
 
 			Console.WriteLine();
+			Log.WriteLine(false, false, "Started NETSH configurtion \"wizard\". Logging is not implemented here.");
 
 			Console.Write(" Do you want to add system rule allowing user {0} to run WebOne on port {1}? (Y/N)", "\"" + NTdomain + "\\" + NTuser + "\"", Port);
 			if (Console.ReadKey().Key == ConsoleKey.Y)
@@ -578,6 +586,8 @@ namespace WebOne
 
 			Console.WriteLine("Windows Network Shell configuration completed.");
 			Console.WriteLine();
+			Log.WriteLine(false, false, "Windows NETSH configurtion \"wizard\" completed.");
+
 		}
 
 	}

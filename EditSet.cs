@@ -90,7 +90,7 @@ namespace WebOne
                         if (ParamName.StartsWith("Add"))
                             Edits.Add(new KeyValuePair<string, string>(ParamName, ParamValue));
                         else
-                            Console.WriteLine("Warning: unknown mask \"{0}\" will be ignored.", ParamName);
+                            new LogWriter().WriteLine(true, false, "Warning: unknown mask \"{0}\" will be ignored.", ParamName);
 
                         if (ParamName.StartsWith("AddConvert")) MayBeForResponse = true;
                         if (ParamName == "AddContentType") MayBeForResponse = true;

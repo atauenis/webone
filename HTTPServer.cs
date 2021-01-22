@@ -18,20 +18,20 @@ namespace WebOne
 		int Port = 80;
 		bool Work = true; 
 		private static HttpListener _listener;
-
+		private LogWriter Log = new LogWriter();
 
 		/// <summary>
 		/// Start a new HTTP Listener
 		/// </summary>
 		/// <param name="port"></param>
 		public HTTPServer(int port) {
-			Console.WriteLine("Starting server...");
+			Log.WriteLine(true, false, "Starting server...");
 			Port = port;
 			_listener = new HttpListener();
 			_listener.Prefixes.Add("http://*:" + Port + "/");
 			_listener.Start();
 			_listener.BeginGetContext(ProcessRequest, null);
-			Console.WriteLine("Listening for HTTP 1.x on port {0}.", port);
+			Log.WriteLine(true, false, "Listening for HTTP 1.x on port {0}.", port);
 			UpdateStatistics();
 			while (Work) { Console.Read(); }
 		}
