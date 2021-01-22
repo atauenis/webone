@@ -425,8 +425,14 @@ namespace WebOne
 #endif
 						}
 					}
-					//local proxy mode: http://localhost/http://example.com/indexr.shtml
-					if (RequestURL.LocalPath.StartsWith("/http:") || RequestURL.AbsoluteUri.StartsWith("/https:"))
+					//local proxy mode: http://localhost/http://example.com/indexr.shtml, http://localhost/http:/example.com/indexr.shtml
+					if (RequestURL.LocalPath.StartsWith("/http:/") || RequestURL.LocalPath.StartsWith("/https:/"))
+					{
+						if(!(RequestURL.LocalPath.StartsWith("/http://") || RequestURL.LocalPath.StartsWith("/https://")))
+						RequestURL = new Uri(RequestURL.AbsoluteUri.Replace("/http:/", "/http://").Replace("/https:/", "/https://"));
+					}
+
+					if (RequestURL.LocalPath.StartsWith("/http://") || RequestURL.LocalPath.StartsWith("/https://"))
 					{
 						RequestURL = new Uri(RequestURL.LocalPath.Substring(1) + RequestURL.Query);
 						Log.WriteLine(" Local: {0}", RequestURL);
