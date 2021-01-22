@@ -18,6 +18,7 @@ namespace WebOne
 		public static string ConfigFileName = ConfigFileAutoName;
 		public static int Port = -1;
 		public static int Load = 0;
+		public static bool DaemonMode = false;
 
 		public const string CmdLineArgUnnamed = "--wo-short";
 		public static List<KeyValuePair<string, string>> CmdLineOptions = new List<KeyValuePair<string, string>>();
@@ -41,12 +42,24 @@ namespace WebOne
 			//enable log
 			if (!ConfigFile.HaveLogFile) LogAgent.OpenLogFile(null);
 
+			//check for --daemon mode
+			if (DaemonMode)
+			{
+				if (!LogAgent.IsLoggingEnabled)
+				{
+					Console.WriteLine("Error: log file is not available, please fix the problem. Exiting.");
+					return;
+				}
+				Console.Title = "WebOne (silent) @ " + ConfigFile.DefaultHostName + ":" + ConfigFile.Port;
+				Console.WriteLine("The proxy runs in daemon mode. See all messages in the log file.");
+			}
+
 			ServicePointManager.DefaultConnectionLimit = int.MaxValue;
 			//https://qna.habr.com/q/696033
 			//https://github.com/atauenis/webone/issues/2
 
 			//set console window title
-			Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + ConfigFile.Port;
+			if (!DaemonMode) Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + ConfigFile.Port;
 			Log.WriteLine(false, false, "Configured to http://{1}:{2}/, HTTP 1.0", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port);
 
 			for (int StartAttempts = 0; StartAttempts < 2; StartAttempts++)
@@ -92,8 +105,12 @@ namespace WebOne
 				}
 			}
 
-			Console.WriteLine("Press any key to exit.");
-			Console.ReadKey();
+			if (!DaemonMode)
+			{
+
+				Console.WriteLine("Press any key to exit.");
+				Console.ReadKey();
+			}
 
 			Log.WriteLine(false, false, "WebOne has been exited.");
 		}
@@ -165,6 +182,9 @@ namespace WebOne
 					case "--dump-headers":
 					case "--dump-requests":
 						//will be processed in ProcessCommandLineOptions()
+						break;
+					case "--daemon":
+						DaemonMode = true;
 						break;
 					case "--help":
 					case "-?":

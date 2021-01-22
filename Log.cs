@@ -25,7 +25,7 @@ namespace WebOne
 		/// <param name="DisplayText">The message string (which should be displayed if <paramref name="Display"/> is true).</param>
 		public static void WriteLine(string LogMessage, bool Display = true, bool Write = true, string DisplayText = "")
 		{
-			if (Display)
+			if (Display && !DaemonMode)
 				if (DisplayText == "") Console.WriteLine(LogMessage);
 				else Console.WriteLine(DisplayText);
 			if (Write && LogStreamWriter != null)
@@ -54,12 +54,16 @@ namespace WebOne
 				{
 					LogStreamWriter = new StreamWriter(LogFileName, Append) { AutoFlush = true };
 
-					string StartMsg = string.Format("{0}\tWebOne {1} ({2}{3}, Runtime {4}) log started.",
+					string CommandLineArgs = string.Empty;
+					for (int i = 1; i < Environment.GetCommandLineArgs().Length; i++) { CommandLineArgs += " " + Environment.GetCommandLineArgs()[i]; };
+
+					string StartMsg = string.Format("{0}\tWebOne {1}{5} ({2}{3}, Runtime {4}) log started.",
 						DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
 						System.Reflection.Assembly.GetExecutingAssembly().GetName().Version,
 						Environment.OSVersion.Platform,
 						Environment.Is64BitOperatingSystem ? "-64" : "-32",
-						Environment.Version);
+						Environment.Version,
+						CommandLineArgs);
 					LogStreamWriter.WriteLine(StartMsg);
 					Console.WriteLine("Using event log file {0}.", LogFileName);
 				}
@@ -69,6 +73,17 @@ namespace WebOne
 				}
 			}
 			else Console.WriteLine("Not using log file.");
+		}
+
+		/// <summary>
+		/// Does messages logging into a log file.
+		/// </summary>
+		public static bool IsLoggingEnabled
+		{
+			get
+			{
+				return LogStreamWriter != null;
+			}
 		}
 	}
 

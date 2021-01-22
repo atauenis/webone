@@ -149,7 +149,7 @@ namespace WebOne
 		static ConfigFile()
 		{
 			//ConfigFileName = "webone.conf";
-			Log.WriteLine(true, false, "Using configuration file {0}.", ConfigFileName);
+			Console.WriteLine("Using configuration file {0}.", ConfigFileName);
 			int i = 0;
 			try
 			{

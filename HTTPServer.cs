@@ -69,7 +69,10 @@ namespace WebOne
 		/// Display count of open requests in app's titlebar
 		/// </summary>
 		private void UpdateStatistics() {
-			Console.Title = string.Format("WebOne @ {0}:{1} [{2}]", ConfigFile.DefaultHostName, Port, Load);
+			if(DaemonMode)
+				Console.Title = string.Format("WebOne (silent) @ {0}:{1} [{2}]", ConfigFile.DefaultHostName, Port, Load);
+			else
+				Console.Title = string.Format("WebOne @ {0}:{1} [{2}]", ConfigFile.DefaultHostName, Port, Load);
 		}
 	}
 }
