@@ -880,6 +880,12 @@ namespace WebOne
 				string header = operation.ResponseHeaders.GetKey(i);
 				foreach (string value in operation.ResponseHeaders.GetValues(i))
 				{
+					string corrvalue = value.Replace("https://", "http://");
+					if(LocalMode)
+					{
+						if (corrvalue.StartsWith("http://") && !corrvalue.StartsWith("http://" + ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString()))
+							corrvalue = corrvalue.Replace("http://", "http://" + ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString() + "/http://");
+					}
 					if (!header.StartsWith("Content-") &&
 					!header.StartsWith("Connection") &&
 					!header.StartsWith("Transfer-Encoding") &&
@@ -887,9 +893,9 @@ namespace WebOne
 					!header.StartsWith("Strict-Transport-Security") &&
 					!header.StartsWith("Content-Security-Policy") &&
 					!header.StartsWith("Upgrade-Insecure-Requests") &&
-					!(header.StartsWith("Vary") && value.Contains("Upgrade-Insecure-Requests")))
+					!(header.StartsWith("Vary") && corrvalue.Contains("Upgrade-Insecure-Requests")))
 					{
-						ClientResponse.AddHeader(header, value.Replace("; secure", "").Replace("https://", "http://"));
+						ClientResponse.AddHeader(header, corrvalue.Replace("; secure", ""));
 					}
 				}
 			}
@@ -974,7 +980,7 @@ namespace WebOne
 
 			//fix the body if it will be deliveried through Local mode
 			if(LocalMode)
-			Body = Body.Replace("http://", "http://" + ConfigFile.DefaultHostName + "/http://");
+			Body = Body.Replace("http://", "http://" + ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString() + "/http://");
 
 			return Body;
 		}
