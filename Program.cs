@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace WebOne
@@ -14,11 +15,14 @@ namespace WebOne
 	public static class Program
 	{
 		private static LogWriter Log = new LogWriter();
+		private static HTTPServer HTTPS;
+
 		public const string ConfigFileAutoName = "**auto**webone.conf";
 		public static string ConfigFileName = ConfigFileAutoName;
 		public static int Port = -1;
 		public static int Load = 0;
 		public static bool DaemonMode = false;
+		static bool ShutdownInitiated = false;
 
 		public const string CmdLineArgUnnamed = "--wo-short";
 		public static List<KeyValuePair<string, string>> CmdLineOptions = new List<KeyValuePair<string, string>>();
@@ -60,25 +64,30 @@ namespace WebOne
 
 			//set console window title
 			if (!DaemonMode) Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + ConfigFile.Port;
-			Log.WriteLine(false, false, "Configured to http://{1}:{2}/, HTTP 1.0", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port);
 
+			Log.WriteLine(false, false, "Configured to http://{1}:{2}/, HTTP 1.0", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port);
+			HTTPS = new HTTPServer(ConfigFile.Port);
+
+			//start the server from 1 or 2 attempts
 			for (int StartAttempts = 0; StartAttempts < 2; StartAttempts++)
 			{
 				try
 				{
-					new HTTPServer(ConfigFile.Port);
+					HTTPS.Start();
+					break;
 				}
 				catch (HttpListenerException ex)
 				{
 					Log.WriteLine(true, false, "Cannot start server: {0}", ex.Message);
-					if (ex.NativeErrorCode != 5) break; //any error
 
-					if (true)
+					if (!DaemonMode && ex.NativeErrorCode == 5)
 					{
+						//access (for listen TCP port) denied, show troubleshooting help
 						if (ex.NativeErrorCode == 5 && Environment.OSVersion.Platform == PlatformID.Unix) //access denied @ *nix
 						{
 							Console.WriteLine();
 							Console.WriteLine(@"You need to use ""sudo WebOne"" or use Port greater than 1024.");
+							Shutdown(ex.NativeErrorCode);
 							break;
 						}
 						if (ex.NativeErrorCode == 5 && Environment.OSVersion.Platform == PlatformID.Win32NT && StartAttempts == 0) //access denied @ Win32
@@ -94,25 +103,61 @@ namespace WebOne
 								continue;
 							}
 							else
+							{
+								Shutdown(ex.NativeErrorCode);
 								break;
+							}
 						}
 					}
+					Shutdown(ex.NativeErrorCode);
+					break;
 				}
 				catch(Exception ex)
 				{
 					Log.WriteLine(true, false, "Server start failed: {0}", ex.Message);
+					Shutdown(ex.HResult);
 					break;
 				}
 			}
 
+			//register Ctrl+C/kill handler
+			System.Runtime.Loader.AssemblyLoadContext.Default.Unloading += (ctx) => { Shutdown(); };
+			Console.CancelKeyPress += (s, e) => { Shutdown(); };
+
+			//wait while server is in work
+			while (HTTPS.Working) { Thread.Sleep(1); }
+
+			//the end
+			Shutdown();
+		}
+
+		/// <summary>
+		/// Shut down server and terminate process
+		/// </summary>
+		/// <param name="Code">Process exit code</param>
+		public static void Shutdown(int Code = 0)
+		{
+			if (ShutdownInitiated) while (true) { Thread.Sleep(1); };
+			ShutdownInitiated = true;
+
+			if(HTTPS.Working) HTTPS.Stop();
+
 			if (!DaemonMode)
 			{
 
-				Console.WriteLine("Press any key to exit.");
+				Console.WriteLine("\nPress any key to exit.");
 				Console.ReadKey();
 			}
 
 			Log.WriteLine(false, false, "WebOne has been exited.");
+			Environment.ExitCode = Code;
+			new Task(() => { Environment.Exit(Code); }).Start();
+
+			#if DEBUG
+			Console.WriteLine("Waiting for process end...");
+			#endif
+			Thread.Sleep(1000);
+			Process.GetCurrentProcess().Kill();
 		}
 
 		/// <summary>

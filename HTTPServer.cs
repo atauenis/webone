@@ -15,25 +15,51 @@ namespace WebOne
 /// </summary>
 	class HTTPServer
 	{
-		int Port = 80;
-		bool Work = true; 
-		private static HttpListener _listener;
+		private int Port;
+		private static HttpListener _listener = new HttpListener();
 		private LogWriter Log = new LogWriter();
 
 		/// <summary>
-		/// Start a new HTTP Listener
+		/// Status of this HTTP Listener
+		/// </summary>
+		public bool Working { get; private set; }
+
+		/// <summary>
+		/// Initizlize a HTTP Listener &amp; Server
 		/// </summary>
 		/// <param name="port"></param>
 		public HTTPServer(int port) {
-			Log.WriteLine(true, false, "Starting server...");
 			Port = port;
-			_listener = new HttpListener();
+			Working = false;
+		}
+
+		/// <summary>
+		/// Start this HTTP Listener
+		/// </summary>
+		public void Start() {
+			Log.WriteLine(true, false, "Starting server...");
+			if (_listener == null) _listener = new HttpListener();
 			_listener.Prefixes.Add("http://*:" + Port + "/");
 			_listener.Start();
 			_listener.BeginGetContext(ProcessRequest, null);
-			Log.WriteLine(true, false, "Listening for HTTP 1.x on port {0}.", port);
+			Working = true;
+			Log.WriteLine(true, false, "Listening for HTTP 1.x on port {0}.", Port);
 			UpdateStatistics();
-			while (Work) { Console.Read(); }
+		}
+
+		/// <summary>
+		/// Gracefully stop this HTTP Listener
+		/// </summary>
+		public void Stop(){
+			Working = false;
+			Log.BeginTime = DateTime.Now;
+			Log.WriteLine(true, true, "Shutdown server...");
+			if (_listener != null)
+			{
+				if (_listener.IsListening) _listener.Stop();
+				_listener.Prefixes.Clear();
+			}
+			Log.WriteLine(true, true, "Server stopped.");
 		}
 
 
@@ -43,10 +69,10 @@ namespace WebOne
 		/// <param name="ar">Something from HttpListener</param>
 		private void ProcessRequest(IAsyncResult ar)
 		{
+			if (!Working) return;
 			Load++;
 			UpdateStatistics();
 			LogWriter Logger = new LogWriter();
-			DateTime BeginTime = Logger.BeginTime;
 #if DEBUG
 			Logger.WriteLine("Got a request.");
 #endif
