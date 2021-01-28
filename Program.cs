@@ -19,6 +19,7 @@ namespace WebOne
 
 		public const string ConfigFileAutoName = "**auto**webone.conf";
 		public static string ConfigFileName = ConfigFileAutoName;
+		public static string OverrideLogFile = "";
 		public static int Port = -1;
 		public static int Load = 0;
 		public static bool DaemonMode = false;
@@ -43,8 +44,8 @@ namespace WebOne
 			//process remaining command line arguments and override configuration file options
 			ProcessCommandLineOptions();
 
-			//enable log
-			if (!ConfigFile.HaveLogFile) LogAgent.OpenLogFile(null);
+			//if log is not declared, say "Not using log file"
+			if (OverrideLogFile == null) LogAgent.OpenLogFile(null);
 
 			//check for --daemon mode
 			if (DaemonMode)
@@ -209,6 +210,10 @@ namespace WebOne
 					case "/l":
 					case "-l":
 					case "--log":
+						if (kvp.Value == "" || kvp.Value == "no") { OverrideLogFile = null; break; }
+						OverrideLogFile = kvp.Value;
+						LogAgent.OpenLogFile(OverrideLogFile);
+						break;
 					case "/t":
 					case "-t":
 					case "--tmp":
@@ -264,13 +269,6 @@ namespace WebOne
 					//Console.WriteLine("Opt: '{0}' = '{1}'", kvp.Key, kvp.Value);
 					switch (kvp.Key)
 					{
-						case "/l":
-						case "-l":
-						case "--log":
-							if (kvp.Value == "" || kvp.Value == "no") { ConfigFile.HaveLogFile = false; break; }
-							LogAgent.OpenLogFile(GetLogFilePath(kvp.Value), false);
-							ConfigFile.HaveLogFile = true;
-							break;
 						case "/t":
 						case "-t":
 						case "--tmp":

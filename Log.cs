@@ -72,7 +72,11 @@ namespace WebOne
 					Console.WriteLine("Cannot use log file {0}: {1}", LogFileName, ex.Message);
 				}
 			}
-			else Console.WriteLine("Not using log file.");
+			else
+			{
+				LogStreamWriter = null;
+				Console.WriteLine("Not using log file.");
+			}
 		}
 
 		/// <summary>

@@ -137,11 +137,6 @@ namespace WebOne
 		public static string TemporaryDirectory = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar;
 
 		/// <summary>
-		/// Indicates is there are a LogFile or AppendLogFile directive in config file
-		/// </summary>
-		public static bool HaveLogFile = false;
-
-		/// <summary>
 		/// Allow or disallow clients see webone.conf content
 		/// </summary>
 		public static bool AllowConfigFileDisplay = true;
@@ -384,12 +379,12 @@ namespace WebOne
 										else TemporaryDirectory = ParamValue;
 										continue;
 									case "LogFile":
-										LogAgent.OpenLogFile(GetLogFilePath(ParamValue), false);
-										HaveLogFile = true;
+										if(OverrideLogFile != null && OverrideLogFile == "")
+											LogAgent.OpenLogFile(GetLogFilePath(ParamValue), false);
 										continue;
 									case "AppendLogFile":
-										LogAgent.OpenLogFile(GetLogFilePath(ParamValue), true);
-										HaveLogFile = true;
+										if (OverrideLogFile != null && OverrideLogFile == "")
+											LogAgent.OpenLogFile(GetLogFilePath(ParamValue), true);
 										continue;
 									case "AllowConfigFileDisplay":
 										AllowConfigFileDisplay = ToBoolean(ParamValue);
