@@ -64,7 +64,7 @@ __WebOne__ - прокси-сервер HTTP, позволяющий открыв
 
 Для запуска на порту с номером менее 1024 необходимы права администратора или root.
 
-Настройки прокси-сервера хранятся в файле __webone.conf__ в каталоге с программой или по адресу ``/var/WebOne/``, ``~/.config/WebOne/``, ``C:\Users\username\AppData\Roaming\WebOne\``, ``C:\ProgramData\WebOne\``. Для использования другого файла, запускайте прокси с параметром "webone.exe _config_file_name.ext_".
+Настройки прокси-сервера хранятся в файле __webone.conf__ в каталоге с программой или по адресу ``/etc/WebOne/``, ``~/.config/WebOne/``, ``C:\Users\username\AppData\Roaming\WebOne\``, ``C:\ProgramData\WebOne\``. Для использования другого файла, запускайте прокси с параметром "webone.exe _config_file_name.ext_".
 
 Файл протокола (__webone.log__) по умолчанию сохраняется по адресу ``/var/log/webone.log`` или `` C:\Users\username\AppData\Roaming\webone.log``.
 
