@@ -144,10 +144,13 @@ command -v systemctl >/dev/null 2>&1 && systemctl disable webone || { echo "syst
     </None>
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(RuntimeIdentifier)'=='linux-x64' OR '$(RuntimeIdentifier)'=='linux-arm'">
     <Content Include="webone.service" CopyToPublishDirectory="Always" LinuxFileMode="1755">
         <LinuxPath>/etc/systemd/system/webone.service</LinuxPath>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="webone.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
         <LinuxPath>/etc/WebOne/webone.conf</LinuxPath>
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
