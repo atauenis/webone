@@ -125,7 +125,7 @@ namespace WebOne
 			Console.CancelKeyPress += (s, e) => { Shutdown(); };
 
 			//wait while server is in work
-			while (HTTPS.Working) { Thread.Sleep(1); }
+			while (HTTPS.Working) { Thread.Sleep(250); }
 
 			//the end
 			Shutdown();

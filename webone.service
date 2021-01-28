@@ -9,7 +9,7 @@ Type=simple
 DynamicUser=yes
 ExecStart=/usr/local/bin/WebOne --daemon
 ReadWriteDirectories=-/var/log/
-TimeoutStopSec=0
+TimeoutStopSec=10
 Restart=on-failure
 
 [Install]
