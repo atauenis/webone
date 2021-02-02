@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Authors>Alexander Tauenis</Authors>
-    <Version>0.10.4</Version>
+    <Version>0.10.4.1</Version>
     <Company>World</Company>
     <Product>WebOne HTTP Proxy Server</Product>
     <Description>HTTP 1.x proxy that makes old web browsers usable again in the Web 2.0 world.</Description>
@@ -57,24 +57,22 @@
   <PropertyGroup>
     <PostInstallScript>
       <![CDATA[
-if [ command -v "systemctl" >/dev/null 2>&1 ]
-then
-  systemctl daemon-reload
-  systemctl enable --now webone
-  touch /var/log/webone.log
-  chmod 666 /var/log/webone.log
-fi
+touch /var/log/webone.log
+chmod 666 /var/log/webone.log
+systemctl daemon-reload
+systemctl enable --now webone
       ]]>
     </PostInstallScript>
     <PreRemoveScript>
       <![CDATA[
-command -v systemctl >/dev/null 2>&1 && systemctl stop webone || { echo "systemctl not found. Continuing." >&2; }
+systemctl stop webone
+systemctl disable webone
 command -v killall >/dev/null 2>&1 && killall WebOne || { echo "killall not found. Continuing." >&2; }
       ]]>
     </PreRemoveScript>
     <PostRemoveScript>
       <![CDATA[
-command -v systemctl >/dev/null 2>&1 && systemctl disable webone || { echo "systemctl not found. Continuing." >&2; }
+systemctl daemon-reload
       ]]>
     </PostRemoveScript>
   </PropertyGroup>
