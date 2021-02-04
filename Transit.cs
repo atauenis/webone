@@ -120,42 +120,7 @@ namespace WebOne
 								case "/":
 								case "/!":
 								case "/!/":
-									string HelpString = "This is <b>" + Environment.MachineName + ":" + ConfigFile.Port + "</b>.<br>";
-									HelpString +="Used memory: <b>" + (double)Environment.WorkingSet/1024/1024 + "</b> MB.<br>";
-									HelpString += "Pending requests: <b>" + (Program.Load - 1) + "</b>.<br>";
-									HelpString += "Available security: <b>" + ServicePointManager.SecurityProtocol + "</b> (" + (int)ServicePointManager.SecurityProtocol + ").<br>";
-
-									HelpString += "<h2>Aliases:</h2><ul>";
-									bool EvidentAlias = false;
-									foreach (IPAddress address in GetLocalIPAddresses())
-									{
-										HelpString += "<li>" + (address.ToString() == ConfigFile.DefaultHostName ? "<b>" + address.ToString() + "</b>" : address.ToString()) + ":" + ConfigFile.Port + "</li>";
-										if(!EvidentAlias) EvidentAlias = address.ToString() == ConfigFile.DefaultHostName;
-									}
-									if (!EvidentAlias) HelpString += "<li><b>" + ConfigFile.DefaultHostName + "</b>:" + ConfigFile.Port + "</li>";
-									HelpString += "</ul>";
-									HelpString += "</ul>";
-
-									HelpString += "<p>Client IP: <b>" + ClientRequest.RemoteEndPoint + "</b>.</p>";
-
-									HelpString += "<h2>Internal URLs:</h2><ul>" +
-									//			  "<li><a href='/!codepages/'>/!codepages/</a> - list of available encodings for OutputEncoding setting</li>" +
-												  "<li><a href='/!img-test/'>/!img-test/</a> - test if ImageMagick is working</li>" +
-												  "<li><a href='/!convert/'>/!convert/</a> - run a file format converter (<a href='/!convert/?src=logo.webp&dest=gif&type=image/gif'>demo</a>)</li>" +
-												  //"<li><a href='/!file/'>/!file/</a> - get a file from WebOne working directory (<a href='/!file/?name=webone.conf&type=text/plain'>demo</a>)</li>" +
-												  "<li><a href=/!webone.conf>/!webone.conf</a> - see active WebOne configuration file</li>" +
-												  "<li><a href='/!clear/'>/!clear/</a> - remove temporary files in WebOne working directory</li>" +
-												  "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>" +
-												  "</ul>";
-
-									HelpString += "<h2>Headers sent by browser</h2><ul>";
-									HelpString += "<li><b>" + ClientRequest.HttpMethod + " " + ClientRequest.RawUrl + " HTTP/" + ClientRequest.ProtocolVersion + "</b></li>";
-									foreach (string hdrn in ClientRequest.Headers.Keys)
-									{
-										HelpString += "<li>" + hdrn + ": " + ClientRequest.Headers[hdrn] + "</li>";
-									}
-									HelpString += "</ul>";
-									SendError(200, HelpString);
+									SendInternalStatusPage();
 									return;
 								case "/!codepages/":
 									string codepages = "The following code pages are available: <br>\n" +
@@ -1288,6 +1253,81 @@ namespace WebOne
 		}
 
 		/// <summary>
+		/// Send internal status page (http://proxyhost:port/!)
+		/// </summary>
+		private void SendInternalStatusPage(){
+			string HelpString = "";
+
+			if(ConfigFile.DisplayStatusPage == "no")
+			{
+				SendInfoPage("WebOne status page", "Sorry", "<p>The status page is disabled by server administrator.</p>");
+				return;
+			}
+
+			if (ConfigFile.DisplayStatusPage == "short")
+			{
+				HelpString += "<p>This is <b>" + ConfigFile.DefaultHostName + ":" + ConfigFile.Port + "</b>.<br>";
+				HelpString += "Pending requests: <b>" + (Load - 1) + "</b>.<br>";
+				HelpString += "Used memory: <b>" + (int)Environment.WorkingSet / 1024 / 1024 + "</b> MB.<br>";
+				HelpString += "About: <a href=\"https://github.com/atauenis/webone/\">https://github.com/atauenis/webone/</a></p>";
+				HelpString += "<p>Client IP: <b>" + ClientRequest.RemoteEndPoint + "</b>.</p>";
+
+				HelpString += "<h2>Internal URLs:</h2><ul>";
+				if (ConfigFile.AllowConfigFileDisplay) HelpString += "<li><a href=/!webone.conf>/!webone.conf</a> - see active WebOne configuration file</li>";
+				HelpString += "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>";
+				HelpString += "</ul>";
+			}
+			else if (ConfigFile.DisplayStatusPage == "full")
+			{
+				HelpString += "This is <b>" + Environment.MachineName + ":" + ConfigFile.Port + "</b>.<br>";
+				HelpString += "Used memory: <b>" + (double)Environment.WorkingSet / 1024 / 1024 + "</b> MB.<br>";
+				HelpString += "Pending requests: <b>" + (Load - 1) + "</b>.<br>";
+				HelpString += "Available security: <b>" + ServicePointManager.SecurityProtocol + "</b> (" + (int)ServicePointManager.SecurityProtocol + ").<br>";
+
+				HelpString += "<h2>Aliases:</h2><ul>";
+				bool EvidentAlias = false;
+				foreach (IPAddress address in GetLocalIPAddresses())
+				{
+					HelpString += "<li>" + (address.ToString() == ConfigFile.DefaultHostName ? "<b>" + address.ToString() + "</b>" : address.ToString()) + ":" + ConfigFile.Port + "</li>";
+					if (!EvidentAlias) EvidentAlias = address.ToString() == ConfigFile.DefaultHostName;
+				}
+				if (!EvidentAlias) HelpString += "<li><b>" + ConfigFile.DefaultHostName + "</b>:" + ConfigFile.Port + "</li>";
+				HelpString += "</ul>";
+				HelpString += "</ul>";
+
+				HelpString += "<p>Client IP: <b>" + ClientRequest.RemoteEndPoint + "</b>.</p>";
+
+
+				HelpString += "<h2>Internal URLs:</h2><ul>" +
+							  //			  "<li><a href='/!codepages/'>/!codepages/</a> - list of available encodings for OutputEncoding setting</li>" +
+							  "<li><a href='/!img-test/'>/!img-test/</a> - test if ImageMagick is working</li>" +
+							  "<li><a href='/!convert/'>/!convert/</a> - run a file format converter (<a href='/!convert/?src=logo.webp&dest=gif&type=image/gif'>demo</a>)</li>" +
+							  //"<li><a href='/!file/'>/!file/</a> - get a file from WebOne working directory (<a href='/!file/?name=webone.conf&type=text/plain'>demo</a>)</li>" +
+							  "<li><a href=/!webone.conf>/!webone.conf</a> - see active WebOne configuration file</li>" +
+							  "<li><a href='/!clear/'>/!clear/</a> - remove temporary files in WebOne working directory</li>" +
+							  "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>" +
+							  "</ul>";
+			}
+
+			else
+			{
+				HelpString = "<h2>It works!</h2>";
+			}
+
+
+			HelpString += "<h2>Headers sent by browser</h2><ul>";
+			HelpString += "<li><b>" + ClientRequest.HttpMethod + " " + ClientRequest.RawUrl + " HTTP/" + ClientRequest.ProtocolVersion + "</b></li>";
+			foreach (string hdrn in ClientRequest.Headers.Keys)
+			{
+				HelpString += "<li>" + hdrn + ": " + ClientRequest.Headers[hdrn] + "</li>";
+			}
+			HelpString += "</ul>";
+			SendInfoPage("WebOne status page", null, HelpString);
+			return;
+
+		}
+
+		/// <summary>
 		/// Send a HTTP error to client
 		/// </summary>
 		/// <param name="Code">HTTP Status code</param>
@@ -1380,6 +1420,49 @@ namespace WebOne
 				SendError(ErrNo, "Cannot retreive stream.<br>" + ex.ToString().Replace("\n", "<br>"));
 			}
 			SaveHeaderDump("End is stream of " + ContentType);
+		}
+
+		/// <summary>
+		/// Send a information page to client
+		/// </summary>
+		/// <param name="Title">The information page title</param>
+		/// <param name="Header1">The information page 1st level header (or null if no title)</param>
+		/// <param name="Content">The information page content (HTML)</param>
+		private void SendInfoPage(string Title = null, string Header1 = null, string Content = "No description is available.")
+		{
+			Log.WriteLine("<Return information page: {0}.", Title);
+
+			string title = "WebOne: untitled"; if (Title != null) title = "<title>" + Title + "</title>\n";
+			string header1 = ""; if (Header1 != null) header1 = "<h1>" + Header1 + "</h1>\n";
+
+			string Html = "<html>\n" +
+			title +
+			"<body>" +
+			header1 +
+			Content +
+			GetInfoString() + 
+			"</body>\n</html>";
+
+			if ((ConfigFile.OutputEncoding ?? Encoding.Default) != Encoding.Default)
+				Html = ConfigFile.OutputEncoding.GetString(Encoding.Default.GetBytes(Html));
+
+			byte[] Buffer = (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(Html);
+			try
+			{
+				ClientResponse.StatusCode = 200;
+				ClientResponse.ProtocolVersion = new Version(1, 0);
+
+				ClientResponse.ContentType = "text/html";
+				ClientResponse.ContentLength64 = Buffer.Length;
+				ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
+				ClientResponse.OutputStream.Close();
+				SaveHeaderDump("End is information page: " + Header1);
+			}
+			catch (Exception ex)
+			{
+				if (!ConfigFile.HideClientErrors)
+					Log.WriteLine("<!Cannot return information page {1}. {2}: {3}", null, Title, ex.GetType(), ex.Message);
+			}
 		}
 	}
 }

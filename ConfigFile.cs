@@ -141,6 +141,11 @@ namespace WebOne
 		/// </summary>
 		public static bool AllowConfigFileDisplay = true;
 
+		/// <summary>
+		/// Set status page display style: no, short, full
+		/// </summary>
+		public static string DisplayStatusPage = "full";
+
 		static ConfigFile()
 		{
 			//ConfigFileName = "webone.conf";
@@ -388,6 +393,9 @@ namespace WebOne
 										continue;
 									case "AllowConfigFileDisplay":
 										AllowConfigFileDisplay = ToBoolean(ParamValue);
+										continue;
+									case "DisplayStatusPage":
+										DisplayStatusPage = ParamValue;
 										continue;
 									default:
 										Log.WriteLine(true, false, "Warning: Unknown server option: " + ParamName);
