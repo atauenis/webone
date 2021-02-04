@@ -354,7 +354,7 @@ namespace WebOne
 									string PacString =
 									@"function FindProxyForURL(url, host) {" +
 									@"if (url.substring(0, 5) == ""http:"")" +
-									@"{ return ""PROXY "+ ConfigFile.DefaultHostName + ":"+ConfigFile.Port+@"""; }" +
+									@"{ return ""PROXY "+ GetServerName() +@"""; }" +
 									@"else { return ""DIRECT""; }"+
 									@"} /*WebOne PAC*/";
 									byte[] Buffer = Encoding.Default.GetBytes(PacString);
@@ -848,9 +848,17 @@ namespace WebOne
 					string corrvalue = value.Replace("https://", "http://");
 					if(LocalMode)
 					{
-						if (corrvalue.StartsWith("http://") && !corrvalue.StartsWith("http://" + ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString()))
-							corrvalue = corrvalue.Replace("http://", "http://" + ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString() + "/http://");
+						if (corrvalue.StartsWith("http://") && !corrvalue.StartsWith("http://" + GetServerName()))
+							corrvalue = corrvalue.Replace("http://", "http://" + GetServerName() + "/http://");
+
+						corrvalue = corrvalue.Replace("; Domain=http://", "; Domain=http://" + GetServerName() + "/http://");
+						corrvalue = corrvalue.Replace("; domain=http://", "; domain=http://" + GetServerName() + "/http://");
 					}
+
+					corrvalue = corrvalue
+						.Replace("; secure", "")
+						.Replace("; Secure", "");
+
 					if (!header.StartsWith("Content-") &&
 					!header.StartsWith("Connection") &&
 					!header.StartsWith("Transfer-Encoding") &&
@@ -860,7 +868,7 @@ namespace WebOne
 					!header.StartsWith("Upgrade-Insecure-Requests") &&
 					!(header.StartsWith("Vary") && corrvalue.Contains("Upgrade-Insecure-Requests")))
 					{
-						ClientResponse.AddHeader(header, corrvalue.Replace("; secure", ""));
+						ClientResponse.AddHeader(header, corrvalue);
 					}
 				}
 			}
@@ -875,7 +883,7 @@ namespace WebOne
 		private string ProcessBody(string Body)
 		{
 			Body = Body.Replace("https", "http");
-			//if (LocalMode) Body = Body.Replace("http://", "http://" + ConfigFile.DefaultHostname + "/http://");//replace with real hostname
+
 			if (ConfigFile.OutputEncoding != null)
 			{
 				Body = Body.Replace("harset=\"utf-8\"", "harset=\"" + ConfigFile.OutputEncoding.WebName + "\"");
@@ -944,9 +952,16 @@ namespace WebOne
 			}
 
 			//fix the body if it will be deliveried through Local mode
-			if(LocalMode)
-			Body = Body.Replace("http://", "http://" + ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString() + "/http://");
+			if (LocalMode)
+			{
+				Body = Body.Replace("http://", "http://" + GetServerName() + "/http://");
+				Body = Body.Replace("href=\"./", "href=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
+				Body = Body.Replace("src=\"./", "src=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
+				Body = Body.Replace("href=\"//", "href=\"http://" + GetServerName() + "/http://");
+				Body = Body.Replace("src=\"//", "src=\"http://" + GetServerName() + "/http://");
 
+			}
+			
 			return Body;
 		}
 
@@ -1253,6 +1268,15 @@ namespace WebOne
 		}
 
 		/// <summary>
+		/// Get this proxy server name and port
+		/// </summary>
+		private string GetServerName()
+		{
+			if (ConfigFile.Port == 80) return ConfigFile.DefaultHostName;
+			return ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString();
+		}
+
+		/// <summary>
 		/// Send internal status page (http://proxyhost:port/!)
 		/// </summary>
 		private void SendInternalStatusPage(){
@@ -1266,7 +1290,7 @@ namespace WebOne
 
 			if (ConfigFile.DisplayStatusPage == "short")
 			{
-				HelpString += "<p>This is <b>" + ConfigFile.DefaultHostName + ":" + ConfigFile.Port + "</b>.<br>";
+				HelpString += "<p>This is <b>" + GetServerName() + "</b>.<br>";
 				HelpString += "Pending requests: <b>" + (Load - 1) + "</b>.<br>";
 				HelpString += "Used memory: <b>" + (int)Environment.WorkingSet / 1024 / 1024 + "</b> MB.<br>";
 				HelpString += "About: <a href=\"https://github.com/atauenis/webone/\">https://github.com/atauenis/webone/</a></p>";
