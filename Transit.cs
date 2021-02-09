@@ -957,9 +957,13 @@ namespace WebOne
 				Body = Body.Replace("http://", "http://" + GetServerName() + "/http://");
 				Body = Body.Replace("href=\"./", "href=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
 				Body = Body.Replace("src=\"./", "src=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
+				Body = Body.Replace("action=\"./", "action=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
 				Body = Body.Replace("href=\"//", "href=\"http://" + GetServerName() + "/http://");
 				Body = Body.Replace("src=\"//", "src=\"http://" + GetServerName() + "/http://");
-
+				Body = Body.Replace("action=\"//", "action=\"http://" + GetServerName() + "/http://");
+				Body = Body.Replace("href=\"/", "href=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
+				Body = Body.Replace("src=\"/", "src=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
+				Body = Body.Replace("action=\"/", "action=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
 			}
 			
 			return Body;
