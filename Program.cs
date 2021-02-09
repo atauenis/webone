@@ -382,8 +382,9 @@ namespace WebOne
 		public static string GetTime(DateTime BeginTime)
 		{
 			TimeSpan difference = DateTime.Now - BeginTime;
-			return BeginTime.ToString("HH:mm:ss.fff") + "+" + difference.Ticks;
+			return BeginTime.ToString("dd.MM.yyyy HH:mm:ss.fff") + "+" + difference.Ticks/2;
 		}
+
 		/// Read all bytes from a Stream (like StreamReader.ReadToEnd)
 		/// </summary>
 		/// <param name="stream">Source Stream</param>

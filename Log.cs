@@ -127,7 +127,7 @@ namespace WebOne
 
 			if (FirstTime)
 			{
-				timestamp = string.Format("{0}+0", BeginTime.ToString("HH:mm:ss.fff")); FirstTime = false; 
+				timestamp = string.Format("{0}+0", BeginTime.ToString("dd.MM.yyyy HH:mm:ss.fff")); FirstTime = false; 
 			}
 			else
 			{ 
@@ -136,11 +136,11 @@ namespace WebOne
 
 			if(displayTimestamp) //e.g. ">GET http://example.com/ (127.0.0.1)"
 			{
-				if (timestamp.Length < 20) //15:55:58.283+7600010 = 20 character long
+				if (timestamp.Length < 20) //23.02.2021 15:55:58.283+7600010 = 31 character long
 				{
-					str = string.Format("{0}+0\t\t{1}", BeginTime.ToString("HH:mm:ss.fff"), message);
+					str = string.Format("{0}+0\t\t{1}", BeginTime.ToString("dd.MM.yyyy HH:mm:ss.fff"), message);
 					LogAgent.WriteLine(str, display, false);
-					str = string.Format("{0}+0\t{1}", BeginTime.ToString("HH:mm:ss.fff"), message);
+					str = string.Format("{0}+0\t{1}", BeginTime.ToString("dd.MM.yyyy HH:mm:ss.fff"), message);
 					LogAgent.WriteLine(str, false, true);
 				}
 				else
@@ -152,7 +152,7 @@ namespace WebOne
 
 			else //e.g. "Starting server..."
 			{
-				str = string.Format("{0}+0\t{1}", BeginTime.ToString("HH:mm:ss.fff"), message);
+				str = string.Format("{0}+0\t{1}", BeginTime.ToString("dd.MM.yyyy HH:mm:ss.fff"), message);
 
 				LogAgent.WriteLine(str, display, true, message);
 				return;
