@@ -457,6 +457,11 @@ namespace WebOne
 				builder = new UriBuilder(URL);
 			}
 
+			if (str.Contains("%UrlDomain%"))
+			{
+				str = str.Replace("%UrlDomain%", builder.Host);
+			}
+
 			return str;
 		}
 
