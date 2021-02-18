@@ -111,9 +111,15 @@ namespace WebOne
 
 					if (RequestURL.PathAndQuery.StartsWith("/!") || PAC || RequestURL.AbsolutePath == "/")
 					{
+						//request to internal URL
 						try
 						{
-							//internal URLs
+							string ClientUA = ClientRequest.Headers["User-Agent"];
+							if (ClientUA != null && ClientUA.Contains("WebOne")) 
+							{
+								SendError(403, "Loop requests are probhited.");
+								return;
+							}
 							Log.WriteLine(" Internal: {0} ", RequestURL.PathAndQuery);
 							switch (RequestURL.AbsolutePath.ToLower())
 							{
