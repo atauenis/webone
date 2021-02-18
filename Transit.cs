@@ -884,6 +884,10 @@ namespace WebOne
 
 						corrvalue = corrvalue.Replace("; Domain=http://", "; Domain=http://" + GetServerName() + "/http://");
 						corrvalue = corrvalue.Replace("; domain=http://", "; domain=http://" + GetServerName() + "/http://");
+						corrvalue = corrvalue.Replace("; Domain=.", "; x-disabled-Domain=http://" + GetServerName() + "/http://");
+						corrvalue = corrvalue.Replace("; domain=.", "; x-disabled-domain=http://" + GetServerName() + "/http://");
+						corrvalue = corrvalue.Replace("; Path=/", "; x-disabled-Path=/");
+						corrvalue = corrvalue.Replace("; path=/", "; x-disabled-path=/");
 					}
 
 					corrvalue = corrvalue
