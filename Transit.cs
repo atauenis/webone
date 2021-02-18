@@ -109,6 +109,31 @@ namespace WebOne
 					string[] PacUrls = { "/auto/", "/auto", "/auto.pac", "/wpad.dat", "/wpad.da" }; //Netscape PAC/Microsoft WPAD
 					foreach (string PacUrl in PacUrls) { if (RequestURL.LocalPath == PacUrl) { PAC = true; break; } }
 
+					if(RequestURL.LocalPath == "/robots.txt")
+					{
+						//attempt to include in google index; kick the bot off
+						string Robots = "User-agent: *\nDisallow: / ";
+						Log.WriteLine("<Return robot kicker.");
+						byte[] Buffer = Encoding.Default.GetBytes(Robots);
+						try
+						{
+							ClientResponse.StatusCode = 200;
+							ClientResponse.ProtocolVersion = new Version(1, 0);
+
+							ClientResponse.ContentType = "text/plain";
+							ClientResponse.ContentLength64 = Robots.Length;
+							ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
+							ClientResponse.OutputStream.Close();
+						}
+						catch
+						{
+							Log.WriteLine("Cannot return robot kicker!");
+						}
+						SaveHeaderDump();
+						return;
+
+					}
+
 					if (RequestURL.PathAndQuery.StartsWith("/!") || PAC || RequestURL.AbsolutePath == "/")
 					{
 						//request to internal URL
