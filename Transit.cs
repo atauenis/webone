@@ -482,10 +482,9 @@ namespace WebOne
 
 				//make reply
 				//SendError(200, "Okay, bro! Open " + RequestURL);
-				bool StWrong = false; //break operation if something is wrong.
 
-				if (RequestURL.AbsoluteUri.Contains("??")) { StWrong = true; SendError(400, "Too many questions."); }
-				if (RequestURL.AbsoluteUri.Length == 0) { StWrong = true; SendError(400, "Empty URL."); }
+				if (RequestURL.AbsoluteUri.Contains("??")) { SendError(400, "Too many questions."); return; }
+				if (RequestURL.AbsoluteUri.Length == 0) { SendError(400, "Empty URL."); return; }
 				if (RequestURL.AbsoluteUri == "") return;
 
 				if (RequestURL.AbsoluteUri.Contains(" ")) RequestURL = new Uri(RequestURL.AbsoluteUri.Replace(" ","%20")); //fix spaces in wrong-formed URLs
@@ -521,6 +520,8 @@ namespace WebOne
 						}
 					}
 				}
+
+				bool BreakTransit = false; //use instead of return
 
 				try
 				{
@@ -619,15 +620,6 @@ namespace WebOne
 					if (ResponseCode == 502) Log.WriteLine(" Cannot load this page: {0}.", wex.Status);
 					else Log.WriteLine(" Web exception: {0} {1}.", ResponseCode, (wex.Response as HttpWebResponse).StatusCode);
 
-					ContentType = "text/html";
-#if DEBUG
-					string err = ": " + wex.Status.ToString();
-					ResponseBody = "<html><title>WebOne error</title><body>Cannot load this page" + err + "<br><i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + Program.GetInfoString() + "</body></html>";
-#else
-					string NiceErrMsg = "<p><big>" + wex.Message + ".</big></p>Status: " + wex.Status;
-					if (wex.InnerException != null && wex.Status != WebExceptionStatus.UnknownError) NiceErrMsg = " <p><big>" + wex.Message + "<br>" + wex.InnerException.Message + ".</big></p>Status: " + wex.Status + " + " + wex.InnerException.GetType().ToString();
-					ResponseBody = "<html><title>WebOne: " + wex.Status + "</title><body><h1>Cannot load this page</h1>" + NiceErrMsg + "<br>URL: " + RequestURL.AbsoluteUri + GetInfoString() + "</body></html>";
-#endif
 
 					//check if archived copy can be retreived instead
 					if (ConfigFile.SearchInArchive)
@@ -675,23 +667,59 @@ namespace WebOne
 										"Try to slightly change the URL.</p>" +
 										"<small><i>You see this message because ShortenArchiveErrors option is enabled.</i></small>";
 										SendError(404, ErrMsg);
+										BreakTransit = true;
 									}
 								}
 							}
 							catch (Exception ArchiveException)
 							{
-								ResponseBody = String.Format("<html><body><b>Server not found and a Web Archive error occured.</b><br>{0}</body></html>", ArchiveException.Message.Replace("\n", "<br>"));
+								SendInfoPage("WebOne: Web Archive error.", "Cannot load this page", string.Format("<b>The requested server or page is not found and a Web Archive error occured.</b><br>{0}", ArchiveException.Message.Replace("\n", "<br>")));
+								BreakTransit = true;
 							}
 						}
+
+					ContentType = "text/html";
+#if DEBUG
+					string err = ": " + wex.Status.ToString();
+					SendInfoPage("WebOne cannot load the page", "Can't load the page: " + wex.Status.ToString(), "<i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + "<br>Debug mode enabled.");
+					BreakTransit = true;
+#else
+					string NiceErrMsg;
+
+					switch(wex.Status){
+						case WebExceptionStatus.UnknownError:
+							if (wex.InnerException != null)
+							{
+								if(wex.Message.Contains(GetFullExceptionMessage(wex, true, true)))
+								{
+									NiceErrMsg = " <p><big>" + wex.Message + "</big></p>Kind of error: " + wex.InnerException.GetType().ToString();
+								}
+								else
+								{
+									NiceErrMsg = " <p><big>" + wex.Message + "</big></p><p>" + GetFullExceptionMessage(wex, true, true).Replace("\n", "<br>") + "</p>Kind of error: " + wex.InnerException.GetType().ToString();
+								}
+							}
+							else
+								NiceErrMsg = " <p><big>" + wex.Message + "</big></p>Kind of error: " + wex.GetType().ToString() + " (no inner exceptions)";
+							break;
+						default:
+							NiceErrMsg = "<p><big>" + wex.Message + ".</big></p>Status: " + wex.Status;
+							break;
+					}
+
+					string ErrorMessage = NiceErrMsg + "<br>URL: " + RequestURL.AbsoluteUri;
+					SendInfoPage("WebOne: " + wex.Status, "Cannot load this page", ErrorMessage);
+					BreakTransit = true;
+#endif
 				}
 				catch (UriFormatException)
 				{
-					StWrong = true;
+					BreakTransit = true;
 					SendError(400, "The URL <b>" + RequestURL.AbsoluteUri + "</b> is not valid.");
 				}
 				catch (Exception ex)
 				{
-					StWrong = true;
+					BreakTransit = true;
 					Log.WriteLine(" ============GURU MEDITATION:\n{1}\nOn URL '{2}', Method '{3}'. Returning 500.============", null, ex.ToString(), RequestURL.AbsoluteUri, ClientRequest.HttpMethod);
 					SendError(500, "Guru meditaion at URL " + RequestURL.AbsoluteUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace.Replace("\n", "\n<br>") + "</i>");
 				}
@@ -699,7 +727,7 @@ namespace WebOne
 				//try to return...
 				try
 				{
-					if (!StWrong)
+					if (!BreakTransit)
 					{
 						ClientResponse.ProtocolVersion = new Version(1, 0);
 						ClientResponse.StatusCode = ResponseCode;
@@ -736,7 +764,7 @@ namespace WebOne
 #endif
 					}
 #if DEBUG
-					else Log.WriteLine(" Abnormal return (something was wrong).");
+					else Log.WriteLine(" Original document lost.");
 #endif
 				}
 				catch (Exception ex)
@@ -885,6 +913,7 @@ namespace WebOne
 						corrvalue = corrvalue.Replace("; domain=.", "; x-disabled-domain=http://" + GetServerName() + "/http://");
 						corrvalue = corrvalue.Replace("; Path=/", "; x-disabled-Path=/");
 						corrvalue = corrvalue.Replace("; path=/", "; x-disabled-path=/");
+						//todo: think again and made a correct fix; don't forget about bug #21.
 					}
 
 					corrvalue = corrvalue
@@ -1492,11 +1521,12 @@ namespace WebOne
 		{
 			Log.WriteLine("<Return information page: {0}.", Title);
 
-			string title = "WebOne: untitled"; if (Title != null) title = "<title>" + Title + "</title>\n";
+			string title = "<title>WebOne: untitled</title>"; if (Title != null) title = "<title>" + Title + "</title>\n";
 			string header1 = ""; if (Header1 != null) header1 = "<h1>" + Header1 + "</h1>\n";
 
 			string Html = "<html>\n" +
 			title +
+			string.Format("<meta charset=\"{0}\"/>", ConfigFile.OutputEncoding == null ? "utf-16" : ConfigFile.OutputEncoding.WebName) +
 			"<body>" +
 			header1 +
 			Content +

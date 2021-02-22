@@ -659,5 +659,22 @@ namespace WebOne
 
 		}
 
+		/// <summary>
+		/// Get all inner exception messages.
+		/// </summary>
+		/// <param name="Ex">The upper exception.</param>
+		public static string GetFullExceptionMessage(Exception Ex, bool ExcludeTopLevel = false, bool IncludeOnlyLast = false)
+		{
+			string msg = string.Empty;
+			Exception e = ExcludeTopLevel ? Ex.InnerException : Ex;
+			while(e != null) 
+			{
+				if (IncludeOnlyLast) msg = e.Message;
+				else msg += e.Message + "\n";
+				e = e.InnerException;
+			}
+			return msg;
+		}
+
 	}
 }
