@@ -109,42 +109,11 @@ namespace WebOne
 					string[] PacUrls = { "/auto/", "/auto", "/auto.pac", "/wpad.dat", "/wpad.da" }; //Netscape PAC/Microsoft WPAD
 					foreach (string PacUrl in PacUrls) { if (RequestURL.LocalPath == PacUrl) { PAC = true; break; } }
 
-					if(RequestURL.LocalPath == "/robots.txt")
-					{
-						//attempt to include in google index; kick the bot off
-						string Robots = "User-agent: *\nDisallow: / ";
-						Log.WriteLine("<Return robot kicker.");
-						byte[] Buffer = Encoding.Default.GetBytes(Robots);
-						try
-						{
-							ClientResponse.StatusCode = 200;
-							ClientResponse.ProtocolVersion = new Version(1, 0);
-
-							ClientResponse.ContentType = "text/plain";
-							ClientResponse.ContentLength64 = Robots.Length;
-							ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
-							ClientResponse.OutputStream.Close();
-						}
-						catch
-						{
-							Log.WriteLine("Cannot return robot kicker!");
-						}
-						SaveHeaderDump();
-						return;
-
-					}
-
 					if (RequestURL.PathAndQuery.StartsWith("/!") || PAC || RequestURL.AbsolutePath == "/")
 					{
 						//request to internal URL
 						try
 						{
-							string ClientUA = ClientRequest.Headers["User-Agent"];
-							if (ClientUA != null && ClientUA.Contains("WebOne")) 
-							{
-								SendError(403, "Loop requests are probhited.");
-								return;
-							}
 							Log.WriteLine(" Internal: {0} ", RequestURL.PathAndQuery);
 							switch (RequestURL.AbsolutePath.ToLower())
 							{
@@ -388,15 +357,15 @@ namespace WebOne
 									@"{ return ""PROXY "+ GetServerName() +@"""; }" +
 									@"else { return ""DIRECT""; }"+
 									@"} /*WebOne PAC*/";
-									byte[] Buffer = Encoding.Default.GetBytes(PacString);
+									byte[] PacBuffer = Encoding.Default.GetBytes(PacString);
 									try
 									{
 										ClientResponse.StatusCode = 200;
 										ClientResponse.ProtocolVersion = new Version(1, 0);
 
 										ClientResponse.ContentType = "application/x-ns-proxy-autoconfig";
-										ClientResponse.ContentLength64 = PacString	.Length;
-										ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
+										ClientResponse.ContentLength64 = PacString.Length;
+										ClientResponse.OutputStream.Write(PacBuffer, 0, PacBuffer.Length);
 										ClientResponse.OutputStream.Close();
 									}
 									catch
@@ -405,6 +374,28 @@ namespace WebOne
 									}
 									SaveHeaderDump();
 									return;
+								case "/robots.txt":
+									//attempt to include in google index; kick the bot off
+									Log.WriteLine("<Return robot kicker.");
+									string Robots = "User-agent: *\nDisallow: / ";
+									byte[] RobotsBuffer = Encoding.Default.GetBytes(Robots);
+									try
+									{
+										ClientResponse.StatusCode = 200;
+										ClientResponse.ProtocolVersion = new Version(1, 0);
+
+										ClientResponse.ContentType = "text/plain";
+										ClientResponse.ContentLength64 = Robots.Length;
+										ClientResponse.OutputStream.Write(RobotsBuffer, 0, RobotsBuffer.Length);
+										ClientResponse.OutputStream.Close();
+									}
+									catch
+									{
+										Log.WriteLine("Cannot return robot kicker!");
+									}
+									SaveHeaderDump();
+									return;
+
 								default:
 									SendError(200, "Unknown internal URL: " + RequestURL.PathAndQuery);
 									break;
@@ -442,6 +433,12 @@ namespace WebOne
 						Log.WriteLine(" Dirty local: {0}", RequestURL);
 						LocalMode = true;
 					}
+				}
+
+				if (LocalMode && ClientRequest.Headers["User-Agent"] != null && ClientRequest.Headers["User-Agent"].Contains("WebOne"))
+				{
+					SendError(403, "Loop requests are probhited.");
+					return;
 				}
 
 				//check for HTTP-to-FTP requests
