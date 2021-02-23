@@ -907,14 +907,15 @@ namespace WebOne
 						if (corrvalue.StartsWith("http://") && !corrvalue.StartsWith("http://" + GetServerName()))
 							corrvalue = corrvalue.Replace("http://", "http://" + GetServerName() + "/http://");
 
-						corrvalue = corrvalue.Replace("; Domain=http://", "; Domain=http://" + GetServerName() + "/http://");
-						corrvalue = corrvalue.Replace("; domain=http://", "; domain=http://" + GetServerName() + "/http://");
-						corrvalue = corrvalue.Replace("; Domain=.", "; x-disabled-Domain=http://" + GetServerName() + "/http://");
-						corrvalue = corrvalue.Replace("; domain=.", "; x-disabled-domain=http://" + GetServerName() + "/http://");
-						corrvalue = corrvalue.Replace("; Path=/", "; x-disabled-Path=/");
-						corrvalue = corrvalue.Replace("; path=/", "; x-disabled-path=/");
-						//todo: think again and made a correct fix; don't forget about bug #21.
+						corrvalue = corrvalue.Replace("; Domain=http://", "; Domain="  + GetServerName());
+						corrvalue = corrvalue.Replace("; domain=http://", "; domain=" + GetServerName());
+						corrvalue = corrvalue.Replace("; Domain=.", "; Domain=" + ConfigFile.DefaultHostName + "; WebOne-orig-domain=");
+						corrvalue = corrvalue.Replace("; domain=.", "; domain=" + ConfigFile.DefaultHostName + "; webone-orig-domain=");
+						corrvalue = corrvalue.Replace("; Path=/", "; WebOne-NoPath=/");
+						corrvalue = corrvalue.Replace("; path=/", "; webone-nopath=/");
 					}
+					
+					//todo: rewrite cookie processing due to bug #21
 
 					corrvalue = corrvalue
 						.Replace("; secure", "")
