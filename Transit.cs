@@ -89,15 +89,16 @@ namespace WebOne
 				}
 
 				//get request URL and referer URL
-				string RefererUri = ClientRequest.Headers["Referer"];
 				try { RequestURL = new UriBuilder(ClientRequest.RawUrl).Uri; }
 				catch { RequestURL = ClientRequest.Url; };
+
+				string RefererUri = ClientRequest.Headers["Referer"];
 
 				//check for local or internal URL
 				bool IsLocalhost = false;
 
-				foreach (IPAddress address in GetLocalIPAddresses())
-					if (RequestURL.Host.ToLower() == address.ToString().ToLower())
+				foreach (IPAddress address in GetLocalIPAddresses()) //todo: add external list support here
+					if (RequestURL.Host.ToLower() == address.ToString().ToLower() || RequestURL.Host.ToLower() == "[" + address.ToString().ToLower() + "]")
 						IsLocalhost = true;
 
 				if (RequestURL.Host.ToLower() == "localhost" || RequestURL.Host.ToLower() == Environment.MachineName.ToLower() || RequestURL.Host == "127.0.0.1" || RequestURL.Host.ToLower() == "wpad" || RequestURL.Host.ToLower() == ConfigFile.DefaultHostName.ToLower() || RequestURL.Host == "")
