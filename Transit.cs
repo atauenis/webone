@@ -869,29 +869,54 @@ namespace WebOne
 
 			if (Stop) return; //if converting has occur and the request should not be processed next
 
-			//todo: this may be moved to MakeOutput!
+			//todo: rewrite and move to MakeOutput or operation.SendRequest!
 			ResponseCode = (int)operation.Response.StatusCode;
 
 			//check for security upgrade
-			if (ResponseCode == 301 || ResponseCode == 302 || ResponseCode == 308)
+			if (ResponseCode >= 301 && ResponseCode <= 399)
 			{
-				if (RequestURL.AbsoluteUri == ((operation.ResponseHeaders ?? new WebHeaderCollection())["Location"] ?? "nowhere").Replace("https://", "http://")
-					&& !CheckString(RequestURL.AbsoluteUri, ConfigFile.InternalRedirectOn))
+				if (operation.ResponseHeaders != null)
 				{
-					Log.WriteLine(">Reload secure...");
+					string NewLocation = operation.ResponseHeaders["Location"];
 
-					RequestURL = new Uri(RequestURL.AbsoluteUri.Replace("http://", "https://"));
-					TransitStream = null;
-					SendRequest(operation, RequestMethod, RequestHeaderCollection, Content_Length);
+					if (NewLocation != null)
+					{
+						if (RequestURL.AbsoluteUri == NewLocation.Replace("https://", "http://")
+							&& !CheckString(RequestURL.AbsoluteUri, ConfigFile.InternalRedirectOn))
+						{
+							Log.WriteLine(">Reload secure...");
 
-					//add to ForceHttp list
-					List<string> ForceHttpsList = ConfigFile.ForceHttps.ToList<string>();
-					string SecureHost = RequestURL.Host;
-					if (!ForceHttpsList.Contains(SecureHost))
-						ForceHttpsList.Add(SecureHost);
-					ConfigFile.ForceHttps = ForceHttpsList.ToArray();
+							RequestURL = new Uri(RequestURL.AbsoluteUri.Replace("http://", "https://"));
+							TransitStream = null;
+							SendRequest(operation, RequestMethod, RequestHeaderCollection, Content_Length);
 
-					return;
+							//add to ForceHttp list
+							List<string> ForceHttpsList = ConfigFile.ForceHttps.ToList<string>();
+							string SecureHost = RequestURL.Host;
+							if (!ForceHttpsList.Contains(SecureHost))
+								ForceHttpsList.Add(SecureHost);
+							ConfigFile.ForceHttps = ForceHttpsList.ToArray();
+
+							return;
+						}
+
+						if(NewLocation.StartsWith("https://")
+						   && !CheckString(RequestURL.AbsoluteUri, ConfigFile.InternalRedirectOn))
+						{
+#if DEBUG
+							Log.WriteLine(" The next request will be secure.");
+#endif
+
+							//add to ForceHttp list
+							List<string> ForceHttpsList = ConfigFile.ForceHttps.ToList<string>();
+							string SecureHost = RequestURL.Host;
+							if (!ForceHttpsList.Contains(SecureHost))
+								ForceHttpsList.Add(SecureHost);
+							ConfigFile.ForceHttps = ForceHttpsList.ToArray();
+
+							//return;
+						}
+					}
 				}
 			}
 
@@ -1040,7 +1065,7 @@ namespace WebOne
 		/// <returns>ResponseBuffer+ResponseBody for texts or TransitStream for binaries</returns>
 		private void MakeOutput(HttpOperation Operation)
 		{
-			MakeOutput(Operation.Response.StatusCode, Operation.ResponseStream, Operation.Response.ContentType, Operation.Response.ContentLength);
+			MakeOutput(Operation.Response.StatusCode, Operation.ResponseStream, Operation.Response.ContentType, Operation.Response.ContentLength, Operation);
 		}
 
 		/// <summary>
@@ -1050,9 +1075,11 @@ namespace WebOne
 		/// <param name="ResponseStream">Stream of response body</param>
 		/// <param name="ContentType">HTTP Content-Type</param>
 		/// <param name="ContentLength">HTTP Content-Lenght</param>
+		/// <param name="Operation">The HTTP Request/Response pair (will replace all other arguments in future)</param>
 		/// <returns>ResponseBuffer+ResponseBody for texts or TransitStream for binaries</returns>
-		private void MakeOutput(HttpStatusCode StatusCode, Stream ResponseStream, string ContentType, long ContentLength)
+		private void MakeOutput(HttpStatusCode StatusCode, Stream ResponseStream, string ContentType, long ContentLength, HttpOperation Operation)
 		{
+			//todo: rewrite and remove all arguments except Operation
 			this.ContentType = ContentType;
 			string SrcContentType = ContentType;
 
@@ -1166,6 +1193,13 @@ namespace WebOne
 			{
 				//if server returns text, make edits
 				Log.WriteLine(" {1} {2}. Body {3}K of {4} [Text].", null, (int)StatusCode, StatusCode, ContentLength / 1024, ContentType);
+#if DEBUG
+				if (Operation.ResponseHeaders["Location"] != null)
+				{
+					Log.WriteLine(" {0} redirect to {1}.", (int)StatusCode, Operation.ResponseHeaders["Location"]);
+					Log.WriteLine(" {0} redirect from {1}.", (int)StatusCode, Operation.Request.RequestUri.AbsoluteUri);
+				}
+#endif
 				byte[] RawContent = null;
 				RawContent = ReadAllBytes(ResponseStream);
 
@@ -1202,6 +1236,14 @@ namespace WebOne
 					Log.WriteLine(" {1} {2}. Body {3}K of {4} [Binary].", null, (int)StatusCode, StatusCode, operation.Response.ContentLength / 1024, ContentType);
 				else
 					Log.WriteLine(" {1} {2}. Body is {3} [Binary], incomplete.", null, (int)StatusCode, StatusCode, ContentType);
+
+#if DEBUG
+				if (Operation.ResponseHeaders["Location"] != null)
+				{
+					Log.WriteLine(" {0} redirect to {1}.", (int)StatusCode, Operation.ResponseHeaders["Location"]);
+					Log.WriteLine(" {0} redirect from {1}.", (int)StatusCode, Operation.Request.RequestUri.AbsoluteUri);
+				}
+#endif
 
 				TransitStream = ResponseStream;
 				this.ContentType = ContentType;
