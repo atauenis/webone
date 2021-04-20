@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Authors>Alexander Tauenis</Authors>
-    <Version>0.10.7</Version>
+    <Version>0.11.0</Version>
     <Company>World</Company>
     <Product>WebOne HTTP Proxy Server</Product>
     <Description>HTTP 1.x proxy that makes old web browsers usable again in the Web 2.0 world.</Description>
@@ -153,6 +153,10 @@ systemctl daemon-reload
         <LinuxPath>/etc/WebOne/webone.conf</LinuxPath>
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+		<Content Include="adblock.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
+			<LinuxPath>/etc/webone.conf.d/adblock.conf</LinuxPath>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
   </ItemGroup>
 
   <ItemGroup Condition="'$(RuntimeIdentifier)'=='win-x86' OR '$(RuntimeIdentifier)'=='win-x64' OR '$(RuntimeIdentifier)'=='win-arm'">

@@ -39,6 +39,8 @@ namespace WebOne
 			ConfigFileName = GetConfigurationFileName();
 
 			//load configuration file and set port number
+			ConfigFileLoader.LoadFile(GetConfigurationFileName());
+			ConfigFileLoader.ProcessConfiguration();
 			if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Port = Port;
 
 			//process remaining command line arguments and override configuration file options
@@ -501,6 +503,8 @@ namespace WebOne
 		/// <returns>Path to configuration file</returns>
 		public static string GetConfigurationFileName()
 		{
+			//UNDONE: remove all about skeleton file - it's obsolete from ~0.10.3...5.
+			//UNDONE: rename "/etc/WebOne/webone.conf" -> "/etc/webone.conf"
 			string CurrentDirConfigFile = "webone.conf";
 			string DefaultConfigFile = "";  //  webone.conf       (in app's directory)
 			string SkeletonConfigFile = ""; //  webone.conf.skel  (too)

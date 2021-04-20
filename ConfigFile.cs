@@ -9,7 +9,7 @@ using static WebOne.Program;
 namespace WebOne
 {
 	/// <summary>
-	/// Config file entries and parser
+	/// Configuration file entries and parser
 	/// </summary>
 	static class ConfigFile
 	{
@@ -148,8 +148,9 @@ namespace WebOne
 
 		static ConfigFile()
 		{
+			//UNDONE: move parser to ConfigFileLoader!
 			//ConfigFileName = "webone.conf";
-			Console.WriteLine("Using configuration file {0}.", ConfigFileName);
+			Console.WriteLine("OLD PARSER Using configuration file {0}.", ConfigFileName);
 			int i = 0;
 			try
 			{
