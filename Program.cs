@@ -526,33 +526,28 @@ namespace WebOne
 		/// <returns>Path to configuration file</returns>
 		public static string GetConfigurationFileName()
 		{
-			//UNDONE: remove all about skeleton file - it's obsolete from ~0.10.3...5.
-			//UNDONE: rename "/etc/WebOne/webone.conf" -> "/etc/webone.conf"
 			string CurrentDirConfigFile = "webone.conf";
 			string DefaultConfigFile = "";  //  webone.conf       (in app's directory)
-			string SkeletonConfigFile = ""; //  webone.conf.skel  (too)
-			string UserConfigFile = "";     //  ~/.config/WebOne/webone.conf
-			string CommonConfigFile = "";   //  /etc/WebOne/webone.conf
+			string UserConfigFile = "";     //  ~/.config/webone/webone.conf
+			string CommonConfigFile = "";   //  /etc/webone.conf
 
 			switch (Environment.OSVersion.Platform)
 			{
 				default:
 				case PlatformID.Unix:
 					DefaultConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + "/webone.conf";
-					SkeletonConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + "/webone.conf.skel";
-					UserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.config/WebOne/webone.conf";
-					CommonConfigFile = "/etc/WebOne/webone.conf";
+					UserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.config/webone/webone.conf";
+					CommonConfigFile = "/etc/webone.conf";
 					break;
 				case PlatformID.Win32NT:
 					DefaultConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + @"\webone.conf";
-					SkeletonConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + @"\webone.conf.skel";
 					UserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\WebOne\webone.conf";
 					CommonConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + @"\WebOne\webone.conf";
 					break;
 			}
 
 #if DEBUG
-			UserConfigFile = DefaultConfigFile; //debug versions weren't deb/rpm-packaged so they can use old-style WebOne.conf placement
+			UserConfigFile = DefaultConfigFile; //debug versions weren't deb/rpm/zip-packaged so they can use old-style webone.conf placement
 #endif
 
 			//try to load custom configuration file (if any)
@@ -570,37 +565,7 @@ namespace WebOne
 			//try to load webone.conf from common configuration directory
 			if (File.Exists(CommonConfigFile)) return CommonConfigFile;
 
-			//if there are no config files, try to create from skeleton
-			try
-			{
-				//1. Common config directory
-				File.Copy(SkeletonConfigFile, CommonConfigFile);
-				Console.WriteLine("Info: default configuration file is now: {0}.", CommonConfigFile);
-				return CommonConfigFile;
-			}
-			catch
-			{
-				try
-				{
-					//2. User config directory
-					File.Copy(SkeletonConfigFile, UserConfigFile);
-					Console.WriteLine("Info: default configuration file is now: {0}.", UserConfigFile);
-					return UserConfigFile;
-				}
-				catch 
-				{
-					//3. Return skeleton file
-					if (!File.Exists(SkeletonConfigFile))
-					{
-						Console.WriteLine("Warning: there are no configuration file and no skeleton for it!");
-						return CurrentDirConfigFile;
-					}
-					Console.WriteLine("Warning: please copy webone.conf.skel to webone.conf.");
-					return SkeletonConfigFile; 
-				}
-			}
-			//Probably need to add an "Quick setup" interface for configuring webone.conf from skeleton.
-			//E.g. ask user for DefaultHostName, OutputEncoding and Translit.
+			throw new Exception("Cannot guess configuration file name. Please run WebOne with full path to the webone.conf specifed.");
 		}
 
 		/// <summary>

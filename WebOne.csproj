@@ -57,6 +57,15 @@
   <PropertyGroup>
     <PostInstallScript>
       <![CDATA[
+WOOldConfFile=/etc/WebOne/webone.conf
+WONewConfFile=/etc/webone.conf.d/migrated.conf
+if [ -f "$WOOldConfFile" ]
+then
+  echo "$WOOldConfFile -> $WONewConfFile"
+  mv $WOOldConfFile $WONewConfFile
+  echo "Consider remove /etc/WebOne/ directory. It is no longer used by WebOne."
+fi
+
 touch /var/log/webone.log
 chmod 666 /var/log/webone.log
 systemctl daemon-reload
@@ -150,7 +159,7 @@ systemctl daemon-reload
 
   <ItemGroup>
     <Content Include="webone.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
-        <LinuxPath>/etc/WebOne/webone.conf</LinuxPath>
+        <LinuxPath>/etc/webone.conf</LinuxPath>
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
 		<Content Include="adblock.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
