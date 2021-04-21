@@ -39,9 +39,23 @@ namespace WebOne
 			ConfigFileName = GetConfigurationFileName();
 
 			//load configuration file and set port number
-			ConfigFileLoader.LoadFile(GetConfigurationFileName());
-			ConfigFileLoader.ProcessConfiguration();
-			if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Port = Port;
+			try
+			{
+				ConfigFileLoader.LoadFile(GetConfigurationFileName());
+				ConfigFileLoader.ProcessConfiguration();
+				if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Port = Port;
+			}
+			catch(Exception ConfigLoadException)
+			{
+				Console.WriteLine("Error while loading configuration: {0}", ConfigLoadException.Message);
+				if (!DaemonMode)
+				{
+					Console.WriteLine("\nPress any key to exit.");
+					Console.ReadKey();
+				}
+				Log.WriteLine(false, false, "WebOne has been exited due to lack of configuration.");
+				return;
+			}
 
 			//process remaining command line arguments and override configuration file options
 			ProcessCommandLineOptions();
@@ -340,6 +354,15 @@ namespace WebOne
 		public static bool CheckString(string What, string[] For) {
 			foreach (string str in For) { if (What.Contains(str)) return true; }
 			return false;
+		}
+
+		/// <summary>
+		/// Check a string for containing a something from list of patterns
+		/// </summary>
+		/// <param name="What">What string should be checked</param>
+		/// <param name="For">Pattern to find</param>
+		public static bool CheckString (string What, List<string> For){
+			return CheckString(What, For.ToArray());
 		}
 
 		/// <summary>

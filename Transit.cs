@@ -891,11 +891,9 @@ namespace WebOne
 							SendRequest(operation, RequestMethod, RequestHeaderCollection, Content_Length);
 
 							//add to ForceHttp list
-							List<string> ForceHttpsList = ConfigFile.ForceHttps.ToList<string>();
 							string SecureHost = RequestURL.Host;
-							if (!ForceHttpsList.Contains(SecureHost))
-								ForceHttpsList.Add(SecureHost);
-							ConfigFile.ForceHttps = ForceHttpsList.ToArray();
+							if (!ConfigFile.ForceHttps.Contains(SecureHost))
+								ConfigFile.ForceHttps.Add(SecureHost);
 
 							return;
 						}
@@ -908,11 +906,9 @@ namespace WebOne
 #endif
 
 							//add to ForceHttp list
-							List<string> ForceHttpsList = ConfigFile.ForceHttps.ToList<string>();
 							string SecureHost = RequestURL.Host;
-							if (!ForceHttpsList.Contains(SecureHost))
-								ForceHttpsList.Add(SecureHost);
-							ConfigFile.ForceHttps = ForceHttpsList.ToArray();
+							if (!ConfigFile.ForceHttps.Contains(SecureHost))
+								ConfigFile.ForceHttps.Add(SecureHost);
 
 							//return;
 						}
