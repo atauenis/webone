@@ -274,6 +274,72 @@ namespace WebOne
 		}
 
 		/// <summary>
+		/// Get an text Encoding from code page number or alias
+		/// </summary>
+		/// <param name="CP">Code page number.</param>
+		/// <returns></returns>
+		internal static Encoding GetCodePage(string CP)
+		{
+			if (CP == "Windows" || CP == "Win" || CP == "ANSI")
+			{
+				return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ANSICodePage);
+			}
+			else if (CP == "DOS" || CP == "OEM")
+			{
+				return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
+			}
+			else if (CP == "Mac" || CP == "Apple")
+			{
+				return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.MacCodePage);
+			}
+			else if (CP == "EBCDIC" || CP == "IBM")
+			{
+				return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.EBCDICCodePage);
+			}
+			else if (CP == "0" || CP == "AsIs")
+			{
+				return null;
+			}
+			else
+			{
+				try
+				{
+					Encoding enc = CodePagesEncodingProvider.Instance.GetEncoding(CP);
+					if (enc == null)
+						try { return CodePagesEncodingProvider.Instance.GetEncoding(int.Parse(CP)); } catch { }
+					else return enc;
+
+					if (enc == null && CP.ToLower().StartsWith("utf"))
+					{
+						switch (CP.ToLower())
+						{
+							case "utf-7":
+								return Encoding.UTF7;
+							case "utf-8":
+								return Encoding.UTF8;
+							case "utf-16":
+							case "utf-16le":
+								return Encoding.Unicode;
+							case "utf-16be":
+								return Encoding.BigEndianUnicode;
+							case "utf-32":
+							case "utf-32le":
+								return Encoding.UTF32;
+						}
+					}
+
+					Log.WriteLine(true, false, "Warning: Unknown codepage {0}, using AsIs. See MSDN 'Encoding.GetEncodings Method' article for list of valid encodings.", CP);
+					return null;
+				}
+				catch (ArgumentException)
+				{
+					Log.WriteLine(true, false, "Warning: Bad codepage {0}, using {1}. Get list of available encodings at http://{2}:{3}/!codepages/.", CP, ConfigFile.OutputEncoding.EncodingName, ConfigFile.DefaultHostName, ConfigFile.Port);
+					return null;
+				}
+			}
+		}
+
+		/// <summary>
 		/// Process command line options that overrides webone.conf
 		/// </summary>
 		private static void ProcessCommandLineOptions()

@@ -154,68 +154,7 @@ namespace WebOne
 									ConfigFile.Port = Convert.ToInt32(Option.Value);
 									break;
 								case "OutputEncoding":
-									if (Option.Value == "Windows" || Option.Value == "Win" || Option.Value == "ANSI")
-									{
-										ConfigFile.OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ANSICodePage);
-										continue;
-									}
-									else if (Option.Value == "DOS" || Option.Value == "OEM")
-									{
-										ConfigFile.OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
-										continue;
-									}
-									else if (Option.Value == "Mac" || Option.Value == "Apple")
-									{
-										ConfigFile.OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.MacCodePage);
-										continue;
-									}
-									else if (Option.Value == "EBCDIC" || Option.Value == "IBM")
-									{
-										ConfigFile.OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.EBCDICCodePage);
-										continue;
-									}
-									else if (Option.Value == "0" || Option.Value == "AsIs")
-									{
-										ConfigFile.OutputEncoding = null;
-										continue;
-									}
-									else
-									{
-										try
-										{
-											ConfigFile.OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(Option.Value);
-											if (ConfigFile.OutputEncoding == null)
-												try { ConfigFile.OutputEncoding = CodePagesEncodingProvider.Instance.GetEncoding(int.Parse(Option.Value)); } catch { }
-
-											if (ConfigFile.OutputEncoding == null && Option.Value.ToLower().StartsWith("utf"))
-											{
-												switch (Option.Value.ToLower())
-												{
-													case "utf-7":
-														ConfigFile.OutputEncoding = Encoding.UTF7;
-														break;
-													case "utf-8":
-														ConfigFile.OutputEncoding = Encoding.UTF8;
-														break;
-													case "utf-16":
-													case "utf-16le":
-														ConfigFile.OutputEncoding = Encoding.Unicode;
-														break;
-													case "utf-16be":
-														ConfigFile.OutputEncoding = Encoding.BigEndianUnicode;
-														break;
-													case "utf-32":
-													case "utf-32le":
-														ConfigFile.OutputEncoding = Encoding.UTF32;
-														break;
-												}
-											}
-
-											if (ConfigFile.OutputEncoding == null)
-											{ Log.WriteLine(true, false, "Warning: Unknown codepage {0}, using AsIs. See MSDN 'Encoding.GetEncodings Method' article for list of valid encodings.", Option.Value); };
-										}
-										catch (ArgumentException) { Log.WriteLine(true, false, "Warning: Bad codepage {0}, using {1}. Get list of available encodings at http://{2}:{3}/!codepages/.", Option.Value, ConfigFile.OutputEncoding.EncodingName, ConfigFile.DefaultHostName, ConfigFile.Port); }
-									}
+									ConfigFile.OutputEncoding = GetCodePage(Option.Value);
 									break;
 								case "Authenticate":
 									ConfigFile.Authenticate = Option.Value;

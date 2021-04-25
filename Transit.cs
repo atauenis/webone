@@ -38,7 +38,8 @@ namespace WebOne
 		string ResponseBody = ":(";
 		Stream TransitStream = null;
 		string ContentType = "text/plain";
-		Encoding ContentEncoding = Encoding.Default;
+		Encoding SourceContentEncoding = Encoding.Default;
+		Encoding OutputContentEncoding = ConfigFile.OutputEncoding;
 
 		bool DumpHeaders = false;
 		bool DumpRequestBody = false;
@@ -157,6 +158,7 @@ namespace WebOne
 										codepages += "<br>Current output encoding: <b>" + ConfigFile.OutputEncoding.WebName + "</b> &quot;" + ConfigFile.OutputEncoding.EncodingName + "&quot; (# " + ConfigFile.OutputEncoding.CodePage + ").";
 									if (ConfigFile.OutputEncoding == null)
 										codepages += "<br>Current output encoding: <b>same as source</b>.";
+									codepages += "<br>Current output encoding: <b>same as source</b>.";
 
 									SendError(200, codepages);
 									break;
@@ -592,6 +594,9 @@ namespace WebOne
 											);
 										DumpRequestBody = Edit.Key == "AddRequestDumping";
 										break;
+									case "AddOutputEncoding":
+										OutputContentEncoding = GetCodePage(Edit.Value);
+										break;
 								}
 							}
 						}
@@ -747,7 +752,7 @@ namespace WebOne
 						if (TransitStream == null)
 						{
 							byte[] RespBuffer;
-							RespBuffer = (ConfigFile.OutputEncoding ?? ContentEncoding).GetBytes(ResponseBody).ToArray();
+							RespBuffer = (OutputContentEncoding ?? SourceContentEncoding).GetBytes(ResponseBody).ToArray();
 
 							ClientResponse.ContentLength64 = RespBuffer.Length;
 
@@ -968,20 +973,20 @@ namespace WebOne
 		{
 			Body = Body.Replace("https", "http");
 
-			if (ConfigFile.OutputEncoding != null)
+			if (OutputContentEncoding != null)
 			{
-				Body = Body.Replace("harset=\"utf-8\"", "harset=\"" + ConfigFile.OutputEncoding.WebName + "\"");
-				Body = Body.Replace("harset=\"UTF-8\"", "harset=\"" + ConfigFile.OutputEncoding.WebName + "\"");
-				Body = Body.Replace("harset=utf-8", "harset=" + ConfigFile.OutputEncoding.WebName);
-				Body = Body.Replace("harset=UTF-8", "harset=" + ConfigFile.OutputEncoding.WebName);
-				Body = Body.Replace("CHARSET=UTF-8", "CHARSET=" + ConfigFile.OutputEncoding.WebName);
-				Body = Body.Replace("ncoding=\"utf-8\"", "ncoding=\"" + ConfigFile.OutputEncoding.WebName + "\"");
-				Body = Body.Replace("ncoding=\"UTF-8\"", "ncoding=\"" + ConfigFile.OutputEncoding.WebName + "\"");
-				Body = Body.Replace("ncoding=utf-8", "ncoding=" + ConfigFile.OutputEncoding.WebName);
-				Body = Body.Replace("ncoding=UTF-8", "ncoding=" + ConfigFile.OutputEncoding.WebName);
-				Body = Body.Replace("ENCODING=UTF-8", "ENCODING=" + ConfigFile.OutputEncoding.WebName);
-				Body = Body.Replace(ConfigFile.OutputEncoding.GetString(UTF8BOM), "");
-				Body = ConfigFile.OutputEncoding.GetString(Encoding.Convert(Encoding.UTF8, ConfigFile.OutputEncoding, Encoding.UTF8.GetBytes(Body)));
+				Body = Body.Replace("harset=\"utf-8\"", "harset=\"" + OutputContentEncoding.WebName + "\"");
+				Body = Body.Replace("harset=\"UTF-8\"", "harset=\"" + OutputContentEncoding.WebName + "\"");
+				Body = Body.Replace("harset=utf-8", "harset=" + OutputContentEncoding.WebName);
+				Body = Body.Replace("harset=UTF-8", "harset=" + OutputContentEncoding.WebName);
+				Body = Body.Replace("CHARSET=UTF-8", "CHARSET=" + OutputContentEncoding.WebName);
+				Body = Body.Replace("ncoding=\"utf-8\"", "ncoding=\"" + OutputContentEncoding.WebName + "\"");
+				Body = Body.Replace("ncoding=\"UTF-8\"", "ncoding=\"" + OutputContentEncoding.WebName + "\"");
+				Body = Body.Replace("ncoding=utf-8", "ncoding=" + OutputContentEncoding.WebName);
+				Body = Body.Replace("ncoding=UTF-8", "ncoding=" + OutputContentEncoding.WebName);
+				Body = Body.Replace("ENCODING=UTF-8", "ENCODING=" + OutputContentEncoding.WebName);
+				Body = Body.Replace(OutputContentEncoding.GetString(UTF8BOM), "");
+				Body = OutputContentEncoding.GetString(Encoding.Convert(Encoding.UTF8, OutputContentEncoding, Encoding.UTF8.GetBytes(Body)));
 			}
 
 			//content patching
@@ -1199,12 +1204,12 @@ namespace WebOne
 				byte[] RawContent = null;
 				RawContent = ReadAllBytes(ResponseStream);
 
-				ContentEncoding = FindContentCharset(RawContent);
+				SourceContentEncoding = FindContentCharset(RawContent);
 
-				if (ConfigFile.OutputEncoding == null)
+				if (OutputContentEncoding == null)
 				{
-					//if don't touch codepage (OutputEncoding=AsIs)
-					ResponseBody = ContentEncoding.GetString(RawContent);
+					//if don't touch codepage (OutputContentEncoding=AsIs)
+					ResponseBody = SourceContentEncoding.GetString(RawContent);
 					ResponseBody = ProcessBody(ResponseBody);
 #if DEBUG
 					Log.WriteLine(" Body maked (codepage AsIs).");
@@ -1213,12 +1218,12 @@ namespace WebOne
 				}
 
 				bool ForceUTF8 = ContentType.ToLower().Contains("utf-8");
-				if (!ForceUTF8 && RawContent.Length > 0) ForceUTF8 = ContentEncoding == Encoding.UTF8;
+				if (!ForceUTF8 && RawContent.Length > 0) ForceUTF8 = SourceContentEncoding == Encoding.UTF8;
 				foreach (string utf8url in ConfigFile.ForceUtf8) { if (Regex.IsMatch(RequestURL.AbsoluteUri, utf8url)) ForceUTF8 = true; }
 				//todo: add fix for "invalid range in character class" at www.yandex.ru with Firefox 3.6 if OutputEncoding!=AsIs
 
 				if (ForceUTF8) ResponseBody = Encoding.UTF8.GetString(RawContent);
-				else ResponseBody = ContentEncoding.GetString(RawContent);
+				else ResponseBody = SourceContentEncoding.GetString(RawContent);
 
 				if (Regex.IsMatch(ResponseBody, @"<meta.*UTF-8.*>", RegexOptions.IgnoreCase)) { ResponseBody = Encoding.UTF8.GetString(RawContent); }
 
@@ -1470,10 +1475,10 @@ namespace WebOne
 			if (ClientResponse.Headers["Refresh"] != null) Refresh = "<META HTTP-EQUIV=\"REFRESH\" CONTENT=\""+ ClientResponse.Headers["Refresh"] +"\">";
 			string Html = "<html>" + Refresh + "<body><h1>" + CodeStr + "</h1>" + Text + "</body></html>";
 
-			if ((ConfigFile.OutputEncoding ?? Encoding.Default) != Encoding.Default)
-				Html = ConfigFile.OutputEncoding.GetString(Encoding.Default.GetBytes(Html));
+			if ((OutputContentEncoding ?? Encoding.Default) != Encoding.Default)
+				Html = OutputContentEncoding.GetString(Encoding.Default.GetBytes(Html));
 
-			byte[] Buffer = (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(Html);
+			byte[] Buffer = (OutputContentEncoding ?? Encoding.Default).GetBytes(Html);
 			try
 			{
 				ClientResponse.StatusCode = Code;
@@ -1566,17 +1571,17 @@ namespace WebOne
 
 			string Html = "<html>\n" +
 			title +
-			string.Format("<meta charset=\"{0}\"/>", ConfigFile.OutputEncoding == null ? "utf-16" : ConfigFile.OutputEncoding.WebName) +
+			string.Format("<meta charset=\"{0}\"/>", OutputContentEncoding == null ? "utf-16" : OutputContentEncoding.WebName) +
 			"<body>" +
 			header1 +
 			Content +
 			GetInfoString() + 
 			"</body>\n</html>";
 
-			if ((ConfigFile.OutputEncoding ?? Encoding.Default) != Encoding.Default)
-				Html = ConfigFile.OutputEncoding.GetString(Encoding.Default.GetBytes(Html));
+			if ((OutputContentEncoding ?? Encoding.Default) != Encoding.Default)
+				Html = OutputContentEncoding.GetString(Encoding.Default.GetBytes(Html));
 
-			byte[] Buffer = (ConfigFile.OutputEncoding ?? Encoding.Default).GetBytes(Html);
+			byte[] Buffer = (OutputContentEncoding ?? Encoding.Default).GetBytes(Html);
 			try
 			{
 				ClientResponse.StatusCode = 200;
