@@ -1,1 +1,2 @@
 *.csproj text eol=lf
+*.service text eol=lf
