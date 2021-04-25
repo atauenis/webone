@@ -13,8 +13,6 @@ namespace WebOne
 	/// </summary>
 	static class ConfigFile
 	{
-		private static LogWriter Log = new LogWriter();
-
 		/// <summary>
 		/// TCP port that should be used by the Proxy Server
 		/// </summary>
@@ -147,109 +145,5 @@ namespace WebOne
 
 
 
-		// The code below is obsolete, and probably too will be moved to trash soon.
-
-		/// <summary>
-		/// Convert legacy FixableURL sections to new syntax (edit sets)
-		/// </summary>
-		private static void AddLegacyFixableURLs()
-		{
-			foreach(string FixUrl in FixableURLs)
-			{
-				List<string> RawES = new List<string>();
-				RawES.Add("OnUrl="+FixUrl);
-
-				foreach (KeyValuePair<string, string> FixUrlAct in FixableUrlActions[FixUrl])
-				{
-					switch (FixUrlAct.Key.ToLower())
-					{
-						case "validmask":
-							RawES.Add("IgnoreUrl=" + FixUrlAct.Value);
-							continue;
-						case "redirect":
-							RawES.Add("AddRedirect=" + FixUrlAct.Value);
-							continue;
-						case "internal":
-							if(FixUrlAct.Value.ToLower() == "yes" && FixableUrlActions[FixUrl].ContainsKey("Redirect"))
-							RawES.Add("AddInternalRedirect=" + FixableUrlActions[FixUrl]["Redirect"]);
-							continue;
-						default:
-							Log.WriteLine(true, false, "Unknown legacy FixableURL option: {0}", FixUrlAct.Key);
-							continue;
-					}
-				}
-				EditRules.Add(new EditSet(RawES));
-				//Log.WriteLine(true, false, new EditSet(RawES));
-			}
-		}
-
-		/// <summary>
-		/// Convert legacy FixableType sections to new syntax (edit sets)
-		/// </summary>
-		private static void AddLegacyFixableTypes()
-		{
-			foreach (string FixT in FixableTypes)
-			{
-				List<string> RawES = new List<string>();
-				RawES.Add("OnContentType=" + FixT);
-				RawES.Add("OnCode=2");
-
-				foreach (KeyValuePair<string, string> FixTAct in FixableTypesActions[FixT])
-				{
-					switch (FixTAct.Key.ToLower())
-					{
-						case "ifurl":
-							RawES.Add("OnUrl=" + FixTAct.Value);
-							continue;
-						case "noturl":
-							RawES.Add("IgnoreUrl=" + FixTAct.Value);
-							continue;
-						case "redirect":
-							RawES.Add("AddRedirect=" + FixTAct.Value);
-							continue;
-						default:
-							Log.WriteLine(true, false, "Unknown legacy FixableType option: {0}", FixTAct.Key);
-							continue;
-					}
-				}
-				EditRules.Add(new EditSet(RawES));
-				//Log.WriteLine(true, false, new EditSet(RawES));
-			}
-		}
-
-
-		/// <summary>
-		/// Convert legacy ContentPatch sections to new syntax (edit sets)
-		/// </summary>
-		private static void AddLegacyContentPatches()
-		{
-			foreach (string Patch in ContentPatches)
-			{
-				List<string> RawES = new List<string>();
-				RawES.Add("AddFind=" + Patch);
-				RawES.Add("OnCode=2");
-
-				foreach (KeyValuePair<string, string> PatchAct in ContentPatchActions[Patch])
-				{
-					switch (PatchAct.Key.ToLower())
-					{
-						case "replace":
-							RawES.Add("AddReplace=" + PatchAct.Value);
-							continue;
-						case "ifurl":
-							RawES.Add("OnUrl=" + PatchAct.Value);
-							continue;
-						case "iftype":
-							RawES.Add("OnContentType=" + PatchAct.Value);
-							continue;
-						default:
-							Log.WriteLine(true, false, "Unknown legacy ContentPatch option: {0}", PatchAct.Key);
-							continue;
-					}
-				}
-				EditRules.Add(new EditSet(RawES));
-				//Log.WriteLine(true, false, new EditSet(RawES));
-			}
-		}
 	}
 }

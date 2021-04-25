@@ -46,13 +46,11 @@ namespace WebOne
         /// </summary>
         public List<KeyValuePair<string, string>> Edits { get; set; }
 
-
         /// <summary>
-        /// Create a Set of edits from a raw INI-like source
+        /// Create a Set of edits from a section from webone.conf
         /// </summary>
-        /// <param name="RawEdits">INI-like list of edits (from webone.conf)</param>
-        public EditSet(List<string> RawEdits)
-        {
+        /// <param name="Section">The webone.conf section</param>
+        public EditSet(ConfigFileSection Section){
             UrlMasks = new List<string>();
             UrlIgnoreMasks = new List<string>();
             ContentTypeMasks = new List<string>();
@@ -62,45 +60,49 @@ namespace WebOne
 
             bool MayBeForResponse = false; //does this set containing tasks for HTTP response processing?
 
-            foreach(string EditRule in RawEdits)
-            {
-                int BeginValue = EditRule.IndexOf("=");
-                if (BeginValue < 1) continue; //ignore bad lines
-                string ParamName = EditRule.Substring(0, BeginValue);
-                string ParamValue = EditRule.Substring(BeginValue + 1);
 
-                switch (ParamName)
+            if(Section.Mask != null) { UrlMasks.Add(Section.Mask); }
+
+            foreach(var Line in Section.Options)
+            {
+                if (!Line.HaveKeyValue) continue;
+                switch(Line.Key)
                 {
                     case "OnUrl":
-                        UrlMasks.Add(ParamValue);
+                        UrlMasks.Add(Line.Value);
                         continue;
                     case "OnCode":
-                        OnCode = int.Parse(ParamValue);
+                        OnCode = int.Parse(Line.Value);
                         continue;
                     case "IgnoreUrl":
-                        UrlIgnoreMasks.Add(ParamValue);
+                        UrlIgnoreMasks.Add(Line.Value);
                         continue;
                     case "OnContentType":
-                        ContentTypeMasks.Add(ParamValue);
+                        ContentTypeMasks.Add(Line.Value);
                         continue;
                     case "OnHeader":
-                        HeaderMasks.Add(ParamValue);
+                        HeaderMasks.Add(Line.Value);
                         continue;
                     default:
-                        if (ParamName.StartsWith("Add"))
-                            Edits.Add(new KeyValuePair<string, string>(ParamName, ParamValue));
+                        if (Line.Key.StartsWith("Add"))
+                            Edits.Add(new KeyValuePair<string, string>(Line.Key, Line.Value));
                         else
-                            new LogWriter().WriteLine(true, false, "Warning: unknown mask \"{0}\" will be ignored.", ParamName);
+                            new LogWriter().WriteLine(true, false, "Warning: unknown mask \"{0}\" will be ignored.", Line.Key);
 
-                        if (ParamName.StartsWith("AddConvert")) MayBeForResponse = true;
-                        if (ParamName == "AddContentType") MayBeForResponse = true;
-                        if (ParamName == "AddFind") MayBeForResponse = true;
-                        if (ParamName == "AddReplace") MayBeForResponse = true;
-                        if (ParamName == "AddInternalRedirect") MayBeForResponse = false;
+                        if (Line.Key.StartsWith("AddConvert")) MayBeForResponse = true;
+                        if (Line.Key == "AddContentType") MayBeForResponse = true;
+                        if (Line.Key == "AddFind") MayBeForResponse = true;
+                        if (Line.Key == "AddReplace") MayBeForResponse = true;
+                        if (Line.Key == "AddInternalRedirect") MayBeForResponse = false;
 
                         continue;
                 }
             }
+
+            /* TODO:
+			if (Finds.Count != Replacions.Count)
+				Log.WriteLine("Warning: Invalid amount of Find/Replace in {0}", Section.Location);
+             */
 
             //check if the edit set can be runned on HTTP-request time
             if (ContentTypeMasks.Count == 0 && !MayBeForResponse) IsForRequest = true;

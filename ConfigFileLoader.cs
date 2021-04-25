@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using static WebOne.Program;
 
 namespace WebOne
 {
@@ -14,8 +15,6 @@ namespace WebOne
 		static List<string> LoadedFiles = new List<string>();
 		public static List<KeyValuePair<string, string>> RawEntries = new List<KeyValuePair<string, string>>();
 		public static List<ConfigFileSection> RawSections = new List<ConfigFileSection>();
-
-		private static LogWriter Log = new LogWriter();
 
 		/// <summary>
 		/// Add all lines from this file onto RawEntries
@@ -304,14 +303,7 @@ namespace WebOne
 						}
 						break;
 					case "Edit":
-						//UNDONE: add support in EditSet.cs to construct from "ConfigFileSection", not only from "string"
-						List<string> EditSetConstructor = new List<string>();
-						if (Section.Mask != null) EditSetConstructor.Add("OnUrl=" + Section.Mask);
-						foreach (ConfigFileOption Line in Section.Options)
-						{
-							EditSetConstructor.Add(Line.RawString);
-						}
-						ConfigFile.EditRules.Add(new EditSet(EditSetConstructor));
+						ConfigFile.EditRules.Add(new EditSet(Section));
 						break;
 					case "FixableURL":
 					case "FixableType":

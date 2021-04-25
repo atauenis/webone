@@ -14,7 +14,7 @@ namespace WebOne
 {
 	public static class Program
 	{
-		private static LogWriter Log = new LogWriter();
+		public static LogWriter Log = new LogWriter();
 		private static HTTPServer HTTPS;
 
 		public const string ConfigFileAutoName = "**auto**webone.conf";
@@ -315,18 +315,18 @@ namespace WebOne
 							if (kvp.Value != "") HdrDmpPath = kvp.Value;
 
 							Console.WriteLine("Will dump headers to: {0}.", HdrDmpPath);
-							List<string> HdrDumpRule = new List<string>();
-							HdrDumpRule.Add("AddHeaderDumping=" + HdrDmpPath);
-							ConfigFile.EditRules.Add(new EditSet(HdrDumpRule));
+							ConfigFileSection HdrDumpSection = new ConfigFileSection("[Edit]", "--dump-headers argument");
+							HdrDumpSection.Options.Add(new ConfigFileOption("AddHeaderDumping=" + HdrDmpPath, "--dump-headers argument"));
+							ConfigFile.EditRules.Add(new EditSet(HdrDumpSection));
 							break;
 						case "--dump-requests":
 							string RqDmpPath = "dump-rq-%Url%.log";
 							if (kvp.Value != "") RqDmpPath = kvp.Value;
 
 							Console.WriteLine("Will dump headers & uploads's bodies to: {0}.", RqDmpPath);
-							List<string> RqDumpRule = new List<string>();
-							RqDumpRule.Add("AddRequestDumping=" + RqDmpPath);
-							ConfigFile.EditRules.Add(new EditSet(RqDumpRule));
+							ConfigFileSection RqDumpSection = new ConfigFileSection("[Edit]", "--dump-requests argument");
+							RqDumpSection.Options.Add(new ConfigFileOption("AddRequestDumping=" + RqDmpPath, "--dump-requests argument"));
+							ConfigFile.EditRules.Add(new EditSet(RqDumpSection));
 							break;
 					}
 				}
