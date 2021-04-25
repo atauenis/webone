@@ -40,6 +40,7 @@ namespace WebOne
 		string ContentType = "text/plain";
 		Encoding SourceContentEncoding = Encoding.Default;
 		Encoding OutputContentEncoding = ConfigFile.OutputEncoding;
+		bool EnableTransliteration = false;
 
 		bool DumpHeaders = false;
 		bool DumpRequestBody = false;
@@ -597,6 +598,9 @@ namespace WebOne
 									case "AddOutputEncoding":
 										OutputContentEncoding = GetCodePage(Edit.Value);
 										break;
+									case "AddTranslit":
+										EnableTransliteration = ToBoolean(Edit.Value);
+										break;
 								}
 							}
 						}
@@ -1032,7 +1036,7 @@ namespace WebOne
 			if (patched > 0) Log.WriteLine(" {0} patch(-es) applied...", patched);
 
 			//do transliteration if need
-			if(ConfigFile.TranslitTable.Count > 0)
+			if(EnableTransliteration)
 			{
 				foreach(var Letter in ConfigFile.TranslitTable)
 				{

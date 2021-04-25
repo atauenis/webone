@@ -244,6 +244,12 @@ namespace WebOne
 					case "Edit":
 						ConfigFile.EditRules.Add(new EditSet(Section));
 						break;
+					case "Translit":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							if (Line.HaveKeyValue) ConfigFile.TranslitTable.Add(new KeyValuePair<string, string>(Line.Key, Line.Value));
+						}
+						break;
 					case "FixableURL":
 					case "FixableType":
 					case "ContentPatch":
@@ -258,30 +264,6 @@ namespace WebOne
 
 			Console.WriteLine("Configuration load complete.");
 			foreach (string f in LoadedFiles) { Log.WriteLine(false, false, "Configuration file {0} load complete.", f); }
-		}
-
-		/// <summary>
-		/// Convert string "true/false" or similar to bool true/false.
-		/// </summary>
-		/// <param name="s">One of these strings: 1/0, y/n, yes/no, on/off, enable/disable, true/false.</param>
-		/// <returns>Boolean true/false</returns>
-		/// <exception cref="InvalidCastException">Throws if the <paramref name="s"/> is not 1/0/y/n/yes/no/on/off/enable/disable/true/false.</exception>
-		public static bool ToBoolean(this string s)
-		{
-			//from https://stackoverflow.com/posts/21864625/revisions
-			string[] trueStrings = { "1", "y", "yes", "on", "enable", "true" };
-			string[] falseStrings = { "0", "n", "no", "off", "disable", "false" };
-
-
-			if (trueStrings.Contains(s, StringComparer.OrdinalIgnoreCase))
-				return true;
-			if (falseStrings.Contains(s, StringComparer.OrdinalIgnoreCase))
-				return false;
-
-			throw new InvalidCastException("only the following are supported for converting strings to boolean: "
-				+ string.Join(",", trueStrings)
-				+ " and "
-				+ string.Join(",", falseStrings));
 		}
 	}
 }

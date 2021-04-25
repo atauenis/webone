@@ -274,10 +274,9 @@ namespace WebOne
 		}
 
 		/// <summary>
-		/// Get an text Encoding from code page number or alias
+		/// Get an character <see cref="System.Text.Encoding"/> from code page number or alias.
 		/// </summary>
 		/// <param name="CP">Code page number.</param>
-		/// <returns></returns>
 		internal static Encoding GetCodePage(string CP)
 		{
 			if (CP == "Windows" || CP == "Win" || CP == "ANSI")
@@ -732,6 +731,32 @@ namespace WebOne
 				e = e.InnerException;
 			}
 			return msg;
+		}
+
+
+
+		/// <summary>
+		/// Convert string "true/false" or similar to bool true/false.
+		/// </summary>
+		/// <param name="s">One of these strings: 1/0, y/n, yes/no, on/off, enable/disable, true/false.</param>
+		/// <returns>Boolean true/false</returns>
+		/// <exception cref="InvalidCastException">Throws if the <paramref name="s"/> is not 1/0/y/n/yes/no/on/off/enable/disable/true/false.</exception>
+		public static bool ToBoolean(string s)
+		{
+			//from https://stackoverflow.com/posts/21864625/revisions
+			string[] trueStrings = { "1", "y", "yes", "on", "enable", "true" };
+			string[] falseStrings = { "0", "n", "no", "off", "disable", "false" };
+
+
+			if (trueStrings.Contains(s, StringComparer.OrdinalIgnoreCase))
+				return true;
+			if (falseStrings.Contains(s, StringComparer.OrdinalIgnoreCase))
+				return false;
+
+			throw new InvalidCastException("only the following are supported for converting strings to boolean: "
+				+ string.Join(",", trueStrings)
+				+ " and "
+				+ string.Join(",", falseStrings));
 		}
 
 	}
