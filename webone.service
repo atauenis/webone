@@ -8,7 +8,7 @@ After=network-online.target
 Type=simple
 DynamicUser=yes
 Environment="HOME=/tmp/"
-ExecStart=/usr/local/bin/WebOne --daemon
+ExecStart=/usr/local/bin/webone --daemon
 ReadWriteDirectories=-/var/log/
 TimeoutStopSec=10
 Restart=on-failure
