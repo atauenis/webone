@@ -1,0 +1,8 @@
+/var/log/webone.log {
+weekly
+rotate 30
+size 2M
+compress
+delaycompress
+create 666 root root
+}
