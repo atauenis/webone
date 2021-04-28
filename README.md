@@ -20,21 +20,29 @@ Image and/or video format converting is performing via external utilities: `conv
 Manuals about how to set up a WebOne proxy on [Windows](https://github.com/atauenis/webone/wiki/Windows-installation) / [Linux](https://github.com/atauenis/webone/wiki/Linux-installation) / [MacOS](https://github.com/atauenis/webone/wiki/MacOS-X-installation) servers are in the Wiki.
 
 ## Run
-To start proxy on Linux or macOS, enter server's DNS name or IP in `DefaultHostName` field in __webone.conf__ and then run:
+To start proxy on Linux or macOS, enter server's IP address or DNS name in `DefaultHostName` field of __/etc/webone.conf__ file and then run:
 
 ```
-$ WebOne                  if run from installed deb/rpm package
+$ sudo systemctl start webone   if run from installed deb/rpm package as service (default)
 or
-$ dotnet WebOne.dll       if run from binary archive
+$ webone                        if run from installed deb/rpm package as program
+or
+$ dotnet webone.dll             if run from binary archive
 ```
 
 *Note: if the Port number is set less than 1024 (e.g. 80), `sudo` is need on Linux/macOS.*
 
-On Windows simply run `WebOne.exe`.
+*Tip: you may store your own configuration in /etc/webone.conf.d/ directory. It will override webone.conf settings and will not be overwritten on package updates.*
 
-On macOS use `WebOne` from zip archive (Mac binaries are experimental).
+On Windows simply run `webone.exe`. On first launch it will show UAC warning about system settings change - it is normal, as WebOne would configure Windows to allow running proxies without administrator rights. However, you may do this step [manually](https://github.com/atauenis/webone/wiki/Windows-installation#how-to-run-without-admin-privileges) and deny the UAC request.
 
-Working of WebOne can be checked via server diagnostics page at http://proxyhost:port/!/.
+On macOS use `webone` from zip archive through Terminal (Mac binaries are experimental and not well tested):
+```
+$ chmod +x webone            <- need only on first run
+$ webone
+```
+
+Working of WebOne can be checked via web browser by opening http://proxyhost:port/.
 
 Note that this app is not intended for daily use, as removing any encryption from web traffic and use of really old and unsupported browser may cause security problems.
 
@@ -47,24 +55,33 @@ To build packages or archives, install [dotnet-packaging](https://github.com/qmf
 
 Windows developers can utilize `Build.bat` script for cross-platform building. "Full" Win7SP1+ builds are made by hand by merging *ReleaseWin32* zip with content of `Win32-full` directory and some magic.
 
+## Who are the author(s)?
+Currently the project is maintained by a single person, Alexander Tauenis. However WebOne project welcomes any new contributors. 
+
+## Feedback
+Any questions can be written on official [VOGONS thread](https://www.vogons.org/viewtopic.php?f=24&t=67165), [phantom.sannata.ru thread](https://phantom.sannata.org/viewtopic.php?f=16&t=33291), and GitHub [Issues](https://github.com/atauenis/webone/issues) and [Discussions](https://github.com/atauenis/webone/discussions) tabs.
+
 # Описание по-русски
-__WebOne__ - прокси-сервер HTTP, позволяющий открывать современные сайты на старых браузерах. Своеобразный переходник между реальным Web 2.0 и историческим Web 1.0. 
+__WebOne__ - прокси-сервер HTTP, позволяющий открывать современные сайты на старых браузерах. Своеобразный переходник между реальным Web 2.0 и историческим Web 1.0. Работает по принципу MITM.
 
 Он имеет следующие функции:
 * Снятие шифрования HTTPS и двухстороннее преобразование HTTPS 1.1 <-> HTTP 1.0.
-* Замена кодировки в ответах серверов.
+* Замена кодировки в ответах серверов на любую, включая транслит.
 * Подмена отдельных файлов (например, новых тяжёлых JS-фреймворков на более старые и лёгкие).
 * Корректирование частей текстового трафика (например, патчинг JS или XML/CDF/RSS).
-* Конвертация или пережатие графических и видеофайлов, в том числе "на лету" (используя внешние конвертеры).
+* Конвертация или пережатие графических и видеофайлов "на лету" (используя внешние конвертеры).
 * Переадресация с несуществующих адресов на Web Archive.
 
-Этот прокси-сервер необходимо запускать на современном ПК с .NET Core 3.1, IP адрес которого нужно указать в настройках устаревшего веб-обозревателя. Порт по умолчанию 8080, тип прокси HTTP 1.0 (или же можно указать путь к скрипту автоматической настройки: http://proxyhost:port/auto.pac).
+Этот прокси-сервер необходимо запускать на любом современном ПК с .NET Core 3.1, IP адрес которого указывается в настройках устаревшего веб-обозревателя. Порт по умолчанию 8080, тип прокси HTTP 1.0. Доступен файл автоматической настройки: http://proxyhost:port/auto.pac .
 
-Системы Windows XP/2003 в качестве серверных больше не поддерживаются. Последняя версия прокси для .NET FW 4.0 была WebOne 0.9.3.
+Настройки прокси-сервера хранятся в файле __webone.conf__ или любом другом в одном из следующих мест:
 
-Для запуска на порту с номером менее 1024 необходимы права администратора или root.
-
-Настройки прокси-сервера хранятся в файле __webone.conf__ в каталоге с программой или по адресу ``/etc/WebOne/``, ``~/.config/WebOne/``, ``C:\Users\username\AppData\Roaming\WebOne\``, ``C:\ProgramData\WebOne\``. Для использования другого файла, запускайте прокси с параметром "webone.exe _config_file_name.ext_".
+* _Каталог программы._
+* /etc/webone.conf
+* /etc/webone.conf.d/*.conf
+* C:\Users\\_username_\AppData\Roaming\WebOne.conf
+* C:\ProgramData\WebOne\\*.conf
+* _Указанный в аргументе при запуске через `webone PATH\FILENAME.EXT`._
 
 Файл протокола (__webone.log__) по умолчанию сохраняется по адресу ``/var/log/webone.log`` или `` C:\Users\username\AppData\Roaming\webone.log``.
 
@@ -72,4 +89,4 @@ __WebOne__ - прокси-сервер HTTP, позволяющий открыв
 
 Проект открыт для всех желающих присоединиться к разработке.
 
-Подробная информация (на английском) в [wiki проекта](https://github.com/atauenis/webone/wiki).
+Подробная документация (на английском) в [wiki проекта](https://github.com/atauenis/webone/wiki).
