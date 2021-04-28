@@ -159,6 +159,12 @@ namespace WebOne
 								case "Authenticate":
 									ConfigFile.Authenticate = Option.Value;
 									break;
+								case "AuthenticateMessage":
+									ConfigFile.AuthenticateMessage = Option.Value;
+									break;
+								case "AuthenticateRealm":
+									ConfigFile.AuthenticateRealm = Option.Value;
+									break;									
 								case "HideClientErrors":
 									ConfigFile.HideClientErrors = ToBoolean(Option.Value);
 									break;

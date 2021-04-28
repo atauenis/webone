@@ -138,6 +138,16 @@ namespace WebOne
 		/// </summary>
 		public static string DisplayStatusPage = "full";
 
+		/// <summary>
+		/// Proxy authentication request page text
+		/// </summary>
+		public static string AuthenticateMessage = "<p>Hello! This Web 2.0-to-1.0 proxy server is private. Please reload this page and enter your credentials in browser's pop-up window.</p>";
+
+		/// <summary>
+		/// Proxy authentication realm (request message text)
+		/// </summary>
+		public static string AuthenticateRealm = "WebOne";
+
 
 
 		// Hint: All parser-related stuff known from v0.2.0 - 0.10.7 has been rewritten and moved to ConfigFileLoader class.

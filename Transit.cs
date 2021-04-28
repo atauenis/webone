@@ -70,23 +70,35 @@ namespace WebOne
 				//check for login to proxy if need
 				if (ConfigFile.Authenticate != "")
 				{
-					if (ClientRequest.Headers["Proxy-Authorization"] == null || ClientRequest.Headers["Proxy-Authorization"] == "")
-					{
-						Log.WriteLine(" Unauthorized client.");
-						ClientResponse.AddHeader("Proxy-Authenticate", @"Basic realm=""Log in to WebOne""");
-						SendError(407, "Hello! This Web 2.0-to-1.0 proxy server is private. Please enter your credentials.");
-						return;
-					}
-					else
-					{
-						string auth = Encoding.Default.GetString(Convert.FromBase64String(ClientRequest.Headers["Proxy-Authorization"].Substring(6)));
-						if (auth != ConfigFile.Authenticate)
-						{
-							Log.WriteLine(" Incorrect login: '{0}'.", auth);
-							ClientResponse.AddHeader("Proxy-Authenticate", @"Basic realm=""Your WebOne credentials are incorrect""");
-							SendError(407, "Your password is not correct. Please try again.");
-							return;
-						}
+					switch(ClientRequest.Url.PathAndQuery){
+						case "/!pac/":
+						case "/auto/":
+						case "/auto":
+						case "/auto.pac":
+						case "/wpad.dat":
+						case "/wpad.da":
+							//PAC is always unprotected
+							break;
+						default:
+							if (ClientRequest.Headers["Proxy-Authorization"] == null || ClientRequest.Headers["Proxy-Authorization"] == "")
+							{
+								Log.WriteLine(" Unauthorized client.");
+								ClientResponse.AddHeader("Proxy-Authenticate", @"Basic realm=""" + ConfigFile.AuthenticateRealm + @"""");
+								SendError(407, ConfigFile.AuthenticateMessage);
+								return;
+							}
+							else
+							{
+								string auth = Encoding.Default.GetString(Convert.FromBase64String(ClientRequest.Headers["Proxy-Authorization"].Substring(6)));
+								if (auth != ConfigFile.Authenticate)
+								{
+									Log.WriteLine(" Incorrect login: '{0}'.", auth);
+									ClientResponse.AddHeader("Proxy-Authenticate", @"Basic realm=""" + ConfigFile.AuthenticateRealm + @" (retry)""");
+									SendError(407, ConfigFile.AuthenticateMessage + "<p>Your login or password is not correct. Please try again.</p>");
+									return;
+								}
+							}
+							break;
 					}
 				}
 
