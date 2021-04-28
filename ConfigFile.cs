@@ -129,11 +129,6 @@ namespace WebOne
 		public static string TemporaryDirectory = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar;
 
 		/// <summary>
-		/// Allow or disallow clients see webone.conf content
-		/// </summary>
-		public static bool AllowConfigFileDisplay = true;
-
-		/// <summary>
 		/// Set status page display style: no, short, full
 		/// </summary>
 		public static string DisplayStatusPage = "full";

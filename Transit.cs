@@ -343,13 +343,6 @@ namespace WebOne
 									"<br><b>Disabled in this version due to security reasons.</b>"+
 									"<br>To see used configuration file, open <a href=/!webone.conf>/!webone.conf</a>.");
 									return;
-								case "/!webone.conf":
-								case "/!webone.conf/":
-									if (ConfigFile.AllowConfigFileDisplay)
-										SendFile(ConfigFileName, "text/plain");
-									else
-										SendError(403, "Administrator has been hidden configuration file from Proxy's clients.");
-									return;
 								case "/!clear/":
 									int FilesDeleted = 0;
 									foreach (FileInfo file in (new DirectoryInfo(ConfigFile.TemporaryDirectory)).EnumerateFiles("convert-*.*"))
@@ -413,7 +406,7 @@ namespace WebOne
 									return;
 
 								default:
-									SendError(200, "Unknown internal URL: " + RequestURL.PathAndQuery);
+									SendError(404, "Unknown internal URL: " + RequestURL.PathAndQuery);
 									break;
 							}
 							return;
@@ -1422,8 +1415,7 @@ namespace WebOne
 				HelpString += "About: <a href=\"https://github.com/atauenis/webone/\">https://github.com/atauenis/webone/</a></p>";
 				HelpString += "<p>Client IP: <b>" + ClientRequest.RemoteEndPoint + "</b>.</p>";
 
-				HelpString += "<h2>Internal URLs:</h2><ul>";
-				if (ConfigFile.AllowConfigFileDisplay) HelpString += "<li><a href=/!webone.conf>/!webone.conf</a> - see active WebOne configuration file</li>";
+				HelpString += "<h2>May be useful:</h2><ul>";
 				HelpString += "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>";
 				HelpString += "</ul>";
 			}
@@ -1453,7 +1445,6 @@ namespace WebOne
 							  "<li><a href='/!img-test/'>/!img-test/</a> - test if ImageMagick is working</li>" +
 							  "<li><a href='/!convert/'>/!convert/</a> - run a file format converter (<a href='/!convert/?src=logo.webp&dest=gif&type=image/gif'>demo</a>)</li>" +
 							  //"<li><a href='/!file/'>/!file/</a> - get a file from WebOne working directory (<a href='/!file/?name=webone.conf&type=text/plain'>demo</a>)</li>" +
-							  "<li><a href=/!webone.conf>/!webone.conf</a> - see active WebOne configuration file</li>" +
 							  "<li><a href='/!clear/'>/!clear/</a> - remove temporary files in WebOne working directory</li>" +
 							  "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>" +
 							  "</ul>";

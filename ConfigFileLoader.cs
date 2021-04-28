@@ -205,9 +205,6 @@ namespace WebOne
 									if (Program.OverrideLogFile != null && Program.OverrideLogFile == "")
 										LogAgent.OpenLogFile(Program.GetLogFilePath(Option.Value), true);
 									break;
-								case "AllowConfigFileDisplay":
-									ConfigFile.AllowConfigFileDisplay = ToBoolean(Option.Value);
-									break;
 								case "DisplayStatusPage":
 									ConfigFile.DisplayStatusPage = Option.Value;
 									break;
