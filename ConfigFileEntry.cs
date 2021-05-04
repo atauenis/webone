@@ -41,9 +41,9 @@ namespace WebOne
 			this.Location = Location;
 
 			if(RawString.Contains("=")){
-				string[] kvp = RawString.Split('=');
-				Key = kvp[0];
-				Value = kvp[1];
+				int SplitPosition = RawString.IndexOf('=');
+				Key = RawString.Substring(0, SplitPosition);
+				Value = RawString.Substring(SplitPosition + 1);
 			}
 			else { Key = null; Value = RawString; }
 		}
