@@ -154,12 +154,12 @@ namespace WebOne
 		/// <param name="Code">Process exit code</param>
 		public static void Shutdown(int Code = 0)
 		{
-			if (ShutdownInitiated) while (true) { Thread.Sleep(1); };
+			if (ShutdownInitiated) return;
 			ShutdownInitiated = true;
 
 			if(HTTPS.Working) HTTPS.Stop();
 
-			if (!DaemonMode)
+			if (!DaemonMode && !Environment.HasShutdownStarted && !ShutdownInitiated)
 			{
 
 				Console.WriteLine("\nPress any key to exit.");
@@ -169,11 +169,6 @@ namespace WebOne
 			Log.WriteLine(false, false, "WebOne has been exited.");
 			Environment.ExitCode = Code;
 			new Task(() => { Environment.Exit(Code); }).Start();
-
-			#if DEBUG
-			Console.WriteLine("Waiting for process end...");
-			#endif
-			Thread.Sleep(1000);
 			Process.GetCurrentProcess().Kill();
 		}
 
