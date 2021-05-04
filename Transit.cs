@@ -68,7 +68,7 @@ namespace WebOne
 				ShouldRedirectInNETFW = false;
 
 				//check for login to proxy if need
-				if (ConfigFile.Authenticate != "")
+				if (ConfigFile.Authenticate.Count > 0)
 				{
 					switch(ClientRequest.Url.PathAndQuery){
 						case "/!pac/":
@@ -90,7 +90,7 @@ namespace WebOne
 							else
 							{
 								string auth = Encoding.Default.GetString(Convert.FromBase64String(ClientRequest.Headers["Proxy-Authorization"].Substring(6)));
-								if (auth != ConfigFile.Authenticate)
+								if(!ConfigFile.Authenticate.Contains(auth))
 								{
 									Log.WriteLine(" Incorrect login: '{0}'.", auth);
 									ClientResponse.AddHeader("Proxy-Authenticate", @"Basic realm=""" + ConfigFile.AuthenticateRealm + @" (retry)""");

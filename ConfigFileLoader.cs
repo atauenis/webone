@@ -157,7 +157,7 @@ namespace WebOne
 									ConfigFile.OutputEncoding = GetCodePage(Option.Value);
 									break;
 								case "Authenticate":
-									ConfigFile.Authenticate = Option.Value;
+									ConfigFile.Authenticate.Add(Option.Value);
 									break;
 								case "AuthenticateMessage":
 									ConfigFile.AuthenticateMessage = Option.Value;
@@ -251,6 +251,15 @@ namespace WebOne
 						foreach (ConfigFileOption Line in Section.Options)
 						{
 							if (Line.HaveKeyValue) ConfigFile.TranslitTable.Add(new KeyValuePair<string, string>(Line.Key, Line.Value));
+						}
+						break;
+					case "Authenticate":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							if (Line.RawString.Split(":").Length != 2 || Line.RawString.Contains(" "))
+								Log.WriteLine(true, false, "Warning: Invalid authentication credentials at {0}.", Line.Location);
+							else
+								ConfigFile.Authenticate.Add(Line.RawString);
 						}
 						break;
 					case "FixableURL":

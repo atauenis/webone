@@ -41,7 +41,7 @@ namespace WebOne
 		/// <summary>
 		/// Credentials for proxy authentication
 		/// </summary>
-		public static string Authenticate = "";
+		public static List<string> Authenticate = new List<string>();
 
 		/// <summary>
 		/// (Legacy) List of URLs that should be always 302ed

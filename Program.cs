@@ -368,7 +368,7 @@ namespace WebOne
 						case "/a":
 						case "-a":
 						case "--proxy-authenticate":
-							ConfigFile.Authenticate = kvp.Value;
+							ConfigFile.Authenticate = new List<string>() { kvp.Value }; //will override all set credentials
 							break;
 						case "--dump-headers":
 							string HdrDmpPath = "dump-hd-%Url%.log";
