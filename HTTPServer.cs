@@ -79,8 +79,16 @@ namespace WebOne
 			HttpListenerContext ctx = _listener.EndGetContext(ar);
 			_listener.BeginGetContext(ProcessRequest, null);
 			HttpListenerRequest req = ctx.Request;
-			
-			Logger.WriteLine(">{0} {1} ({2})", req.HttpMethod, req.RawUrl, req.RemoteEndPoint.Address);
+
+			string ClientId = req.RemoteEndPoint.Address.ToString();
+			if(req.Headers["Proxy-Authorization"] != null && req.Headers["Proxy-Authorization"].StartsWith("Basic "))
+			{
+				string ClientUserName = null;
+				ClientUserName = Encoding.Default.GetString(Convert.FromBase64String(req.Headers["Proxy-Authorization"][6..])); //6 = "Basic "
+				ClientUserName = ClientUserName.Substring(0, ClientUserName.IndexOf(":"));
+				ClientId = ClientUserName + ", " + ClientId;
+			}
+			Logger.WriteLine(">{0} {1} ({2})", req.HttpMethod, req.RawUrl, ClientId);
 
 			HttpListenerResponse resp = ctx.Response;
 			Transit Tranzit = new Transit(req, resp, Logger);
