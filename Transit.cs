@@ -568,9 +568,9 @@ namespace WebOne
 							if(UseRegEx) Log.WriteLine(" RegExp groups are available on {0}.", Set.UrlMasks[0]);
 #endif
 
-							foreach (KeyValuePair<string, string> Edit in Set.Edits)
+							foreach (EditSetRule Edit in Set.Edits)
 							{
-								switch (Edit.Key)
+								switch (Edit.Action)
 								{
 									case "AddInternalRedirect":
 										string NewUrlInternal = UseRegEx ? ProcessUriMasks(new Regex(Set.UrlMasks[0]).Replace(RequestURL.AbsoluteUri, Edit.Value), RequestURL.AbsoluteUri)
@@ -598,7 +598,7 @@ namespace WebOne
 											RequestURL.ToString(),
 											true
 											);
-										DumpRequestBody = Edit.Key == "AddRequestDumping";
+										DumpRequestBody = Edit.Action == "AddRequestDumping";
 										break;
 									case "AddOutputEncoding":
 										OutputContentEncoding = GetCodePage(Edit.Value);
@@ -1011,9 +1011,9 @@ namespace WebOne
 				{
 					if (CheckHttpStatusCode(Set.OnCode, operation.Response.StatusCode))
 					{ 
-						foreach (KeyValuePair<string, string> Edit in Set.Edits)
+						foreach (EditSetRule Edit in Set.Edits)
 						{
-							switch (Edit.Key)
+							switch (Edit.Action)
 							{
 								case "AddFind":
 									Finds.Add(Edit.Value);
@@ -1021,6 +1021,7 @@ namespace WebOne
 								case "AddReplace":
 									Replacions.Add(Edit.Value);
 									break;
+								//UNDONE: case "AddFindReplace" (or similar called virtual rule which will be implemented later)
 							}
 						}
 					}
@@ -1107,9 +1108,9 @@ namespace WebOne
 				{
 					if (CheckHttpStatusCode(Set.OnCode, operation.Response.StatusCode))
 					{
-						foreach (KeyValuePair<string, string> Edit in Set.Edits)
+						foreach (EditSetRule Edit in Set.Edits)
 						{
-							switch (Edit.Key)
+							switch (Edit.Action)
 							{
 								case "AddConvert":
 									Converter = Edit.Value;
@@ -1141,8 +1142,9 @@ namespace WebOne
 										RequestURL.ToString(),
 										true
 										);
-									DumpRequestBody = Edit.Key == "AddRequestDumping";
+									DumpRequestBody = Edit.Action == "AddRequestDumping";
 									break;
+								//UNDONE: case "AddConverting" (or similar called virtual rule which will be implemented later)
 							}
 						}
 					}

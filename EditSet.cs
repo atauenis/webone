@@ -44,7 +44,7 @@ namespace WebOne
         /// <summary>
         /// List of edits that would be performed on the need content
         /// </summary>
-        public List<KeyValuePair<string, string>> Edits { get; set; }
+        public List<EditSetRule> Edits { get; set; }
 
         /// <summary>
         /// Create a Set of edits from a section from webone.conf
@@ -55,7 +55,7 @@ namespace WebOne
             UrlIgnoreMasks = new List<string>();
             ContentTypeMasks = new List<string>();
             HeaderMasks = new List<string>();
-            Edits = new List<KeyValuePair<string, string>>();
+            Edits = new List<EditSetRule>();
             IsForRequest = false;
 
             bool MayBeForResponse = false; //does this set containing tasks for HTTP response processing?
@@ -68,6 +68,7 @@ namespace WebOne
                 if (!Line.HaveKeyValue) continue;
                 switch(Line.Key)
                 {
+                    //detection rules
                     case "OnUrl":
                         UrlMasks.Add(Line.Value);
                         continue;
@@ -83,23 +84,42 @@ namespace WebOne
                     case "OnHeader":
                         HeaderMasks.Add(Line.Value);
                         continue;
+                    //editing rules
+                    case "AddRedirect":
+                    case "AddInternalRedirect":
+                    case "AddHeader":
+                    case "AddResponseHeader":
+                    case "AddConvert":
+                    case "AddConvertDest":
+                    case "AddConvertArg1":
+                    case "AddConvertArg2":
+                    case "AddFind":
+                    case "AddReplace":
+                    case "AddHeaderDumping":
+                    case "AddRequestDumping":
+                    case "AddOutputEncoding":
+                    case "AddTranslit":
+                        Edits.Add(new EditSetRule(Line.Key, Line.Value));
+                        break;
                     default:
                         if (Line.Key.StartsWith("Add"))
-                            Edits.Add(new KeyValuePair<string, string>(Line.Key, Line.Value));
+                            new LogWriter().WriteLine(true, false, "Warning: unknown editing rule \"{0}\".", Line.Key);
                         else
-                            new LogWriter().WriteLine(true, false, "Warning: unknown mask \"{0}\" will be ignored.", Line.Key);
+                            new LogWriter().WriteLine(true, false, "Warning: unknown detection rule \"{0}\".", Line.Key);
+                        break;
 
-                        if (Line.Key.StartsWith("AddConvert")) MayBeForResponse = true;
-                        if (Line.Key == "AddContentType") MayBeForResponse = true;
-                        if (Line.Key == "AddFind") MayBeForResponse = true;
-                        if (Line.Key == "AddReplace") MayBeForResponse = true;
-                        if (Line.Key == "AddInternalRedirect") MayBeForResponse = false;
-
-                        continue;
+                    //UNDONE: implement   case "Add*":  for each possible kind of multi-line rules
                 }
+                if (Line.Key.StartsWith("AddConvert")) MayBeForResponse = true;
+                if (Line.Key == "AddContentType") MayBeForResponse = true;
+                if (Line.Key == "AddFind") MayBeForResponse = true;
+                if (Line.Key == "AddReplace") MayBeForResponse = true;
+                if (Line.Key == "AddInternalRedirect") MayBeForResponse = false;
             }
 
-            /* TODO:
+            //UNDONE: post-process all multiple line rules (e.g. AddFind+AddReplace -> AddFindReplace)
+
+            /* //don't forget to include in post-process:
 			if (Finds.Count != Replacions.Count)
 				Log.WriteLine("Warning: Invalid amount of Find/Replace in {0}", Section.Location);
              */
@@ -118,7 +138,7 @@ namespace WebOne
             foreach (var imask in UrlIgnoreMasks) Str += "IgnoreUrl=" + "=" + imask + "\n";
             foreach (var ctmask in ContentTypeMasks) Str += "OnContentType=" + "=" + ctmask + "\n";
             foreach (var hmask in HeaderMasks) Str += "OnHeader=" + "=" + hmask + "\n";
-            foreach (var edit in Edits) Str += edit.Key + "=" + edit.Value + "\n";
+            foreach (var edit in Edits) Str += edit.Action + "=" + edit.Value + "\n";
             return Str;
         }
     }
