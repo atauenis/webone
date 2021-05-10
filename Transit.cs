@@ -997,14 +997,7 @@ namespace WebOne
 				Body = Body.Replace(OutputContentEncoding.GetString(UTF8BOM), "");
 				Body = OutputContentEncoding.GetString(Encoding.Convert(Encoding.UTF8, OutputContentEncoding, Encoding.UTF8.GetBytes(Body)));
 			}
-
-			//content patching
-			int patched = 0;
-			List<string> Finds = new List<string>();
-			List<string> Replacions = new List<string>();
-
 			//perform edits on the response body
-			//find edits
 			foreach (EditSet Set in EditSets)
 			{
 				if (Set.ContentTypeMasks.Count == 0 || CheckStringRegExp(ContentType, Set.ContentTypeMasks.ToArray()))
@@ -1015,31 +1008,15 @@ namespace WebOne
 						{
 							switch (Edit.Action)
 							{
-								case "AddFind":
-									Finds.Add(Edit.Value);
+								case "AddFindReplace":
+									FindReplaceEditSetRule frpair = Edit as FindReplaceEditSetRule;
+									Body = Regex.Replace(Body, frpair.Find, frpair.Replace, RegexOptions.Singleline);
 									break;
-								case "AddReplace":
-									Replacions.Add(Edit.Value);
-									break;
-								//UNDONE: case "AddFindReplace" (or similar called virtual rule which will be implemented later)
 							}
 						}
 					}
 				}
 			}
-
-			//do edits
-			if (Finds.Count != Replacions.Count)
-				Log.WriteLine(" Invalid amount of Find/Replace!");
-				//todo: add warning to constructor of EditSet
-			else if(Finds.Count > 0)
-				for (int i = 0; i < Finds.Count; i++)
-				{
-					Body = Regex.Replace(Body, Finds[i], Replacions[i], RegexOptions.Singleline);
-					patched++;
-				}
-
-			if (patched > 0) Log.WriteLine(" {0} patch(-es) applied...", patched);
 
 			//do transliteration if need
 			if(EnableTransliteration)

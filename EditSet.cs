@@ -117,18 +117,59 @@ namespace WebOne
                 if (Line.Key == "AddInternalRedirect") MayBeForResponse = false;
             }
 
-            //UNDONE: post-process all multiple line rules (e.g. AddFind+AddReplace -> AddFindReplace)
-
-            /* //don't forget to include in post-process:
-			if (Finds.Count != Replacions.Count)
-				Log.WriteLine("Warning: Invalid amount of Find/Replace in {0}", Section.Location);
-             */
+            ProcessComplexRules(Section.Location);
 
             //check if the edit set can be runned on HTTP-request time
             if (ContentTypeMasks.Count == 0 && !MayBeForResponse) IsForRequest = true;
 
             if (UrlMasks.Count == 0) UrlMasks.Add(".*");
         }
+
+        /// <summary>
+        /// Process multi-line rules (like AddFind+AddReplace) to a virtual rule
+        /// </summary>
+        /// <param name="EditSetLocation">Edit Set's location (for error message if need)</param>
+		private void ProcessComplexRules(string EditSetLocation)
+        {
+            //process AddFind, AddReplace -> AddFindReplace
+            List<string> Finds = new List<string>();
+            List<string> Replacions = new List<string>();
+            foreach (EditSetRule Rule in Edits)
+            {
+                switch (Rule.Action)
+                {
+                    case "AddFind":
+                        Finds.Add(Rule.Value);
+                        break;
+                    case "AddReplace":
+                        Replacions.Add(Rule.Value);
+                        break;
+                }
+            }
+            if (Finds.Count != Replacions.Count)
+                Log.WriteLine(true,false,"Warning: Invalid amount of Find/Replace in {0}.", EditSetLocation);
+            else if (Finds.Count > 0)
+                for (int i = 0; i < Finds.Count; i++)
+                {
+                    Edits.Add(new FindReplaceEditSetRule("AddFindReplace", Finds[i], Replacions[i]));
+                }
+
+            //UNDONE:
+            //AddHeaderFind, AddHeaderReplace -> AddHeaderFindReplace (FindReplaceEditSetRule)
+            //AddRequestHeaderFind, AddRequestHeaderReplace -> AddRequestHeaderFindReplace (FindReplaceEditSetRule)
+            //then both are need to be implemented in Transit
+
+            //UNDONE: AddConvert, AddConvertDest, AddConvertArg1, AddConvertArg2 -> AddConverting (ConvertEditSetRule)
+        }
+
+
+        /* List of virtual editing rules, not listed at https://github.com/atauenis/webone/wiki/Sets-of-edits
+           TODO: Create a wiki article for devs?
+          
+         * AddFind + AddReplace = AddFindReplace
+         * 
+         * continue list when implement other?
+         */
 
         //test function
         public override string ToString()
