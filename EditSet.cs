@@ -107,8 +107,6 @@ namespace WebOne
                         else
                             new LogWriter().WriteLine(true, false, "Warning: unknown detection rule \"{0}\".", Line.Key);
                         break;
-
-                    //UNDONE: implement   case "Add*":  for each possible kind of multi-line rules
                 }
                 if (Line.Key.StartsWith("AddConvert")) MayBeForResponse = true;
                 if (Line.Key == "AddContentType") MayBeForResponse = true;
@@ -126,26 +124,53 @@ namespace WebOne
         }
 
         /// <summary>
-        /// Process multi-line rules (like AddFind+AddReplace) to a virtual rule
+        /// Process all multi-line rules (like AddFind+AddReplace) to virtual rules (e.g. AddFindReplace)
         /// </summary>
         /// <param name="EditSetLocation">Edit Set's location (for error message if need)</param>
 		private void ProcessComplexRules(string EditSetLocation)
         {
-            //process AddFind, AddReplace -> AddFindReplace
-            List<string> Finds = new List<string>();
+			/* List of virtual editing rules, not listed at https://github.com/atauenis/webone/wiki/Sets-of-edits
+               TODO: Create a wiki article for devs?
+
+             * AddFind + AddReplace = AddFindReplace                                             (FindReplaceEditSetRule)
+             * AddConvert + AddConvertDest + AddConvertArg1 + AddConvertArg2 = AddConverting     (ConvertEditSetRule)
+             * 
+             * continue list when implement other?
+             */
+
+			//load all original lines
+			List<string> Finds = new List<string>();
             List<string> Replacions = new List<string>();
+            string Converter = null;
+            string ConvertDest = "";
+            string ConvertArg1 = "";
+            string ConvertArg2 = "";
             foreach (EditSetRule Rule in Edits)
             {
                 switch (Rule.Action)
-                {
+				{
                     case "AddFind":
                         Finds.Add(Rule.Value);
                         break;
                     case "AddReplace":
                         Replacions.Add(Rule.Value);
                         break;
+                    case "AddConvert":
+                        Converter = Rule.Value;
+                        break;
+                    case "AddConvertDest":
+                        ConvertDest = Rule.Value;
+                        break;
+                    case "AddConvertArg1":
+                        ConvertArg1 = Rule.Value;
+                        break;
+                    case "AddConvertArg2":
+                        ConvertArg2 = Rule.Value;
+                        break;
                 }
             }
+
+            //process AddFind, AddReplace -> AddFindReplace
             if (Finds.Count != Replacions.Count)
                 Log.WriteLine(true,false,"Warning: Invalid amount of Find/Replace in {0}.", EditSetLocation);
             else if (Finds.Count > 0)
@@ -154,22 +179,24 @@ namespace WebOne
                     Edits.Add(new FindReplaceEditSetRule("AddFindReplace", Finds[i], Replacions[i]));
                 }
 
+            //process AddConvert, AddConvertDest, AddConvertArg1, AddConvertArg2 -> AddConverting
+            if (!string.IsNullOrEmpty(Converter))
+            {
+                //TODO: check converter presence and warn if there is no?
+                Edits.Add(new ConvertEditSetRule("AddConverting", Converter, ConvertDest, ConvertArg1, ConvertArg2));
+			}
+			else if (ConvertDest != "" || ConvertArg1 != "" || ConvertArg2 != "")
+            {
+                Log.WriteLine(true, false, "Warning: Please add AddConvert rule to Edit Set starting at {0} to use converting.", EditSetLocation);
+            }
+
             //UNDONE:
             //AddHeaderFind, AddHeaderReplace -> AddHeaderFindReplace (FindReplaceEditSetRule)
             //AddRequestHeaderFind, AddRequestHeaderReplace -> AddRequestHeaderFindReplace (FindReplaceEditSetRule)
-            //then both are need to be implemented in Transit
+            //then both are need to be implemented in Transit.
 
-            //UNDONE: AddConvert, AddConvertDest, AddConvertArg1, AddConvertArg2 -> AddConverting (ConvertEditSetRule)
+            //UNDONE: delete original rules from Edits list. They are no longer used in Transit, so will waste memory.
         }
-
-
-        /* List of virtual editing rules, not listed at https://github.com/atauenis/webone/wiki/Sets-of-edits
-           TODO: Create a wiki article for devs?
-          
-         * AddFind + AddReplace = AddFindReplace
-         * 
-         * continue list when implement other?
-         */
 
         //test function
         public override string ToString()

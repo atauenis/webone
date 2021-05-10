@@ -1089,18 +1089,13 @@ namespace WebOne
 						{
 							switch (Edit.Action)
 							{
-								case "AddConvert":
-									Converter = Edit.Value;
+								case "AddConverting":
+									ConvertEditSetRule rule = (ConvertEditSetRule)Edit;
+									Converter = rule.Converter;
+									ConvertDest = rule.ConvertDest;
+									ConvertArg1 = rule.ConvertArg1;
+									ConvertArg2 = rule.ConvertArg2;
 									Stop = true;
-									break;
-								case "AddConvertDest":
-									ConvertDest = Edit.Value;
-									break;
-								case "AddConvertArg1":
-									ConvertArg1 = Edit.Value;
-									break;
-								case "AddConvertArg2":
-									ConvertArg2 = Edit.Value;
 									break;
 								case "AddResponseHeader":
 									Log.WriteLine(" Add response header: {0}", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
@@ -1121,7 +1116,6 @@ namespace WebOne
 										);
 									DumpRequestBody = Edit.Action == "AddRequestDumping";
 									break;
-								//UNDONE: case "AddConverting" (or similar called virtual rule which will be implemented later)
 							}
 						}
 					}
