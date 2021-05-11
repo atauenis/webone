@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <AssemblyName>webone</AssemblyName>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Authors>Alexander Tauenis</Authors>
@@ -14,6 +15,16 @@
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <Configurations>Debug;Release;ReleaseSC</Configurations>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm;linux-x64;linux-arm;osx-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
+    <PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-x64'">amd64</PackageArchitecture>
+    <PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-arm'">armhf</PackageArchitecture>
+    <PackageName>webone.$(Version).linux-$(PackageArchitecture)</PackageName>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(RuntimeIdentifier.Contains('win')) OR $(RuntimeIdentifier.Contains('osx'))">
+    <PackageName>WebOne.$(Version).$(RuntimeIdentifier)</PackageName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'!='Debug'">
@@ -57,12 +68,17 @@
   <PropertyGroup>
     <PostInstallScript>
       <![CDATA[
+WOOldConfDir=/etc/WebOne/
 WOOldConfFile=/etc/WebOne/webone.conf
 WONewConfFile=/etc/webone.conf.d/migrated.conf
 if [ -f "$WOOldConfFile" ]
 then
   echo "$WOOldConfFile -> $WONewConfFile"
   mv $WOOldConfFile $WONewConfFile
+fi
+
+if [ -d "$WOOldConfDir" ]
+then
   echo "Consider remove /etc/WebOne/ directory. It is no longer used by WebOne."
 fi
 
@@ -151,7 +167,7 @@ systemctl daemon-reload
     </None>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(RuntimeIdentifier)'=='linux-x64' OR '$(RuntimeIdentifier)'=='linux-arm'">
+  <ItemGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
     <Content Include="webone.service" CopyToPublishDirectory="Always" LinuxFileMode="1755">
         <LinuxPath>/etc/systemd/system/webone.service</LinuxPath>
     </Content>
@@ -162,16 +178,17 @@ systemctl daemon-reload
 
   <ItemGroup>
     <Content Include="webone.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
-        <LinuxPath>/etc/webone.conf</LinuxPath>
+        <LinuxPath Condition="$(RuntimeIdentifier.Contains('linux'))">/etc/webone.conf</LinuxPath>
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-		<Content Include="codepage.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
-			<LinuxPath>/etc/webone.conf.d/codepage.conf</LinuxPath>
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
+
+    <Content Include="codepage.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
+        <LinuxPath Condition="$(RuntimeIdentifier.Contains('linux'))">/etc/webone.conf.d/codepage.conf</LinuxPath>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(RuntimeIdentifier)'=='win-x86' OR '$(RuntimeIdentifier)'=='win-x64' OR '$(RuntimeIdentifier)'=='win-arm'">
+  <ItemGroup Condition="$(RuntimeIdentifier.Contains('win'))">
     <None Update="convert.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
