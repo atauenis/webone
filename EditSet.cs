@@ -153,7 +153,6 @@ namespace WebOne
             string ConvertDest = "";
             string ConvertArg1 = "";
             string ConvertArg2 = "";
-            List<EditSetRule> CleanedUpEdits = new List<EditSetRule>(); //copy of Edits which will not contain non-need entries
             foreach (EditSetRule Rule in Edits)
             {
                 switch (Rule.Action)
@@ -188,10 +187,6 @@ namespace WebOne
                     case "AddConvertArg2":
                         ConvertArg2 = Rule.Value;
                         break;
-                    default:
-                        //a rule which is not need to be post-processed
-                        CleanedUpEdits.Add(Rule);
-                        break;
                 }
             }
 
@@ -225,16 +220,24 @@ namespace WebOne
             //process AddConvert, AddConvertDest, AddConvertArg1, AddConvertArg2 -> AddConverting
             if (!string.IsNullOrEmpty(Converter))
             {
-                //TODO: check converter presence and warn if there is no?
-                Edits.Add(new ConvertEditSetRule("AddConverting", Converter, ConvertDest, ConvertArg1, ConvertArg2));
+                //check converter presence and warn if there is no such
+                bool CorrectConverter = false;
+                foreach(var conv in ConfigFile.Converters)
+                {
+                    if(conv.Executable == Converter)
+                    {
+                        Edits.Add(new ConvertEditSetRule("AddConverting", Converter, ConvertDest, ConvertArg1, ConvertArg2));
+                        CorrectConverter = true;
+                        break;
+				    }
+				}
+                if(!CorrectConverter) Log.WriteLine(true, false, @"Warning: Converter ""{1}"" in Edit Set at {0} is not present in lists of converters.", EditSetLocation, Converter);
+                
 			}
 			else if (ConvertDest != "" || ConvertArg1 != "" || ConvertArg2 != "")
             {
                 Log.WriteLine(true, false, "Warning: Please add AddConvert rule to Edit Set starting at {0} to use converting.", EditSetLocation);
             }
-
-            //update list of Edits (remove processed here entries and keep other)
-            Edits = CleanedUpEdits;
         }
 
         //test function
