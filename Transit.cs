@@ -586,9 +586,17 @@ namespace WebOne
 										ClientResponse.AddHeader("Location", NewUrl302);
 										SendError(302, "Брось каку!");
 										return;
+									case "AddRequestHeader":
 									case "AddHeader":
 										//Log.WriteLine(" Add request header: {0}", Edit.Value);
 										if (whc[Edit.Value.Substring(0, Edit.Value.IndexOf(": "))] == null) whc.Add(ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+										break;
+									case "AddRequestHeaderFindReplace":
+										FindReplaceEditSetRule hdr_rule = (FindReplaceEditSetRule)Edit;
+										foreach(var hdr in whc.AllKeys)
+										{
+											whc[hdr] = whc[hdr].Replace(hdr_rule.Find, hdr_rule.Replace);
+										}
 										break;
 									case "AddHeaderDumping":
 									case "AddRequestDumping":
@@ -1101,6 +1109,13 @@ namespace WebOne
 									Log.WriteLine(" Add response header: {0}", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
 									operation.ResponseHeaders.Add(ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
 									if (Edit.Value.StartsWith("Content-Type: ")) ContentType = Edit.Value.Substring("Content-Type: ".Length);
+									break;
+								case "AddResponseHeaderFindReplace":
+									FindReplaceEditSetRule resp_rule = (FindReplaceEditSetRule)Edit;
+									foreach (var hdr in operation.ResponseHeaders.AllKeys)
+									{
+										operation.ResponseHeaders[hdr] = operation.ResponseHeaders[hdr].Replace(resp_rule.Find, resp_rule.Replace);
+									}
 									break;
 								case "AddRedirect":
 									Log.WriteLine(" Add redirect: {0}", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));

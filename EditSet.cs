@@ -95,6 +95,10 @@ namespace WebOne
                     case "AddConvertArg2":
                     case "AddFind":
                     case "AddReplace":
+                    case "AddRequestHeaderFind":
+                    case "AddRequestHeaderReplace":
+                    case "AddResponseHeaderFind":
+                    case "AddResponseHeaderReplace":
                     case "AddHeaderDumping":
                     case "AddRequestDumping":
                     case "AddOutputEncoding":
@@ -129,22 +133,27 @@ namespace WebOne
         /// <param name="EditSetLocation">Edit Set's location (for error message if need)</param>
 		private void ProcessComplexRules(string EditSetLocation)
         {
-			/* List of virtual editing rules, not listed at https://github.com/atauenis/webone/wiki/Sets-of-edits
+            /* List of virtual editing rules, not listed at https://github.com/atauenis/webone/wiki/Sets-of-edits
                TODO: Create a wiki article for devs?
 
              * AddFind + AddReplace = AddFindReplace                                             (FindReplaceEditSetRule)
              * AddConvert + AddConvertDest + AddConvertArg1 + AddConvertArg2 = AddConverting     (ConvertEditSetRule)
-             * 
-             * continue list when implement other?
+             * AddHeaderFind + AddHeaderReplace = AddRequestHeaderFindReplace                    (FindReplaceEditSetRule)
+             * AddResponseHeaderFind + AddResponseHeaderReplace = AddResponseHeaderFindReplace   (FindReplaceEditSetRule)
              */
 
-			//load all original lines
-			List<string> Finds = new List<string>();
+            //load all original lines
+            List<string> Finds = new List<string>();
             List<string> Replacions = new List<string>();
+            List<string> RequestHeaderFinds = new List<string>();
+            List<string> RequestHeaderReplacions = new List<string>();
+			List<string> ResponseHeaderFinds = new List<string>();
+            List<string> ResponseHeaderReplacions = new List<string>();
             string Converter = null;
             string ConvertDest = "";
             string ConvertArg1 = "";
             string ConvertArg2 = "";
+            List<EditSetRule> CleanedUpEdits = new List<EditSetRule>(); //copy of Edits which will not contain non-need entries
             foreach (EditSetRule Rule in Edits)
             {
                 switch (Rule.Action)
@@ -154,6 +163,18 @@ namespace WebOne
                         break;
                     case "AddReplace":
                         Replacions.Add(Rule.Value);
+                        break;
+                   case "AddRequestHeaderFind":
+                        RequestHeaderFinds.Add(Rule.Value);
+                        break;
+                    case "AddRequestHeaderReplace":
+                        RequestHeaderReplacions.Add(Rule.Value);
+                        break;
+                    case "AddResponseHeaderFind":
+                        ResponseHeaderFinds.Add(Rule.Value);
+                        break;
+                    case "AddResponseHeaderReplace":
+                        ResponseHeaderReplacions.Add(Rule.Value);
                         break;
                     case "AddConvert":
                         Converter = Rule.Value;
@@ -167,16 +188,38 @@ namespace WebOne
                     case "AddConvertArg2":
                         ConvertArg2 = Rule.Value;
                         break;
+                    default:
+                        //a rule which is not need to be post-processed
+                        CleanedUpEdits.Add(Rule);
+                        break;
                 }
             }
 
             //process AddFind, AddReplace -> AddFindReplace
             if (Finds.Count != Replacions.Count)
-                Log.WriteLine(true,false,"Warning: Invalid amount of Find/Replace in {0}.", EditSetLocation);
+                Log.WriteLine(true,false,"Warning: Invalid amount of finds/replaces in {0}.", EditSetLocation);
             else if (Finds.Count > 0)
                 for (int i = 0; i < Finds.Count; i++)
                 {
                     Edits.Add(new FindReplaceEditSetRule("AddFindReplace", Finds[i], Replacions[i]));
+                }
+
+            //process AddHeaderFind, AddHeaderReplace -> AddRequestHeaderFindReplace
+            if (RequestHeaderFinds.Count != RequestHeaderReplacions.Count)
+                Log.WriteLine(true, false, "Warning: Invalid amount of request header finds/replaces in {0}.", EditSetLocation);
+            else if (RequestHeaderFinds.Count > 0)
+                for (int i = 0; i < RequestHeaderFinds.Count; i++)
+                {
+                    Edits.Add(new FindReplaceEditSetRule("AddRequestHeaderFindReplace", RequestHeaderFinds[i], RequestHeaderReplacions[i]));
+                }
+
+            //process AddResponseHeaderFind, AddResponseHeaderReplace -> AddResponseHeaderFindReplace
+            if (ResponseHeaderFinds.Count != ResponseHeaderReplacions.Count)
+                Log.WriteLine(true, false, "Warning: Invalid amount of response header finds/replaces in {0}.", EditSetLocation);
+            else if (ResponseHeaderFinds.Count > 0)
+                for (int i = 0; i < ResponseHeaderFinds.Count; i++)
+                {
+                    Edits.Add(new FindReplaceEditSetRule("AddResponseHeaderFindReplace", ResponseHeaderFinds[i], ResponseHeaderReplacions[i]));
                 }
 
             //process AddConvert, AddConvertDest, AddConvertArg1, AddConvertArg2 -> AddConverting
@@ -190,12 +233,8 @@ namespace WebOne
                 Log.WriteLine(true, false, "Warning: Please add AddConvert rule to Edit Set starting at {0} to use converting.", EditSetLocation);
             }
 
-            //UNDONE:
-            //AddHeaderFind, AddHeaderReplace -> AddHeaderFindReplace (FindReplaceEditSetRule)
-            //AddRequestHeaderFind, AddRequestHeaderReplace -> AddRequestHeaderFindReplace (FindReplaceEditSetRule)
-            //then both are need to be implemented in Transit.
-
-            //UNDONE: delete original rules from Edits list. They are no longer used in Transit, so will waste memory.
+            //update list of Edits (remove processed here entries and keep other)
+            Edits = CleanedUpEdits;
         }
 
         //test function
