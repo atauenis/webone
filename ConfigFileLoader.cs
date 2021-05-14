@@ -256,10 +256,32 @@ namespace WebOne
 					case "Authenticate":
 						foreach (ConfigFileOption Line in Section.Options)
 						{
-							if (Line.RawString.Split(":").Length != 2 || Line.RawString.Contains(" "))
-								Log.WriteLine(true, false, "Warning: Invalid authentication credentials at {0}.", Line.Location);
-							else
+							if (Line.RawString.Split(":").Length == 2 && !Line.RawString.Contains(" "))
+								//login:password pair
 								ConfigFile.Authenticate.Add(Line.RawString);
+							else
+							{
+								//option name/value pair
+								if (Line.HaveKeyValue)
+								{
+									switch (Line.Key)
+									{
+										case "AuthenticateMessage":
+											ConfigFile.AuthenticateMessage = Line.Value;
+											break;
+										case "AuthenticateRealm":
+											ConfigFile.AuthenticateRealm = Line.Value;
+											break;
+										default:
+											Log.WriteLine(true, false, "Warning: Invalid authentication option at {0}.", Line.Location);
+											break;
+									}
+								}
+								else
+								{
+									Log.WriteLine(true, false, "Warning: Invalid authentication credentials at {0}.", Line.Location);
+								}
+							}
 						}
 						break;
 					case "FixableURL":
