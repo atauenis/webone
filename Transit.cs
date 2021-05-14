@@ -1468,10 +1468,8 @@ namespace WebOne
 			string CodeStr = Code.ToString() + " " + ((HttpStatusCode)Code).ToString();
 			string Refresh = "";
 			if (ClientResponse.Headers["Refresh"] != null) Refresh = "<META HTTP-EQUIV=\"REFRESH\" CONTENT=\""+ ClientResponse.Headers["Refresh"] +"\">";
-			string Html = "<html>" + Refresh + "<body><h1>" + CodeStr + "</h1>" + Text + "</body></html>";
-
-			if ((OutputContentEncoding ?? Encoding.Default) != Encoding.Default)
-				Html = OutputContentEncoding.GetString(Encoding.Default.GetBytes(Html));
+			Refresh += "<META CHARSET=\"" + (OutputContentEncoding ?? Encoding.Default).WebName + "\">";
+			string Html = "<HTML>" + Refresh + "<BODY><H1>" + CodeStr + "</H1>" + Text + "</BODY></HTML>";
 
 			byte[] Buffer = (OutputContentEncoding ?? Encoding.Default).GetBytes(Html);
 			try
