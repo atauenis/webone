@@ -64,11 +64,6 @@ namespace WebOne
 		public string Method;
 
 		/// <summary>
-		/// Cookie container
-		/// </summary>
-		public CookieContainer Cookies;
-
-		/// <summary>
 		/// Request's headers
 		/// </summary>
 		public WebHeaderCollection RequestHeaders;
@@ -151,7 +146,6 @@ namespace WebOne
 
 			Request.Method = Method;
 			Request.AllowAutoRedirect = AllowAutoRedirect;
-			Request.CookieContainer = Cookies;
 			Request.ProtocolVersion = HttpVersion.Version11;
 			Request.KeepAlive = true;
 			Request.ServicePoint.Expect100Continue = false;
