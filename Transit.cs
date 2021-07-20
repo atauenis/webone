@@ -541,7 +541,7 @@ namespace WebOne
 					WebHeaderCollection whc = new WebHeaderCollection();
 
 					//prepare headers
-					if (RequestURL.Scheme.ToLower() == "https")
+					if (RequestURL.Scheme.ToLower() == "https" || CheckString(RequestURL.Host, ConfigFile.ForceHttps))
 					{
 						foreach (string h in ClientRequest.Headers.Keys)
 						{
