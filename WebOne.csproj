@@ -6,6 +6,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Authors>Alexander Tauenis</Authors>
     <Version>0.11.1</Version>
+    <PackageVersion>$(Version)pre</PackageVersion>
     <Company>World</Company>
     <Product>WebOne HTTP Proxy Server</Product>
     <Description>HTTP 1.x proxy that makes old web browsers usable again in the Web 2.0 world.</Description>
@@ -20,11 +21,11 @@
   <PropertyGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
     <PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-x64'">amd64</PackageArchitecture>
     <PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-arm'">armhf</PackageArchitecture>
-    <PackageName>webone.$(Version).linux-$(PackageArchitecture)</PackageName>
+    <PackageName>webone.$(PackageVersion).linux-$(PackageArchitecture)</PackageName>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(RuntimeIdentifier.Contains('win')) OR $(RuntimeIdentifier.Contains('osx'))">
-    <PackageName>WebOne.$(Version).$(RuntimeIdentifier)</PackageName>
+    <PackageName>WebOne.$(PackageVersion).$(RuntimeIdentifier)</PackageName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'!='Debug'">
@@ -84,20 +85,29 @@ fi
 
 touch /var/log/webone.log
 chmod 666 /var/log/webone.log
-systemctl daemon-reload
-systemctl enable --now webone
+
+if [ -f /bin/systemctl ]; then
+  systemctl daemon-reload
+  systemctl enable --now webone
+fi
       ]]>
     </PostInstallScript>
     <PreRemoveScript>
       <![CDATA[
-systemctl stop webone
-systemctl disable webone
-command -v killall >/dev/null 2>&1 && killall WebOne || { echo "killall not found. Continuing." >&2; }
+if [ -f /bin/systemctl ]; then
+  systemctl stop webone
+  systemctl disable webone
+fi
+if [ -f /usr/bin/killall ]; then
+  killall webone || true
+fi
       ]]>
     </PreRemoveScript>
     <PostRemoveScript>
       <![CDATA[
-systemctl daemon-reload
+if [ -f /bin/systemctl ]; then
+  systemctl daemon-reload
+fi
       ]]>
     </PostRemoveScript>
   </PropertyGroup>
