@@ -296,6 +296,10 @@ namespace WebOne
 				}
 			}
 
+			Variables.Add("Proxy", ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString());
+			Variables.Add("ProxyHost", ConfigFile.DefaultHostName);
+			Variables.Add("ProxyPort", ConfigFile.Port.ToString());
+
 			Console.WriteLine("Configuration load complete.");
 			foreach (string f in LoadedFiles) { Log.WriteLine(false, false, "Configuration file {0} load complete.", f); }
 		}

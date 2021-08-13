@@ -31,8 +31,11 @@ namespace WebOne
 
 		static void Main(string[] args)
 		{
+			Variables.Add("WOVer", Assembly.GetExecutingAssembly().GetName().Version.ToString() + "-pre");
+			Variables.Add("WOSystem", Environment.OSVersion.Platform.ToString());
+
 			Console.Title = "WebOne";
-			Console.WriteLine("WebOne HTTP Proxy Server {0}\n(C) https://github.com/atauenis/webone\n\n", Assembly.GetExecutingAssembly().GetName().Version);
+			Console.WriteLine("WebOne HTTP Proxy Server {0}\n(C) https://github.com/atauenis/webone\n\n", Variables["WOVer"]);
 
 			//process command line arguments
 			ProcessCommandLine(args);
@@ -349,8 +352,7 @@ namespace WebOne
 						case "-t":
 						case "--tmp":
 						case "--temp":
-							if (kvp.Value.ToUpper() == "%TEMP%" || kvp.Value == "$TEMP" || kvp.Value == "$TMPDIR") ConfigFile.TemporaryDirectory = Path.GetTempPath();
-							else ConfigFile.TemporaryDirectory = kvp.Value;
+							ConfigFile.TemporaryDirectory = ExpandMaskedVariables(kvp.Value);
 							break;
 						case "/p":
 						case "-p":
@@ -402,7 +404,7 @@ namespace WebOne
 		/// </summary>
 		/// <returns>HTML: WebOne vX.Y.Z on Windows NT 6.2.9200 Service Pack 6</returns>
 		public static string GetInfoString() {
-			return "<hr>WebOne Proxy Server " + Assembly.GetExecutingAssembly().GetName().Version + "<br>on " + Environment.OSVersion.VersionString;
+			return "<hr>WebOne Proxy Server " + Variables["WOVer"] + "<br>on " + Variables["WOSystem"];
 		}
 
 
@@ -500,11 +502,12 @@ namespace WebOne
 			else
 				URL = PossibleURL;
 
+
+			//UNDONE: continue merge with ExpandMaskedVariables!!!
+
 			str = str.Replace("%URL%", URL);
 			str = str.Replace("%Url%", Uri.EscapeDataString(URL));
-			str = str.Replace("%ProxyHost%", Environment.MachineName);
-			str = str.Replace("%ProxyPort%", ConfigFile.Port.ToString());
-			str = str.Replace("%Proxy%", ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString());
+			str = ExpandMaskedVariables(str);
 
 			UriBuilder builder = new UriBuilder(URL);
 
@@ -551,6 +554,58 @@ namespace WebOne
 			return str;
 		}
 
+		/// <summary>
+		/// Internal variables which can be used in strings
+		/// </summary>
+		public static Dictionary<string, string> Variables = new Dictionary<string, string>();
+
+		/// <summary>
+		/// Replace all environment/WebOne variable %masks% ($masks) in a string with their real values
+		/// </summary>
+		/// <param name="MaskedString">A string with some %masks% inside</param>
+		/// <param name="AdditionalVariables">Additional variables, which also can be used in masked string</param>
+		/// <returns>A string with real variable values</returns>
+		public static string ExpandMaskedVariables(string MaskedString, Dictionary<string, string> AdditionalVariables = null)
+		{
+			//Workaround for https://github.com/dotnet/runtime/issues/25792
+			//So this is a better version of Environment.ExpandEnvironmentVariables(String)
+			//where both UNIX ($EnvVar) and DOS (%EnvVar%) syntaxes are allowed, and %TEMP% and $TMPDIR are synonyms.
+			//Also any WebOne internal variables can be used here.
+
+			//UNDONE: find all places where %masks% are used, and rewrite code to use ExpandMaskedVariables if possible!!!
+
+			string str = MaskedString;
+			str = str.Replace("$TMPDIR", Path.GetTempPath()).Replace("%TEMP%", Path.GetTempPath(), StringComparison.CurrentCultureIgnoreCase);
+			str = str.Replace("$SYSLOGDIR", GetDefaultLogDirectory()).Replace("%SYSLOGDIR%", GetDefaultLogDirectory());
+
+			//get custom variables (e.g. HTTP headers, etc)
+			Dictionary<string, string> AddVars = Variables;
+			if (AdditionalVariables != null) foreach (var entry in AdditionalVariables) { AddVars.TryAdd(entry.Key, entry.Value); }
+			foreach (KeyValuePair<string, string> Var in AddVars)
+			{
+				str = str
+				.Replace("%" + (string)Var.Key + "%", (string)Var.Value)
+				.Replace("$" + (string)Var.Key, (string)Var.Value);
+			}
+
+			//get environment variables and home directory
+			if (Environment.OSVersion.Platform == PlatformID.Unix)
+			{
+				foreach (System.Collections.DictionaryEntry EnvVar in Environment.GetEnvironmentVariables())
+				{
+					str = str
+					.Replace("%" + (string)EnvVar.Key + "%", (string)EnvVar.Value, StringComparison.CurrentCultureIgnoreCase)
+					.Replace("$" + (string)EnvVar.Key, (string)EnvVar.Value);
+				}
+				str = str.Replace("~/", Environment.SpecialFolder.UserProfile + "/");
+			}
+			else
+			{
+				str = Environment.ExpandEnvironmentVariables(str);
+			}
+
+			return str;
+		}
 
 		/// <summary>
 		/// Get user-agent string for a request
@@ -559,10 +614,10 @@ namespace WebOne
 		/// <returns>Something like "Mozilla/3.04Gold (U; Windows NT 3.51) WebOne/1.0.0.0 (Unix)"</returns>
 		public static string GetUserAgent(string ClientUA = "")
 		{
-			return ConfigFile.UserAgent
-			.Replace("%Original%", ClientUA ?? "Mozilla/5.0 (Kundryuchy-Leshoz)")
-			.Replace("%WOVer%", Assembly.GetExecutingAssembly().GetName().Version.ToString())
-			.Replace("%WOSystem%", Environment.OSVersion.Platform.ToString());
+			Dictionary<string, string> dic = new Dictionary<string, string>();
+			dic.Add("Original", ClientUA ?? "Mozilla / 5.0(Kundryuchy - Leshoz)");
+
+			return ExpandMaskedVariables(ConfigFile.UserAgent, dic);
 		}
 
 		/// <summary>
@@ -650,7 +705,7 @@ namespace WebOne
 		public static string GetLogFilePath(string RawPath)
 		{
 			string LogFilePath = RawPath.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
-			return LogFilePath.Replace("%SYSLOGDIR%", GetDefaultLogDirectory());
+			return ExpandMaskedVariables(LogFilePath);
 		}
 
 		/// <summary>
