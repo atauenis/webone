@@ -6,7 +6,8 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Authors>Alexander Tauenis</Authors>
     <Version>0.11.1</Version>
-    <PackageVersion>$(Version)pre</PackageVersion>
+		<VersionSuffix>-pre</VersionSuffix>
+    <PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
     <Company>World</Company>
     <Product>WebOne HTTP Proxy Server</Product>
     <Description>HTTP 1.x proxy that makes old web browsers usable again in the Web 2.0 world.</Description>
