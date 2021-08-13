@@ -109,6 +109,7 @@ namespace WebOne
 		/// <param name="Path">Path of the configuration file.</param>
 		public static void LoadFile(string Path)
 		{
+			Path = ExpandMaskedVariables(Path);
 			if (!File.Exists(Path)) throw new FileNotFoundException();
 
 			string FullPath = new FileInfo(Path).FullName;

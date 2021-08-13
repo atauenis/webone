@@ -225,7 +225,7 @@ namespace WebOne
 					case "-l":
 					case "--log":
 						if (kvp.Value == "" || kvp.Value == "no") { OverrideLogFile = null; break; }
-						OverrideLogFile = kvp.Value;
+						OverrideLogFile = ExpandMaskedVariables(kvp.Value);
 						LogAgent.OpenLogFile(OverrideLogFile);
 						break;
 					case "/t":
@@ -492,8 +492,9 @@ namespace WebOne
 		/// <param name="MaskedURL">URI template</param>
 		/// <param name="PossibleURL">Previous URI (for "%URL%" mask and similar)</param>
 		/// <param name="DontTouchURL">Do not edit previous URI (%URL% mask) in any cases</param>
+		/// <param name="AdditionalVariables">Additional %masks% which can be processed</param>
 		/// <returns>Ready URL</returns>
-		public static string ProcessUriMasks(string MaskedURL, string PossibleURL = "http://webone.github.io:80/index.htm", bool DontTouchURL = false)
+		public static string ProcessUriMasks(string MaskedURL, string PossibleURL = "http://webone.github.io:80/index.htm", bool DontTouchURL = false, Dictionary<string, string> AdditionalVariables = null)
 		{
 			string str = MaskedURL;
 			string URL = null;
@@ -501,15 +502,20 @@ namespace WebOne
 				URL = new UriBuilder(PossibleURL) { Scheme = "https" }.Uri.ToString();
 			else
 				URL = PossibleURL;
-
-
-			//UNDONE: continue merge with ExpandMaskedVariables!!!
-
-			str = str.Replace("%URL%", URL);
-			str = str.Replace("%Url%", Uri.EscapeDataString(URL));
-			str = ExpandMaskedVariables(str);
+			//UNDONE: think, does it really need to keep PossibleURL argument?
 
 			UriBuilder builder = new UriBuilder(URL);
+
+			var UrlVars = new Dictionary<string, string>
+			{
+				{ "%URL%", URL }, //UNDONE: probably, this should be filled in Transit and given to here via AdditionalVariables.
+				{ "%Url%", Uri.EscapeDataString(URL) },
+				{ "%UrlDomain%", builder.Host }
+			};
+			if (AdditionalVariables != null) foreach (var entry in AdditionalVariables) { UrlVars.TryAdd(entry.Key, entry.Value); }
+			str = ExpandMaskedVariables(str, UrlVars);
+
+			//the code below may be moved to ExpandMaskedVariables too (after rewrite).
 
 			if (str.Contains("%UrlNoDomain%"))
 			{
@@ -544,11 +550,6 @@ namespace WebOne
 				builder.Scheme = "http";
 				str = str.Replace("%UrlHttp%", builder.Uri.ToString());
 				builder = new UriBuilder(URL);
-			}
-
-			if (str.Contains("%UrlDomain%"))
-			{
-				str = str.Replace("%UrlDomain%", builder.Host);
 			}
 
 			return str;
@@ -614,10 +615,7 @@ namespace WebOne
 		/// <returns>Something like "Mozilla/3.04Gold (U; Windows NT 3.51) WebOne/1.0.0.0 (Unix)"</returns>
 		public static string GetUserAgent(string ClientUA = "")
 		{
-			Dictionary<string, string> dic = new Dictionary<string, string>();
-			dic.Add("Original", ClientUA ?? "Mozilla / 5.0(Kundryuchy - Leshoz)");
-
-			return ExpandMaskedVariables(ConfigFile.UserAgent, dic);
+			return ExpandMaskedVariables(ConfigFile.UserAgent, new Dictionary<string, string> { { "Original", ClientUA ?? "Mozilla/5.0 (Kundryuchy-Leshoz)" } });
 		}
 
 		/// <summary>
