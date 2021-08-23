@@ -575,9 +575,9 @@ namespace WebOne
 
 			//UNDONE: find all places where %masks% are used, and rewrite code to use ExpandMaskedVariables if possible!!!
 
-			string str = MaskedString;
-			str = str.Replace("$TMPDIR", Path.GetTempPath()).Replace("%TEMP%", Path.GetTempPath(), StringComparison.CurrentCultureIgnoreCase);
-			str = str.Replace("$SYSLOGDIR", GetDefaultLogDirectory()).Replace("%SYSLOGDIR%", GetDefaultLogDirectory());
+			string str = MaskedString, tempdir = Path.GetTempPath(), logdir = GetDefaultLogDirectory();
+			str = str.Replace("$TMPDIR", tempdir).Replace("%TEMP%", tempdir, StringComparison.CurrentCultureIgnoreCase);
+			str = str.Replace("$SYSLOGDIR", logdir).Replace("%SYSLOGDIR%", logdir, StringComparison.CurrentCultureIgnoreCase);
 
 			//get custom variables (e.g. HTTP headers, etc)
 			Dictionary<string, string> AddVars = Variables;
@@ -691,7 +691,10 @@ namespace WebOne
 				case PlatformID.Win32NT:
 					return Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 				case PlatformID.Unix:
-					return "/var/log";
+					if (Environment.OSVersion.Version.Major < 16) //Linux
+						return "/var/log";
+					else //macOS 10.12+ or Darwin
+						return Environment.SpecialFolder.UserProfile + "/Library/Logs";
 				default:
 					return Environment.CurrentDirectory;
 			}
