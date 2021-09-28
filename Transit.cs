@@ -634,7 +634,10 @@ namespace WebOne
 					}
 
 					//send the request
-					SendRequest(operation, ClientRequest.HttpMethod, whc, CL);
+					operation = new HttpOperation(Log);
+					operation.Method = ClientRequest.HttpMethod;
+					operation.RequestHeaders = whc;
+					SendRequest(operation);
 				}
 				catch (WebException wex)
 				{
@@ -814,27 +817,28 @@ namespace WebOne
 		}
 
 		/// <summary>
-		/// Send a HTTPS request and put the response to shared variable "response"
+		/// Send a HTTPS request through <paramref name="HTTPO"/> operation.<br/>
+		/// Then the server response will be in the <paramref name="HTTPO"/>.Response. Or an exception will be thrown if there are network problems.
 		/// </summary>
-		/// <param name="https">HTTPS client</param>
-		/// <param name="RequestMethod">Request method</param>
-		/// <param name="RequestHeaderCollection">Request headers</param>
-		/// <param name="Content_Length">Request content length</param>
-		/// <returns>Response status code (and the Response in shared variable)</returns>
-		private void SendRequest(HttpOperation HTTPO, string RequestMethod, WebHeaderCollection RequestHeaderCollection, int Content_Length)
+		/// <param name="HTTPO">HTTPS operation client with request data</param>
+		private void SendRequest(HttpOperation HTTPO)
 		{
 			bool AllowAutoRedirect = CheckString(RequestURL.AbsoluteUri, ConfigFile.InternalRedirectOn);
 			if (!AllowAutoRedirect) AllowAutoRedirect = ShouldRedirectInNETFW;
 
-			switch (RequestMethod)
+			if (operation is null) throw new NullReferenceException("Initialize `operation` first! Also don't forget to put headers, method, log agent in Operation.");
+			//in future probably need to merge operation.URL with RequestURL.AbsoluteUri too. Seems that they does not differ at SendRequest time, but currently I am not 100% sure - atauenis.
+
+			switch (operation.Method)
 			{
 				case "CONNECT":
 					string ProtocolReplacerJS = "<script>if (window.location.protocol != 'http:') { setTimeout(function(){window.location.protocol = 'http:'; window.location.reload();}, 1000); }</script>";
-					SendError(405, "The proxy does not know the " + RequestMethod + " method.<BR>Please use HTTP, not HTTPS.<BR>HSTS must be disabled." + ProtocolReplacerJS);
+					SendError(405, "The proxy does not know the " + operation.Method + " method.<BR>Please use HTTP, not HTTPS.<BR>HSTS must be disabled." + ProtocolReplacerJS);
 					Log.WriteLine(" Wrong method.");
 					return;
 				default:
-					operation = new HttpOperation(Log);
+					int Content_Length = 0;
+					if (ClientRequest.Headers["Content-Length"] != null) Content_Length = Int32.Parse(ClientRequest.Headers["Content-Length"]);
 					if (Content_Length == 0)
 					{
 						//try to download (GET, HEAD, WebDAV download, etc)
@@ -844,8 +848,6 @@ namespace WebOne
 						Log.WriteLine(">Downloading content...");
 #endif
 						operation.URL = RequestURL.AbsoluteUri;
-						operation.Method = RequestMethod;
-						operation.RequestHeaders = RequestHeaderCollection;
 						operation.AllowAutoRedirect = AllowAutoRedirect;
 						operation.SendRequest();
 #if DEBUG
@@ -859,13 +861,11 @@ namespace WebOne
 					{
 						//try to upload (POST, PUT, WebDAV, etc)
 #if DEBUG
-						Log.WriteLine(">Uploading {0}K of {1} (connecting)...",Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024, RequestHeaderCollection["Content-Type"]);
+						Log.WriteLine(">Uploading {0}K of {1} (connecting)...",Convert.ToInt32((operation.RequestHeaders["Content-Length"])) / 1024, operation.RequestHeaders["Content-Type"]);
 #else
-						Log.WriteLine(">Uploading {0}K of {1}...", Convert.ToInt32((RequestHeaderCollection["Content-Length"])) / 1024, RequestHeaderCollection["Content-Type"]);
+						Log.WriteLine(">Uploading {0}K of {1}...", Convert.ToInt32((operation.RequestHeaders["Content-Length"])) / 1024, operation.RequestHeaders["Content-Type"]);
 #endif
 						operation.URL = RequestURL.AbsoluteUri;
-						operation.Method = RequestMethod;
-						operation.RequestHeaders = RequestHeaderCollection;
 						if (!DumpRequestBody)
 							operation.RequestStream = ClientRequest.InputStream;
 						else
@@ -910,7 +910,13 @@ namespace WebOne
 
 							RequestURL = new Uri(RequestURL.AbsoluteUri.Replace("http://", "https://"));
 							TransitStream = null;
-							SendRequest(operation, RequestMethod, RequestHeaderCollection, Content_Length);
+
+							string RequestMethod = operation.Method;
+							WebHeaderCollection RequestHeaderCollection = operation.RequestHeaders;
+							operation = new HttpOperation(Log);
+							operation.Method = RequestMethod;
+							operation.RequestHeaders = RequestHeaderCollection;
+							SendRequest(operation);
 
 							//add to ForceHttp list
 							string SecureHost = RequestURL.Host;
