@@ -172,6 +172,9 @@ namespace WebOne
 								case "SearchInArchive":
 									ConfigFile.SearchInArchive = ToBoolean(Option.Value);
 									break;
+								case "HideArchiveRedirect":
+									ConfigFile.HideArchiveRedirect = ToBoolean(Option.Value);
+									break;
 								case "ShortenArchiveErrors":
 									ConfigFile.ShortenArchiveErrors = ToBoolean(Option.Value);
 									break;

@@ -89,6 +89,11 @@ namespace WebOne
 		public static bool SearchInArchive = false;
 
 		/// <summary>
+		/// Hide HTTP 302 redirect to web.archive.org, and continue use original URL (but retrieve archived copy)
+		/// </summary>
+		public static bool HideArchiveRedirect = false;
+
+		/// <summary>
 		/// Make Web.Archive.Org error messages laconic (for retro browsers)
 		/// </summary>
 		public static bool ShortenArchiveErrors = false;

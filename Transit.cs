@@ -646,6 +646,8 @@ namespace WebOne
 					if (ResponseCode == 502) Log.WriteLine(" Cannot load this page: {0}.", wex.Status);
 					else Log.WriteLine(" Web exception: {0} {1}.", ResponseCode, (wex.Response as HttpWebResponse).StatusCode);
 
+					bool dontworry = false; //don't show error message, all is under control
+
 
 					//check if archived copy can be retreived instead
 					if (ConfigFile.SearchInArchive)
@@ -671,11 +673,32 @@ namespace WebOne
 									if (ArchiveMatch.Success)
 									{
 										Log.WriteLine(" Available.");
-										ArchiveURL = ArchiveMatch.Value.Substring(8, ArchiveMatch.Value.IndexOf(@""",") - 8);
-										ResponseBody = "<html><body><h1>Server not found</h2>But an <a href=" + ArchiveURL + ">archived copy</a> is available! Redirecting to it...</body></html>";
-										ClientResponse.AddHeader("Location", ArchiveURL);
-										SendError(302, ResponseBody);
-										return;
+										ArchiveURL = ArchiveMatch.Value.Substring(8, ArchiveMatch.Value.IndexOf(@""",") - 8); //todo: add suffix here (#48)
+										if (ConfigFile.HideArchiveRedirect)
+										{
+											try
+											{
+												RequestURL = new Uri(ArchiveURL);
+												#if DEBUG
+												Log.WriteLine("Internal download via Web Archive: " + RequestURL.AbsoluteUri);
+												#endif
+												SendRequest(operation);
+												dontworry = true;
+											}
+											catch (Exception ArchiveRetrieveException)
+											{
+												SendInfoPage("WebOne: Web Archive retreive error.", "Cannot load this page from Web Archive", string.Format("<b>The requested page is found only at Web Archive, but cannot be delivered from it.</b><br>{0}", ArchiveRetrieveException.Message.Replace("\n", "<br>")));
+												BreakTransit = true;
+												dontworry = true;
+											}
+										}
+										else
+										{
+											ResponseBody = "<html><body><h1>Server not found</h2>But an <a href=" + ArchiveURL + ">archived copy</a> is available! Redirecting to it...</body></html>";
+											ClientResponse.AddHeader("Location", ArchiveURL);
+											SendError(302, ResponseBody);
+											return;
+										}
 									}
 									else
 									{
@@ -704,39 +727,42 @@ namespace WebOne
 							}
 						}
 
-					ContentType = "text/html";
+					if (!dontworry)
+					{
+						ContentType = "text/html";
 #if DEBUG
-					string err = ": " + wex.Status.ToString();
-					SendInfoPage("WebOne cannot load the page", "Can't load the page: " + wex.Status.ToString(), "<i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + "<br>Debug mode enabled.");
-					BreakTransit = true;
+						string err = ": " + wex.Status.ToString();
+						SendInfoPage("WebOne cannot load the page", "Can't load the page: " + wex.Status.ToString(), "<i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + "<br>Debug mode enabled.");
+						BreakTransit = true;
 #else
-					string NiceErrMsg;
+						string NiceErrMsg;
 
-					switch(wex.Status){
-						case WebExceptionStatus.UnknownError:
-							if (wex.InnerException != null)
-							{
-								if(wex.Message.Contains(GetFullExceptionMessage(wex, true, true)))
+						switch(wex.Status){
+							case WebExceptionStatus.UnknownError:
+								if (wex.InnerException != null)
 								{
-									NiceErrMsg = " <p><big>" + wex.Message + "</big></p>Kind of error: " + wex.InnerException.GetType().ToString();
+									if(wex.Message.Contains(GetFullExceptionMessage(wex, true, true)))
+									{
+										NiceErrMsg = " <p><big>" + wex.Message + "</big></p>Kind of error: " + wex.InnerException.GetType().ToString();
+									}
+									else
+									{
+										NiceErrMsg = " <p><big>" + wex.Message + "</big></p><p>" + GetFullExceptionMessage(wex, true, true).Replace("\n", "<br>") + "</p>Kind of error: " + wex.InnerException.GetType().ToString();
+									}
 								}
 								else
-								{
-									NiceErrMsg = " <p><big>" + wex.Message + "</big></p><p>" + GetFullExceptionMessage(wex, true, true).Replace("\n", "<br>") + "</p>Kind of error: " + wex.InnerException.GetType().ToString();
-								}
-							}
-							else
-								NiceErrMsg = " <p><big>" + wex.Message + "</big></p>Kind of error: " + wex.GetType().ToString() + " (no inner exceptions)";
-							break;
-						default:
-							NiceErrMsg = "<p><big>" + wex.Message + ".</big></p>Status: " + wex.Status;
-							break;
-					}
+									NiceErrMsg = " <p><big>" + wex.Message + "</big></p>Kind of error: " + wex.GetType().ToString() + " (no inner exceptions)";
+								break;
+							default:
+								NiceErrMsg = "<p><big>" + wex.Message + ".</big></p>Status: " + wex.Status;
+								break;
+						}
 
-					string ErrorMessage = NiceErrMsg + "<br>URL: " + RequestURL.AbsoluteUri;
-					SendInfoPage("WebOne: " + wex.Status, "Cannot load this page", ErrorMessage);
-					BreakTransit = true;
+						string ErrorMessage = NiceErrMsg + "<br>URL: " + RequestURL.AbsoluteUri;
+						SendInfoPage("WebOne: " + wex.Status, "Cannot load this page", ErrorMessage);
+						BreakTransit = true;
 #endif
+					}
 				}
 				catch (UriFormatException)
 				{
