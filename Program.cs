@@ -496,62 +496,31 @@ namespace WebOne
 		/// <returns>Ready URL</returns>
 		public static string ProcessUriMasks(string MaskedURL, string PossibleURL = "http://webone.github.io:80/index.htm", bool DontTouchURL = false, Dictionary<string, string> AdditionalVariables = null)
 		{
+			//this function should be rewritten or removed in future,
+			//when will implement more powerful manipulation of headers, cookies, content. (v0.12?)
+
 			string str = MaskedURL;
 			string URL = null;
 			if (CheckString(PossibleURL, ConfigFile.ForceHttps) && !DontTouchURL)
 				URL = new UriBuilder(PossibleURL) { Scheme = "https" }.Uri.ToString();
 			else
 				URL = PossibleURL;
-			//UNDONE: think, does it really need to keep PossibleURL argument?
 
 			UriBuilder builder = new UriBuilder(URL);
 
 			var UrlVars = new Dictionary<string, string>
 			{
-				{ "%URL%", URL }, //UNDONE: probably, this should be filled in Transit and given to here via AdditionalVariables.
-				{ "%Url%", Uri.EscapeDataString(URL) },
-				{ "%UrlDomain%", builder.Host }
+				{ "URL", URL },
+				{ "Url", Uri.EscapeDataString(URL) },
+				{ "UrlDomain", builder.Host },
+				{ "UrlNoDomain", (builder.Query == "" ? builder.Path : builder.Path + "?" + builder.Query) },
+				{ "UrlNoQuery", builder.Scheme + "://" + builder.Host + "/" +  builder.Path },
+				{ "UrlNoPort", builder.Scheme + "://" + builder.Host + "/" + (builder.Query == "" ? builder.Path : builder.Path + "?" + builder.Query) },
+				{ "UrlHttps", "https://" + builder.Host + "/" + (builder.Query == "" ? builder.Path : builder.Path + "?" + builder.Query) },
+				{ "UrlHttp", "http://" + builder.Host + "/" + (builder.Query == "" ? builder.Path : builder.Path + "?" + builder.Query) }
 			};
 			if (AdditionalVariables != null) foreach (var entry in AdditionalVariables) { UrlVars.TryAdd(entry.Key, entry.Value); }
 			str = ExpandMaskedVariables(str, UrlVars);
-
-			//the code below may be moved to ExpandMaskedVariables too (after rewrite).
-
-			if (str.Contains("%UrlNoDomain%"))
-			{
-				builder.Host = "butaforia-" + new Random().Next().ToString();
-				str = str.Replace("%UrlNoDomain%", builder.Uri.ToString().Replace(builder.Host + ":" + builder.Port, "").Replace(builder.Scheme + "://", ""));
-				builder = new UriBuilder(URL);
-			}
-
-			if (str.Contains("%UrlNoPort%"))
-			{
-				builder.Port = new Random().Next(1, 65535);
-				str = str.Replace("%UrlNoPort%", builder.Uri.ToString().Replace(":" + builder.Port.ToString(), ""));
-				builder = new UriBuilder(URL);
-			}
-
-			if (str.Contains("%UrlNoQuery%"))
-			{
-				builder.Query = "?noquery=" + new Random().Next().ToString();
-				str = str.Replace("%UrlNoQuery%", builder.Uri.ToString().Replace(builder.Query, ""));
-				builder = new UriBuilder(URL);
-			}
-
-			if (str.Contains("%UrlHttps%"))
-			{
-				builder.Scheme = "https";
-				str = str.Replace("%UrlHttps%", builder.Uri.ToString());
-				builder = new UriBuilder(URL);
-			}
-
-			if (str.Contains("%UrlHttp%"))
-			{
-				builder.Scheme = "http";
-				str = str.Replace("%UrlHttp%", builder.Uri.ToString());
-				builder = new UriBuilder(URL);
-			}
-
 			return str;
 		}
 
@@ -572,8 +541,6 @@ namespace WebOne
 			//So this is a better version of Environment.ExpandEnvironmentVariables(String)
 			//where both UNIX ($EnvVar) and DOS (%EnvVar%) syntaxes are allowed, and %TEMP% and $TMPDIR are synonyms.
 			//Also any WebOne internal variables can be used here.
-
-			//UNDONE: find all places where %masks% are used, and rewrite code to use ExpandMaskedVariables if possible!!!
 
 			string str = MaskedString, tempdir = Path.GetTempPath(), logdir = GetDefaultLogDirectory();
 			str = str.Replace("$TMPDIR", tempdir).Replace("%TEMP%", tempdir, StringComparison.CurrentCultureIgnoreCase);
