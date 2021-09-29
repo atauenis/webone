@@ -94,6 +94,11 @@ namespace WebOne
 		public static bool HideArchiveRedirect = false;
 
 		/// <summary>
+		/// Set suffix of timestamp in web.archive.org URLs ("fw_" = hide toolbar, "id_" = original links, "" = default)
+		/// </summary>
+		public static string ArchiveUrlSuffix = "";
+
+		/// <summary>
 		/// Make Web.Archive.Org error messages laconic (for retro browsers)
 		/// </summary>
 		public static bool ShortenArchiveErrors = false;

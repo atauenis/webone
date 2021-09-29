@@ -673,27 +673,34 @@ namespace WebOne
 									if (ArchiveMatch.Success)
 									{
 										Log.WriteLine(" Available.");
-										ArchiveURL = ArchiveMatch.Value.Substring(8, ArchiveMatch.Value.IndexOf(@""",") - 8); //todo: add suffix here (#48)
+										ArchiveURL = ArchiveMatch.Value.Substring(8, ArchiveMatch.Value.IndexOf(@""",") - 8);
+										if (ConfigFile.ArchiveUrlSuffix != "")
+										{ //add suffix
+											Match AUrlParts = Regex.Match(ArchiveURL, "^http://web.archive.org/web/([0-9]*)/(.*)");
+											//http://web.archive.org/web/$1fw_/$2
+											ArchiveURL = "http://web.archive.org/web/" + AUrlParts.Groups[1].Value + ConfigFile.ArchiveUrlSuffix + "/" + AUrlParts.Groups[2].Value;
+										}
+
 										if (ConfigFile.HideArchiveRedirect)
-										{
+										{ //internal redirect to archive
 											try
 											{
 												RequestURL = new Uri(ArchiveURL);
 												#if DEBUG
-												Log.WriteLine("Internal download via Web Archive: " + RequestURL.AbsoluteUri);
+												Log.WriteLine(" Internal download via Web Archive: " + RequestURL.AbsoluteUri);
 												#endif
 												SendRequest(operation);
 												dontworry = true;
 											}
 											catch (Exception ArchiveRetrieveException)
 											{
-												SendInfoPage("WebOne: Web Archive retreive error.", "Cannot load this page from Web Archive", string.Format("<b>The requested page is found only at Web Archive, but cannot be delivered from it.</b><br>{0}", ArchiveRetrieveException.Message.Replace("\n", "<br>")));
+												SendInfoPage("WebOne: Web Archive retrieve error.", "Cannot load this page from Web Archive", string.Format("<b>The requested page is found only at Web Archive, but cannot be delivered from it.</b><br>{0}", ArchiveRetrieveException.Message.Replace("\n", "<br>")));
 												BreakTransit = true;
 												dontworry = true;
 											}
 										}
 										else
-										{
+										{ //regular redirect to archive
 											ResponseBody = "<html><body><h1>Server not found</h2>But an <a href=" + ArchiveURL + ">archived copy</a> is available! Redirecting to it...</body></html>";
 											ClientResponse.AddHeader("Location", ArchiveURL);
 											SendError(302, ResponseBody);

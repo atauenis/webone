@@ -178,6 +178,9 @@ namespace WebOne
 								case "ShortenArchiveErrors":
 									ConfigFile.ShortenArchiveErrors = ToBoolean(Option.Value);
 									break;
+								case "ArchiveUrlSuffix":
+									ConfigFile.ArchiveUrlSuffix = Option.Value;
+									break;
 								case "SecurityProtocols":
 									try { System.Net.ServicePointManager.SecurityProtocol = (System.Net.SecurityProtocolType)(int.Parse(Option.Value)); }
 									catch (NotSupportedException) { Log.WriteLine(true, false, "Warning: Bad TLS version {1} ({0}), using {2} ({2:D}).", Option.Value, (System.Net.SecurityProtocolType)(int.Parse(Option.Value)), System.Net.ServicePointManager.SecurityProtocol); };
