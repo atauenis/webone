@@ -547,7 +547,7 @@ namespace WebOne
 			str = str.Replace("$SYSLOGDIR", logdir).Replace("%SYSLOGDIR%", logdir, StringComparison.CurrentCultureIgnoreCase);
 
 			//get custom variables (e.g. HTTP headers, etc)
-			Dictionary<string, string> AddVars = Variables;
+			Dictionary<string, string> AddVars = new Dictionary<string, string>(Variables);
 			if (AdditionalVariables != null) foreach (var entry in AdditionalVariables) { AddVars.TryAdd(entry.Key, entry.Value); }
 			foreach (KeyValuePair<string, string> Var in AddVars)
 			{
