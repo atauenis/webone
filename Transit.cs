@@ -985,24 +985,37 @@ namespace WebOne
 				foreach (string value in operation.ResponseHeaders.GetValues(i))
 				{
 					string corrvalue = value.Replace("https://", "http://");
+					corrvalue = Regex.Replace(corrvalue, "; secure", ";", RegexOptions.IgnoreCase);
+
 					if(LocalMode)
 					{
 						if (corrvalue.StartsWith("http://") && !corrvalue.StartsWith("http://" + GetServerName()))
 							corrvalue = corrvalue.Replace("http://", "http://" + GetServerName() + "/http://");
-
-						corrvalue = corrvalue.Replace("; Domain=http://", "; Domain="  + GetServerName());
-						corrvalue = corrvalue.Replace("; domain=http://", "; domain=" + GetServerName());
-						corrvalue = corrvalue.Replace("; Domain=.", "; Domain=" + ConfigFile.DefaultHostName + "; WebOne-orig-domain=");
-						corrvalue = corrvalue.Replace("; domain=.", "; domain=" + ConfigFile.DefaultHostName + "; webone-orig-domain=");
-						corrvalue = corrvalue.Replace("; Path=/", "; WebOne-NoPath=/");
-						corrvalue = corrvalue.Replace("; path=/", "; webone-nopath=/");
+							corrvalue = Regex.Replace(corrvalue, "domain=[^;]*; ", " ", RegexOptions.IgnoreCase);
+							corrvalue = Regex.Replace(corrvalue, "path=[^;]*; ", " ", RegexOptions.IgnoreCase);
+						//TODO: fix https://github.com/atauenis/webone/issues/21
 					}
-					
-					//todo: rewrite cookie processing due to bug #21
 
-					corrvalue = corrvalue
-						.Replace("; secure", "")
-						.Replace("; Secure", "");
+					if(header.ToLower() == "set-cookie" && corrvalue.Contains(", "))
+					{
+						//multiple cookies per single header
+						//https://stackoverflow.com/questions/51564395/add-multiple-cookies-to-clients-web-browser-via-httplistenerresponse
+						//causes https://github.com/atauenis/webone/issues/21 & https://github.com/atauenis/webone/issues/35
+
+						string[] allcookies = corrvalue.Split(", ");
+
+						string cookieplus = "";
+						foreach(var cookie in allcookies)
+						{
+							if (Regex.Match(cookie, "[0-9][0-9]-[A-Z][a-z][a-z]-[0-9][0-9][0-9][0-9]").Success)
+							{
+								cookieplus += " " + cookie;
+								//Console.WriteLine("FOLDED COOKIE: {0}", cookieplus);
+								ClientResponse.AppendHeader("Set-Cookie", cookieplus);
+							}
+							else cookieplus = cookie;
+						}
+					}
 
 					if (!header.StartsWith("Content-") &&
 					!header.StartsWith("Connection") &&
@@ -1013,7 +1026,7 @@ namespace WebOne
 					!header.StartsWith("Upgrade-Insecure-Requests") &&
 					!(header.StartsWith("Vary") && corrvalue.Contains("Upgrade-Insecure-Requests")))
 					{
-						ClientResponse.AddHeader(header, corrvalue);
+						ClientResponse.AppendHeader(header, corrvalue);
 					}
 				}
 			}
