@@ -6,7 +6,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Authors>Alexander Tauenis</Authors>
     <Version>0.11.1</Version>
-    <VersionSuffix>-pre</VersionSuffix>
+    <VersionSuffix></VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
     <PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
     <Company>World</Company>
     <Product>WebOne HTTP Proxy Server</Product>

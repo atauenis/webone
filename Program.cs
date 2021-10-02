@@ -31,7 +31,7 @@ namespace WebOne
 
 		static void Main(string[] args)
 		{
-			Variables.Add("WOVer", Assembly.GetExecutingAssembly().GetName().Version.ToString() + "-pre");
+			Variables.Add("WOVer", Assembly.GetExecutingAssembly().GetName().Version.ToString()/* + "-pre"*/);
 			Variables.Add("WOSystem", Environment.OSVersion.ToString());
 
 			Console.Title = "WebOne";
@@ -661,7 +661,7 @@ namespace WebOne
 					if (Environment.OSVersion.Version.Major < 16) //Linux
 						return "/var/log";
 					else //macOS 10.12+ or Darwin
-						return Environment.SpecialFolder.UserProfile + "/Library/Logs";
+						return Environment.GetEnvironmentVariable("HOME") + "/Library/Logs";
 				default:
 					return Environment.CurrentDirectory;
 			}
