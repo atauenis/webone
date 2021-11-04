@@ -52,12 +52,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <DebDependency Include="ffmpeg" />
+    <DebRecommends Include="ffmpeg" />
     <DebDependency Include="imagemagick-6.q16" />
   </ItemGroup>
 
   <ItemGroup>
-    <RpmDependency Include="ffmpeg" />
     <RpmDependency Include="ImageMagick" />
   </ItemGroup>
 
