@@ -1,4 +1,4 @@
-@echo WebOne build script	20.12.2021
+@echo WebOne build script	25.12.2021
 @echo.
 
 @echo Clean up directories:
@@ -27,9 +27,9 @@ dotnet rpm --no-restore -c Release -r linux-x64
 dotnet publish -c ReleaseSC -r linux-arm
 dotnet deb --no-restore -c ReleaseSC -r linux-arm
 dotnet rpm --no-restore -c ReleaseSC -r linux-arm
-@rem dotnet publish -c ReleaseSC -r linux-arm64
-@rem dotnet deb --no-restore -c ReleaseSC -r linux-arm64
-@rem dotnet rpm --no-restore -c ReleaseSC -r linux-arm64
+dotnet publish -c ReleaseSC -r linux-arm64
+dotnet deb --no-restore -c ReleaseSC -r linux-arm64
+dotnet rpm --no-restore -c ReleaseSC -r linux-arm64
 dotnet publish -c Release -r osx-x64
 @rem dotnet pkg -r osx-x64 -c Release
 dotnet tarball --no-restore -c Release -r osx-x64
@@ -61,11 +61,12 @@ dotnet tarball install
 dotnet rpm install
 dotnet deb install
 @IF ERRORLEVEL 0 GOTO Build
-@echo Seems, an error occured. How about to read this: https://github.com/quamotion/dotnet-packaging ?
+@echo Seems, an error occured. How about to read this:
+@echo https://github.com/quamotion/dotnet-packaging  ?
 @GOTO :EOF
 
 :NoNetSDK
 @echo ERROR:
 @echo You need to have Microsoft .NET Core SDK 3.1 or Microsoft Visual Studio 2019+.
-@echo It can be downloaded here: https://dotnet.microsoft.com/en-us/download/dotnet/3.1
-@echo                   or here: https://visualstudio.microsoft.com/ru/vs/community/
+@echo Dowload it here: https://dotnet.microsoft.com/en-us/download/dotnet/3.1
+@echo         or here: https://visualstudio.microsoft.com/ru/vs/community/
