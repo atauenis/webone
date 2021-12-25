@@ -68,5 +68,5 @@ dotnet deb install
 :NoNetSDK
 @echo ERROR:
 @echo You need to have Microsoft .NET Core SDK 3.1 or Microsoft Visual Studio 2019+.
-@echo Dowload it here: https://dotnet.microsoft.com/en-us/download/dotnet/3.1
-@echo         or here: https://visualstudio.microsoft.com/ru/vs/community/
+@echo Download it here: https://dotnet.microsoft.com/en-us/download/dotnet/3.1
+@echo          or here: https://visualstudio.microsoft.com/ru/vs/community/
