@@ -736,37 +736,73 @@ namespace WebOne
 
 					if (!dontworry)
 					{
+						//display error page
 						ContentType = "text/html";
 #if DEBUG
+						//full debug output
 						string err = ": " + wex.Status.ToString();
 						SendInfoPage("WebOne cannot load the page", "Can't load the page: " + wex.Status.ToString(), "<i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + "<br>Debug mode enabled.");
 						BreakTransit = true;
 #else
-						string NiceErrMsg;
+						//nice error message
+						string ErrorMessage = "", ErrorMessageHeader = "Cannot load this page";
 
 						switch(wex.Status){
+							case WebExceptionStatus.NameResolutionFailure:
+								//server not found
+								ErrorMessageHeader = "Cannot find the server";
+								ErrorMessage = "<p><big>" + wex.InnerException.Message + "</big></p>" +
+								"<ul><li>Check the address for typing errors such as <strong>ww</strong>.example.com instead of <strong>www</strong>.example.com.</li>" +
+								"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+								"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
+								"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
+								"</ul>"; //InnerException use is a workaround for .NET Core problem with message duplication
+								break;
 							case WebExceptionStatus.UnknownError:
 								if (wex.InnerException != null)
 								{
-									if(wex.Message.Contains(GetFullExceptionMessage(wex, true, true)))
+									if (wex.Message.Contains(GetFullExceptionMessage(wex, true, true)))
 									{
-										NiceErrMsg = " <p><big>" + wex.Message + "</big></p>Kind of error: " + wex.InnerException.GetType().ToString();
+										//do not duplicate exception messages, and show only first
+										ErrorMessage = " <p><big>" + wex.Message + "</big></p>Kind of error: " + wex.InnerException.GetType().ToString();
 									}
 									else
 									{
-										NiceErrMsg = " <p><big>" + wex.Message + "</big></p><p>" + GetFullExceptionMessage(wex, true, true).Replace("\n", "<br>") + "</p>Kind of error: " + wex.InnerException.GetType().ToString();
+										if (wex.InnerException.GetType().ToString() == "System.Net.Http.HttpRequestException")
+										{
+											//TLS problem
+											ErrorMessageHeader = "Cannot connect to the server";
+											ErrorMessage = "<p><big>Secure connection could not be established.</big></p>" +
+											"<ul><li>The page you are trying to view cannot be shown because the authenticity of the received data could not be verified.</li>" +
+											"<li>Make sure that the OS on the proxy server have all updates installed.</li>" +
+											"<li>Check date and time on the proxy server.</li>" +
+											"<li>Verify that the proxy server operating system have proper support for TLS/SSL version and chiphers used on the site.</li>" +
+											"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+											"</ul>";
+
+											ErrorMessage += "More info:" +
+											"<p>" + wex.Message + "</p><p>" + GetFullExceptionMessage(wex, true, true).Replace("\n", "<br>") +
+											"</p>Kind of error: " + wex.InnerException.GetType().ToString() + "";
+										}
+										else
+										{
+											//other error, so report all exceptions
+											ErrorMessage = " <p><big>" + wex.Message + "</big></p><p>" + GetFullExceptionMessage(wex, true, true).Replace("\n", "<br>") + "</p>Kind of error: " + wex.InnerException.GetType().ToString();
+										}
 									}
 								}
 								else
-									NiceErrMsg = " <p><big>" + wex.Message + "</big></p>Kind of error: " + wex.GetType().ToString() + " (no inner exceptions)";
+								{
+									ErrorMessage = " <p><big>" + wex.Message + "</big></p>Kind of error: " + wex.GetType().ToString() + " (no inner exceptions)";
+								}
 								break;
 							default:
-								NiceErrMsg = "<p><big>" + wex.Message + ".</big></p>Status: " + wex.Status;
+								ErrorMessage = "<p><big>" + wex.Message + ".</big></p>Status: " + wex.Status;
 								break;
 						}
 
-						string ErrorMessage = NiceErrMsg + "<br>URL: " + RequestURL.AbsoluteUri;
-						SendInfoPage("WebOne: " + wex.Status, "Cannot load this page", ErrorMessage);
+						ErrorMessage += "<br>URL: " + RequestURL.AbsoluteUri;
+						SendInfoPage("WebOne: " + wex.Status, ErrorMessageHeader, ErrorMessage);
 						BreakTransit = true;
 #endif
 					}
