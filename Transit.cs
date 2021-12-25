@@ -1616,7 +1616,7 @@ namespace WebOne
 
 			string Html = "<html>\n" +
 			title +
-			string.Format("<meta charset=\"{0}\"/>", OutputContentEncoding == null ? "utf-16" : OutputContentEncoding.WebName) +
+			string.Format("<meta charset=\"{0}\"/>", OutputContentEncoding == null ? "utf-8" : OutputContentEncoding.WebName) +
 			"<body>" +
 			header1 +
 			Content +
