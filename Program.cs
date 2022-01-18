@@ -658,9 +658,9 @@ namespace WebOne
 				case PlatformID.Win32NT:
 					return Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 				case PlatformID.Unix:
-					if (Environment.OSVersion.Version.Major < 16) //Linux
+					if (Environment.OSVersion.Version.Major < 10) //Linux
 						return "/var/log";
-					else //macOS 10.12+ or Darwin
+					else //macOS or Darwin
 						return Environment.GetEnvironmentVariable("HOME") + "/Library/Logs";
 				default:
 					return Environment.CurrentDirectory;
