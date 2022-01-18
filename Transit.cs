@@ -747,7 +747,7 @@ namespace WebOne
 						//nice error message
 						string ErrorMessage = "", ErrorMessageHeader = "Cannot load this page";
 
-						switch(wex.Status){
+						switch (wex.Status){
 							case WebExceptionStatus.NameResolutionFailure:
 								//server not found
 								ErrorMessageHeader = "Cannot find the server";
@@ -758,13 +758,49 @@ namespace WebOne
 								"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
 								"</ul>"; //InnerException use is a workaround for .NET Core problem with message duplication
 								break;
+							case WebExceptionStatus.Timeout:
+								//connection timeout
+								ErrorMessageHeader = "The connection has timed out";
+								ErrorMessage = "<p><big>" + wex.Message + "</big></p>" +
+								"<ul><li>The site could be temporarily unavailable or too busy. Try again in a few moments.</li>" +
+								"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+								"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
+								"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
+								"</ul>";
+								break;
+							case WebExceptionStatus.ConnectFailure:
+								//connection broken
+								ErrorMessageHeader = "The connection was interrupted";
+								ErrorMessage = "<p><big>" + wex.Message + "</big></p>" +
+								"<ul><li>The site could be temporarily unavailable or too busy. Try again in a few moments.</li>" +
+								"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+								"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
+								"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
+								"</ul>";
+								break;
+							case WebExceptionStatus.SecureChannelFailure:
 							case WebExceptionStatus.UnknownError:
 								if (wex.InnerException != null)
 								{
 									if (wex.Message.Contains(GetFullExceptionMessage(wex, true, true)))
 									{
-										//do not duplicate exception messages, and show only first
-										ErrorMessage = " <p><big>" + wex.Message + "</big></p>Kind of error: " + wex.InnerException.GetType().ToString();
+										if (wex.InnerException.InnerException != null && wex.InnerException.InnerException.Message.StartsWith("TLS Policy Error(s)"))
+										{
+											//certificate is correct, but invalid (bad date, domain name, etc)
+											ErrorMessageHeader = "Connection to the remote server is dangerous";
+											ErrorMessage = "<p><big>" + wex.InnerException.InnerException.Message + "</big></p>" +
+											"<ul><li>The proxy server has blocked this connection to protect you from possible attack.</li>" +
+											"<li>This could be a problem with the server's configuration, or it could be someone trying to impersonate the server.</li>" +
+											"<li>If you have connected to this server successfully in the past, the error may be temporary, and you can try again later.</li>" +
+											"<li>To disable this security check, set <q><b>ValidateCertificates=no</b></q> in proxy configuration file. But this will make the proxy less secure, do this at your own risk.</li>" +
+											"<li>Make sure that date and time on the proxy server are correct.</li>" +
+											"</ul>";
+										}
+										else
+										{
+											//do not duplicate exception messages, and show only first
+											ErrorMessage = " <p><big>" + wex.Message + "</big></p>Kind of error: " + wex.InnerException.GetType().ToString();
+										}
 									}
 									else
 									{
@@ -778,6 +814,7 @@ namespace WebOne
 											"<li>Check date and time on the proxy server.</li>" +
 											"<li>Verify that the proxy server operating system have proper support for TLS/SSL version and chiphers used on the site.</li>" +
 											"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+											"<li>This could be also a problem with the server's configuration, or it could be someone trying to impersonate the server.</li>"+
 											"</ul>";
 
 											ErrorMessage += "More info:" +
