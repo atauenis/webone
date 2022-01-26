@@ -857,6 +857,7 @@ namespace WebOne
 							"<p>Try to slightly change the URL.</p>" +
 							"<small><i>You see this message because ShortenArchiveErrors option is enabled.</i></small>";
 							SendError(404, ErrMsg404);
+							BreakTransit = true;
 							break;
 						case 403:
 							string ErrMsg403 =
@@ -864,9 +865,9 @@ namespace WebOne
 							"<p>This page is not present in Web Archive.</p>" +
 							"<small><i>You see this message because ShortenArchiveErrors option is enabled.</i></small>";
 							SendError(404, ErrMsg403);
+							BreakTransit = true;
 							break;
 					}
-					BreakTransit = true;
 				}
 
 				//try to return...
