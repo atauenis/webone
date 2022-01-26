@@ -715,16 +715,6 @@ namespace WebOne
 								else
 								{
 									Log.WriteLine(" No snapshots.");
-									if (RequestURL.AbsoluteUri.StartsWith("http://web.archive.org/web/") && ConfigFile.ShortenArchiveErrors)
-									{
-										string ErrMsg =
-										"<p><b>The Wayback Machine has not archived that URL.</b></p>" +
-										"<p>This page is not available on the web because page does not exist<br>" +
-										"Try to slightly change the URL.</p>" +
-										"<small><i>You see this message because ShortenArchiveErrors option is enabled.</i></small>";
-										SendError(404, ErrMsg);
-										BreakTransit = true;
-									}
 								}
 							}
 							catch (Exception ArchiveException)
@@ -854,6 +844,29 @@ namespace WebOne
 					BreakTransit = true;
 					Log.WriteLine(" ============GURU MEDITATION:\n{1}\nOn URL '{2}', Method '{3}'. Returning 500.============", null, ex.ToString(), RequestURL.AbsoluteUri, ClientRequest.HttpMethod);
 					SendError(500, "Guru meditaion at URL " + RequestURL.AbsoluteUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace.Replace("\n", "\n<br>") + "</i>");
+				}
+
+				//shorten Web Archive error page if need
+				if (!BreakTransit && RequestURL.AbsoluteUri.StartsWith("http://web.archive.org/web/") && ConfigFile.ShortenArchiveErrors)
+				{
+					Log.WriteLine(" Wayback Machine error page shortened.");
+					switch(ResponseCode){
+						case 404:
+							string ErrMsg404 =
+							"<p><b>The Wayback Machine has not archived that URL.</b></p>" +
+							"<p>Try to slightly change the URL.</p>" +
+							"<small><i>You see this message because ShortenArchiveErrors option is enabled.</i></small>";
+							SendError(404, ErrMsg404);
+							break;
+						case 403:
+							string ErrMsg403 =
+							"<p><b>This URL has been excluded from the Wayback Machine.</b></p>" +
+							"<p>This page is not present in Web Archive.</p>" +
+							"<small><i>You see this message because ShortenArchiveErrors option is enabled.</i></small>";
+							SendError(404, ErrMsg403);
+							break;
+					}
+					BreakTransit = true;
 				}
 
 				//try to return...
