@@ -194,11 +194,6 @@ fi
         <LinuxPath Condition="$(RuntimeIdentifier.Contains('linux'))">/etc/webone.conf.d/codepage.conf</LinuxPath>
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-
-    <Content Include="ie4chl.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
-        <LinuxPath Condition="$(RuntimeIdentifier.Contains('linux'))">/etc/webone.conf.d/ie4chl.conf</LinuxPath>
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 
   <ItemGroup Condition="$(RuntimeIdentifier.Contains('win'))">
