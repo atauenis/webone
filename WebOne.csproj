@@ -170,6 +170,9 @@ fi
     <None Update="README.md">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="CONTRIBUTING.md">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="logo.webp">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
