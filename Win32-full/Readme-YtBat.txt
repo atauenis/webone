@@ -21,13 +21,16 @@ Step 4. Add to [Converters] section of webone.conf this line:
          yt.bat "%SRCURL%"
 Step 5. Add to webone.conf this edit set:
         [Edit:^(http://www\.|http://)youtube.com/watch]
-        AddRedirect=http://%Proxy%/!convert/?url=%Url%&util=yt.bat&type=video/x-ms-asf
         AddConvert=yt.bat
+        AddResponseHeader=Content-Type: video/MP2T
 Step 6. Open any player on client PC and open url
          http://youtube.com/watch?v=any_video_id                     * via proxy
         or
          http://proxyhost:port/!convert/?url=URL_LIKE_ABOVE&util=yt.bat  *direct
         The requested video should begin playing in the player.
+
+In full Win32/64 builds of WebOne, steps 1-4 are already complete. Step 5 is
+present in webone.conf, but by default is commented (disabled).
 
 Configuring:
 - To change path to youtube-dl.exe and/or ffmpeg.exe edit yt.bat and
@@ -42,4 +45,4 @@ on proxy machine with "-codecs" and "-formats" arguments.
 Note: the example edit set in Step 5 of the manual is for WebOne 0.10.1+.
 For WebOne 0.9.2/0.9.3 use this old-style webone.conf rule:
          [FixableURL:^(http://www\.|http://)youtube.com/watch]
-         Redirect=http://%Proxy%/!convert/?url=%Url%&util=yt.bat
+         Redirect=http://%Proxy%/!convert/?url=%Url%&util=yt.bat&type=video/MP2T
