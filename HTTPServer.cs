@@ -38,7 +38,9 @@ namespace WebOne
 		/// </summary>
 		public void Start() {
 			Log.WriteLine(true, false, "Starting server...");
-			if (_listener == null) _listener = new HttpListener();
+			//if (_listener == null) _listener = new HttpListener();
+			try { int test = _listener.Prefixes.Count; }
+			catch { _listener = new HttpListener(); /*initialize HttpListener if it is not ready*/ }
 			_listener.Prefixes.Add("http://*:" + Port + "/");
 			_listener.Start();
 			_listener.BeginGetContext(ProcessRequest, null);
