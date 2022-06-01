@@ -3,9 +3,9 @@
   <PropertyGroup>
     <AssemblyName>webone</AssemblyName>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <Authors>Alexander Tauenis</Authors>
-    <Version>0.11.3</Version>
+    <Version>0.11.12</Version>
     <VersionSuffix></VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
     <PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
     <Company>World</Company>
@@ -17,6 +17,8 @@
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <Configurations>Debug;Release;ReleaseSC</Configurations>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm;linux-x64;linux-arm;linux-arm64;osx-x64</RuntimeIdentifiers>
+		<NoWarn>$(NoWarn);NETSDK1179;NETSDK1182</NoWarn>
+    <!-- https://github.com/dotnet/sdk/issues/24269, https://stackoverflow.com/questions/69773547/visual-studio-2019-not-showing-net-6-framework/ -->
   </PropertyGroup>
 
   <PropertyGroup Condition="$(RuntimeIdentifier.Contains('linux'))">

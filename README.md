@@ -12,7 +12,7 @@ The program's settings are in the __webone.conf__ file (but any other file name 
 See [WebOne wiki](https://github.com/atauenis/webone/wiki) for complete list of features and full documentation.
 
 ## Server prerequisites
-Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET Core 3.1 Runtime are required on server PC. See [.NET Core 3.1 System Requirements](https://github.com/dotnet/core/blob/master/release-notes/3.1/3.1-supported-os.md).
+Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET 6.0 Runtime are required on server PC. See [.NET 6.0 System Requirements](https://github.com/dotnet/core/blob/main/release-notes/6.0/supported-os.md).
 
 Image and/or video format converting is performing via external utilities: `convert` (from ImageMagick), `ffmpeg`, `youtube-dl`.
 
@@ -54,7 +54,7 @@ The server can be started even on public hosts. But don't forget to enable passw
 ## Build
 Latest source code can be always found in the __master__ branch of [Git repository](https://github.com/atauenis/webone). Forks and pull requests are welcome!
 
-The program is built using Microsoft .NET Core 3.1 SDK and [dotnet-packaging](https://github.com/qmfrederik/dotnet-packaging/) add-on. With it the building is easy: use `dotnet publish` & `dotnet deb || dotnet rpm || dotnet zip` tools.
+The program is built using Microsoft .NET 6.0 SDK and [dotnet-packaging](https://github.com/qmfrederik/dotnet-packaging/) add-on. With it the building is easy: use `dotnet publish` & `dotnet deb || dotnet rpm || dotnet zip` tools.
 
 Windows developers can utilize `Build.bat` script for cross-platform building. "Full" Win7SP1+ builds are made by hand by merging *ReleaseWin32* zip with content of `Win32-full` directory and some magic.
 
@@ -75,7 +75,7 @@ __WebOne__ - прокси-сервер HTTP, позволяющий открыв
 * Конвертация или пережатие графических и видеофайлов "на лету" (используя внешние конвертеры).
 * Переадресация с несуществующих адресов на Web Archive.
 
-Этот прокси-сервер необходимо запускать на любом современном ПК с .NET Core 3.1, IP адрес которого указывается в настройках устаревшего веб-обозревателя. Порт по умолчанию 8080, тип прокси HTTP 1.0. Доступен файл автоматической настройки: http://proxyhost:port/auto.pac .
+Этот прокси-сервер необходимо запускать на любом современном ПК с Microsoft .NET 6.0 Runtime, IP адрес которого указывается в настройках устаревшего веб-обозревателя. Порт по умолчанию 8080, тип прокси HTTP 1.0. Доступен файл автоматической настройки: http://proxyhost:port/auto.pac .
 
 Настройки прокси-сервера хранятся в файле __webone.conf__ или любом другом в одном из следующих мест:
 
