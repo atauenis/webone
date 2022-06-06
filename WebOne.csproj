@@ -17,14 +17,14 @@
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <Configurations>Debug;Release;ReleaseSC</Configurations>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm;linux-x64;linux-arm;linux-arm64;osx-x64</RuntimeIdentifiers>
-		<NoWarn>$(NoWarn);NETSDK1179;NETSDK1182</NoWarn>
+    <NoWarn>$(NoWarn);NETSDK1179;NETSDK1182</NoWarn>
     <!-- https://github.com/dotnet/sdk/issues/24269, https://stackoverflow.com/questions/69773547/visual-studio-2019-not-showing-net-6-framework/ -->
   </PropertyGroup>
 
   <PropertyGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
     <PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-x64'">amd64</PackageArchitecture>
     <PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-arm'">armhf</PackageArchitecture>
-		<PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-arm64'">arm64</PackageArchitecture>
+    <PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-arm64'">arm64</PackageArchitecture>
     <PackageName>webone.$(PackageVersion).linux-$(PackageArchitecture)</PackageName>
   </PropertyGroup>
 
@@ -46,9 +46,9 @@
     <SelfContained>True</SelfContained>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(TargetFramework) == 'netcoreapp3.1' AND $(SelfContained)==false">
-    <DebDotNetDependencies Include="dotnet-runtime-3.1" />
-    <RpmDotNetDependency Include="dotnet-runtime-3.1" Version="" />
+  <ItemGroup Condition="$(SelfContained)==false">
+    <DebDotNetDependencies Include="dotnet-runtime-6.0" />
+    <RpmDotNetDependencies Include="dotnet-runtime-6.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -58,12 +58,6 @@
 
   <ItemGroup>
     <RpmDependency Include="ImageMagick" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(SelfContained)==true">
-    <!--Fix for self-contained debs on Ubuntu 20.xx-->
-    <DebDotNetDependencies Remove="libc6, libgcc1, libgssapi-krb5-2, libstdc++6, zlib1g, libssl1.1 | libssl1.0.2 | libssl1.0.1 | libssl1.0.0 | libssl0.9.8, libicu63 | libicu62 | libicu61 | libicu60 | libicu59 | libicu58 | libicu57 | libicu56 | libicu55 | libicu54 | libicu53 | libicu52" />
-    <DebDotNetDependencies Include="libc6, libgcc1, libgssapi-krb5-2, libstdc++6, zlib1g, libssl1.1 | libssl1.0.2 | libssl1.0.1 | libssl1.0.0 | libssl0.9.8, libicu70 | libicu69 | libicu68 | libicu67 | libicu66 | libicu65 | libicu64 | libicu63 | libicu62 | libicu61 | libicu60 | libicu59 | libicu58 | libicu57 | libicu56 | libicu55 | libicu54 | libicu53 | libicu52" /> 
   </ItemGroup>
 
   <PropertyGroup>
