@@ -107,47 +107,16 @@ fi
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="avconv\**" />
-    <Compile Remove="bin-old\**" />
-    <Compile Remove="docs\**" />
-    <Compile Remove="EXE\**" />
-    <Compile Remove="ImageMagic\**" />
-    <Compile Remove="Netscape\**" />
-    <Compile Remove="obj-old\**" />
-    <Compile Remove="Screenshots\**" />
-    <Compile Remove="viewtube\**" />
-    <EmbeddedResource Remove="avconv\**" />
-    <EmbeddedResource Remove="bin-old\**" />
-    <EmbeddedResource Remove="docs\**" />
-    <EmbeddedResource Remove="EXE\**" />
-    <EmbeddedResource Remove="ImageMagic\**" />
-    <EmbeddedResource Remove="Netscape\**" />
-    <EmbeddedResource Remove="obj-old\**" />
-    <EmbeddedResource Remove="Screenshots\**" />
-    <EmbeddedResource Remove="viewtube\**" />
-    <None Remove="avconv\**" />
-    <None Remove="bin-old\**" />
-    <None Remove="docs\**" />
-    <None Remove="EXE\**" />
-    <None Remove="ImageMagic\**" />
-    <None Remove="Netscape\**" />
-    <None Remove="obj-old\**" />
-    <None Remove="Screenshots\**" />
-    <None Remove="viewtube\**" />
-    <None Include="LICENSE.txt">
-      <Pack>True</Pack>
-      <PackagePath></PackagePath>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
+    <None Remove="docs/**" />
+    <None Remove="EXE/**" />
+    <None Remove="ImageMagic/**" />
+    <None Remove="Netscape/**" />
+    <None Remove="Screenshots/**" />
+    <None Remove="viewtube/**" />
+    <None Remove="WebFixes/**" />
     <None Remove="convert.txt" />
-    <None Remove="FAQ.rus.txt" />
-    <None Remove="Firefox 3.6 CE - РЇСЂР»С‹Рє.lnk" />
-    <None Remove="HIEW32.EXE.lnk" />
-    <None Remove="netscape - РЇСЂР»С‹Рє.lnk" />
-    <None Remove="Netscape.rar" />
-    <None Remove="webone-youtube-dl.zip" />
+    <None Remove="*.rar" />
+    <None Remove="*.lnk" />
   </ItemGroup>
 
   <ItemGroup>
