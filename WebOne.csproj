@@ -46,6 +46,10 @@
     <SelfContained>True</SelfContained>
   </PropertyGroup>
 
+  <PropertyGroup Condition="$(RuntimeIdentifier.Contains('win')) AND $(SelfContained)==true">
+		<PackageName>WebOne.$(PackageVersion).$(RuntimeIdentifier).full.self-contained</PackageName>
+	</PropertyGroup>
+
   <ItemGroup Condition="$(SelfContained)==false">
     <DebDotNetDependencies Include="dotnet-runtime-6.0" />
     <RpmDotNetDependencies Include="dotnet-runtime-6.0" />
@@ -172,5 +176,22 @@ fi
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+	<ItemGroup Condition="$(RuntimeIdentifier.Contains('win')) AND $(SelfContained)==true">
+		<None Include="Win32-full/*.*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<Link>%(Filename)%(Extension)</Link>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup Condition="$(RuntimeIdentifier.Contains('win')) AND $(Configuration)=='Debug'">
+		<None Include="convert.exe">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Include="Win32-full/*.*">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>%(Filename)%(Extension)</Link>
+		</None>
+	</ItemGroup>
 
 </Project>
