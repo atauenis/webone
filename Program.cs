@@ -31,7 +31,7 @@ namespace WebOne
 
 		static void Main(string[] args)
 		{
-			Variables.Add("WOVer", Assembly.GetExecutingAssembly().GetName().Version.ToString()/* + "-pre"*/);
+			Variables.Add("WOVer", Assembly.GetExecutingAssembly().GetName().Version.ToString() + "-beta1");
 			Variables.Add("WOSystem", Environment.OSVersion.ToString());
 
 			Console.Title = "WebOne";

@@ -5,8 +5,8 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <Authors>Alexander Tauenis</Authors>
-    <Version>0.11.12</Version>
-    <VersionSuffix></VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
+    <Version>0.12.0</Version>
+    <VersionSuffix>-beta1</VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
     <PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
     <Company>World</Company>
     <Product>WebOne HTTP Proxy Server</Product>
