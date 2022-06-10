@@ -138,42 +138,45 @@ namespace WebOne
 									SendInternalStatusPage();
 									return;
 								case "/!codepages/":
-									string codepages = "The following code pages are available: <br>\n" +
+									string codepages = "<p>The following code pages are available: <br>\n" +
 													   "<table><tr><td><b>Name</b></td><td><b>#</b></td><td><b>Description</b></td></tr>\n";
-									codepages += "<tr><td><b>AsIs</b></td><td>0</td><td>Leave code pages as is</td></tr>\n";
+									codepages += "<tr><td><b>AsIs</b></td><td>0</td><td>Keep original encoding (code page)</td></tr>\n";
 									Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 									bool IsOutputEncodingListed = false;
 									foreach (EncodingInfo cp in Encoding.GetEncodings())
 									{
 										codepages += "<tr><td>";
-
-										//don't work since transfer to .Net Core:
-										/*if (Encoding.Default.EncodingName.Contains(" ") && cp.DisplayName.Contains(Encoding.Default.EncodingName.Substring(0, Encoding.Default.EncodingName.IndexOf(" "))))
-											codepages += "<b><u>" + cp.Name + "</u></b></td><td><u>" + cp.CodePage + "</u></td><td><u>" + cp.DisplayName + (cp.CodePage == Encoding.Default.CodePage ? "</u> (<i>system default</i>)" : "</u>");
-										else
-											codepages += "<b>" + cp.Name + "</b></td><td>" + cp.CodePage + "</td><td>" + cp.DisplayName;*/
-
 										codepages += "<b>" + cp.Name + "</b></td><td>" + cp.CodePage + "</td><td>" + cp.DisplayName;
-
 
 										if (ConfigFile.OutputEncoding != null && cp.CodePage == ConfigFile.OutputEncoding.CodePage)
 										{
 											codepages += " <b>(Current)</b>";
 											IsOutputEncodingListed = true;
 										}
-
+										/*codepages += "<td>";
+										if (GetCodePage("Win").CodePage == cp.CodePage) codepages += "Windows &quot;ANSI&quot;";
+										if (GetCodePage("DOS").CodePage == cp.CodePage) codepages += "DOS &quot;OEM&quot;";
+										if (GetCodePage("Mac").CodePage == cp.CodePage) codepages += "MacOS classic";
+										if (GetCodePage("EBCDIC").CodePage == cp.CodePage) codepages += "IBM EBCDIC";
+										codepages += "</td>";*/
 										codepages += "</td></tr>\n";
 									}
-									//codepages += "</table><br>Use any of these. Underlined are for your locale.";
-									codepages += "</table><br>Use any of these or from <a href=http://docs.microsoft.com/en-us/dotnet/api/system.text.encoding.getencodings?view=netcore-3.1>Microsoft documentation</a>.";
+									codepages += "</table><br>Use any of these or from <a href=http://docs.microsoft.com/en-us/dotnet/api/system.text.encoding.getencodings?view=net-6.0>.NET documentation</a>.</p>\n";
+
+									codepages += "<p>Code pages for current server's locale:\n" +
+									"<table>" + 
+									"<tr><td>Windows &quot;ANSI&quot;</td><td>" + GetCodePage("Win").WebName + "</td></tr>\n" +
+									"<tr><td>DOS &quot;OEM&quot;</td><td>" + GetCodePage("DOS").WebName + "</td></tr>\n" +
+									"<tr><td>MacOS classic</td><td>" + GetCodePage("Mac").WebName + "</td></tr>\n" +
+									"<tr><td>IBM EBCDIC</td><td>" + GetCodePage("EBCDIC").WebName + "</td></tr>\n" +
+									"</table>This list is correct only for language, set on proxy server machine.</p>\n";
 
 									if (!IsOutputEncodingListed && ConfigFile.OutputEncoding != null)
-										codepages += "<br>Current output encoding: <b>" + ConfigFile.OutputEncoding.WebName + "</b> &quot;" + ConfigFile.OutputEncoding.EncodingName + "&quot; (# " + ConfigFile.OutputEncoding.CodePage + ").";
+										codepages += "<br>Current output encoding: <b>" + ConfigFile.OutputEncoding.WebName + "</b> &quot;" + ConfigFile.OutputEncoding.EncodingName + "&quot; (# " + ConfigFile.OutputEncoding.CodePage + ").\n";
 									if (ConfigFile.OutputEncoding == null)
-										codepages += "<br>Current output encoding: <b>same as source</b>.";
-									codepages += "<br>Current output encoding: <b>same as source</b>.";
+										codepages += "<br>Current output encoding: <b>same as source</b>.\n";
 
-									SendError(200, codepages);
+									SendInfoPage("WebOne: List of supported code pages", "Content encodings", codepages);
 									break;
 								case "/!img-test/":
 									SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
@@ -1422,7 +1425,9 @@ namespace WebOne
 			switch (Charset.ToLower())
 			{
 				case "utf-7":
+#pragma warning disable SYSLIB0001 // The UTF-7 encoding is insecure since .NET 5.0
 					return Encoding.UTF7;
+#pragma warning restore SYSLIB0001
 				case "utf-8":
 					return Encoding.UTF8;
 				case "utf-16":

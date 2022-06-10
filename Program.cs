@@ -31,7 +31,7 @@ namespace WebOne
 
 		static void Main(string[] args)
 		{
-			Variables.Add("WOVer", Assembly.GetExecutingAssembly().GetName().Version.ToString() + "-beta1");
+			Variables.Add("WOVer", Assembly.GetExecutingAssembly().GetName().Version.ToString() + "-beta2");
 			Variables.Add("WOSystem", Environment.OSVersion.ToString());
 
 			Console.Title = "WebOne";
@@ -311,7 +311,9 @@ namespace WebOne
 						switch (CP.ToLower())
 						{
 							case "utf-7":
+#pragma warning disable SYSLIB0001 // The UTF-7 encoding is insecure since .NET 5.0
 								return Encoding.UTF7;
+#pragma warning restore SYSLIB0001
 							case "utf-8":
 								return Encoding.UTF8;
 							case "utf-16":
