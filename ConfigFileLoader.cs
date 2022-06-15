@@ -260,6 +260,18 @@ namespace WebOne
 							if (Line.HaveKeyValue) ConfigFile.TranslitTable.Add(new KeyValuePair<string, string>(Line.Key, Line.Value));
 						}
 						break;
+					case "IpBanList":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							ConfigFile.IpBanList.Add(Line.RawString);
+						}
+						break;
+					case "IpWhiteList":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							ConfigFile.IpWhiteList.Add(Line.RawString);
+						}
+						break;
 					case "Authenticate":
 						foreach (ConfigFileOption Line in Section.Options)
 						{

@@ -64,6 +64,22 @@ namespace WebOne
 			#endif
 			try
 			{
+				//check IP black list
+				if (CheckString(ClientRequest.RemoteEndPoint.ToString(), ConfigFile.IpBanList))
+				{
+					Log.WriteLine(" Banned client.");
+					ClientResponse.Close();
+					return;
+				}
+
+				//check IP white list
+				if(ConfigFile.IpWhiteList.Count > 0)
+				if(!CheckString(ClientRequest.RemoteEndPoint.ToString(), ConfigFile.IpWhiteList))
+				{
+					SendError(403, "You are not in the list of allowed clients. Contact proxy server's administrator to add your IP address in it.");
+					Log.WriteLine(" Non-whitelisted client.");
+					return;
+				}
 
 				ShouldRedirectInNETFW = false;
 

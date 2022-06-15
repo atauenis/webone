@@ -153,6 +153,16 @@ namespace WebOne
 		/// </summary>
 		public static string AuthenticateRealm = "WebOne";
 
+		/// <summary>
+		/// List of banned client IP addresses
+		/// </summary>
+		public static List<string> IpBanList = new();
+
+		/// <summary>
+		/// List of allowed client IP addresses
+		/// </summary>
+		public static List<string> IpWhiteList = new();
+
 
 
 		// Hint: All parser-related stuff known from v0.2.0 - 0.10.7 has been rewritten and moved to ConfigFileLoader class.
