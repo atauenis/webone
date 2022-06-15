@@ -173,6 +173,11 @@ namespace WebOne
 		/// </summary>
 		public static List<string> UrlWhiteList = new();
 
+		/// <summary>
+		/// List of the proxy server's host names
+		/// </summary>
+		public static List<string> HostNames = new();
+
 
 
 		// Hint: All parser-related stuff known from v0.2.0 - 0.10.7 has been rewritten and moved to ConfigFileLoader class.

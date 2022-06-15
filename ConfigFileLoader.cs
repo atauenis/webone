@@ -284,6 +284,12 @@ namespace WebOne
 							ConfigFile.UrlWhiteList.Add(Line.RawString);
 						}
 						break;
+					case "HostNames":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							ConfigFile.HostNames.Add(Line.RawString);
+						}
+						break;
 					case "Authenticate":
 						foreach (ConfigFileOption Line in Section.Options)
 						{
