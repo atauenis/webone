@@ -272,6 +272,18 @@ namespace WebOne
 							ConfigFile.IpWhiteList.Add(Line.RawString);
 						}
 						break;
+					case "UrlBlackList":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							ConfigFile.UrlBlackList.Add(Line.RawString);
+						}
+						break;
+					case "UrlWhiteList":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							ConfigFile.UrlWhiteList.Add(Line.RawString);
+						}
+						break;
 					case "Authenticate":
 						foreach (ConfigFileOption Line in Section.Options)
 						{

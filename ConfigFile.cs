@@ -163,6 +163,16 @@ namespace WebOne
 		/// </summary>
 		public static List<string> IpWhiteList = new();
 
+		/// <summary>
+		/// List of disallowed URLs
+		/// </summary>
+		public static List<string> UrlBlackList = new();
+
+		/// <summary>
+		/// List of only allowed URLs
+		/// </summary>
+		public static List<string> UrlWhiteList = new();
+
 
 
 		// Hint: All parser-related stuff known from v0.2.0 - 0.10.7 has been rewritten and moved to ConfigFileLoader class.

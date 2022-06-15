@@ -124,6 +124,14 @@ namespace WebOne
 
 				string RefererUri = ClientRequest.Headers["Referer"];
 
+				//check for blacklisted URL
+				if (CheckString(RequestURL.ToString(), ConfigFile.UrlBlackList))
+				{
+					Log.WriteLine(" Blacklisted URL.");
+					SendError(403, "Access to this web page is disallowed by proxy settings.");
+					return;
+				}
+
 				//check for local or internal URL
 				bool IsLocalhost = false;
 
@@ -548,6 +556,15 @@ namespace WebOne
 						}
 					}
 				}
+
+				//check for URL white list (if any)
+				if (ConfigFile.UrlWhiteList.Count > 0)
+					if (!CheckString(RequestURL.ToString(), ConfigFile.UrlWhiteList))
+					{
+						SendError(403, "Proxy server administrator has been limited this proxy server to work with several web sites only.");
+						Log.WriteLine(" URL out of white list.");
+						return;
+					}
 
 				bool BreakTransit = false; //use instead of return
 
