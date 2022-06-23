@@ -1051,7 +1051,7 @@ namespace WebOne
 							TransitStream = null;
 
 							string RequestMethod = operation.Method;
-							WebHeaderCollection RequestHeaderCollection = operation.RequestHeaders; //UNDONE: somewhere loses request headers when "reload secure" happens.
+							WebHeaderCollection RequestHeaderCollection = (WebHeaderCollection)ClientRequest.Headers;
 							operation = new HttpOperation(Log);
 							operation.Method = RequestMethod;
 							operation.RequestHeaders = RequestHeaderCollection;
