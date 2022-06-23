@@ -6,7 +6,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <Authors>Alexander Tauenis</Authors>
     <Version>0.12.0</Version>
-    <VersionSuffix>-beta1</VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
+    <VersionSuffix>-beta2</VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
     <PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
     <Company>World</Company>
     <Product>WebOne HTTP Proxy Server</Product>
@@ -194,4 +194,10 @@ fi
 		</None>
 	</ItemGroup>
 
+	<ItemGroup Condition="$(RuntimeIdentifier.Contains('osx'))">
+		<None Include="macOS-resforks/*.*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<Link>__MACOSX/%(Filename)%(Extension)</Link>
+		</None>
+	</ItemGroup>
 </Project>

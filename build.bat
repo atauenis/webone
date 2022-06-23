@@ -1,4 +1,4 @@
-@echo WebOne build script	25.12.2021
+@echo WebOne build script	23.06.2022
 @echo.
 
 @echo Clean up directories:
@@ -31,8 +31,7 @@ dotnet publish -c ReleaseSC -r linux-arm64
 dotnet deb --no-restore -c ReleaseSC -r linux-arm64
 dotnet rpm --no-restore -c ReleaseSC -r linux-arm64
 dotnet publish -c Release -r osx-x64
-@rem dotnet pkg -r osx-x64 -c Release
-dotnet tarball --no-restore -c Release -r osx-x64
+dotnet zip --no-restore -c Release -r osx-x64
 dotnet publish -c Release -r win-x86
 dotnet zip --no-restore -c Release -r win-x86
 dotnet zip --no-restore -c ReleaseSC -r win-x86
@@ -48,7 +47,7 @@ dotnet zip --no-restore -c Release -r win-x64
 
 :NoToolkit
 @echo BUILD PROBLEM:
-@echo Your environment does not have Packaging utilities for .NET Core installed.
+@echo Your environment does not have Packaging utilities for .NET installed.
 @echo Press any key to install them and try again, or Ctrl+C to exit this script now.
 @echo.
 @pause
@@ -67,6 +66,6 @@ dotnet deb install
 
 :NoNetSDK
 @echo ERROR:
-@echo You need to have Microsoft .NET Core SDK 3.1 or Microsoft Visual Studio 2019+.
-@echo Download it here: https://dotnet.microsoft.com/en-us/download/dotnet/3.1
+@echo You need to have Microsoft .NET SDK 6 or Microsoft Visual Studio 2022+.
+@echo Download it here: https://dotnet.microsoft.com/en-us/download/dotnet/6.0
 @echo          or here: https://visualstudio.microsoft.com/ru/vs/community/
