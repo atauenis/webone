@@ -178,6 +178,11 @@ namespace WebOne
 		/// </summary>
 		public static List<string> HostNames = new();
 
+		/// <summary>
+		/// Upper limit of Web Archive page date
+		/// </summary>
+		public static int ArchiveDateLimit = 0;
+
 
 
 		// Hint: All parser-related stuff known from v0.2.0 - 0.10.7 has been rewritten and moved to ConfigFileLoader class.

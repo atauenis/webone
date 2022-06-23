@@ -46,12 +46,17 @@ namespace WebOne
 				return;
 			}
 
-			//find last archived version, preferable without redirects
+			//find last (or last at ArchiveDateLimit date) archived version, preferable without redirects
 			string LastCdxEntry = "";
 			foreach (var CdxEntry in CdxBody)
 			{
 				string[] Fields = CdxEntry.Split(" ");
 				if (Fields.Count() != CdxFieldsCount) continue;
+				if(ConfigFile.ArchiveDateLimit > 0)
+				{
+					long.TryParse(Fields[0], out long Timestamp);
+					if (Timestamp > ConfigFile.ArchiveDateLimit * (Math.Pow(10, 6))) continue;
+				}
 				if (Fields[2] == "200") LastCdxEntry = CdxEntry;
 			}
 			if (LastCdxEntry == "") LastCdxEntry = CdxBody[^1];

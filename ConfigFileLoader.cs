@@ -215,6 +215,19 @@ namespace WebOne
 								case "DisplayStatusPage":
 									ConfigFile.DisplayStatusPage = Option.Value;
 									break;
+								case "ArchiveDateLimit":
+									int ArchiveDateLimit = 0;
+									int.TryParse(Option.Value, out ArchiveDateLimit);
+									if(ArchiveDateLimit > 0)
+									{
+										if(ArchiveDateLimit > 10000000 && ArchiveDateLimit < 99990000)
+										{
+											ConfigFile.ArchiveDateLimit = ArchiveDateLimit;
+											break;
+										}
+									}
+									Log.WriteLine(true, false, "Warning: The ArchiveDateLimit must be in YYYYMMDD format.");
+									break;
 								default:
 									Log.WriteLine(true, false, "Warning: Unknown server option {0} in {1}.", Option.Key, Option.Location);
 									break;
