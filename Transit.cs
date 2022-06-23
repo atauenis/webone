@@ -135,7 +135,7 @@ namespace WebOne
 				//check for local or internal URL
 				bool IsLocalhost = false;
 
-				foreach (IPAddress address in GetLocalIPAddresses()) //todo: add external list support here
+				foreach (IPAddress address in GetLocalIPAddresses())
 					if (RequestURL.Host.ToLower() == address.ToString().ToLower() || RequestURL.Host.ToLower() == "[" + address.ToString().ToLower() + "]")
 						IsLocalhost = true;
 
@@ -688,64 +688,47 @@ namespace WebOne
 					//check if archived copy can be retreived instead
 					if (ConfigFile.SearchInArchive)
 						if ((wex.Status == WebExceptionStatus.NameResolutionFailure) ||
-							(wex.Response != null && (wex.Response as HttpWebResponse).StatusCode == HttpStatusCode.NotFound))
+							(wex.Response != null && (wex.Response as HttpWebResponse).StatusCode == HttpStatusCode.NotFound) ||
+							wex.Status == WebExceptionStatus.UnknownError)
 						{
 							try
 							{
 								Log.WriteLine(" Look in Archive.org...");
-								HttpWebRequest ArchiveRequest = (HttpWebRequest)WebRequest.Create("https://archive.org/wayback/available?url=" + RequestURL.AbsoluteUri);
-								ArchiveRequest.UserAgent = "WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-								ArchiveRequest.Method = "GET";
-								string ArchiveResponse = "";
-								MemoryStream ms = new MemoryStream();
-								ArchiveRequest.GetResponse().GetResponseStream().CopyTo(ms);
-								ArchiveResponse = Encoding.UTF8.GetString(ms.ToArray());
-								string ArchiveURL = "";
+								WebArchiveRequest war = new WebArchiveRequest(RequestURL.ToString());
+								if(war.Archived){
+									Log.WriteLine(" Available.");
+									string ArchiveURL = war.ArchivedURL;
+									if (ConfigFile.ArchiveUrlSuffix != "")
+									{ //add suffix
+										Match AUrlParts = Regex.Match(ArchiveURL, "^http://web.archive.org/web/([0-9]*)/(.*)");
+										//http://web.archive.org/web/$1fw_/$2
+										ArchiveURL = "http://web.archive.org/web/" + AUrlParts.Groups[1].Value + ConfigFile.ArchiveUrlSuffix + "/" + AUrlParts.Groups[2].Value;
+									}
 
-								//parse archive.org json reply
-								if (ArchiveResponse.Contains(@"""available"": true"))
-								{
-									Match ArchiveMatch = Regex.Match(ArchiveResponse, @"""url"": ""http://web.archive.org/.*"","); ;
-									if (ArchiveMatch.Success)
-									{
-										Log.WriteLine(" Available.");
-										ArchiveURL = ArchiveMatch.Value.Substring(8, ArchiveMatch.Value.IndexOf(@""",") - 8);
-										if (ConfigFile.ArchiveUrlSuffix != "")
-										{ //add suffix
-											Match AUrlParts = Regex.Match(ArchiveURL, "^http://web.archive.org/web/([0-9]*)/(.*)");
-											//http://web.archive.org/web/$1fw_/$2
-											ArchiveURL = "http://web.archive.org/web/" + AUrlParts.Groups[1].Value + ConfigFile.ArchiveUrlSuffix + "/" + AUrlParts.Groups[2].Value;
+									if (ConfigFile.HideArchiveRedirect)
+									{ //internal redirect to archive
+										try
+										{
+											RequestURL = new Uri(ArchiveURL);
+#if DEBUG
+											Log.WriteLine(" Internal download via Web Archive: " + RequestURL.AbsoluteUri);
+#endif
+											SendRequest(operation);
+											dontworry = true;
 										}
-
-										if (ConfigFile.HideArchiveRedirect)
-										{ //internal redirect to archive
-											try
-											{
-												RequestURL = new Uri(ArchiveURL);
-												#if DEBUG
-												Log.WriteLine(" Internal download via Web Archive: " + RequestURL.AbsoluteUri);
-												#endif
-												SendRequest(operation);
-												dontworry = true;
-											}
-											catch (Exception ArchiveRetrieveException)
-											{
-												SendInfoPage("WebOne: Web Archive retrieve error.", "Cannot load this page from Web Archive", string.Format("<b>The requested page is found only at Web Archive, but cannot be delivered from it.</b><br>{0}", ArchiveRetrieveException.Message.Replace("\n", "<br>")));
-												BreakTransit = true;
-												dontworry = true;
-											}
-										}
-										else
-										{ //regular redirect to archive
-											ResponseBody = "<html><body><h1>Server not found</h2>But an <a href=" + ArchiveURL + ">archived copy</a> is available! Redirecting to it...</body></html>";
-											ClientResponse.AddHeader("Location", ArchiveURL);
-											SendError(302, ResponseBody);
-											return;
+										catch (Exception ArchiveRetrieveException)
+										{
+											SendInfoPage("WebOne: Web Archive retrieve error.", "Cannot load this page from Web Archive", string.Format("<b>The requested page is found only at Web Archive, but cannot be delivered from it.</b><br>{0}", ArchiveRetrieveException.Message.Replace("\n", "<br>")));
+											BreakTransit = true;
+											dontworry = true;
 										}
 									}
 									else
-									{
-										Log.WriteLine(" Available, but somewhere.");
+									{ //regular redirect to archive
+										ResponseBody = "<html><body><h1>Server not found</h2>But an <a href=" + ArchiveURL + ">archived copy</a> is available! Redirecting to it...</body></html>";
+										ClientResponse.AddHeader("Location", ArchiveURL);
+										SendError(302, ResponseBody);
+										return;
 									}
 								}
 								else
@@ -1068,7 +1051,7 @@ namespace WebOne
 							TransitStream = null;
 
 							string RequestMethod = operation.Method;
-							WebHeaderCollection RequestHeaderCollection = operation.RequestHeaders;
+							WebHeaderCollection RequestHeaderCollection = operation.RequestHeaders; //UNDONE: somewhere loses request headers when "reload secure" happens.
 							operation = new HttpOperation(Log);
 							operation.Method = RequestMethod;
 							operation.RequestHeaders = RequestHeaderCollection;
