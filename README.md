@@ -14,7 +14,10 @@ See [WebOne wiki](https://github.com/atauenis/webone/wiki) for complete list of 
 ## Server prerequisites
 Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET 6.0 Runtime are required on server PC. See [.NET 6.0 System Requirements](https://github.com/dotnet/core/blob/main/release-notes/6.0/supported-os.md).
 
-Image and/or video format converting is performing via external utilities: `convert` (from ImageMagick), `ffmpeg`, `youtube-dl`.
+## Image and video converting
+* Picture format converting is performing via `convert` from ImageMagick (installing automatically).
+* Video files can be converted on fly via `ffmpeg`. It's included in Win-x64.full zips, and can be installed manually on Linux/macOS.
+* To watch YouTube.com videos through proxy, install `ffmpeg` together with `youtube-dl` (included in Win-x64.full zips) and use included `yt.bat`/`yt.sh` script.
 
 ## Install
 Manuals about how to set up a WebOne proxy on [Windows](https://github.com/atauenis/webone/wiki/Windows-installation) / [Linux](https://github.com/atauenis/webone/wiki/Linux-installation) / [MacOS](https://github.com/atauenis/webone/wiki/MacOS-X-installation) servers are in the Wiki.
@@ -56,7 +59,7 @@ Latest source code can be always found in the __master__ branch of [Git reposito
 
 The program is built using Microsoft .NET 6.0 SDK and [dotnet-packaging](https://github.com/qmfrederik/dotnet-packaging/) add-on. With it the building is easy: use `dotnet publish` & `dotnet deb || dotnet rpm || dotnet zip` tools.
 
-Windows developers can utilize `Build.bat` script for cross-platform building. "Full" Win7SP1+ builds are made by hand by merging *ReleaseWin32* zip with content of `Win32-full` directory and some magic.
+Windows developers can utilize `Build.bat` script for cross-platform building.
 
 ## Who are the author(s)?
 Currently the project is maintained by a single person, Alexander Tauenis. However WebOne project welcomes any new contributors. 
