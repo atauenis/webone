@@ -58,6 +58,7 @@
   <ItemGroup>
     <DebDependency Include="imagemagick-6.q16" />
     <DebRecommends Include="ffmpeg" />
+    <DebRecommends Include="youtube-dl" />
   </ItemGroup>
 
   <ItemGroup>
@@ -151,7 +152,7 @@ fi
     <Content Include="webone.service" CopyToPublishDirectory="Always" LinuxFileMode="1755">
         <LinuxPath>/etc/systemd/system/webone.service</LinuxPath>
     </Content>
-        <Content Include="webone.logrotate" CopyToPublishDirectory="Always" LinuxFileMode="1755">
+    <Content Include="webone.logrotate" CopyToPublishDirectory="Always" LinuxFileMode="1755">
         <LinuxPath>/etc/logrotate.d/webone</LinuxPath>
     </Content>
   </ItemGroup>
@@ -177,27 +178,39 @@ fi
     </None>
   </ItemGroup>
 
-	<ItemGroup Condition="$(RuntimeIdentifier.Contains('win')) AND $(SelfContained)==true">
-		<None Include="Win32-full/*.*">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-			<Link>%(Filename)%(Extension)</Link>
-		</None>
-	</ItemGroup>
-
-	<ItemGroup Condition="$(RuntimeIdentifier.Contains('win')) AND $(Configuration)=='Debug'">
-		<None Include="convert.exe">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Include="Win32-full/*.*">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+  <ItemGroup Condition="$(RuntimeIdentifier.Contains('win')) AND $(SelfContained)==true">
+    <None Include="Win32-full/*.*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>%(Filename)%(Extension)</Link>
-		</None>
-	</ItemGroup>
+    </None>
+  </ItemGroup>
 
-	<ItemGroup Condition="$(RuntimeIdentifier.Contains('osx'))">
-		<None Include="macOS-resforks/*.*">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-			<Link>__MACOSX/%(Filename)%(Extension)</Link>
-		</None>
-	</ItemGroup>
+  <ItemGroup Condition="$(RuntimeIdentifier.Contains('win')) AND $(Configuration)=='Debug'">
+    <None Include="convert.exe">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Win32-full/*.*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup Condition="$(RuntimeIdentifier.Contains('osx'))">
+    <None Include="macOS-resforks/*.*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>__MACOSX/%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
+   <ItemGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
+    <Content Include="LinuxAndMacOS/yt.sh" CopyToPublishDirectory="Always" LinuxFileMode="1755">
+			<LinuxPath>/usr/share/webone/yt.sh</LinuxPath>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup Condition="$(RuntimeIdentifier.Contains('osx'))">
+    <Content Include="LinuxAndMacOS/yt.sh" CopyToPublishDirectory="Always">
+      <Link>yt.sh</Link>
+    </Content>
+  </ItemGroup>
 </Project>
