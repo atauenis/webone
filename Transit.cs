@@ -137,10 +137,20 @@ namespace WebOne
 
 				foreach (IPAddress address in GetLocalIPAddresses())
 					if (RequestURL.Host.ToLower() == address.ToString().ToLower() || RequestURL.Host.ToLower() == "[" + address.ToString().ToLower() + "]")
-						IsLocalhost = true;
+						if(RequestURL.Port == ConfigFile.Port)
+							IsLocalhost = true;
 
-				if (RequestURL.Host.ToLower() == "localhost" || RequestURL.Host.ToLower() == Environment.MachineName.ToLower() || RequestURL.Host == "127.0.0.1" || RequestURL.Host.ToLower() == "wpad" || RequestURL.Host.ToLower() == ConfigFile.DefaultHostName.ToLower() || RequestURL.Host == "" || CheckString(RequestURL.Host.ToLower(), ConfigFile.HostNames))
-					IsLocalhost = true;
+				if (
+				RequestURL.Host.ToLower() == "localhost" ||
+				RequestURL.Host.ToLower() == Environment.MachineName.ToLower() ||
+				RequestURL.Host == "127.0.0.1" ||
+				RequestURL.Host.ToLower() == "wpad" ||
+				RequestURL.Host.ToLower() == ConfigFile.DefaultHostName.ToLower() ||
+				RequestURL.Host == "" ||
+				CheckString(RequestURL.Host.ToLower(), ConfigFile.HostNames)
+				)
+					if (RequestURL.Port == ConfigFile.Port)
+						IsLocalhost = true;
 
 				if (IsLocalhost)
 				{
