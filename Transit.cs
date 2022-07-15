@@ -538,6 +538,7 @@ namespace WebOne
 				//check for available edit sets
 				foreach (EditSet set in ConfigFile.EditRules)
 				{
+					if (!set.CorrectHostOS) continue;
 					if (CheckStringRegExp(RequestURL.AbsoluteUri, set.UrlMasks.ToArray()) &&
 						!CheckStringRegExp(RequestURL.AbsoluteUri, set.UrlIgnoreMasks.ToArray()))
 					{

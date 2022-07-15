@@ -42,6 +42,12 @@ namespace WebOne
         public bool IsForRequest { get; private set; }
 
         /// <summary>
+        /// Limitation by proxy server operating system [OnHostOS]<br/>
+        /// True if OS is good, False if is bad.
+        /// </summary>
+        public bool CorrectHostOS { get; private set; }
+
+        /// <summary>
         /// List of edits that would be performed on the need content
         /// </summary>
         public List<EditSetRule> Edits { get; set; }
@@ -55,6 +61,7 @@ namespace WebOne
             UrlIgnoreMasks = new List<string>();
             ContentTypeMasks = new List<string>();
             HeaderMasks = new List<string>();
+            CorrectHostOS = true;
             Edits = new List<EditSetRule>();
             IsForRequest = false;
 
@@ -84,6 +91,23 @@ namespace WebOne
                     case "OnHeader":
                         HeaderMasks.Add(Line.Value);
                         continue;
+                    case "OnHostOS":
+                        switch(Line.Value.ToLower())
+                        {
+                            case "windows":
+                                CorrectHostOS = OperatingSystem.IsWindows();
+                                continue;
+                            case "linux":
+                                CorrectHostOS = OperatingSystem.IsLinux();
+                                continue;
+                            case "macos":
+                                CorrectHostOS = OperatingSystem.IsMacOS();
+                                continue;
+                            default:
+                                new LogWriter().WriteLine(true, false, "Warning: unknown host OS \"{0}\", edit set disabled.", Line.Value);
+                                CorrectHostOS = false;
+                                continue;
+						}
                     //editing rules
                     case "AddRedirect":
                     case "AddInternalRedirect":
