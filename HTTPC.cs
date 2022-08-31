@@ -12,9 +12,9 @@ using static WebOne.Program;
 namespace WebOne
 {
 	/// <summary>
-	/// HTTP download/upload operation client
+	/// HTTP download/upload operation client - OLD VERSION for .NET 4.0
 	/// </summary>
-	public class HttpOperation : IDisposable
+	public class HttpOperation1 : IDisposable
 	{
 		private readonly string UA_Mozilla = "Mozilla/5.0 (Windows NT 4.0; WOW64; rv:99.0) Gecko/20100101 Firefox/99.0";
 		private readonly string[] HeaderBanList = 
@@ -42,13 +42,13 @@ namespace WebOne
 		/// Prepare to do an HTTP operation
 		/// </summary>
 		/// <param name="Log">Log writer for this operation</param>
-		public HttpOperation(LogWriter Log)
+		public HttpOperation1(LogWriter Log)
 		{
 			this.Log = Log;
 			ResetRequest();
 		}
 
-		~HttpOperation()
+		~HttpOperation1()
 		{
 			Dispose();
 		}
@@ -82,7 +82,7 @@ namespace WebOne
 		/// Source HttpWebRequest
 		/// </summary>
 		public HttpWebRequest Request { get; private set; }
-		
+
 		/// <summary>
 		/// Source HttpWebResponse <!--(if any)-->
 		/// </summary>

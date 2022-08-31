@@ -5,7 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Net.Security;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,10 +30,12 @@ namespace WebOne
 		public const string CmdLineArgUnnamed = "--wo-short";
 		public static List<KeyValuePair<string, string>> CmdLineOptions = new List<KeyValuePair<string, string>>();
 
+		public static System.Net.Http.SocketsHttpHandler HTTPHandler = new ();
+		public static System.Net.Http.HttpClient HTTPClient = new (HTTPHandler);
 
 		static void Main(string[] args)
 		{
-			Variables.Add("WOVer", Assembly.GetExecutingAssembly().GetName().Version.ToString()/* + "-beta2"*/);
+			Variables.Add("WOVer", Assembly.GetExecutingAssembly().GetName().Version.ToString() + "-pre");
 			Variables.Add("WOSystem", Environment.OSVersion.ToString());
 
 			Console.Title = "WebOne";
@@ -78,9 +82,11 @@ namespace WebOne
 				Console.WriteLine("The proxy runs in daemon mode. See all messages in the log file.");
 			}
 
-			ServicePointManager.DefaultConnectionLimit = int.MaxValue;
-			//https://qna.habr.com/q/696033
-			//https://github.com/atauenis/webone/issues/2
+			//initialize system HTTP socket message handler for static HttpClient used by HttpOperation class instances
+			HTTPHandler.SslOptions.RemoteCertificateValidationCallback = CheckServerCertificate;
+			HTTPHandler.AllowAutoRedirect = false;
+			HTTPHandler.AutomaticDecompression = DecompressionMethods.All;
+			HTTPHandler.UseCookies = false;
 
 			//set console window title
 			if (!DaemonMode) Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + ConfigFile.Port;
@@ -753,7 +759,21 @@ namespace WebOne
 			return msg;
 		}
 
+		/// <summary>
+		/// Check remote HTTPS server certificate
+		/// </summary>
+		/// <returns>Rate of certificate goodness</returns>
+		/// <exception cref="TlsPolicyErrorException">If ValidateCertificates configuration option is enabled and if the certificate is broken, this exception raises.</exception>
+		public static bool CheckServerCertificate(object sender, X509Certificate certification, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+		{
+			if (sslPolicyErrors != SslPolicyErrors.None)
+				Log.WriteLine(" Danger: {0}", sslPolicyErrors.ToString());
 
+			if (!ConfigFile.ValidateCertificates) return true;
+			if (sslPolicyErrors == SslPolicyErrors.None)
+				return true;
+			throw new TlsPolicyErrorException(sender as SslStream, certification, chain, sslPolicyErrors);
+		}
 
 		/// <summary>
 		/// Convert string "true/false" or similar to bool true/false.

@@ -603,6 +603,7 @@ namespace WebOne
 						}
 					}
 					if (whc["Origin"] == null & whc["Referer"] != null) whc.Add("Origin: " + new Uri(whc["Referer"]).Scheme + "://" + new Uri(whc["Referer"]).Host);
+					if (whc["User-Agent"] != null) whc["User-Agent"] = GetUserAgent(whc["User-Agent"]);
 
 					//perform edits on the request
 					foreach (EditSet Set in EditSets)
@@ -667,7 +668,8 @@ namespace WebOne
 					}
 
 					//save dump of headers if need for debugging (a-la Chromium devtools Network tab)
-					if (DumpHeaders) {
+					if (DumpHeaders)
+					{
 						OriginalURL = RequestURL.AbsoluteUri;
 						foreach (string hdrname in whc.AllKeys)
 						{
@@ -684,9 +686,132 @@ namespace WebOne
 					operation = new HttpOperation(Log);
 					operation.Method = ClientRequest.HttpMethod;
 					operation.RequestHeaders = whc;
+					operation.URL = RequestURL.AbsoluteUri;
 					SendRequest(operation);
 				}
-				catch (WebException wex)
+				catch (System.Net.Http.HttpRequestException httpex)
+				{
+					//an network error has been catched
+					BreakTransit = true;
+
+					//UNDONE: add Web Archive request here
+					//also after this try...catch block add similar for 404 errors. They no longer raises exception.
+					if ( /*!LookInArchive(RequestURL.AbsoluteUri)*/ true)
+					{
+						Log.WriteLine(" Cannot load this page: {0}.", httpex.Message);
+#if !DEBUG
+						//return full debug output
+						string err = GetFullExceptionMessage(httpex);
+						SendInfoPage("WebOne cannot load the page", "Can't load the page: " + httpex.Message, "<i>" + err.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + "<br>Debug mode enabled.");
+						BreakTransit = true;
+#else
+						//return nice error message
+						string ErrorTitle = "connection error", ErrorMessageHeader = "Cannot load this page", ErrorMessage = "";
+						if (httpex.InnerException != null)
+						{
+							switch (httpex.InnerException.GetType().ToString())
+							{
+								case "System.Net.Sockets.SocketException":
+									System.Net.Sockets.SocketException sockerr = httpex.InnerException as System.Net.Sockets.SocketException;
+									switch (sockerr.SocketErrorCode)
+									{
+										case System.Net.Sockets.SocketError.HostNotFound:
+											//server not found
+											ErrorMessageHeader = "Cannot find the server";
+											ErrorMessage = "<p><big>" + sockerr.Message + "</big></p>" +
+											"<ul><li>Check the address for typing errors such as <strong>ww</strong>.example.com instead of <strong>www</strong>.example.com.</li>" +
+											"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+											"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
+											"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
+											"</ul>"; //InnerException use is a workaround for .NET Core problem with message duplication
+											break;
+										case System.Net.Sockets.SocketError.TimedOut:
+											//connection timeout
+											ErrorMessageHeader = "The connection has timed out";
+											ErrorMessage = "<p><big>" + sockerr.Message + "</big></p>" +
+											"<ul><li>The site could be temporarily unavailable or too busy. Try again in a few moments.</li>" +
+											"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+											"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
+											"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
+											"</ul>";
+											break;
+										case System.Net.Sockets.SocketError.ConnectionRefused:
+											//connection broken
+											ErrorMessageHeader = "The connection was refused";
+											ErrorMessage = "<p><big>" + sockerr.Message + "</big></p>" +
+											"<ul><li>The site could be temporarily unavailable or too busy. Try again in a few moments.</li>" +
+											"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+											"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
+											"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
+											"</ul>";
+											break;
+										case System.Net.Sockets.SocketError.ConnectionReset:
+											//connection reset
+											ErrorMessageHeader = "The connection has been reset";
+											ErrorMessage = "<p><big>" + sockerr.Message + "</big></p>" +
+											"<ul><li>The site could be temporarily unavailable or too busy. Try again in a few moments.</li>" +
+											"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+											"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
+											"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
+											"</ul>";
+											break;
+										default:
+											ErrorMessageHeader = "The connection can't be stablished";
+											ErrorMessage = "<p><big>" + sockerr.Message + "</big></p>" +
+											"<ul><li>The site could be temporarily unavailable or too busy. Try again in a few moments.</li>" +
+											"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+											"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
+											"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
+											"</ul><br>Error code: " + sockerr.SocketErrorCode;
+											break;
+									}
+									break;
+								case "WebOne.TlsPolicyErrorException":
+									//certificate is invalid (bad date, domain name, etc)
+									string polerr = "";
+									switch((httpex.InnerException as TlsPolicyErrorException).PolicyError){
+										case System.Net.Security.SslPolicyErrors.RemoteCertificateNotAvailable:
+											polerr = "Certificate is not available.";
+											break;
+										case System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch:
+											polerr = "The certificate is issued for another site.";
+											break;
+										case System.Net.Security.SslPolicyErrors.RemoteCertificateChainErrors:
+											polerr = "Certificate chain is incorrect.";
+											break;
+										default:
+											polerr = httpex.InnerException.Message;
+											break;
+									}
+									ErrorMessageHeader = "Secure connection could not be established";
+									ErrorMessage = "<p><big>" + polerr + "</big></p>" +
+									"<ul><li>The page you are trying to view cannot be shown because the authenticity of the received data could not be verified.</li>" +
+											"<li>Make sure that the OS on the proxy server have all updates installed.</li>" +
+											"<li>Check date and time on the proxy server.</li>" +
+											"<li>Verify that the proxy server operating system have proper support for TLS/SSL version and chiphers used on the site.</li>" +
+											"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+											"<li>To disable this security check, set <q><b>ValidateCertificates=no</b></q> in proxy configuration file. But this will make the proxy less secure, do this at your own risk.</li>" +
+									"</ul>";
+									break;
+								default:
+									ErrorTitle = httpex.InnerException.GetType().ToString();
+									ErrorMessage = "There are problems, that are preventing from displaying the page: " + GetFullExceptionMessage(httpex);
+									break;
+							}
+						}
+						else
+						{
+							ErrorTitle = httpex.InnerException.GetType().ToString();
+							ErrorMessage = "An error occured: " + httpex.Message;
+						}
+
+						ErrorMessage += "<br>URL: " + RequestURL.AbsoluteUri;
+						SendInfoPage("WebOne: " + ErrorTitle, ErrorMessageHeader, ErrorMessage);
+						BreakTransit = true;
+#endif
+					}
+				}
+				catch (WebException wex) //UNDONE! NO LOGNER THROWS - example of old code for reference! перенести в обработку httpex выше!
 				{
 					if (wex.Response == null) ResponseCode = 502;
 					else ResponseCode = (int)(wex.Response as HttpWebResponse).StatusCode;
@@ -957,10 +1082,11 @@ namespace WebOne
 			{
 				Log.WriteLine(" A error has been catched: {1}\n{0}\t Please report to author.", null, E.ToString().Replace("\n", "\n{0}\t "));
 				SendError(500, "An error occured: " + E.ToString().Replace("\n", "\n<BR>"));
-				if (operation != null) operation.Dispose();
+				//if (operation != null) operation.Dispose();
+				//UNDONE: think about disposing if need (or now it is not need?...)
 			}
 			SaveHeaderDump();
-			if (operation != null) operation.Dispose();
+			//if (operation != null) operation.Dispose();
 #if DEBUG
 			Log.WriteLine(" End process.");
 #endif
@@ -998,7 +1124,7 @@ namespace WebOne
 						Log.WriteLine(">Downloading content...");
 #endif
 						operation.URL = RequestURL.AbsoluteUri;
-						operation.AllowAutoRedirect = AllowAutoRedirect;
+						//operation.AllowAutoRedirect = AllowAutoRedirect; //UNDONE: add fix for AutoRedirect
 						operation.SendRequest();
 #if DEBUG
 						Log.WriteLine(">Downloading content (receiving)...");
@@ -1028,7 +1154,7 @@ namespace WebOne
 							RequestDumpStream.Position = 0;
 							operation.RequestStream = RequestDumpStream;
 						}
-						operation.AllowAutoRedirect = AllowAutoRedirect;
+						//operation.AllowAutoRedirect = AllowAutoRedirect; //UNDONE: add fix for AutoRedirect
 						operation.SendRequest();
 #if DEBUG
 						Log.WriteLine(">Uploading content (receiving)...");
@@ -1222,17 +1348,6 @@ namespace WebOne
 			return Body;
 		}
 
-
-		/// <summary>
-		/// Prepare response body for tranfer to client
-		/// </summary>
-		/// <param name="Operation">HttpOperation which describes the source response</param>
-		/// <returns>ResponseBuffer+ResponseBody for texts or TransitStream for binaries</returns>
-		private void MakeOutput(HttpOperation Operation)
-		{
-			MakeOutput(Operation.Response.StatusCode, Operation.ResponseStream, Operation.Response.ContentType, Operation.Response.ContentLength, Operation);
-		}
-
 		/// <summary>
 		/// Prepare response body for tranfer to client
 		/// </summary>
@@ -1242,9 +1357,13 @@ namespace WebOne
 		/// <param name="ContentLength">HTTP Content-Lenght</param>
 		/// <param name="Operation">The HTTP Request/Response pair (will replace all other arguments in future)</param>
 		/// <returns>ResponseBuffer+ResponseBody for texts or TransitStream for binaries</returns>
-		private void MakeOutput(HttpStatusCode StatusCode, Stream ResponseStream, string ContentType, long ContentLength, HttpOperation Operation)
+		private void MakeOutput(HttpOperation Operation)
 		{
-			//todo: rewrite and remove all arguments except Operation
+			HttpStatusCode StatusCode = operation.Response.StatusCode;
+			Stream ResponseStream = operation.ResponseStream;
+			string ContentType = "unknown/unknown";
+			if (operation.Response.Content.Headers.ContentType != null) ContentType = operation.Response.Content.Headers.ContentType.MediaType ?? "unknown/unknown";
+			long ContentLength = operation.Response.Content.Headers.ContentLength ?? 0;
 			this.ContentType = ContentType;
 			string SrcContentType = ContentType;
 
@@ -1400,7 +1519,7 @@ namespace WebOne
 			else
 			{
 				if (operation != null)
-					Log.WriteLine(" {1} {2}. Body {3}K of {4} [Binary].", null, (int)StatusCode, StatusCode, operation.Response.ContentLength / 1024, ContentType);
+					Log.WriteLine(" {1} {2}. Body {3}K of {4} [Binary].", null, (int)StatusCode, StatusCode, ContentLength / 1024, ContentType);
 				else
 					Log.WriteLine(" {1} {2}. Body is {3} [Binary], incomplete.", null, (int)StatusCode, StatusCode, ContentType);
 
