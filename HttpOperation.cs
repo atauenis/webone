@@ -19,18 +19,40 @@ namespace WebOne
 	{
 		private LogWriter Log;
 
-		//old from HTTPC
-		internal string URL { get; set; }
+		/// <summary>
+		/// Uniform Resource Locator of content which should be accessed on the HTTP operation
+		/// </summary>
+		internal Uri URL { get; set; }
+		/// <summary>
+		/// HTTP Method, used on this operation
+		/// </summary>
 		internal string Method { get; set; }
-		internal Stream RequestStream { get; set; }
-		internal Stream ResponseStream { get; private set; }
 
-
-		//new v0.12.2 (httpclient net6.0)
+		/// <summary>
+		/// Full HTTP client request
+		/// </summary>
 		internal HttpRequestMessage Request { get; set; }
+		/// <summary>
+		/// HTTP request headers
+		/// </summary>
 		internal WebHeaderCollection RequestHeaders { get; set; }
+		/// <summary>
+		/// HTTP request body (if any)
+		/// </summary>
+		internal Stream RequestStream { get; set; }
+
+		/// <summary>
+		/// Full HTTP server response
+		/// </summary>
 		internal HttpResponseMessage Response { get; private set; }
+		/// <summary>
+		/// HTTP response headers
+		/// </summary>
 		internal WebHeaderCollection ResponseHeaders { get; private set; }
+		/// <summary>
+		/// HTTP response body (if any)
+		/// </summary>
+		internal Stream ResponseStream { get; private set; }
 
 
 		/// <summary>
@@ -42,17 +64,21 @@ namespace WebOne
 			this.Log = Log;
 	}
 
+		/// <summary>
+		/// Perform a HTTP request (content retreive or upload) on this operation
+		/// </summary>
 		internal void SendRequest()
 		{
 			Request = new HttpRequestMessage();
-			Request.RequestUri = new Uri(URL);
+			Request.RequestUri = URL;
 			Request.Method = new HttpMethod(Method);
 			foreach (var rqhdr in RequestHeaders.AllKeys)
 			{
-				if(!rqhdr.StartsWith("Proxy-"))
+				if(!rqhdr.StartsWith("Proxy-") && rqhdr != "Host")
 				Request.Headers.TryAddWithoutValidation(rqhdr, RequestHeaders[rqhdr]);
 			}
 			if(RequestStream != null) Request.Content = new StreamContent(RequestStream);
+			//UNDONE: POSTs do not work as their bodies losts somewhere here!
 
 			foreach (string SslHost in ConfigFile.ForceHttps)
 			{
@@ -62,7 +88,7 @@ namespace WebOne
 					ub.Scheme = "https";
 					if (ub.Port == 80) ub.Port = 443;
 					Request.RequestUri = ub.Uri;
-					URL = ub.ToString();
+					URL = ub.Uri;
 #if DEBUG
 					Log.WriteLine(" Willfully secure request.");
 #endif
@@ -74,6 +100,9 @@ namespace WebOne
 			ResponseStream = null;
 		}
 
+		/// <summary>
+		/// Retreive server response on HTTP request of this operation
+		/// </summary>
 		internal void GetResponse()
 		{
 			if (Response == null) throw new InvalidOperationException("HTTP request must be sent and be successful first.");

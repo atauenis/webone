@@ -276,7 +276,7 @@ namespace WebOne
 												//download source file
 												if (!Cvt.SelfDownload) try
 												{
-													HOper.URL = SrcUrl;
+													HOper.URL = new Uri(SrcUrl);
 													HOper.Method = "GET";
 													HOper.RequestHeaders = new WebHeaderCollection();
 #if DEBUG
@@ -686,20 +686,18 @@ namespace WebOne
 					operation = new HttpOperation(Log);
 					operation.Method = ClientRequest.HttpMethod;
 					operation.RequestHeaders = whc;
-					operation.URL = RequestURL.AbsoluteUri;
+					operation.URL = RequestURL;
 					SendRequest(operation);
 				}
 				catch (System.Net.Http.HttpRequestException httpex)
 				{
 					//an network error has been catched
-					BreakTransit = true;
-
-					//UNDONE: add Web Archive request here
-					//also after this try...catch block add similar for 404 errors. They no longer raises exception.
-					if ( /*!LookInArchive(RequestURL.AbsoluteUri)*/ true)
+					//try to load the page from Archive.org, then display error message if need
+					if (!LookInWebArchive("Can't load from Web"))
 					{
+						BreakTransit = true;
 						Log.WriteLine(" Cannot load this page: {0}.", httpex.Message);
-#if !DEBUG
+#if DEBUG
 						//return full debug output
 						string err = GetFullExceptionMessage(httpex);
 						SendInfoPage("WebOne cannot load the page", "Can't load the page: " + httpex.Message, "<i>" + err.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + "<br>Debug mode enabled.");
@@ -723,7 +721,7 @@ namespace WebOne
 											"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
 											"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
 											"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
-											"</ul>"; //InnerException use is a workaround for .NET Core problem with message duplication
+											"</ul>";
 											break;
 										case System.Net.Sockets.SocketError.TimedOut:
 											//connection timeout
@@ -795,7 +793,7 @@ namespace WebOne
 									break;
 								default:
 									ErrorTitle = httpex.InnerException.GetType().ToString();
-									ErrorMessage = "There are problems, that are preventing from displaying the page: " + GetFullExceptionMessage(httpex);
+									ErrorMessage = "There are problems, that are preventing from displaying the page:<br>" + GetFullExceptionMessage(httpex).Replace("\n", "<br>");
 									break;
 							}
 						}
@@ -811,184 +809,6 @@ namespace WebOne
 #endif
 					}
 				}
-				catch (WebException wex) //UNDONE! NO LOGNER THROWS - example of old code for reference! перенести в обработку httpex выше!
-				{
-					if (wex.Response == null) ResponseCode = 502;
-					else ResponseCode = (int)(wex.Response as HttpWebResponse).StatusCode;
-					if (ResponseCode == 502) Log.WriteLine(" Cannot load this page: {0}.", wex.Status);
-					else Log.WriteLine(" Web exception: {0} {1}.", ResponseCode, (wex.Response as HttpWebResponse).StatusCode);
-
-					bool dontworry = false; //don't show error message, all is under control
-
-
-					//check if archived copy can be retreived instead
-					if (ConfigFile.SearchInArchive)
-						if ((wex.Status == WebExceptionStatus.NameResolutionFailure) ||
-							(wex.Response != null && (wex.Response as HttpWebResponse).StatusCode == HttpStatusCode.NotFound) ||
-							wex.Status == WebExceptionStatus.UnknownError)
-						{
-							try
-							{
-								Log.WriteLine(" Look in Archive.org...");
-								WebArchiveRequest war = new WebArchiveRequest(RequestURL.ToString());
-								if(war.Archived){
-									Log.WriteLine(" Available.");
-									string ArchiveURL = war.ArchivedURL;
-									if (ConfigFile.ArchiveUrlSuffix != "")
-									{ //add suffix
-										Match AUrlParts = Regex.Match(ArchiveURL, "^http://web.archive.org/web/([0-9]*)/(.*)");
-										//http://web.archive.org/web/$1fw_/$2
-										ArchiveURL = "http://web.archive.org/web/" + AUrlParts.Groups[1].Value + ConfigFile.ArchiveUrlSuffix + "/" + AUrlParts.Groups[2].Value;
-									}
-
-									if (ConfigFile.HideArchiveRedirect)
-									{ //internal redirect to archive
-										try
-										{
-											RequestURL = new Uri(ArchiveURL);
-#if DEBUG
-											Log.WriteLine(" Internal download via Web Archive: " + RequestURL.AbsoluteUri);
-#endif
-											SendRequest(operation);
-											dontworry = true;
-										}
-										catch (Exception ArchiveRetrieveException)
-										{
-											SendInfoPage("WebOne: Web Archive retrieve error.", "Cannot load this page from Web Archive", string.Format("<b>The requested page is found only at Web Archive, but cannot be delivered from it.</b><br>{0}", ArchiveRetrieveException.Message.Replace("\n", "<br>")));
-											BreakTransit = true;
-											dontworry = true;
-										}
-									}
-									else
-									{ //regular redirect to archive
-										ResponseBody = "<html><body><h1>Server not found</h2>But an <a href=" + ArchiveURL + ">archived copy</a> is available! Redirecting to it...</body></html>";
-										ClientResponse.AddHeader("Location", ArchiveURL);
-										SendError(302, ResponseBody);
-										return;
-									}
-								}
-								else
-								{
-									Log.WriteLine(" No snapshots.");
-								}
-							}
-							catch (Exception ArchiveException)
-							{
-								SendInfoPage("WebOne: Web Archive error.", "Cannot load this page", string.Format("<b>The requested server or page is not found and a Web Archive error occured.</b><br>{0}", ArchiveException.Message.Replace("\n", "<br>")));
-								BreakTransit = true;
-							}
-						}
-
-					if (!dontworry)
-					{
-						//display error page
-						ContentType = "text/html";
-#if DEBUG
-						//full debug output
-						string err = ": " + wex.Status.ToString();
-						SendInfoPage("WebOne cannot load the page", "Can't load the page: " + wex.Status.ToString(), "<i>" + wex.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + "<br>Debug mode enabled.");
-						BreakTransit = true;
-#else
-						//nice error message
-						string ErrorMessage = "", ErrorMessageHeader = "Cannot load this page";
-
-						switch (wex.Status){
-							case WebExceptionStatus.NameResolutionFailure:
-								//server not found
-								ErrorMessageHeader = "Cannot find the server";
-								ErrorMessage = "<p><big>" + wex.InnerException.Message + "</big></p>" +
-								"<ul><li>Check the address for typing errors such as <strong>ww</strong>.example.com instead of <strong>www</strong>.example.com.</li>" +
-								"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
-								"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
-								"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
-								"</ul>"; //InnerException use is a workaround for .NET Core problem with message duplication
-								break;
-							case WebExceptionStatus.Timeout:
-								//connection timeout
-								ErrorMessageHeader = "The connection has timed out";
-								ErrorMessage = "<p><big>" + wex.Message + "</big></p>" +
-								"<ul><li>The site could be temporarily unavailable or too busy. Try again in a few moments.</li>" +
-								"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
-								"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
-								"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
-								"</ul>";
-								break;
-							case WebExceptionStatus.ConnectFailure:
-								//connection broken
-								ErrorMessageHeader = "The connection was interrupted";
-								ErrorMessage = "<p><big>" + wex.Message + "</big></p>" +
-								"<ul><li>The site could be temporarily unavailable or too busy. Try again in a few moments.</li>" +
-								"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
-								"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
-								"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
-								"</ul>";
-								break;
-							case WebExceptionStatus.SecureChannelFailure:
-							case WebExceptionStatus.UnknownError:
-								if (wex.InnerException != null)
-								{
-									if (wex.Message.Contains(GetFullExceptionMessage(wex, true, true)))
-									{
-										if (wex.InnerException.InnerException != null && wex.InnerException.InnerException.Message.StartsWith("TLS Policy Error(s)"))
-										{
-											//certificate is correct, but invalid (bad date, domain name, etc)
-											ErrorMessageHeader = "Connection to the remote server is dangerous";
-											ErrorMessage = "<p><big>" + wex.InnerException.InnerException.Message + "</big></p>" +
-											"<ul><li>The proxy server has blocked this connection to protect you from possible attack.</li>" +
-											"<li>This could be a problem with the server's configuration, or it could be someone trying to impersonate the server.</li>" +
-											"<li>If you have connected to this server successfully in the past, the error may be temporary, and you can try again later.</li>" +
-											"<li>To disable this security check, set <q><b>ValidateCertificates=no</b></q> in proxy configuration file. But this will make the proxy less secure, do this at your own risk.</li>" +
-											"<li>Make sure that date and time on the proxy server are correct.</li>" +
-											"</ul>";
-										}
-										else
-										{
-											//do not duplicate exception messages, and show only first
-											ErrorMessage = " <p><big>" + wex.Message + "</big></p>Kind of error: " + wex.InnerException.GetType().ToString();
-										}
-									}
-									else
-									{
-										if (wex.InnerException.GetType().ToString() == "System.Net.Http.HttpRequestException")
-										{
-											//TLS problem
-											ErrorMessageHeader = "Cannot connect to the server";
-											ErrorMessage = "<p><big>Secure connection could not be established.</big></p>" +
-											"<ul><li>The page you are trying to view cannot be shown because the authenticity of the received data could not be verified.</li>" +
-											"<li>Make sure that the OS on the proxy server have all updates installed.</li>" +
-											"<li>Check date and time on the proxy server.</li>" +
-											"<li>Verify that the proxy server operating system have proper support for TLS/SSL version and chiphers used on the site.</li>" +
-											"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
-											"<li>This could be also a problem with the server's configuration, or it could be someone trying to impersonate the server.</li>"+
-											"</ul>";
-
-											ErrorMessage += "More info:" +
-											"<p>" + wex.Message + "</p><p>" + GetFullExceptionMessage(wex, true, true).Replace("\n", "<br>") +
-											"</p>Kind of error: " + wex.InnerException.GetType().ToString() + "";
-										}
-										else
-										{
-											//other error, so report all exceptions
-											ErrorMessage = " <p><big>" + wex.Message + "</big></p><p>" + GetFullExceptionMessage(wex, true, true).Replace("\n", "<br>") + "</p>Kind of error: " + wex.InnerException.GetType().ToString();
-										}
-									}
-								}
-								else
-								{
-									ErrorMessage = " <p><big>" + wex.Message + "</big></p>Kind of error: " + wex.GetType().ToString() + " (no inner exceptions)";
-								}
-								break;
-							default:
-								ErrorMessage = "<p><big>" + wex.Message + ".</big></p>Status: " + wex.Status;
-								break;
-						}
-
-						ErrorMessage += "<br>URL: " + RequestURL.AbsoluteUri;
-						SendInfoPage("WebOne: " + wex.Status, ErrorMessageHeader, ErrorMessage);
-						BreakTransit = true;
-#endif
-					}
-				}
 				catch (UriFormatException)
 				{
 					BreakTransit = true;
@@ -1000,6 +820,8 @@ namespace WebOne
 					Log.WriteLine(" ============GURU MEDITATION:\n{1}\nOn URL '{2}', Method '{3}'. Returning 500.============", null, ex.ToString(), RequestURL.AbsoluteUri, ClientRequest.HttpMethod);
 					SendError(500, "Guru meditaion at URL " + RequestURL.AbsoluteUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace.Replace("\n", "\n<br>") + "</i>");
 				}
+
+				//UNDONE: add load from web archive on 404 errors. THIS WILL BE A FIX OF REGRESSION BUG APPEAR IN 0.10.0.
 
 				//shorten Web Archive error page if need
 				if (!BreakTransit && RequestURL.AbsoluteUri.StartsWith("http://web.archive.org/web/") && ConfigFile.ShortenArchiveErrors)
@@ -1123,7 +945,7 @@ namespace WebOne
 #else
 						Log.WriteLine(">Downloading content...");
 #endif
-						operation.URL = RequestURL.AbsoluteUri;
+						operation.URL = RequestURL;
 						//operation.AllowAutoRedirect = AllowAutoRedirect; //UNDONE: add fix for AutoRedirect
 						operation.SendRequest();
 #if DEBUG
@@ -1141,7 +963,7 @@ namespace WebOne
 #else
 						Log.WriteLine(">Uploading {0}K of {1}...", Convert.ToInt32((operation.RequestHeaders["Content-Length"])) / 1024, operation.RequestHeaders["Content-Type"]);
 #endif
-						operation.URL = RequestURL.AbsoluteUri;
+						operation.URL = RequestURL;
 						if (!DumpRequestBody)
 							operation.RequestStream = ClientRequest.InputStream;
 						else
@@ -1671,6 +1493,69 @@ namespace WebOne
 		{
 			if (ConfigFile.Port == 80) return ConfigFile.DefaultHostName;
 			return ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString();
+		}
+
+		/// <summary>
+		/// Look for the page at RequestURL variable in Internet Archive Wayback Machine
+		/// </summary>
+		/// <returns>Is the response ready or not</returns>
+		private bool LookInWebArchive(string Reason){
+			//check if archived copy can be retreived instead
+			if (ConfigFile.SearchInArchive)
+			{
+				try
+				{
+					Log.WriteLine(" {0}, look in Archive.org...", Reason);
+					WebArchiveRequest war = new WebArchiveRequest(RequestURL.ToString());
+					if (war.Archived)
+					{
+						Log.WriteLine(" Available.");
+						string ArchiveURL = war.ArchivedURL;
+						if (ConfigFile.ArchiveUrlSuffix != "")
+						{ //add suffix
+							Match AUrlParts = Regex.Match(ArchiveURL, "^http://web.archive.org/web/([0-9]*)/(.*)");
+							//http://web.archive.org/web/$1fw_/$2
+							ArchiveURL = "http://web.archive.org/web/" + AUrlParts.Groups[1].Value + ConfigFile.ArchiveUrlSuffix + "/" + AUrlParts.Groups[2].Value;
+						}
+
+						if (ConfigFile.HideArchiveRedirect)
+						{ //internal redirect to archive
+							try
+							{
+								RequestURL = new Uri(ArchiveURL);
+#if DEBUG
+								Log.WriteLine(" Internal download via Web Archive: " + RequestURL.AbsoluteUri);
+#endif
+								SendRequest(operation);
+								return true; //archived copy is ready
+							}
+							catch (Exception ArchiveRetrieveException)
+							{
+								SendInfoPage("WebOne: Web Archive retrieve error.", "Cannot load this page from Web Archive", string.Format("<b>The requested page is found only at Web Archive, but cannot be delivered from it.</b><br>{0}", ArchiveRetrieveException.Message.Replace("\n", "<br>")));
+								return true; //error page is ready
+							}
+						}
+						else
+						{ //regular redirect to archive
+							ResponseBody = "<html><body><h1>Server not found</h2>But an <a href=" + ArchiveURL + ">archived copy</a> is available! Redirecting to it...</body></html>";
+							ClientResponse.AddHeader("Location", ArchiveURL);
+							SendError(302, ResponseBody); //302 redirect is ready
+							return true;
+						}
+					}
+					else
+					{
+						Log.WriteLine(" No snapshots.");
+						return false; //nothing ready
+					}
+				}
+				catch (Exception ArchiveException)
+				{
+					SendInfoPage("WebOne: Web Archive error.", "Cannot load this page", string.Format("<b>The requested server or page is not found and a Web Archive error occured.</b><br>{0}", ArchiveException.Message.Replace("\n", "<br>")));
+					return true; //error page is ready
+				}
+			}
+			else return false; //nothing ready
 		}
 
 		/// <summary>
