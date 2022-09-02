@@ -1,20 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Net;
 using System.IO;
-using System.Threading;
-using static WebOne.Program;
+using System.Linq;
+using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
-using System.Diagnostics;
+using static WebOne.Program;
 
 namespace WebOne
 {
-/// <summary>
-/// Transit transfer of content with applying some edits
-/// </summary>
+	/// <summary>
+	/// Transit transfer of content with applying some edits
+	/// </summary>
 	class Transit
 	{
 		HttpListenerRequest ClientRequest;
@@ -28,7 +25,6 @@ namespace WebOne
 		static string LastURL = "http://999.999.999.999/CON";
 		static HttpStatusCode LastCode = HttpStatusCode.OK;
 		static string LastContentType = "not-a-carousel";
-		bool ShouldRedirectInNETFW = false;
 		List<EditSet> EditSets = new List<EditSet>();
 		bool Stop = false;
 		bool LocalMode = false;
@@ -59,9 +55,9 @@ namespace WebOne
 			this.ClientRequest = ClientRequest;
 			this.ClientResponse = ClientResponse;
 			this.Log = Log;
-			#if DEBUG
+#if DEBUG
 			Log.WriteLine(" Begin process.");
-			#endif
+#endif
 			try
 			{
 				//check IP black list
@@ -73,20 +69,19 @@ namespace WebOne
 				}
 
 				//check IP white list
-				if(ConfigFile.IpWhiteList.Count > 0)
-				if(!CheckString(ClientRequest.RemoteEndPoint.ToString(), ConfigFile.IpWhiteList))
-				{
-					SendError(403, "You are not in the list of allowed clients. Contact proxy server's administrator to add your IP address in it.");
-					Log.WriteLine(" Non-whitelisted client.");
-					return;
-				}
-
-				ShouldRedirectInNETFW = false;
+				if (ConfigFile.IpWhiteList.Count > 0)
+					if (!CheckString(ClientRequest.RemoteEndPoint.ToString(), ConfigFile.IpWhiteList))
+					{
+						SendError(403, "You are not in the list of allowed clients. Contact proxy server's administrator to add your IP address in it.");
+						Log.WriteLine(" Non-whitelisted client.");
+						return;
+					}
 
 				//check for login to proxy if need
 				if (ConfigFile.Authenticate.Count > 0)
 				{
-					switch(ClientRequest.Url.PathAndQuery){
+					switch (ClientRequest.Url.PathAndQuery)
+					{
 						case "/!pac/":
 						case "/auto/":
 						case "/auto":
@@ -106,7 +101,7 @@ namespace WebOne
 							else
 							{
 								string auth = Encoding.Default.GetString(Convert.FromBase64String(ClientRequest.Headers["Proxy-Authorization"].Substring(6)));
-								if(!ConfigFile.Authenticate.Contains(auth))
+								if (!ConfigFile.Authenticate.Contains(auth))
 								{
 									Log.WriteLine(" Incorrect login: '{0}'.", auth);
 									ClientResponse.AddHeader("Proxy-Authenticate", @"Basic realm=""" + ConfigFile.AuthenticateRealm + @" (retry)""");
@@ -137,7 +132,7 @@ namespace WebOne
 
 				foreach (IPAddress address in GetLocalIPAddresses())
 					if (RequestURL.Host.ToLower() == address.ToString().ToLower() || RequestURL.Host.ToLower() == "[" + address.ToString().ToLower() + "]")
-						if(RequestURL.Port == ConfigFile.Port)
+						if (RequestURL.Port == ConfigFile.Port)
 							IsLocalhost = true;
 
 				if (
@@ -198,7 +193,7 @@ namespace WebOne
 									codepages += "</table><br>Use any of these or from <a href=http://docs.microsoft.com/en-us/dotnet/api/system.text.encoding.getencodings?view=net-6.0>.NET documentation</a>.</p>\n";
 
 									codepages += "<p>Code pages for current server's locale:\n" +
-									"<table>" + 
+									"<table>" +
 									"<tr><td>Windows &quot;ANSI&quot;</td><td>" + GetCodePage("Win").WebName + "</td></tr>\n" +
 									"<tr><td>DOS &quot;OEM&quot;</td><td>" + GetCodePage("DOS").WebName + "</td></tr>\n" +
 									"<tr><td>MacOS classic</td><td>" + GetCodePage("Mac").WebName + "</td></tr>\n" +
@@ -232,15 +227,15 @@ namespace WebOne
 
 									if (FindSrcUrl.Success)
 										SrcUrl = Uri.UnescapeDataString(FindSrcUrl.Groups[2].Value);
-										//BUG: sometimes URL gets unescaped when opening via WMP
-										//     (mostly via UI, and all load retries via FF plugin, strange but 1st plugin's attempt is valid)
+									//BUG: sometimes URL gets unescaped when opening via WMP
+									//     (mostly via UI, and all load retries via FF plugin, strange but 1st plugin's attempt is valid)
 
 									if (FindDest.Success)
 										Dest = Uri.UnescapeDataString(FindDest.Groups[2].Value);
 
 									if (FindDestMime.Success)
 										DestMime = Uri.UnescapeDataString(FindDestMime.Groups[2].Value);
-									
+
 									if (FindConverter.Success)
 										Converter = Uri.UnescapeDataString(FindConverter.Groups[2].Value);
 
@@ -263,9 +258,9 @@ namespace WebOne
 									}
 
 									//find converter and use it
-									foreach(Converter Cvt in ConfigFile.Converters)
+									foreach (Converter Cvt in ConfigFile.Converters)
 									{
-										if(Cvt.Executable == Converter)
+										if (Cvt.Executable == Converter)
 										{
 											HttpOperation HOper = new HttpOperation(Log);
 											Stream SrcStream = null;
@@ -275,54 +270,54 @@ namespace WebOne
 											{
 												//download source file
 												if (!Cvt.SelfDownload) try
-												{
-													HOper.URL = new Uri(SrcUrl);
-													HOper.Method = "GET";
-													HOper.RequestHeaders = new WebHeaderCollection();
+													{
+														HOper.URL = new Uri(SrcUrl);
+														HOper.Method = "GET";
+														HOper.RequestHeaders = new WebHeaderCollection();
 #if DEBUG
-													Log.WriteLine(">Downloading source stream (connecting)...");
+														Log.WriteLine(">Downloading source stream (connecting)...");
 #else
 													Log.WriteLine(">Downloading source stream...");
 #endif
-													HOper.SendRequest();
+														HOper.SendRequest();
 #if DEBUG
-													Log.WriteLine(">Downloading source stream (receiving)...");
+														Log.WriteLine(">Downloading source stream (receiving)...");
 #endif
-													HOper.GetResponse();
-													SrcStream = HOper.ResponseStream;
-												}
-												catch (Exception DlEx)
-												{
-													Log.WriteLine(" Converter cannot download source: {0}", DlEx.Message);
-													SendError(503,
-														"<p><big><b>Converter cannot download the source</b>: " + DlEx.Message + "</big></p>" +
-														"Source URL: " + SrcUrl);
-													return;
-												}
+														HOper.GetResponse();
+														SrcStream = HOper.ResponseStream;
+													}
+													catch (Exception DlEx)
+													{
+														Log.WriteLine(" Converter cannot download source: {0}", DlEx.Message);
+														SendError(503,
+															"<p><big><b>Converter cannot download the source</b>: " + DlEx.Message + "</big></p>" +
+															"Source URL: " + SrcUrl);
+														return;
+													}
 											}
 											else
 											{
 												//open local source file
 												SrcUrl = "http://0.0.0.0/localfile";
 												if (!Cvt.SelfDownload) try
-												{
-													if (!File.Exists(Src))
 													{
-														if (File.Exists(new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + Src))
-															Src = new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + Src;
-														else
-															throw new FileNotFoundException("No such file: " + Src);
+														if (!File.Exists(Src))
+														{
+															if (File.Exists(new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + Src))
+																Src = new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + Src;
+															else
+																throw new FileNotFoundException("No such file: " + Src);
+														}
+														SrcStream = File.OpenRead(Src);
 													}
-													SrcStream = File.OpenRead(Src);
-												}
-												catch (Exception OpenEx)
-												{
-													Log.WriteLine(" Converter cannot open source: {0}", OpenEx.Message);
-													SendError(503,
-														"<p><big><b>Converter cannot open the source</b>: " + OpenEx.Message + "</big></p>" +
-														"Source URL: " + SrcUrl);
-													return;
-												}
+													catch (Exception OpenEx)
+													{
+														Log.WriteLine(" Converter cannot open source: {0}", OpenEx.Message);
+														SendError(503,
+															"<p><big><b>Converter cannot open the source</b>: " + OpenEx.Message + "</big></p>" +
+															"Source URL: " + SrcUrl);
+														return;
+													}
 											}
 
 											//go to converter
@@ -332,10 +327,10 @@ namespace WebOne
 												SendStream(Cvt.Run(Log, SrcStream, Args1, Args2, Dest, SrcUrl), DestMime, true);
 												return;
 											}
-											catch(Exception CvtEx)
+											catch (Exception CvtEx)
 											{
 												Log.WriteLine(" Converter error: {0}", CvtEx.Message);
-												SendError(502, 
+												SendError(502,
 													"<p><big><b>Converter error</b>: " + CvtEx.Message + "</big></p>" +
 													"Source URL: " + SrcUrl + "<br>" +
 													"Utility: " + Cvt.Executable);
@@ -376,8 +371,8 @@ namespace WebOne
 									SendError(200, "Get a local file.<br>Usage: /!file/?name=filename.ext&type=text/plain");
 									return;
 									*/
-									SendError(403, "<del>Get a local file.<br>Usage: /!file/?name=filename.ext&type=text/plain</del>"+
-									"<br><b>Disabled in this version due to security reasons.</b>"+
+									SendError(403, "<del>Get a local file.<br>Usage: /!file/?name=filename.ext&type=text/plain</del>" +
+									"<br><b>Disabled in this version due to security reasons.</b>" +
 									"<br>To see used configuration file, open <a href=/!webone.conf>/!webone.conf</a>.");
 									return;
 								case "/!clear/":
@@ -400,8 +395,8 @@ namespace WebOne
 									string PacString =
 									@"function FindProxyForURL(url, host) {" +
 									@"if (url.substring(0, 5) == ""http:"")" +
-									@"{ return ""PROXY "+ GetServerName() +@"""; }" +
-									@"else { return ""DIRECT""; }"+
+									@"{ return ""PROXY " + GetServerName() + @"""; }" +
+									@"else { return ""DIRECT""; }" +
 									@"} /*WebOne PAC*/";
 									byte[] PacBuffer = Encoding.Default.GetBytes(PacString);
 									try
@@ -452,7 +447,7 @@ namespace WebOne
 						{
 							Log.WriteLine("!Internal server error: {0}", ex.ToString());
 #if DEBUG
-							SendError(500, "Internal server error: <b>" + ex.Message + "</b><br>" + ex.GetType().ToString() + " " + ex.StackTrace.Replace("\n","<br>"));
+							SendError(500, "Internal server error: <b>" + ex.Message + "</b><br>" + ex.GetType().ToString() + " " + ex.StackTrace.Replace("\n", "<br>"));
 #else
 							SendError(500, "WebOne cannot process the request because <b>" + ex.Message + "</b>.");
 #endif
@@ -461,8 +456,8 @@ namespace WebOne
 					//local proxy mode: http://localhost/http://example.com/indexr.shtml, http://localhost/http:/example.com/indexr.shtml
 					if (RequestURL.LocalPath.StartsWith("/http:/") || RequestURL.LocalPath.StartsWith("/https:/"))
 					{
-						if(!(RequestURL.LocalPath.StartsWith("/http://") || RequestURL.LocalPath.StartsWith("/https://")))
-						RequestURL = new Uri(RequestURL.AbsoluteUri.Replace("/http:/", "/http://").Replace("/https:/", "/https://"));
+						if (!(RequestURL.LocalPath.StartsWith("/http://") || RequestURL.LocalPath.StartsWith("/https://")))
+							RequestURL = new Uri(RequestURL.AbsoluteUri.Replace("/http:/", "/http://").Replace("/https:/", "/https://"));
 					}
 
 					if (RequestURL.LocalPath.StartsWith("/http://") || RequestURL.LocalPath.StartsWith("/https://"))
@@ -501,12 +496,12 @@ namespace WebOne
 				//dirty workarounds for HTTP>HTTPS redirection bugs ("carousels")
 				//should redirect on 302s or reloadings from 200 and only on htmls
 				if ((RequestURL.AbsoluteUri == RefererUri || RequestURL.AbsoluteUri == LastURL) &&
-				RequestURL.AbsoluteUri != "" && 
+				RequestURL.AbsoluteUri != "" &&
 				(LastContentType.StartsWith("text/htm") || LastContentType == "") &&
 				(((int)LastCode > 299 && (int)LastCode < 400) || LastCode == HttpStatusCode.OK) &&
-				ClientRequest.HttpMethod != "POST" && 
-				ClientRequest.HttpMethod != "CONNECT" && 
-				!Program.CheckString(RequestURL.AbsoluteUri, ConfigFile.ForceHttps) && 
+				ClientRequest.HttpMethod != "POST" &&
+				ClientRequest.HttpMethod != "CONNECT" &&
+				!Program.CheckString(RequestURL.AbsoluteUri, ConfigFile.ForceHttps) &&
 				RequestURL.Host.ToLower() != Environment.MachineName.ToLower() &&
 				RequestURL.Host.ToLower() != ConfigFile.DefaultHostName.ToLower())
 				{
@@ -533,7 +528,7 @@ namespace WebOne
 				if (RequestURL.AbsoluteUri.Length == 0) { SendError(400, "Empty URL."); return; }
 				if (RequestURL.AbsoluteUri == "") return;
 
-				if (RequestURL.AbsoluteUri.Contains(" ")) RequestURL = new Uri(RequestURL.AbsoluteUri.Replace(" ","%20")); //fix spaces in wrong-formed URLs
+				if (RequestURL.AbsoluteUri.Contains(" ")) RequestURL = new Uri(RequestURL.AbsoluteUri.Replace(" ", "%20")); //fix spaces in wrong-formed URLs
 
 				//check for available edit sets
 				foreach (EditSet set in ConfigFile.EditRules)
@@ -551,7 +546,7 @@ namespace WebOne
 								foreach (string RqHdrName in ClientRequest.Headers.AllKeys)
 								{
 									string header = RqHdrName + ": " + ClientRequest.Headers[RqHdrName];
-									if (Regex.IsMatch(header, HdrMask)) 
+									if (Regex.IsMatch(header, HdrMask))
 									{
 										HaveGoodMask = true;
 										EditSets.Add(set);
@@ -613,7 +608,7 @@ namespace WebOne
 							//if URL mask is single, allow use RegEx groups (if any) for replace
 							bool UseRegEx = (Set.UrlMasks.Count == 1 && new Regex(Set.UrlMasks[0]).GetGroupNames().Count() > 1);
 #if DEBUG
-							if(UseRegEx) Log.WriteLine(" RegExp groups are available on {0}.", Set.UrlMasks[0]);
+							if (UseRegEx) Log.WriteLine(" RegExp groups are available on {0}.", Set.UrlMasks[0]);
 #endif
 
 							foreach (EditSetRule Edit in Set.Edits)
@@ -628,7 +623,7 @@ namespace WebOne
 										RequestURL = new Uri(NewUrlInternal);
 										break;
 									case "AddRedirect":
-										string NewUrl302 = UseRegEx ? ProcessUriMasks (new Regex(Set.UrlMasks[0]).Replace(RequestURL.AbsoluteUri, Edit.Value), RequestURL.AbsoluteUri)
+										string NewUrl302 = UseRegEx ? ProcessUriMasks(new Regex(Set.UrlMasks[0]).Replace(RequestURL.AbsoluteUri, Edit.Value), RequestURL.AbsoluteUri)
 																	: ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
 										Log.WriteLine(" Fix to {0}", NewUrl302);
 										ClientResponse.AddHeader("Location", NewUrl302);
@@ -641,7 +636,7 @@ namespace WebOne
 										break;
 									case "AddRequestHeaderFindReplace":
 										FindReplaceEditSetRule hdr_rule = (FindReplaceEditSetRule)Edit;
-										foreach(var hdr in whc.AllKeys)
+										foreach (var hdr in whc.AllKeys)
 										{
 											whc[hdr] = whc[hdr].Replace(hdr_rule.Find, hdr_rule.Replace);
 										}
@@ -822,16 +817,17 @@ namespace WebOne
 				}
 
 				//look in Web Archive if 404
-				if(!BreakTransit && ResponseCode >= 400 && ConfigFile.SearchInArchive)
+				if (!BreakTransit && ResponseCode >= 403 && ConfigFile.SearchInArchive)
 				{
 					LookInWebArchive();
 				}
 
 				//shorten Web Archive error page if need
-				if (!BreakTransit && ResponseCode >= 400 && RequestURL.AbsoluteUri.StartsWith("http://web.archive.org/web/") && ConfigFile.ShortenArchiveErrors)
+				if (!BreakTransit && ResponseCode >= 403 && RequestURL.AbsoluteUri.StartsWith("http://web.archive.org/web/") && ConfigFile.ShortenArchiveErrors)
 				{
 					Log.WriteLine(" Wayback Machine error page shortened.");
-					switch(ResponseCode){
+					switch (ResponseCode)
+					{
 						case 404:
 							string ErrMsg404 =
 							"<p><b>The Wayback Machine has not archived that URL.</b></p>" +
@@ -885,12 +881,12 @@ namespace WebOne
 
 							ClientResponse.ContentLength64 = RespBuffer.Length;
 
-							if (ClientResponse.ContentLength64 > 300*1024) Log.WriteLine(" Sending binary.");
+							if (ClientResponse.ContentLength64 > 300 * 1024) Log.WriteLine(" Sending binary.");
 							ClientResponse.OutputStream.Write(RespBuffer, 0, RespBuffer.Length);
 						}
 						else
 						{
-							if(TransitStream.CanSeek) ClientResponse.ContentLength64 = TransitStream.Length;
+							if (TransitStream.CanSeek) ClientResponse.ContentLength64 = TransitStream.Length;
 							TransitStream.CopyTo(ClientResponse.OutputStream);
 						}
 						ClientResponse.OutputStream.Close();
@@ -912,7 +908,7 @@ namespace WebOne
 #endif
 				}
 			}
-			catch(Exception E)
+			catch (Exception E)
 			{
 				Log.WriteLine(" A error has been catched: {1}\n{0}\t Please report to author.", null, E.ToString().Replace("\n", "\n{0}\t "));
 				SendError(500, "An error occured: " + E.ToString().Replace("\n", "\n<BR>"));
@@ -968,7 +964,7 @@ namespace WebOne
 					{
 						//try to upload (POST, PUT, WebDAV, etc)
 #if DEBUG
-						Log.WriteLine(">Uploading {0}K of {1} (connecting)...",Convert.ToInt32((operation.RequestHeaders["Content-Length"])) / 1024, operation.RequestHeaders["Content-Type"]);
+						Log.WriteLine(">Uploading {0}K of {1} (connecting)...", Convert.ToInt32((operation.RequestHeaders["Content-Length"])) / 1024, operation.RequestHeaders["Content-Type"]);
 #else
 						Log.WriteLine(">Uploading {0}K of {1}...", Convert.ToInt32((operation.RequestHeaders["Content-Length"])) / 1024, operation.RequestHeaders["Content-Type"]);
 #endif
@@ -1032,7 +1028,7 @@ namespace WebOne
 							return;
 						}
 
-						if(NewLocation.StartsWith("https://"))
+						if (NewLocation.StartsWith("https://"))
 						{
 #if DEBUG
 							Log.WriteLine(" The next request will be secure.");
@@ -1050,58 +1046,58 @@ namespace WebOne
 			}
 
 			//process response headers
-			if(operation.ResponseHeaders != null)
-			for (int i = 0; i < operation.ResponseHeaders.Count; ++i)
-			{
-				string header = operation.ResponseHeaders.GetKey(i);
-				foreach (string value in operation.ResponseHeaders.GetValues(i))
+			if (operation.ResponseHeaders != null)
+				for (int i = 0; i < operation.ResponseHeaders.Count; ++i)
 				{
-					string corrvalue = value.Replace("https://", "http://");
-					corrvalue = Regex.Replace(corrvalue, "; secure", ";", RegexOptions.IgnoreCase);
-
-					if(LocalMode)
+					string header = operation.ResponseHeaders.GetKey(i);
+					foreach (string value in operation.ResponseHeaders.GetValues(i))
 					{
-						if (corrvalue.StartsWith("http://") && !corrvalue.StartsWith("http://" + GetServerName()))
-							corrvalue = corrvalue.Replace("http://", "http://" + GetServerName() + "/http://");
+						string corrvalue = value.Replace("https://", "http://");
+						corrvalue = Regex.Replace(corrvalue, "; secure", ";", RegexOptions.IgnoreCase);
+
+						if (LocalMode)
+						{
+							if (corrvalue.StartsWith("http://") && !corrvalue.StartsWith("http://" + GetServerName()))
+								corrvalue = corrvalue.Replace("http://", "http://" + GetServerName() + "/http://");
 							corrvalue = Regex.Replace(corrvalue, "domain=[^;]*; ", " ", RegexOptions.IgnoreCase);
 							corrvalue = Regex.Replace(corrvalue, "path=[^;]*; ", " ", RegexOptions.IgnoreCase);
-						//TODO: fix https://github.com/atauenis/webone/issues/21
-					}
+							//TODO: fix https://github.com/atauenis/webone/issues/21
+						}
 
-					if(header.ToLower() == "set-cookie" && corrvalue.Contains(", "))
-					{
-						//multiple cookies per single header
-						//https://stackoverflow.com/questions/51564395/add-multiple-cookies-to-clients-web-browser-via-httplistenerresponse
-						//causes https://github.com/atauenis/webone/issues/21 & https://github.com/atauenis/webone/issues/35
-
-						string[] allcookies = corrvalue.Split(", ");
-
-						string cookieplus = "";
-						foreach(var cookie in allcookies)
+						if (header.ToLower() == "set-cookie" && corrvalue.Contains(", "))
 						{
-							if (Regex.Match(cookie, "[0-9][0-9]-[A-Z][a-z][a-z]-[0-9][0-9][0-9][0-9]").Success)
+							//multiple cookies per single header
+							//https://stackoverflow.com/questions/51564395/add-multiple-cookies-to-clients-web-browser-via-httplistenerresponse
+							//causes https://github.com/atauenis/webone/issues/21 & https://github.com/atauenis/webone/issues/35
+
+							string[] allcookies = corrvalue.Split(", ");
+
+							string cookieplus = "";
+							foreach (var cookie in allcookies)
 							{
-								cookieplus += " " + cookie;
-								//Console.WriteLine("FOLDED COOKIE: {0}", cookieplus);
-								ClientResponse.AppendHeader("Set-Cookie", cookieplus);
+								if (Regex.Match(cookie, "[0-9][0-9]-[A-Z][a-z][a-z]-[0-9][0-9][0-9][0-9]").Success)
+								{
+									cookieplus += " " + cookie;
+									//Console.WriteLine("FOLDED COOKIE: {0}", cookieplus);
+									ClientResponse.AppendHeader("Set-Cookie", cookieplus);
+								}
+								else cookieplus = cookie;
 							}
-							else cookieplus = cookie;
+						}
+
+						if (!header.StartsWith("Content-") &&
+						!header.StartsWith("Connection") &&
+						!header.StartsWith("Transfer-Encoding") &&
+						!header.StartsWith("Access-Control-Allow-Methods") &&
+						!header.StartsWith("Strict-Transport-Security") &&
+						!header.StartsWith("Content-Security-Policy") &&
+						!header.StartsWith("Upgrade-Insecure-Requests") &&
+						!(header.StartsWith("Vary") && corrvalue.Contains("Upgrade-Insecure-Requests")))
+						{
+							ClientResponse.AppendHeader(header, corrvalue);
 						}
 					}
-
-					if (!header.StartsWith("Content-") &&
-					!header.StartsWith("Connection") &&
-					!header.StartsWith("Transfer-Encoding") &&
-					!header.StartsWith("Access-Control-Allow-Methods") &&
-					!header.StartsWith("Strict-Transport-Security") &&
-					!header.StartsWith("Content-Security-Policy") &&
-					!header.StartsWith("Upgrade-Insecure-Requests") &&
-					!(header.StartsWith("Vary") && corrvalue.Contains("Upgrade-Insecure-Requests")))
-					{
-						ClientResponse.AppendHeader(header, corrvalue);
-					}
 				}
-			}
 		}
 
 
@@ -1136,7 +1132,7 @@ namespace WebOne
 				if (Set.ContentTypeMasks.Count == 0 || CheckStringRegExp(ContentType, Set.ContentTypeMasks.ToArray()))
 				{
 					if (CheckHttpStatusCode(Set.OnCode, operation.Response.StatusCode))
-					{ 
+					{
 						foreach (EditSetRule Edit in Set.Edits)
 						{
 							switch (Edit.Action)
@@ -1152,9 +1148,9 @@ namespace WebOne
 			}
 
 			//do transliteration if need
-			if(EnableTransliteration)
+			if (EnableTransliteration)
 			{
-				foreach(var Letter in ConfigFile.TranslitTable)
+				foreach (var Letter in ConfigFile.TranslitTable)
 				{
 					Body = Body.Replace(Letter.Key, Letter.Value);
 				}
@@ -1174,7 +1170,7 @@ namespace WebOne
 				Body = Body.Replace("src=\"/", "src=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
 				Body = Body.Replace("action=\"/", "action=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
 			}
-			
+
 			return Body;
 		}
 
@@ -1274,7 +1270,7 @@ namespace WebOne
 					{
 						if (Cvt.Executable == Converter)
 						{
-							if(!Cvt.SelfDownload)
+							if (!Cvt.SelfDownload)
 								SendStream(Cvt.Run(Log, ResponseStream, ConvertArg1, ConvertArg2, ConvertDest, RequestURL.AbsoluteUri), ContentType, true);
 							else
 							{
@@ -1289,13 +1285,13 @@ namespace WebOne
 					"<p>See <a href=\"http://github.com/atauenis/webone/wiki\">WebOne wiki</a> for help on this.</p>");
 					return;
 				}
-				catch(Exception ConvertEx)
+				catch (Exception ConvertEx)
 				{
 					Log.WriteLine(" On-fly converter error: {0}", ConvertEx.Message);
 					SendError(502,
 						"<p><big><b>Converter error</b>: " + ConvertEx.Message + "</big></p>" +
 						"Source URL: " + RequestURL.AbsoluteUri + "<br>" +
-						"Utility: " + Converter + "<br>"+
+						"Utility: " + Converter + "<br>" +
 						"Mode: seamless from '" + SrcContentType + "' to '" + ContentType + "'");
 					return;
 				}
@@ -1387,7 +1383,7 @@ namespace WebOne
 			if (RawContent[0] == Encoding.UTF32.GetPreamble()[0]) return Encoding.UTF32;
 
 			//2. get charset from "Content-Type: text/html; charset=UTF-8" header
-			if(operation.ResponseHeaders["Content-Type"] != null)
+			if (operation.ResponseHeaders["Content-Type"] != null)
 			{
 				Match HeaderCharset = Regex.Match(operation.ResponseHeaders["Content-Type"], "; charset=(.*)");
 				if (HeaderCharset.Success)
@@ -1461,13 +1457,13 @@ namespace WebOne
 		/// <param name="Epilogue">The epilogue (the finish) for log entry.</param>
 		private void SaveHeaderDump(string Epilogue = "Complete.")
 		{
-			if (DumpHeaders == false || DumpPath.Contains ("\0")) return;
+			if (DumpHeaders == false || DumpPath.Contains("\0")) return;
 
 			Log.WriteLine(" Save headers to: {0}", DumpPath);
 			string SniffLog = string.Format("{0} request to {1} HTTP/{2}\n", ClientRequest.HttpMethod, RequestURL.ToString(), ClientRequest.ProtocolVersion);
 			if (OriginalURL != RequestURL.AbsoluteUri) SniffLog += "Original URL was: " + OriginalURL + "\n";
 
-			foreach(string hdrname in DumpOfHeaders.AllKeys)
+			foreach (string hdrname in DumpOfHeaders.AllKeys)
 			{
 				SniffLog += hdrname + ": " + DumpOfHeaders[hdrname] + "\n";
 			}
@@ -1477,7 +1473,7 @@ namespace WebOne
 				SniffLog += ClientRequest.HasEntityBody ? "Body goes below. CAUTION: Private area!\n" + DumpOfRequestBody + "\n\n" : "No body.\n\n";
 			}
 			else { SniffLog += ClientRequest.HasEntityBody ? "Body is hidden.\n\n" : "No body.\n\n"; }
-			
+
 
 			if (ClientResponse != null)
 			{
@@ -1500,7 +1496,7 @@ namespace WebOne
 				SniffWriter.Write(SniffLog);
 				SniffWriter.Close();
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				Log.WriteLine(" Cannot save headers: {0}!", ex.Message);
 			}
@@ -1519,7 +1515,8 @@ namespace WebOne
 		/// Look for the page at RequestURL variable in Internet Archive Wayback Machine
 		/// </summary>
 		/// <returns>Is the response ready or not</returns>
-		private bool LookInWebArchive(){
+		private bool LookInWebArchive()
+		{
 			//check if archived copy can be retreived instead
 			if (ConfigFile.SearchInArchive)
 			{
@@ -1581,10 +1578,11 @@ namespace WebOne
 		/// <summary>
 		/// Send internal status page (http://proxyhost:port/!)
 		/// </summary>
-		private void SendInternalStatusPage(){
+		private void SendInternalStatusPage()
+		{
 			string HelpString = "";
 
-			if(ConfigFile.DisplayStatusPage == "no")
+			if (ConfigFile.DisplayStatusPage == "no")
 			{
 				SendInfoPage("WebOne status page", "Sorry", "<p>The status page is disabled by server administrator.</p>");
 				return;
@@ -1662,7 +1660,7 @@ namespace WebOne
 			Text += GetInfoString();
 			string CodeStr = Code.ToString() + " " + ((HttpStatusCode)Code).ToString();
 			string Refresh = "";
-			if (ClientResponse.Headers["Refresh"] != null) Refresh = "<META HTTP-EQUIV=\"REFRESH\" CONTENT=\""+ ClientResponse.Headers["Refresh"] +"\">";
+			if (ClientResponse.Headers["Refresh"] != null) Refresh = "<META HTTP-EQUIV=\"REFRESH\" CONTENT=\"" + ClientResponse.Headers["Refresh"] + "\">";
 			Refresh += "<META CHARSET=\"" + (OutputContentEncoding ?? Encoding.Default).WebName + "\">";
 			string Html = "<HTML>" + Refresh + "<BODY><H1>" + CodeStr + "</H1>" + Text + "</BODY></HTML>";
 
@@ -1678,9 +1676,9 @@ namespace WebOne
 				ClientResponse.OutputStream.Close();
 				SaveHeaderDump("End is internal page: code " + Code + ", " + Text);
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
-				if(!ConfigFile.HideClientErrors)
+				if (!ConfigFile.HideClientErrors)
 					Log.WriteLine("<!Cannot return code {1}. {2}: {3}", null, Code, ex.GetType(), ex.Message);
 			}
 		}
@@ -1703,7 +1701,7 @@ namespace WebOne
 				potok.Close();
 				ClientResponse.OutputStream.Close();
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				int ErrNo = 500;
 				if (ex is FileNotFoundException) ErrNo = 404;
@@ -1722,7 +1720,7 @@ namespace WebOne
 		{
 			if (!Potok.CanRead) throw new ArgumentException("Cannot send write-only stream", "Potok");
 			if (Potok.CanSeek)
-				Log.WriteLine("<Send stream with {2}K of {1}.", null, ContentType, Potok.Length/1024);
+				Log.WriteLine("<Send stream with {2}K of {1}.", null, ContentType, Potok.Length / 1024);
 			else
 				Log.WriteLine("<Send {0} stream.", ContentType);
 			try
@@ -1730,12 +1728,12 @@ namespace WebOne
 				ClientResponse.StatusCode = 200;
 				ClientResponse.ProtocolVersion = new Version(1, 0);
 				ClientResponse.ContentType = ContentType;
-				if(Potok.CanSeek) ClientResponse.ContentLength64 = Potok.Length;
-				if(Potok.CanSeek) Potok.Position = 0;
+				if (Potok.CanSeek) ClientResponse.ContentLength64 = Potok.Length;
+				if (Potok.CanSeek) Potok.Position = 0;
 				Potok.CopyTo(ClientResponse.OutputStream);
-				if(Close) ClientResponse.OutputStream.Close();
+				if (Close) ClientResponse.OutputStream.Close();
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				int ErrNo = 500;
 				if (ex is FileNotFoundException) ErrNo = 404;
@@ -1763,7 +1761,7 @@ namespace WebOne
 			"<body>" +
 			header1 +
 			Content +
-			GetInfoString() + 
+			GetInfoString() +
 			"</body>\n</html>";
 
 			if ((OutputContentEncoding ?? Encoding.Default) != Encoding.Default)

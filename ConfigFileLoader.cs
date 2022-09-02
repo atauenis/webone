@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using static WebOne.Program;
 
 namespace WebOne
@@ -25,7 +24,7 @@ namespace WebOne
 		{
 			Console.WriteLine("Using configuration file {0}.", FileName);
 
-			for(int i = 0; i<Body.Length; i++)
+			for (int i = 0; i < Body.Length; i++)
 			{
 				string LineNo = FileName + ", line " + (i + 1);
 				string Line = Body[i].TrimStart().TrimEnd();
@@ -43,7 +42,7 @@ namespace WebOne
 
 					RawEntries.Add(new KeyValuePair<string, string>(LineNo, Line));
 				}
-				catch(Exception ex)
+				catch (Exception ex)
 				{
 					Log.WriteLine(true, false, "Error in {0}: {1} Line ignored.", LineNo, ex.Message);
 				}
@@ -97,7 +96,8 @@ namespace WebOne
 		{
 			if (!Directory.Exists(Path)) throw new DirectoryNotFoundException();
 
-			foreach(string f in Directory.GetFiles(Path, Mask)){
+			foreach (string f in Directory.GetFiles(Path, Mask))
+			{
 				try { LoadFile(f); }
 				catch (Exception e) { throw new Exception(string.Format("Can't load included {0}: {1}", f, e.Message)); };
 			}
@@ -125,8 +125,9 @@ namespace WebOne
 		/// </summary>
 		public static void ProcessConfiguration()
 		{
-			foreach(KeyValuePair<string, string> entry in RawEntries){
-				if(entry.Value.StartsWith('['))
+			foreach (KeyValuePair<string, string> entry in RawEntries)
+			{
+				if (entry.Value.StartsWith('['))
 				{
 					//section title
 					RawSections.Add(new ConfigFileSection(entry.Value, entry.Key));
@@ -142,14 +143,14 @@ namespace WebOne
 				}
 			}
 
-			foreach(var Section in RawSections)
+			foreach (var Section in RawSections)
 			{
-				switch(Section.Kind)
+				switch (Section.Kind)
 				{
 					case "Server":
-						foreach(ConfigFileOption Option in Section.Options)
+						foreach (ConfigFileOption Option in Section.Options)
 						{
-							switch(Option.Key)
+							switch (Option.Key)
 							{
 								case "Port":
 									ConfigFile.Port = Convert.ToInt32(Option.Value);
@@ -165,7 +166,7 @@ namespace WebOne
 									break;
 								case "AuthenticateRealm":
 									ConfigFile.AuthenticateRealm = Option.Value;
-									break;									
+									break;
 								case "HideClientErrors":
 									ConfigFile.HideClientErrors = ToBoolean(Option.Value);
 									break;
@@ -205,7 +206,7 @@ namespace WebOne
 									else ConfigFile.TemporaryDirectory = Option.Value;
 									break;
 								case "LogFile":
-									if(Program.OverrideLogFile != null && Program.OverrideLogFile == "")
+									if (Program.OverrideLogFile != null && Program.OverrideLogFile == "")
 										LogAgent.OpenLogFile(Program.GetLogFilePath(Option.Value), false);
 									break;
 								case "AppendLogFile":
@@ -218,9 +219,9 @@ namespace WebOne
 								case "ArchiveDateLimit":
 									int ArchiveDateLimit = 0;
 									int.TryParse(Option.Value, out ArchiveDateLimit);
-									if(ArchiveDateLimit > 0)
+									if (ArchiveDateLimit > 0)
 									{
-										if(ArchiveDateLimit > 10000000 && ArchiveDateLimit < 99990000)
+										if (ArchiveDateLimit > 10000000 && ArchiveDateLimit < 99990000)
 										{
 											ConfigFile.ArchiveDateLimit = ArchiveDateLimit;
 											break;
@@ -235,19 +236,19 @@ namespace WebOne
 						}
 						break;
 					case "ForceHttps":
-						foreach(ConfigFileOption Line in Section.Options)
+						foreach (ConfigFileOption Line in Section.Options)
 						{
 							ConfigFile.ForceHttps.Add(Line.RawString);
 						}
 						break;
 					case "TextTypes":
-						foreach(ConfigFileOption Line in Section.Options)
+						foreach (ConfigFileOption Line in Section.Options)
 						{
 							ConfigFile.TextTypes.Add(Line.RawString);
 						}
 						break;
 					case "ForceUtf8":
-						foreach(ConfigFileOption Line in Section.Options)
+						foreach (ConfigFileOption Line in Section.Options)
 						{
 							ConfigFile.ForceUtf8.Add(Line.RawString);
 						}

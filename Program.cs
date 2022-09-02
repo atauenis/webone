@@ -30,8 +30,8 @@ namespace WebOne
 		public const string CmdLineArgUnnamed = "--wo-short";
 		public static List<KeyValuePair<string, string>> CmdLineOptions = new List<KeyValuePair<string, string>>();
 
-		public static System.Net.Http.SocketsHttpHandler HTTPHandler = new ();
-		public static System.Net.Http.HttpClient HTTPClient = new (HTTPHandler);
+		public static System.Net.Http.SocketsHttpHandler HTTPHandler = new();
+		public static System.Net.Http.HttpClient HTTPClient = new(HTTPHandler);
 
 		static void Main(string[] args)
 		{
@@ -52,7 +52,7 @@ namespace WebOne
 				ConfigFileLoader.ProcessConfiguration();
 				if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Port = Port;
 			}
-			catch(Exception ConfigLoadException)
+			catch (Exception ConfigLoadException)
 			{
 				Console.WriteLine("Error while loading configuration: {0}", ConfigLoadException.Message);
 				if (!DaemonMode)
@@ -138,7 +138,7 @@ namespace WebOne
 					Shutdown(ex.NativeErrorCode);
 					break;
 				}
-				catch(Exception ex)
+				catch (Exception ex)
 				{
 					Log.WriteLine(true, false, "Server start failed: {0}", ex.Message);
 					Shutdown(ex.HResult);
@@ -166,7 +166,7 @@ namespace WebOne
 			if (ShutdownInitiated) return;
 			ShutdownInitiated = true;
 
-			if(HTTPS.Working) HTTPS.Stop();
+			if (HTTPS.Working) HTTPS.Stop();
 
 			if (!DaemonMode && !Environment.HasShutdownStarted && !ShutdownInitiated)
 			{
@@ -400,7 +400,7 @@ namespace WebOne
 							break;
 					}
 				}
-				catch(Exception ex)
+				catch (Exception ex)
 				{
 					Console.WriteLine("Warning: Wrong argument '{1} {2}': {0}.", ex.Message, kvp.Key, kvp.Value);
 				}
@@ -411,7 +411,8 @@ namespace WebOne
 		/// Make info string (footer) for message pages
 		/// </summary>
 		/// <returns>HTML: WebOne vX.Y.Z on Windows NT 6.2.9200 Service Pack 6</returns>
-		public static string GetInfoString() {
+		public static string GetInfoString()
+		{
 			return "<hr>WebOne Proxy Server " + Variables["WOVer"] + "<br>on " + Variables["WOSystem"];
 		}
 
@@ -421,7 +422,8 @@ namespace WebOne
 		/// </summary>
 		/// <param name="What">What string should be checked</param>
 		/// <param name="For">Pattern to find</param>
-		public static bool CheckString(string What, string[] For) {
+		public static bool CheckString(string What, string[] For)
+		{
 			foreach (string str in For) { if (What.Contains(str)) return true; }
 			return false;
 		}
@@ -431,7 +433,8 @@ namespace WebOne
 		/// </summary>
 		/// <param name="What">What string should be checked</param>
 		/// <param name="For">Pattern to find</param>
-		public static bool CheckString (string What, List<string> For){
+		public static bool CheckString(string What, List<string> For)
+		{
 			return CheckString(What, For.ToArray());
 		}
 
@@ -477,7 +480,7 @@ namespace WebOne
 		public static string GetTime(DateTime BeginTime)
 		{
 			TimeSpan difference = DateTime.Now - BeginTime;
-			return BeginTime.ToString("dd.MM.yyyy HH:mm:ss.fff") + "+" + difference.Ticks/2;
+			return BeginTime.ToString("dd.MM.yyyy HH:mm:ss.fff") + "+" + difference.Ticks / 2;
 		}
 
 		/// Read all bytes from a Stream (like StreamReader.ReadToEnd)
@@ -715,7 +718,7 @@ namespace WebOne
 
 				Console.WriteLine("\n Running as administrator: netsh " + args);
 				try { Process.Start(psi).WaitForExit(); Console.WriteLine(" OK."); }
-				catch(Exception ex) { Console.WriteLine(" Error: {0}",ex.Message); }
+				catch (Exception ex) { Console.WriteLine(" Error: {0}", ex.Message); }
 			}
 			Console.WriteLine();
 
@@ -750,7 +753,7 @@ namespace WebOne
 		{
 			string msg = string.Empty;
 			Exception e = ExcludeTopLevel ? Ex.InnerException : Ex;
-			while(e != null) 
+			while (e != null)
 			{
 				if (IncludeOnlyLast) msg = e.Message;
 				else msg += e.Message + "\n";

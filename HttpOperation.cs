@@ -1,19 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace WebOne
 {
 	/// <summary>
-	/// HTTP download/upload operation client (new version)
+	/// HTTP download/upload operation client
 	/// </summary>
 	class HttpOperation
 	{
@@ -62,7 +57,7 @@ namespace WebOne
 		internal HttpOperation(LogWriter Log)
 		{
 			this.Log = Log;
-	}
+		}
 
 		/// <summary>
 		/// Perform a HTTP request (content retreive or upload) on this operation
@@ -74,8 +69,8 @@ namespace WebOne
 			Request.Method = new HttpMethod(Method);
 			foreach (var rqhdr in RequestHeaders.AllKeys)
 			{
-				if(!rqhdr.StartsWith("Proxy-") && rqhdr != "Host" && rqhdr != "Content-Encoding")
-				Request.Headers.TryAddWithoutValidation(rqhdr, RequestHeaders[rqhdr]);
+				if (!rqhdr.StartsWith("Proxy-") && rqhdr != "Host" && rqhdr != "Content-Encoding")
+					Request.Headers.TryAddWithoutValidation(rqhdr, RequestHeaders[rqhdr]);
 			}
 			if (RequestStream != null)
 			{
@@ -113,7 +108,7 @@ namespace WebOne
 		internal void GetResponse()
 		{
 			if (Response == null) throw new InvalidOperationException("HTTP request must be sent and be successful first.");
-			
+
 			ResponseHeaders = new WebHeaderCollection();
 			foreach (var rshdr in Response.Headers)
 			{

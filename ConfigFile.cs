@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
-using static WebOne.Program;
+using System.Text;
 
 namespace WebOne
 {
@@ -31,7 +28,7 @@ namespace WebOne
 		/// <summary>
 		/// List of parts of Content-Types that describing text files
 		/// </summary>
-		public static List<string> TextTypes = new List<string>(){ "text/", "javascript"};
+		public static List<string> TextTypes = new List<string>() { "text/", "javascript" };
 
 		/// <summary>
 		/// Encoding to be used in output content
@@ -51,7 +48,7 @@ namespace WebOne
 		/// <summary>
 		/// (Legacy) Dictionary of URLs that should be always 302ed if they're looks like too new JS frameworks
 		/// </summary>
-		public static Dictionary<string, Dictionary<string, string>> FixableUrlActions =  new Dictionary<string, Dictionary<string, string>>();
+		public static Dictionary<string, Dictionary<string, string>> FixableUrlActions = new Dictionary<string, Dictionary<string, string>>();
 
 		/// <summary>
 		/// (Legacy) List of Content-Types that should be always 302ed
