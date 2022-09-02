@@ -74,11 +74,18 @@ namespace WebOne
 			Request.Method = new HttpMethod(Method);
 			foreach (var rqhdr in RequestHeaders.AllKeys)
 			{
-				if(!rqhdr.StartsWith("Proxy-") && rqhdr != "Host")
+				if(!rqhdr.StartsWith("Proxy-") && rqhdr != "Host" && rqhdr != "Content-Encoding")
 				Request.Headers.TryAddWithoutValidation(rqhdr, RequestHeaders[rqhdr]);
 			}
-			if(RequestStream != null) Request.Content = new StreamContent(RequestStream);
-			//UNDONE: POSTs do not work as their bodies losts somewhere here!
+			if (RequestStream != null)
+			{
+				Request.Content = new StreamContent(RequestStream);
+				if (RequestHeaders["Content-Length"] != null) Request.Content.Headers.TryAddWithoutValidation("Content-Length", RequestHeaders["Content-Length"]);
+				if (RequestHeaders["Content-Type"] != null) Request.Content.Headers.TryAddWithoutValidation("Content-Type", RequestHeaders["Content-Type"]);
+				if (RequestHeaders["Content-Disposition"] != null) Request.Content.Headers.TryAddWithoutValidation("Content-Disposition", RequestHeaders["Content-Disposition"]);
+				if (RequestHeaders["Content-Location"] != null) Request.Content.Headers.TryAddWithoutValidation("Content-Location", RequestHeaders["Content-Location"]);
+				if (RequestHeaders["Content-Range"] != null) Request.Content.Headers.TryAddWithoutValidation("Content-Range", RequestHeaders["Content-Range"]);
+			}
 
 			foreach (string SslHost in ConfigFile.ForceHttps)
 			{
@@ -109,6 +116,14 @@ namespace WebOne
 			
 			ResponseHeaders = new WebHeaderCollection();
 			foreach (var rshdr in Response.Headers)
+			{
+				foreach (var rshdrval in rshdr.Value)
+				{
+					ResponseHeaders.Add(rshdr.Key, rshdrval);
+				}
+			}
+
+			foreach (var rshdr in Response.Content.Headers)
 			{
 				foreach (var rshdrval in rshdr.Value)
 				{

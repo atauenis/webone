@@ -692,11 +692,11 @@ namespace WebOne
 				catch (System.Net.Http.HttpRequestException httpex)
 				{
 					//an network error has been catched
-					//try to load the page from Archive.org, then display error message if need
-					if (!LookInWebArchive("Can't load from Web"))
+					Log.WriteLine(" Cannot load this page: {0}.", httpex.Message);
+					//try to load the page from Archive.org, then return error message if need
+					if (!LookInWebArchive())
 					{
 						BreakTransit = true;
-						Log.WriteLine(" Cannot load this page: {0}.", httpex.Message);
 #if DEBUG
 						//return full debug output
 						string err = GetFullExceptionMessage(httpex);
@@ -821,7 +821,11 @@ namespace WebOne
 					SendError(500, "Guru meditaion at URL " + RequestURL.AbsoluteUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace.Replace("\n", "\n<br>") + "</i>");
 				}
 
-				//UNDONE: add load from web archive on 404 errors. THIS WILL BE A FIX OF REGRESSION BUG APPEAR IN 0.10.0.
+				//look in Web Archive if 404
+				if(ResponseCode >= 400 && ConfigFile.SearchInArchive)
+				{
+					LookInWebArchive();
+				}
 
 				//shorten Web Archive error page if need
 				if (!BreakTransit && RequestURL.AbsoluteUri.StartsWith("http://web.archive.org/web/") && ConfigFile.ShortenArchiveErrors)
@@ -1122,6 +1126,7 @@ namespace WebOne
 				Body = Body.Replace(OutputContentEncoding.GetString(UTF8BOM), "");
 				Body = OutputContentEncoding.GetString(Encoding.Convert(Encoding.UTF8, OutputContentEncoding, Encoding.UTF8.GetBytes(Body)));
 			}
+
 			//perform edits on the response body
 			foreach (EditSet Set in EditSets)
 			{
@@ -1183,8 +1188,7 @@ namespace WebOne
 		{
 			HttpStatusCode StatusCode = operation.Response.StatusCode;
 			Stream ResponseStream = operation.ResponseStream;
-			string ContentType = "unknown/unknown";
-			if (operation.Response.Content.Headers.ContentType != null) ContentType = operation.Response.Content.Headers.ContentType.MediaType ?? "unknown/unknown";
+			string ContentType = operation.ResponseHeaders["Content-Type"] ?? "unknown/unknown";
 			long ContentLength = operation.Response.Content.Headers.ContentLength ?? 0;
 			this.ContentType = ContentType;
 			string SrcContentType = ContentType;
@@ -1370,17 +1374,30 @@ namespace WebOne
 		/// <returns>Code page</returns>
 		private Encoding FindContentCharset(byte[] RawContent)
 		{
+			//0. if body is empty, think that it's UTF8
 			if (RawContent.Length < 1) return Encoding.UTF8;
-			//check for UTF magic bytes
+
+			//1. check for UTF magic bytes
 			if (RawContent[0] == Encoding.UTF8.GetPreamble()[0]) return Encoding.UTF8;
 			if (RawContent[0] == Encoding.Unicode.GetPreamble()[0]) return Encoding.Unicode;
 			if (RawContent[0] == Encoding.BigEndianUnicode.GetPreamble()[0]) return Encoding.BigEndianUnicode;
 			if (RawContent[0] == Encoding.UTF32.GetPreamble()[0]) return Encoding.UTF32;
 
+			//2. get charset from "Content-Type: text/html; charset=UTF-8" header
+			if(operation.ResponseHeaders["Content-Type"] != null)
+			{
+				Match HeaderCharset = Regex.Match(operation.ResponseHeaders["Content-Type"], "; charset=(.*)");
+				if (HeaderCharset.Success)
+				{
+					Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+					return Encoding.GetEncoding(HeaderCharset.Groups[1].Value);
+				}
+			}
+
 			//get ANSI charset
 			Encoding WindowsEncoding = CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ANSICodePage);
 
-			//find Meta Charset tag
+			//3. find Meta Charset tag
 			string Content = Encoding.Default.GetString(RawContent);
 			Match MetaCharset = Regex.Match(Content, "<meta http-equiv .*charset=.*>", RegexOptions.IgnoreCase);
 			if (!MetaCharset.Success) return WindowsEncoding;
@@ -1499,13 +1516,13 @@ namespace WebOne
 		/// Look for the page at RequestURL variable in Internet Archive Wayback Machine
 		/// </summary>
 		/// <returns>Is the response ready or not</returns>
-		private bool LookInWebArchive(string Reason){
+		private bool LookInWebArchive(){
 			//check if archived copy can be retreived instead
 			if (ConfigFile.SearchInArchive)
 			{
 				try
 				{
-					Log.WriteLine(" {0}, look in Archive.org...", Reason);
+					Log.WriteLine(" Look in Archive.org...");
 					WebArchiveRequest war = new WebArchiveRequest(RequestURL.ToString());
 					if (war.Archived)
 					{
