@@ -252,12 +252,6 @@ namespace WebOne
 							ConfigFile.ForceUtf8.Add(Line.RawString);
 						}
 						break;
-					case "InternalRedirectOn":
-						foreach(ConfigFileOption Line in Section.Options)
-						{
-							ConfigFile.InternalRedirectOn.Add(Line.RawString);
-						}
-						break;
 					case "Converters":
 						foreach (ConfigFileOption Line in Section.Options)
 						{

@@ -74,11 +74,6 @@ namespace WebOne
 		public static Dictionary<string, Dictionary<string, string>> ContentPatchActions = new Dictionary<string, Dictionary<string, string>>();
 
 		/// <summary>
-		/// List of domains where 302 redirections should be passed through .NET FW
-		/// </summary>
-		public static List<string> InternalRedirectOn = new List<string>();
-
-		/// <summary>
 		/// Hide "Can't read from client" and "Cannot return reply to the client" error messages in log
 		/// </summary>
 		public static bool HideClientErrors = false;

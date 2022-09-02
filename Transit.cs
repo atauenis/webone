@@ -822,13 +822,13 @@ namespace WebOne
 				}
 
 				//look in Web Archive if 404
-				if(ResponseCode >= 400 && ConfigFile.SearchInArchive)
+				if(!BreakTransit && ResponseCode >= 400 && ConfigFile.SearchInArchive)
 				{
 					LookInWebArchive();
 				}
 
 				//shorten Web Archive error page if need
-				if (!BreakTransit && RequestURL.AbsoluteUri.StartsWith("http://web.archive.org/web/") && ConfigFile.ShortenArchiveErrors)
+				if (!BreakTransit && ResponseCode >= 400 && RequestURL.AbsoluteUri.StartsWith("http://web.archive.org/web/") && ConfigFile.ShortenArchiveErrors)
 				{
 					Log.WriteLine(" Wayback Machine error page shortened.");
 					switch(ResponseCode){
@@ -846,6 +846,14 @@ namespace WebOne
 							"<p>This page is not present in Web Archive.</p>" +
 							"<small><i>You see this message because ShortenArchiveErrors option is enabled.</i></small>";
 							SendError(404, ErrMsg403);
+							BreakTransit = true;
+							break;
+						default:
+							string ErrMsg000 =
+							"<p><b>The Wayback Machine cannot give this page.</b></p>" +
+							"<p>This is reason: " + ((HttpStatusCode)ResponseCode).ToString() + ".</p>" +
+							"<small><i>You see this message because ShortenArchiveErrors option is enabled.</i></small>";
+							SendError(404, ErrMsg000);
 							BreakTransit = true;
 							break;
 					}
@@ -925,9 +933,6 @@ namespace WebOne
 		/// <param name="HTTPO">HTTPS operation client with request data</param>
 		private void SendRequest(HttpOperation HTTPO)
 		{
-			bool AllowAutoRedirect = CheckString(RequestURL.AbsoluteUri, ConfigFile.InternalRedirectOn);
-			if (!AllowAutoRedirect) AllowAutoRedirect = ShouldRedirectInNETFW;
-
 			if (operation is null) throw new NullReferenceException("Initialize `operation` first! Also don't forget to put headers, method, log agent in Operation.");
 			//in future probably need to merge operation.URL with RequestURL.AbsoluteUri too. Seems that they does not differ at SendRequest time, but currently I am not 100% sure - atauenis.
 
@@ -1005,8 +1010,7 @@ namespace WebOne
 
 					if (NewLocation != null)
 					{
-						if (RequestURL.AbsoluteUri == NewLocation.Replace("https://", "http://")
-							&& !CheckString(RequestURL.AbsoluteUri, ConfigFile.InternalRedirectOn))
+						if (RequestURL.AbsoluteUri == NewLocation.Replace("https://", "http://"))
 						{
 							Log.WriteLine(">Reload secure...");
 
@@ -1028,8 +1032,7 @@ namespace WebOne
 							return;
 						}
 
-						if(NewLocation.StartsWith("https://")
-						   && !CheckString(RequestURL.AbsoluteUri, ConfigFile.InternalRedirectOn))
+						if(NewLocation.StartsWith("https://"))
 						{
 #if DEBUG
 							Log.WriteLine(" The next request will be secure.");
