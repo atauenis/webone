@@ -35,11 +35,15 @@ namespace WebOne
 
 		static void Main(string[] args)
 		{
-			Variables.Add("WOVer", Assembly.GetExecutingAssembly().GetName().Version.ToString() + "-pre");
+			Variables.Add("WOVer",
+			Assembly.GetExecutingAssembly().GetName().Version.Major + "." +
+			Assembly.GetExecutingAssembly().GetName().Version.Minor + "." +
+			Assembly.GetExecutingAssembly().GetName().Version.Build
+			/*+ "-pre"*/);
 			Variables.Add("WOSystem", Environment.OSVersion.ToString());
 
 			Console.Title = "WebOne";
-			Console.WriteLine("WebOne HTTP Proxy Server {0}\n(C) https://github.com/atauenis/webone\n\n", Variables["WOVer"]);
+			Console.WriteLine("WebOne HTTP Proxy Server {0}\nhttps://github.com/atauenis/webone\n\n", Variables["WOVer"]);
 
 			//process command line arguments
 			ProcessCommandLine(args);

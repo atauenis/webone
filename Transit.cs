@@ -912,11 +912,8 @@ namespace WebOne
 			{
 				Log.WriteLine(" A error has been catched: {1}\n{0}\t Please report to author.", null, E.ToString().Replace("\n", "\n{0}\t "));
 				SendError(500, "An error occured: " + E.ToString().Replace("\n", "\n<BR>"));
-				//if (operation != null) operation.Dispose();
-				//UNDONE: think about disposing if need (or now it is not need?...)
 			}
 			SaveHeaderDump();
-			//if (operation != null) operation.Dispose();
 #if DEBUG
 			Log.WriteLine(" End process.");
 #endif

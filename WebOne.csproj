@@ -6,7 +6,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <Authors>Alexander Tauenis</Authors>
     <Version>0.12.2</Version>
-    <VersionSuffix>-pre</VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
+    <VersionSuffix></VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
     <PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
     <Company>World</Company>
     <Product>WebOne HTTP Proxy Server</Product>
@@ -64,6 +64,15 @@
   <ItemGroup>
     <RpmDependency Include="ImageMagick" />
   </ItemGroup>
+
+	<ItemGroup Condition="$(SelfContained)==true">
+		<!--
+    Fix for self-contained debs on Ubuntu 20.xx
+    https://github.com/quamotion/dotnet-packaging/issues/222
+    -->
+		<DebDotNetDependencies Remove=" libc6, libgcc1, libgssapi-krb5-2, libstdc++6, zlib1g, libssl1.1 | libssl1.0.2 | libssl1.0.1 | libssl1.0.0 | libssl0.9.8, libicu70 | libicu69 | libicu68 | libicu67 | libicu66 | libicu65 | libicu64 | libicu63 | libicu62 | libicu61 | libicu60 | libicu59 | libicu58 | libicu57 | libicu56 | libicu55 | libicu54 | libicu53 | libicu52" />
+		<DebDotNetDependencies Include="libc6, libgcc1, libgssapi-krb5-2, libstdc++6, zlib1g, libssl3 | libssl1.1 | libssl1.0.2 | libssl1.0.1 | libssl1.0.0 | libssl0.9.8, libicu70 | libicu69 | libicu68 | libicu67 | libicu66 | libicu65 | libicu64 | libicu63 | libicu62 | libicu61 | libicu60 | libicu59 | libicu58 | libicu57 | libicu56 | libicu55 | libicu54 | libicu53 | libicu52" />
+	</ItemGroup>
 
   <PropertyGroup>
     <PostInstallScript>
