@@ -1525,17 +1525,16 @@ namespace WebOne
 					{
 						Log.WriteLine(" Available.");
 						string ArchiveURL = war.ArchivedURL;
-						if (ConfigFile.ArchiveUrlSuffix != "")
-						{ //add suffix
-							Match AUrlParts = Regex.Match(ArchiveURL, "^http://web.archive.org/web/([0-9]*)/(.*)");
-							//http://web.archive.org/web/$1fw_/$2
-							ArchiveURL = "http://web.archive.org/web/" + AUrlParts.Groups[1].Value + ConfigFile.ArchiveUrlSuffix + "/" + AUrlParts.Groups[2].Value;
-						}
 
 						if (ConfigFile.HideArchiveRedirect)
 						{ //internal redirect to archive
 							try
 							{
+								//add "id_" suffix (to preserve inline links)
+								Match AUrlParts = Regex.Match(ArchiveURL, "^http://web.archive.org/web/([0-9]*)/(.*)");
+								//http://web.archive.org/web/$1fw_/$2
+								ArchiveURL = "http://web.archive.org/web/" + AUrlParts.Groups[1].Value + "id_/" + AUrlParts.Groups[2].Value;
+
 								RequestURL = new Uri(ArchiveURL);
 #if DEBUG
 								Log.WriteLine(" Internal download via Web Archive: " + RequestURL.AbsoluteUri);
@@ -1551,6 +1550,14 @@ namespace WebOne
 						}
 						else
 						{ //regular redirect to archive
+							//add suffix if need
+							if (ConfigFile.ArchiveUrlSuffix != "")
+							{
+								Match AUrlParts = Regex.Match(ArchiveURL, "^http://web.archive.org/web/([0-9]*)/(.*)");
+								//http://web.archive.org/web/$1fw_/$2
+								ArchiveURL = "http://web.archive.org/web/" + AUrlParts.Groups[1].Value + ConfigFile.ArchiveUrlSuffix + "/" + AUrlParts.Groups[2].Value;
+							}
+
 							ResponseBody = "<html><body><h1>Server not found</h2>But an <a href=" + ArchiveURL + ">archived copy</a> is available! Redirecting to it...</body></html>";
 							ClientResponse.AddHeader("Location", ArchiveURL);
 							SendError(302, ResponseBody); //302 redirect is ready
