@@ -38,12 +38,7 @@ namespace WebOne
 		Encoding OutputContentEncoding = ConfigFile.OutputEncoding;
 		bool EnableTransliteration = false;
 
-		bool DumpHeaders = false;
-		bool DumpRequestBody = false;
-		string DumpPath = "\0dump-%Url%.log";
-		string OriginalURL = "";
-		string DumpOfRequestBody = "Nothing dumped.";
-		WebHeaderCollection DumpOfHeaders = new WebHeaderCollection();
+		string DumpFile = null;
 
 		/// <summary>
 		/// Convert a Web 2.0 page to Web 1.0-like page.
@@ -413,7 +408,6 @@ namespace WebOne
 									{
 										Log.WriteLine("Cannot return PAC!");
 									}
-									SaveHeaderDump();
 									return;
 								case "/robots.txt":
 									//attempt to include in google index; kick the bot off
@@ -434,7 +428,6 @@ namespace WebOne
 									{
 										Log.WriteLine("Cannot return robot kicker!");
 									}
-									SaveHeaderDump();
 									return;
 
 								default:
@@ -615,65 +608,60 @@ namespace WebOne
 							{
 								switch (Edit.Action)
 								{
+									case "AddHeaderDumping":
+									case "AddRequestDumping":
+									case "AddDumping":
+										//dump initializing must be first
+										DumpFile = ProcessUriMasks(Edit.Value,ClientRequest.RawUrl);
+										Dump(ClientRequest.HttpMethod + " " + ClientRequest.RawUrl + " HTTP/" + ClientRequest.ProtocolVersion.ToString());
+										break;
 									case "AddInternalRedirect":
 										string NewUrlInternal = UseRegEx ? ProcessUriMasks(new Regex(Set.UrlMasks[0]).Replace(RequestURL.AbsoluteUri, Edit.Value), RequestURL.AbsoluteUri)
 																		 : ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
 										Log.WriteLine(" Fix to {0} internally", NewUrlInternal);
-										SaveHeaderDump("Internal redirect to " + NewUrlInternal + "\nThen continue.");
+										Dump("~Internal redirect to: " + NewUrlInternal);
 										RequestURL = new Uri(NewUrlInternal);
 										break;
 									case "AddRedirect":
 										string NewUrl302 = UseRegEx ? ProcessUriMasks(new Regex(Set.UrlMasks[0]).Replace(RequestURL.AbsoluteUri, Edit.Value), RequestURL.AbsoluteUri)
 																	: ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
 										Log.WriteLine(" Fix to {0}", NewUrl302);
+										Dump("~Redirect using 302 to: " + NewUrl302);
 										ClientResponse.AddHeader("Location", NewUrl302);
 										SendError(302, "Брось каку!");
 										return;
 									case "AddRequestHeader":
 									case "AddHeader":
-										//Log.WriteLine(" Add request header: {0}", Edit.Value);
-										if (whc[Edit.Value.Substring(0, Edit.Value.IndexOf(": "))] == null) whc.Add(ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+										string Header = ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
+										Dump("~Add request header: " + Header);
+										if (whc[Edit.Value.Substring(0, Edit.Value.IndexOf(": "))] == null) whc.Add(Header);
 										break;
 									case "AddRequestHeaderFindReplace":
 										FindReplaceEditSetRule hdr_rule = (FindReplaceEditSetRule)Edit;
 										foreach (var hdr in whc.AllKeys)
 										{
 											whc[hdr] = whc[hdr].Replace(hdr_rule.Find, hdr_rule.Replace);
+											Dump("Request header find&replace: '" + hdr_rule.Find + "' / '" + hdr_rule.Replace + "'");
 										}
-										break;
-									case "AddHeaderDumping":
-									case "AddRequestDumping":
-										DumpHeaders = true;
-										DumpPath = ProcessUriMasks(
-											Edit.Value,
-											RequestURL.ToString(),
-											true
-											);
-										DumpRequestBody = Edit.Action == "AddRequestDumping";
 										break;
 									case "AddOutputEncoding":
 										OutputContentEncoding = GetCodePage(Edit.Value);
+										Dump("~Output encoding set to: " + OutputContentEncoding.BodyName);
 										break;
 									case "AddTranslit":
 										EnableTransliteration = ToBoolean(Edit.Value);
+										Dump("~Enable transliteration");
 										break;
 								}
 							}
 						}
 					}
 
-					//save dump of headers if need for debugging (a-la Chromium devtools Network tab)
-					if (DumpHeaders)
+					if(DumpFile != null)
 					{
-						OriginalURL = RequestURL.AbsoluteUri;
-						foreach (string hdrname in whc.AllKeys)
+						foreach(var hdr in whc.AllKeys)
 						{
-							if (hdrname == "User-Agent")
-							{
-								DumpOfHeaders.Add("REAL-User-Agent", whc[hdrname]);
-								DumpOfHeaders.Add("SENT-User-Agent", GetUserAgent(whc[hdrname]));
-							}
-							else DumpOfHeaders.Add(hdrname, whc[hdrname]);
+							Dump(hdr + ": " + whc[hdr]);
 						}
 					}
 
@@ -688,6 +676,7 @@ namespace WebOne
 				{
 					//an network error has been catched
 					Log.WriteLine(" Cannot load this page: {0}.", httpex.Message);
+					Dump("~Network error: " + httpex.Message);
 					//try to load the page from Archive.org, then return error message if need
 					if (!LookInWebArchive())
 					{
@@ -806,12 +795,14 @@ namespace WebOne
 				}
 				catch (UriFormatException)
 				{
+					Dump("~Invalid URL.");
 					BreakTransit = true;
 					SendError(400, "The URL <b>" + RequestURL.AbsoluteUri + "</b> is not valid.");
 				}
 				catch (Exception ex)
 				{
 					BreakTransit = true;
+					try { Dump("~Guru meditation: " + ex.Message); } catch { }
 					Log.WriteLine(" ============GURU MEDITATION:\n{1}\nOn URL '{2}', Method '{3}'. Returning 500.============", null, ex.ToString(), RequestURL.AbsoluteUri, ClientRequest.HttpMethod);
 					SendError(500, "Guru meditaion at URL " + RequestURL.AbsoluteUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace.Replace("\n", "\n<br>") + "</i>");
 				}
@@ -824,7 +815,7 @@ namespace WebOne
 
 				//shorten Web Archive error page if need
 				if (!BreakTransit && ResponseCode >= 403 && RequestURL.AbsoluteUri.StartsWith("http://web.archive.org/web/") && ConfigFile.ShortenArchiveErrors)
-				{
+				{					
 					Log.WriteLine(" Wayback Machine error page shortened.");
 					switch (ResponseCode)
 					{
@@ -883,11 +874,35 @@ namespace WebOne
 
 							if (ClientResponse.ContentLength64 > 300 * 1024) Log.WriteLine(" Sending binary.");
 							ClientResponse.OutputStream.Write(RespBuffer, 0, RespBuffer.Length);
+
+							if (DumpFile != null)
+							{
+								Dump("\n\n" + ClientResponse.StatusCode + " HTTP/" + ClientResponse.ProtocolVersion.ToString());
+								foreach (var hdr in ClientResponse.Headers.AllKeys)
+								{
+									Dump(hdr + ": " + ClientResponse.Headers[hdr]);
+								}
+								Dump("\n");
+
+								if (ClientResponse.ContentLength64 < 1024) Dump(ResponseBody);
+								else Dump("Over 1 KB response body.");
+							}
+
 						}
 						else
 						{
 							if (TransitStream.CanSeek) ClientResponse.ContentLength64 = TransitStream.Length;
 							TransitStream.CopyTo(ClientResponse.OutputStream);
+
+							if (DumpFile != null)
+							{
+								Dump("\n\n" + ClientResponse.StatusCode + " HTTP/" + ClientResponse.ProtocolVersion.ToString());
+								foreach (var hdr in ClientResponse.Headers.AllKeys)
+								{
+									Dump(hdr + ": " + ClientResponse.Headers[hdr]);
+								}
+								Dump("\nBody is binary stream.");
+							}
 						}
 						ClientResponse.OutputStream.Close();
 #if DEBUG
@@ -913,7 +928,8 @@ namespace WebOne
 				Log.WriteLine(" A error has been catched: {1}\n{0}\t Please report to author.", null, E.ToString().Replace("\n", "\n{0}\t "));
 				SendError(500, "An error occured: " + E.ToString().Replace("\n", "\n<BR>"));
 			}
-			SaveHeaderDump();
+			try { Dump("END."); } catch { }
+
 #if DEBUG
 			Log.WriteLine(" End process.");
 #endif
@@ -966,17 +982,22 @@ namespace WebOne
 						Log.WriteLine(">Uploading {0}K of {1}...", Convert.ToInt32((operation.RequestHeaders["Content-Length"])) / 1024, operation.RequestHeaders["Content-Type"]);
 #endif
 						operation.URL = RequestURL;
-						if (!DumpRequestBody)
+
+						if(DumpFile == null)
+						{ //if normal operation
 							operation.RequestStream = ClientRequest.InputStream;
+						}
 						else
-						{
-							//if need to create a dump of request's body
+						{ //if need to save request dump
 							MemoryStream RequestDumpStream = new MemoryStream();
 							ClientRequest.InputStream.CopyTo(RequestDumpStream);
 							RequestDumpStream.Position = 0;
-							DumpOfRequestBody = new StreamReader(RequestDumpStream).ReadToEnd();
+							string DumpOfRequestBody = new StreamReader(RequestDumpStream).ReadToEnd();
 							RequestDumpStream.Position = 0;
 							operation.RequestStream = RequestDumpStream;
+							if (DumpOfRequestBody.Length > 0) Dump("\nCAUTION: Request body may contain private data!\n" + DumpOfRequestBody);
+							else Dump("\n");
+
 						}
 						//operation.AllowAutoRedirect = AllowAutoRedirect; //UNDONE: add fix for AutoRedirect
 						operation.SendRequest();
@@ -1214,11 +1235,14 @@ namespace WebOne
 									ConvertArg1 = rule.ConvertArg1;
 									ConvertArg2 = rule.ConvertArg2;
 									Stop = true;
+									Dump("~~Convert using: " + Converter);
 									break;
 								case "AddResponseHeader":
-									Log.WriteLine(" Add response header: {0}", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
-									operation.ResponseHeaders.Add(ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
+									string RespHdr = ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
+									Log.WriteLine(" Add response header: {0}", RespHdr);
+									operation.ResponseHeaders.Add(RespHdr);
 									if (Edit.Value.StartsWith("Content-Type: ")) ContentType = Edit.Value.Substring("Content-Type: ".Length);
+									Dump("~~Add response header: " + RespHdr);
 									break;
 								case "AddResponseHeaderFindReplace":
 									FindReplaceEditSetRule resp_rule = (FindReplaceEditSetRule)Edit;
@@ -1226,20 +1250,12 @@ namespace WebOne
 									{
 										operation.ResponseHeaders[hdr] = operation.ResponseHeaders[hdr].Replace(resp_rule.Find, resp_rule.Replace);
 									}
+									Dump("~~Response header find&replace: " + resp_rule.Find + " / " + resp_rule.Replace);
 									break;
 								case "AddRedirect":
 									Log.WriteLine(" Add redirect: {0}", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
 									Redirect = ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
-									break;
-								case "AddHeaderDumping":
-								case "AddRequestDumping":
-									DumpHeaders = true;
-									DumpPath = ProcessUriMasks(
-										Edit.Value,
-										RequestURL.ToString(),
-										true
-										);
-									DumpRequestBody = Edit.Action == "AddRequestDumping";
+									Dump("~~Redirect to: " + Redirect);
 									break;
 							}
 						}
@@ -1449,57 +1465,6 @@ namespace WebOne
 		}
 
 		/// <summary>
-		/// Save header dump if need
-		/// </summary>
-		/// <param name="Epilogue">The epilogue (the finish) for log entry.</param>
-		private void SaveHeaderDump(string Epilogue = "Complete.")
-		{
-			if (DumpHeaders == false || DumpPath.Contains("\0")) return;
-
-			Log.WriteLine(" Save headers to: {0}", DumpPath);
-			string SniffLog = string.Format("{0} request to {1} HTTP/{2}\n", ClientRequest.HttpMethod, RequestURL.ToString(), ClientRequest.ProtocolVersion);
-			if (OriginalURL != RequestURL.AbsoluteUri) SniffLog += "Original URL was: " + OriginalURL + "\n";
-
-			foreach (string hdrname in DumpOfHeaders.AllKeys)
-			{
-				SniffLog += hdrname + ": " + DumpOfHeaders[hdrname] + "\n";
-			}
-
-			if (DumpRequestBody)
-			{
-				SniffLog += ClientRequest.HasEntityBody ? "Body goes below. CAUTION: Private area!\n" + DumpOfRequestBody + "\n\n" : "No body.\n\n";
-			}
-			else { SniffLog += ClientRequest.HasEntityBody ? "Body is hidden.\n\n" : "No body.\n\n"; }
-
-
-			if (ClientResponse != null)
-			{
-				SniffLog += string.Format("Response {0} {1} HTTP/{2}\n", ClientResponse.StatusCode, ClientResponse.StatusDescription, ClientResponse.ProtocolVersion);
-				foreach (string hdrname in ClientResponse.Headers.AllKeys)
-				{
-					SniffLog += hdrname + ": " + ClientResponse.Headers[hdrname] + "\n";
-				}
-			}
-			else { SniffLog += "Custom response.\n"; }
-
-			SniffLog += Epilogue;
-
-			SniffLog = SniffLog.Replace("\n", "\r\n");
-
-			try
-			{
-				if (File.Exists(DumpPath)) SniffLog = "\n\n---------\n\n" + SniffLog;
-				var SniffWriter = new StreamWriter(DumpPath, true);
-				SniffWriter.Write(SniffLog);
-				SniffWriter.Close();
-			}
-			catch (Exception ex)
-			{
-				Log.WriteLine(" Cannot save headers: {0}!", ex.Message);
-			}
-		}
-
-		/// <summary>
 		/// Get this proxy server name and port
 		/// </summary>
 		private string GetServerName()
@@ -1520,6 +1485,7 @@ namespace WebOne
 				try
 				{
 					Log.WriteLine(" Look in Archive.org...");
+					Dump("~Look in Web Archive...");
 					WebArchiveRequest war = new WebArchiveRequest(RequestURL.ToString());
 					if (war.Archived)
 					{
@@ -1536,6 +1502,7 @@ namespace WebOne
 								ArchiveURL = "http://web.archive.org/web/" + AUrlParts.Groups[1].Value + "id_/" + AUrlParts.Groups[2].Value;
 
 								RequestURL = new Uri(ArchiveURL);
+								Dump("~Go to Web Archive, internal: " + RequestURL.AbsoluteUri);
 #if DEBUG
 								Log.WriteLine(" Internal download via Web Archive: " + RequestURL.AbsoluteUri);
 #endif
@@ -1567,6 +1534,7 @@ namespace WebOne
 					else
 					{
 						Log.WriteLine(" No snapshots.");
+						Dump("~Not in Web Archive.");
 						return false; //nothing ready
 					}
 				}
@@ -1577,6 +1545,20 @@ namespace WebOne
 				}
 			}
 			else return false; //nothing ready
+		}
+
+		/// <summary>
+		/// If HTTP traffic sniffing is enabled, write a line to traffic dump
+		/// </summary>
+		/// <param name="str">The string to write.</param>
+		private void Dump(string str = "")
+		{
+			if (DumpFile != null)
+			{
+				StreamWriter DumpWriter = new StreamWriter(new FileStream(DumpFile,FileMode.Append));
+				DumpWriter.WriteLine(str);
+				DumpWriter.Close();
+			}
 		}
 
 		/// <summary>
@@ -1678,7 +1660,7 @@ namespace WebOne
 				ClientResponse.ContentLength64 = Buffer.Length;
 				ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
 				ClientResponse.OutputStream.Close();
-				SaveHeaderDump("End is internal page: code " + Code + ", " + Text);
+				Dump("End is internal page: code " + Code + ", " + Text);
 			}
 			catch (Exception ex)
 			{
@@ -1711,7 +1693,7 @@ namespace WebOne
 				if (ex is FileNotFoundException) ErrNo = 404;
 				SendError(ErrNo, "Cannot open the file <i>" + FileName + "</i>.<br>" + ex.ToString().Replace("\n", "<br>"));
 			}
-			SaveHeaderDump("End is file " + FileName);
+			Dump("End is file " + FileName);
 		}
 
 		/// <summary>
@@ -1743,7 +1725,7 @@ namespace WebOne
 				if (ex is FileNotFoundException) ErrNo = 404;
 				SendError(ErrNo, "Cannot retreive stream.<br>" + ex.ToString().Replace("\n", "<br>"));
 			}
-			SaveHeaderDump("End is stream of " + ContentType);
+			Dump("End is stream of " + ContentType);
 		}
 
 		/// <summary>
@@ -1781,7 +1763,7 @@ namespace WebOne
 				ClientResponse.ContentLength64 = Buffer.Length;
 				ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
 				ClientResponse.OutputStream.Close();
-				SaveHeaderDump("End is information page: " + Header1);
+				Dump("End is information page: " + Header1);
 			}
 			catch (Exception ex)
 			{

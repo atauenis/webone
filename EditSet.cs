@@ -125,6 +125,7 @@ namespace WebOne
                     case "AddResponseHeaderReplace":
                     case "AddHeaderDumping":
                     case "AddRequestDumping":
+                    case "AddDumping":
                     case "AddOutputEncoding":
                     case "AddTranslit":
                         Edits.Add(new EditSetRule(Line.Key, Line.Value));
