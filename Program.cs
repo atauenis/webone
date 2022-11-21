@@ -134,6 +134,7 @@ namespace WebOne
 							}
 							else
 							{
+								Console.WriteLine("\nYou always can configure the system using instructions from WebOne wiki.");
 								Shutdown(ex.NativeErrorCode);
 								break;
 							}
@@ -706,6 +707,7 @@ namespace WebOne
 			NTdomain = Environment.UserDomainName;
 			NTuser = Environment.UserName;
 
+			Console.WriteLine();
 			Console.WriteLine();
 			Log.WriteLine(false, false, "Started NETSH configurtion \"wizard\". Logging is not implemented here.");
 
