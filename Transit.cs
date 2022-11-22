@@ -612,7 +612,13 @@ namespace WebOne
 									case "AddRequestDumping":
 									case "AddDumping":
 										//dump initializing must be first
-										DumpFile = ProcessUriMasks(Edit.Value,ClientRequest.RawUrl);
+										DumpFile = ProcessUriMasks(Edit.Value,ClientRequest.RawUrl)
+										.Replace(":","-")
+										.Replace("<","(")
+										.Replace(">", ")")
+										.Replace("?", "-")
+										.Replace("|","!");
+										if (DumpFile.Length > 128) { DumpFile = DumpFile.Substring(0, 128) + "-CUT.log"; } //about half of Windows path limitation
 										Dump(ClientRequest.HttpMethod + " " + ClientRequest.RawUrl + " HTTP/" + ClientRequest.ProtocolVersion.ToString());
 										break;
 									case "AddInternalRedirect":
@@ -641,7 +647,7 @@ namespace WebOne
 										foreach (var hdr in whc.AllKeys)
 										{
 											whc[hdr] = whc[hdr].Replace(hdr_rule.Find, hdr_rule.Replace);
-											Dump("Request header find&replace: '" + hdr_rule.Find + "' / '" + hdr_rule.Replace + "'");
+											Dump("~Request header find&replace: '" + hdr_rule.Find + "' / '" + hdr_rule.Replace + "'");
 										}
 										break;
 									case "AddOutputEncoding":
@@ -663,6 +669,7 @@ namespace WebOne
 						{
 							Dump(hdr + ": " + whc[hdr]);
 						}
+						Dump();
 					}
 
 					//send the request
@@ -676,7 +683,7 @@ namespace WebOne
 				{
 					//an network error has been catched
 					Log.WriteLine(" Cannot load this page: {0}.", httpex.Message);
-					Dump("~Network error: " + httpex.Message);
+					Dump("!Network error: " + httpex.Message);
 					//try to load the page from Archive.org, then return error message if need
 					if (!LookInWebArchive())
 					{
@@ -795,14 +802,14 @@ namespace WebOne
 				}
 				catch (UriFormatException)
 				{
-					Dump("~Invalid URL.");
+					Dump("!Invalid URL");
 					BreakTransit = true;
 					SendError(400, "The URL <b>" + RequestURL.AbsoluteUri + "</b> is not valid.");
 				}
 				catch (Exception ex)
 				{
 					BreakTransit = true;
-					try { Dump("~Guru meditation: " + ex.Message); } catch { }
+					try { Dump("!Guru meditation: " + ex.Message); } catch { }
 					Log.WriteLine(" ============GURU MEDITATION:\n{1}\nOn URL '{2}', Method '{3}'. Returning 500.============", null, ex.ToString(), RequestURL.AbsoluteUri, ClientRequest.HttpMethod);
 					SendError(500, "Guru meditaion at URL " + RequestURL.AbsoluteUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace.Replace("\n", "\n<br>") + "</i>");
 				}
@@ -877,7 +884,6 @@ namespace WebOne
 
 							if (DumpFile != null)
 							{
-								Dump("\n\n" + ClientResponse.StatusCode + " HTTP/" + ClientResponse.ProtocolVersion.ToString());
 								foreach (var hdr in ClientResponse.Headers.AllKeys)
 								{
 									Dump(hdr + ": " + ClientResponse.Headers[hdr]);
@@ -885,7 +891,7 @@ namespace WebOne
 								Dump("\n");
 
 								if (ClientResponse.ContentLength64 < 1024) Dump(ResponseBody);
-								else Dump("Over 1 KB response body.");
+								else Dump("Over 1 KB response body");
 							}
 
 						}
@@ -896,12 +902,11 @@ namespace WebOne
 
 							if (DumpFile != null)
 							{
-								Dump("\n\n" + ClientResponse.StatusCode + " HTTP/" + ClientResponse.ProtocolVersion.ToString());
 								foreach (var hdr in ClientResponse.Headers.AllKeys)
 								{
 									Dump(hdr + ": " + ClientResponse.Headers[hdr]);
 								}
-								Dump("\nBody is binary stream.");
+								Dump("\nBody is binary stream");
 							}
 						}
 						ClientResponse.OutputStream.Close();
@@ -995,11 +1000,13 @@ namespace WebOne
 							string DumpOfRequestBody = new StreamReader(RequestDumpStream).ReadToEnd();
 							RequestDumpStream.Position = 0;
 							operation.RequestStream = RequestDumpStream;
-							if (DumpOfRequestBody.Length > 0) Dump("\nCAUTION: Request body may contain private data!\n" + DumpOfRequestBody);
+							if (DumpOfRequestBody.Length > 0)
+							{
+								if (DumpOfRequestBody.Length < 1024) Dump("\nCAUTION: Request body may contain private data!\n" + DumpOfRequestBody);
+								else Dump("\nRequest body is longer than 1 KB");
+							}
 							else Dump("\n");
-
 						}
-						//operation.AllowAutoRedirect = AllowAutoRedirect; //UNDONE: add fix for AutoRedirect
 						operation.SendRequest();
 #if DEBUG
 						Log.WriteLine(">Uploading content (receiving)...");
@@ -1027,6 +1034,7 @@ namespace WebOne
 						if (RequestURL.AbsoluteUri == NewLocation.Replace("https://", "http://"))
 						{
 							Log.WriteLine(">Reload secure...");
+							Dump("Upgrade HTTP to HTTPS");
 
 							RequestURL = new Uri(RequestURL.AbsoluteUri.Replace("http://", "https://"));
 							TransitStream = null;
@@ -1158,6 +1166,7 @@ namespace WebOne
 								case "AddFindReplace":
 									FindReplaceEditSetRule frpair = Edit as FindReplaceEditSetRule;
 									Body = Regex.Replace(Body, frpair.Find, frpair.Replace, RegexOptions.Singleline);
+									Dump("~~Find & replace (RegEx): " + frpair.Find + " -> " + frpair.Replace);
 									break;
 							}
 						}
@@ -1209,6 +1218,7 @@ namespace WebOne
 			long ContentLength = operation.Response.Content.Headers.ContentLength ?? 0;
 			this.ContentType = ContentType;
 			string SrcContentType = ContentType;
+			Dump("\n\n" + (int)StatusCode + " HTTP/1.0");
 
 			//perform edits on the response: common tasks for all bin/text
 			string Converter = null;
@@ -1250,7 +1260,7 @@ namespace WebOne
 									{
 										operation.ResponseHeaders[hdr] = operation.ResponseHeaders[hdr].Replace(resp_rule.Find, resp_rule.Replace);
 									}
-									Dump("~~Response header find&replace: " + resp_rule.Find + " / " + resp_rule.Replace);
+									Dump("~~Response header find&replace: " + resp_rule.Find + " -> " + resp_rule.Replace);
 									break;
 								case "AddRedirect":
 									Log.WriteLine(" Add redirect: {0}", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
@@ -1485,7 +1495,7 @@ namespace WebOne
 				try
 				{
 					Log.WriteLine(" Look in Archive.org...");
-					Dump("~Look in Web Archive...");
+					Dump("=Look in Web Archive...");
 					WebArchiveRequest war = new WebArchiveRequest(RequestURL.ToString());
 					if (war.Archived)
 					{
@@ -1502,7 +1512,7 @@ namespace WebOne
 								ArchiveURL = "http://web.archive.org/web/" + AUrlParts.Groups[1].Value + "id_/" + AUrlParts.Groups[2].Value;
 
 								RequestURL = new Uri(ArchiveURL);
-								Dump("~Go to Web Archive, internal: " + RequestURL.AbsoluteUri);
+								Dump("=Go to Web Archive, internal: " + RequestURL.AbsoluteUri);
 #if DEBUG
 								Log.WriteLine(" Internal download via Web Archive: " + RequestURL.AbsoluteUri);
 #endif
@@ -1534,7 +1544,7 @@ namespace WebOne
 					else
 					{
 						Log.WriteLine(" No snapshots.");
-						Dump("~Not in Web Archive.");
+						Dump("=Not in Web Archive");
 						return false; //nothing ready
 					}
 				}
