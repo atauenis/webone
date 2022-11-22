@@ -254,9 +254,10 @@ namespace WebOne
 					case "/a":
 					case "-a":
 					case "--proxy-authenticate":
+					case "--dump":
 					case "--dump-headers":
 					case "--dump-requests":
-						//will be processed in ProcessCommandLineOptions()
+						//all will be processed in ProcessCommandLineOptions()
 						break;
 					case "--daemon":
 						DaemonMode = true;
@@ -385,23 +386,15 @@ namespace WebOne
 						case "--proxy-authenticate":
 							ConfigFile.Authenticate = new List<string>() { kvp.Value }; //will override all set credentials
 							break;
+						case "--dump":
 						case "--dump-headers":
-							string HdrDmpPath = "dump-hd-%Url%.log";
-							if (kvp.Value != "") HdrDmpPath = kvp.Value;
-
-							Console.WriteLine("Will dump headers to: {0}.", HdrDmpPath);
-							ConfigFileSection HdrDumpSection = new ConfigFileSection("[Edit]", "--dump-headers argument");
-							HdrDumpSection.Options.Add(new ConfigFileOption("AddHeaderDumping=" + HdrDmpPath, "--dump-headers argument"));
-							ConfigFile.EditRules.Add(new EditSet(HdrDumpSection));
-							break;
 						case "--dump-requests":
-							string RqDmpPath = "dump-rq-%Url%.log";
-							if (kvp.Value != "") RqDmpPath = kvp.Value;
-
-							Console.WriteLine("Will dump headers & uploads's bodies to: {0}.", RqDmpPath);
-							ConfigFileSection RqDumpSection = new ConfigFileSection("[Edit]", "--dump-requests argument");
-							RqDumpSection.Options.Add(new ConfigFileOption("AddRequestDumping=" + RqDmpPath, "--dump-requests argument"));
-							ConfigFile.EditRules.Add(new EditSet(RqDumpSection));
+							string DumpFilePath = "dump-%Url%.log";
+							if (kvp.Value != "") DumpFilePath = kvp.Value;
+							Log.WriteLine(true, false, "Will save all HTTP traffic to: {0}.", DumpFilePath);
+							ConfigFileSection DumpSection = new ConfigFileSection("[Edit]", "[command line]");
+							DumpSection.Options.Add(new ConfigFileOption("AddDumping=" + DumpFilePath, "[command line]"));
+							ConfigFile.EditRules.Add(new EditSet(DumpSection));
 							break;
 					}
 				}
