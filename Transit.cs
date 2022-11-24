@@ -28,6 +28,7 @@ namespace WebOne
 		List<EditSet> EditSets = new List<EditSet>();
 		bool Stop = false;
 		bool LocalMode = false;
+		string LocalIP = "127.0.0.1";
 
 		HttpOperation operation;
 		int ResponseCode = 502;
@@ -122,6 +123,9 @@ namespace WebOne
 					return;
 				}
 
+				//get proxy's IP address
+				LocalIP = ClientRequest.LocalEndPoint.Address.ToString();
+
 				//check for local or internal URL
 				bool IsLocalhost = false;
 
@@ -134,6 +138,7 @@ namespace WebOne
 				RequestURL.Host.ToLower() == "localhost" ||
 				RequestURL.Host.ToLower() == Environment.MachineName.ToLower() ||
 				RequestURL.Host == "127.0.0.1" ||
+				RequestURL.Host == LocalIP ||
 				RequestURL.Host.ToLower() == "wpad" ||
 				RequestURL.Host.ToLower() == ConfigFile.DefaultHostName.ToLower() ||
 				RequestURL.Host == "" ||
@@ -496,6 +501,7 @@ namespace WebOne
 				ClientRequest.HttpMethod != "CONNECT" &&
 				!Program.CheckString(RequestURL.AbsoluteUri, ConfigFile.ForceHttps) &&
 				RequestURL.Host.ToLower() != Environment.MachineName.ToLower() &&
+				RequestURL.Host.ToLower() != LocalIP &&
 				RequestURL.Host.ToLower() != ConfigFile.DefaultHostName.ToLower())
 				{
 					Log.WriteLine(" Carousel detected.");
@@ -1479,8 +1485,9 @@ namespace WebOne
 		/// </summary>
 		private string GetServerName()
 		{
-			if (ConfigFile.Port == 80) return ConfigFile.DefaultHostName;
-			return ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString();
+			string LocalHostName = ConfigFile.DefaultHostName == Environment.MachineName ? LocalIP : ConfigFile.DefaultHostName;
+			if (ConfigFile.Port == 80) return LocalHostName;
+			return LocalHostName + ":" + ConfigFile.Port.ToString();
 		}
 
 		/// <summary>
@@ -1583,8 +1590,7 @@ namespace WebOne
 				SendInfoPage("WebOne status page", "Sorry", "<p>The status page is disabled by server administrator.</p>");
 				return;
 			}
-
-			if (ConfigFile.DisplayStatusPage == "short")
+			else if (ConfigFile.DisplayStatusPage == "short")
 			{
 				HelpString += "<p>This is <b>" + GetServerName() + "</b>.<br>";
 				HelpString += "Pending requests: <b>" + (Load - 1) + "</b>.<br>";
@@ -1618,7 +1624,7 @@ namespace WebOne
 
 
 				HelpString += "<h2>Internal URLs:</h2><ul>" +
-							  //			  "<li><a href='/!codepages/'>/!codepages/</a> - list of available encodings for OutputEncoding setting</li>" +
+							  "<li><a href='/!codepages/'>/!codepages/</a> - list of available encodings for OutputEncoding setting</li>" +
 							  "<li><a href='/!img-test/'>/!img-test/</a> - test if ImageMagick is working</li>" +
 							  "<li><a href='/!convert/'>/!convert/</a> - run a file format converter (<a href='/!convert/?src=logo.webp&dest=gif&type=image/gif'>demo</a>)</li>" +
 							  //"<li><a href='/!file/'>/!file/</a> - get a file from WebOne working directory (<a href='/!file/?name=webone.conf&type=text/plain'>demo</a>)</li>" +
@@ -1626,7 +1632,6 @@ namespace WebOne
 							  "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>" +
 							  "</ul>";
 			}
-
 			else
 			{
 				HelpString = "<h2>It works!</h2>";

@@ -39,7 +39,7 @@ namespace WebOne
 			Assembly.GetExecutingAssembly().GetName().Version.Major + "." +
 			Assembly.GetExecutingAssembly().GetName().Version.Minor + "." +
 			Assembly.GetExecutingAssembly().GetName().Version.Build
-			/*+ "-pre"*/);
+			+ "-pre");
 			Variables.Add("WOSystem", Environment.OSVersion.ToString());
 
 			Console.Title = "WebOne";
