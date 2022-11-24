@@ -124,7 +124,10 @@ namespace WebOne
 				}
 
 				//get proxy's IP address
-				LocalIP = ClientRequest.LocalEndPoint.Address.ToString();
+				if(ClientRequest.LocalEndPoint.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+					LocalIP = ClientRequest.LocalEndPoint.Address.ToString(); // IPv4
+				else
+					LocalIP = "[" + ClientRequest.LocalEndPoint.Address.ToString() + "]"; //IPv6
 
 				//check for local or internal URL
 				bool IsLocalhost = false;
