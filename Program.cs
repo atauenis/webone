@@ -91,6 +91,10 @@ namespace WebOne
 			HTTPHandler.AllowAutoRedirect = false;
 			HTTPHandler.AutomaticDecompression = DecompressionMethods.All;
 			HTTPHandler.UseCookies = false;
+			if(ConfigFile.UpperProxy != ""){
+				WebProxy UpperProxy = new(ConfigFile.UpperProxy);
+				HTTPHandler.Proxy = UpperProxy;
+			}
 
 			//set console window title
 			if (!DaemonMode) Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + ConfigFile.Port;

@@ -175,7 +175,10 @@ namespace WebOne
 		/// </summary>
 		public static int ArchiveDateLimit = 0;
 
-
+		/// <summary>
+		/// Another proxy server, used by WebOne to connect to Internet
+		/// </summary>
+		public static string UpperProxy = "";
 
 		// Hint: All parser-related stuff known from v0.2.0 - 0.10.7 has been rewritten and moved to ConfigFileLoader class.
 		//       Don't look for the parser here.
