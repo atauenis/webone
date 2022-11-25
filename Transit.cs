@@ -395,12 +395,15 @@ namespace WebOne
 								case "/wpad.da":
 									//Proxy Auto-Config
 									Log.WriteLine("<Return PAC/WPAD script.");
+									string LocalHostAdress = GetServerName();
+									if (LocalHostAdress.StartsWith("[")) LocalHostAdress = ConfigFile.DefaultHostName + ":" + ConfigFile.Port; //on IPv6, fallback to DefaultHostName:Port
+
 									string PacString =
-									@"function FindProxyForURL(url, host) {" +
-									@"if (url.substring(0, 5) == ""http:"")" +
-									@"{ return ""PROXY " + GetServerName() + @"""; }" +
-									@"else { return ""DIRECT""; }" +
-									@"} /*WebOne PAC*/";
+									"function FindProxyForURL(url, host){\n" +
+									"if (url.substring(0, 5) == 'http:')\n" +
+									"{ return 'PROXY " + LocalHostAdress + "'; }\n" +
+									"} /*WebOne PAC*/ ";
+
 									byte[] PacBuffer = Encoding.Default.GetBytes(PacString);
 									try
 									{
