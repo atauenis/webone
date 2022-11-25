@@ -18,8 +18,9 @@ namespace WebOne
 		HttpListenerResponse ClientResponse;
 		LogWriter Log;
 
-
 		byte[] UTF8BOM = Encoding.UTF8.GetPreamble();
+
+		Dictionary<string, string> Variables = new Dictionary<string, string>();
 
 		Uri RequestURL = new Uri("about:blank");
 		static string LastURL = "http://999.999.999.999/CON";
@@ -128,6 +129,25 @@ namespace WebOne
 					LocalIP = ClientRequest.LocalEndPoint.Address.ToString(); // IPv4
 				else
 					LocalIP = "[" + ClientRequest.LocalEndPoint.Address.ToString() + "]"; //IPv6
+
+				//fill variables
+				UriBuilder builder = new UriBuilder(RequestURL);
+				var DefaultVars = new Dictionary<string, string>
+				{
+					{ "URL", RequestURL.ToString() },
+					{ "Url", Uri.EscapeDataString(RequestURL.ToString()) },
+					{ "UrlDomain", builder.Host },
+					{ "UrlNoDomain", (builder.Query == "" ? builder.Path : builder.Path + "?" + builder.Query) },
+					{ "UrlNoQuery", builder.Scheme + "://" + builder.Host + "/" +  builder.Path },
+					{ "UrlNoPort", builder.Scheme + "://" + builder.Host + "/" + (builder.Query == "" ? builder.Path : builder.Path + "?" + builder.Query) },
+					{ "UrlHttps", "https://" + builder.Host + "/" + (builder.Query == "" ? builder.Path : builder.Path + "?" + builder.Query) },
+					{ "UrlHttp", "http://" + builder.Host + "/" + (builder.Query == "" ? builder.Path : builder.Path + "?" + builder.Query) },
+					{ "Proxy", GetServerName() },
+					{ "ProxyHost", ConfigFile.DefaultHostName == Environment.MachineName ? LocalIP : ConfigFile.DefaultHostName },
+					{ "Method", ClientRequest.HttpMethod },
+					{ "HttpVersion", ClientRequest.ProtocolVersion.ToString() }
+				};
+				foreach (var entry in Program.Variables) { DefaultVars.TryAdd(entry.Key, entry.Value); }
 
 				//check for local or internal URL
 				bool IsLocalhost = false;
@@ -624,7 +644,7 @@ namespace WebOne
 									case "AddRequestDumping":
 									case "AddDumping":
 										//dump initializing must be first
-										DumpFile = ProcessUriMasks(Edit.Value,ClientRequest.RawUrl)
+										DumpFile = ProcessUriMasks(Edit.Value)
 										.Replace(":","-")
 										.Replace("<","(")
 										.Replace(">", ")")
@@ -634,15 +654,15 @@ namespace WebOne
 										Dump(ClientRequest.HttpMethod + " " + ClientRequest.RawUrl + " HTTP/" + ClientRequest.ProtocolVersion.ToString());
 										break;
 									case "AddInternalRedirect":
-										string NewUrlInternal = UseRegEx ? ProcessUriMasks(new Regex(Set.UrlMasks[0]).Replace(RequestURL.AbsoluteUri, Edit.Value), RequestURL.AbsoluteUri)
-																		 : ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
+										string NewUrlInternal = UseRegEx ? ProcessUriMasks(new Regex(Set.UrlMasks[0]).Replace(RequestURL.AbsoluteUri, Edit.Value))
+																		 : ProcessUriMasks(Edit.Value);
 										Log.WriteLine(" Fix to {0} internally", NewUrlInternal);
 										Dump("~Internal redirect to: " + NewUrlInternal);
 										RequestURL = new Uri(NewUrlInternal);
 										break;
 									case "AddRedirect":
-										string NewUrl302 = UseRegEx ? ProcessUriMasks(new Regex(Set.UrlMasks[0]).Replace(RequestURL.AbsoluteUri, Edit.Value), RequestURL.AbsoluteUri)
-																	: ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
+										string NewUrl302 = UseRegEx ? ProcessUriMasks(new Regex(Set.UrlMasks[0]).Replace(RequestURL.AbsoluteUri, Edit.Value))
+																	: ProcessUriMasks(Edit.Value);
 										Log.WriteLine(" Fix to {0}", NewUrl302);
 										Dump("~Redirect using 302 to: " + NewUrl302);
 										ClientResponse.AddHeader("Location", NewUrl302);
@@ -650,7 +670,7 @@ namespace WebOne
 										return;
 									case "AddRequestHeader":
 									case "AddHeader":
-										string Header = ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
+										string Header = ProcessUriMasks(Edit.Value);
 										Dump("~Add request header: " + Header);
 										if (whc[Edit.Value.Substring(0, Edit.Value.IndexOf(": "))] == null) whc.Add(Header);
 										break;
@@ -675,14 +695,12 @@ namespace WebOne
 						}
 					}
 
-					if(DumpFile != null)
+					foreach (var hdr in whc.AllKeys)
 					{
-						foreach(var hdr in whc.AllKeys)
-						{
-							Dump(hdr + ": " + whc[hdr]);
-						}
-						Dump();
+						Variables.Add("Request." + hdr, whc[hdr]);
+						Dump(hdr + ": " + whc[hdr]);
 					}
+					Dump();
 
 					//send the request
 					operation = new HttpOperation(Log);
@@ -1232,6 +1250,13 @@ namespace WebOne
 			string SrcContentType = ContentType;
 			Dump("\n\n" + (int)StatusCode + " HTTP/1.0");
 
+			Variables.TryAdd("Response.HttpStatusCode", ((int)operation.Response.StatusCode).ToString());
+			Variables.TryAdd("Response.HttpVersion", operation.Response.Version.ToString());
+			foreach (string hdr in operation.ResponseHeaders)
+			{
+				Variables.TryAdd("Response." + hdr, operation.ResponseHeaders[hdr]);
+			}
+
 			//perform edits on the response: common tasks for all bin/text
 			string Converter = null;
 			string ConvertDest = "";
@@ -1260,7 +1285,7 @@ namespace WebOne
 									Dump("~~Convert using: " + Converter);
 									break;
 								case "AddResponseHeader":
-									string RespHdr = ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
+									string RespHdr = ProcessUriMasks(Edit.Value);
 									Log.WriteLine(" Add response header: {0}", RespHdr);
 									operation.ResponseHeaders.Add(RespHdr);
 									if (Edit.Value.StartsWith("Content-Type: ")) ContentType = Edit.Value.Substring("Content-Type: ".Length);
@@ -1275,8 +1300,8 @@ namespace WebOne
 									Dump("~~Response header find&replace: " + resp_rule.Find + " -> " + resp_rule.Replace);
 									break;
 								case "AddRedirect":
-									Log.WriteLine(" Add redirect: {0}", ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri));
-									Redirect = ProcessUriMasks(Edit.Value, RequestURL.AbsoluteUri);
+									Log.WriteLine(" Add redirect: {0}", ProcessUriMasks(Edit.Value));
+									Redirect = ProcessUriMasks(Edit.Value);
 									Dump("~~Redirect to: " + Redirect);
 									break;
 							}
@@ -1460,6 +1485,18 @@ namespace WebOne
 			}
 
 			return CodePagesEncodingProvider.Instance.GetEncoding(Charset) ?? Encoding.UTF8;
+		}
+
+		/// <summary>
+		/// Fill values on masks in a string
+		/// </summary>
+		/// <param name="MaskedURL">String (probably an URL) with %masks%</param>
+		/// <param name="PossibleURL">Value for %URL%-based masks</param>
+		/// <returns>Ready string with filled fields</returns>
+		private string ProcessUriMasks(string MaskedURL, string PossibleURL = "")
+		{
+			if (PossibleURL == "") PossibleURL = RequestURL.AbsoluteUri;
+			return Program.ProcessUriMasks(MaskedURL, PossibleURL, false, Variables);
 		}
 
 		/// <summary>
