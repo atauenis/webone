@@ -92,8 +92,15 @@ namespace WebOne
 			HTTPHandler.AutomaticDecompression = DecompressionMethods.All;
 			HTTPHandler.UseCookies = false;
 			if(ConfigFile.UpperProxy != ""){
-				WebProxy UpperProxy = new(ConfigFile.UpperProxy);
-				HTTPHandler.Proxy = UpperProxy;
+				if (ConfigFile.UpperProxy == "no" || ConfigFile.UpperProxy == "off" || ConfigFile.UpperProxy == "disable" || ConfigFile.UpperProxy == "false" || ConfigFile.UpperProxy == "direct")
+				{
+					HTTPHandler.UseProxy = false;
+				}
+				else
+				{
+					WebProxy UpperProxy = new(ConfigFile.UpperProxy);
+					HTTPHandler.Proxy = UpperProxy;
+				}
 			}
 
 			//set console window title
