@@ -833,6 +833,8 @@ namespace WebOne
 				catch (System.Threading.Tasks.TaskCanceledException)
 				{
 					Dump("!Connection timeout (100 sec)");
+					BreakTransit = true;
+
 					string ErrorMessageHeader = "The connection has timed out";
 					string ErrorMessage = "<p><big>The request was canceled due to Timeout of 100 seconds elapsing.</big></p>" +
 					"<ul><li>The site could be temporarily unavailable or too busy. Try again in a few moments.</li>" +
