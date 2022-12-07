@@ -830,6 +830,21 @@ namespace WebOne
 #endif
 					}
 				}
+				catch (System.Threading.Tasks.TaskCanceledException)
+				{
+					Dump("!Connection timeout (100 sec)");
+					string ErrorMessageHeader = "The connection has timed out";
+					string ErrorMessage = "<p><big>The request was canceled due to Timeout of 100 seconds elapsing.</big></p>" +
+					"<ul><li>The site could be temporarily unavailable or too busy. Try again in a few moments.</li>" +
+					"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+					"<li>Internet Archive sometimes became busy. Be patient, wait a some time.</li>" +
+					"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
+					"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
+					"</ul>";
+
+					ErrorMessage += "<br>URL: " + RequestURL.AbsoluteUri;
+					SendInfoPage("WebOne: Operation timeout", ErrorMessageHeader, ErrorMessage);
+				}
 				catch (UriFormatException)
 				{
 					Dump("!Invalid URL");
