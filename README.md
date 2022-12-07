@@ -9,28 +9,22 @@ WebOne HTTP Proxy Server is working by default on port 8080 and is compatible ev
 
 The program's settings are in the __webone.conf__ file (but any other file name can be used too).
 
-See [WebOne wiki](https://github.com/atauenis/webone/wiki) for complete list of features and full documentation.
+See **[WebOne wiki](https://github.com/atauenis/webone/wiki)** for complete list of features and full documentation.
 
 ## Server prerequisites
 Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET 6.0 Runtime are required on server PC. See [.NET 6.0 System Requirements](https://github.com/dotnet/core/blob/main/release-notes/6.0/supported-os.md).
 
 ## Image and video converting
-* Picture format converting is performing via `convert` from ImageMagick (installing automatically).
-* Video files can be converted on fly via `ffmpeg`. It's included in Win-x64.full zips, and can be installed manually on Linux/macOS.
-* To watch YouTube.com videos through proxy, install `ffmpeg` together with `youtube-dl` (included in Win-x64.full zips) and use included `yt.bat`/`yt.sh` script.
+* Picture format converting is performing via `convert` utility from ImageMagick (bundled with WebOne).
+* To watch YouTube.com videos through proxy, install `ffmpeg` together with `youtube-dl` (included in `win-x64.Full` zips, and can be installed manually on Linux/macOS).
 
 ## Install
-Manuals about how to set up a WebOne proxy on [Windows](https://github.com/atauenis/webone/wiki/Windows-installation) / [Linux](https://github.com/atauenis/webone/wiki/Linux-installation) / [MacOS](https://github.com/atauenis/webone/wiki/MacOS-X-installation) servers are in the Wiki.
+Manuals about how to set up a WebOne proxy on [Windows](https://github.com/atauenis/webone/wiki/Windows-installation) / [Linux](https://github.com/atauenis/webone/wiki/Linux-installation) / [macOS](https://github.com/atauenis/webone/wiki/MacOS-X-installation) servers are in the Wiki.
 
 ## Run
 *	On Windows simply run `webone.exe`. On first launch it will show UAC warning about system settings change - it is normal, as WebOne would configure Windows to allow running proxies without administrator rights. However, you may do this step [manually](https://github.com/atauenis/webone/wiki/Windows-installation#how-to-run-without-admin-privileges) and deny the UAC request.
-	
-*	On Linux & macOS it is important to set `DefaultHostName` option in `[Server]` section of configuration file. Details are in the [wiki](https://github.com/atauenis/webone/wiki/Linux-installation#common-things).
 
-	*Tip:* you may store your own configuration in `/etc/webone.conf.d/` directory. It will override `webone.conf` settings and will not be overwritten on package updates.
-	
-	
-*	On distributions of Linux the proxy is installing as a service, so it can be configured via regular service management commands:
+*	On Linux the proxy is installing as a service, so it can be configured via regular service management commands:
 	```
 	$ sudo service webone start
 	or
@@ -38,15 +32,19 @@ Manuals about how to set up a WebOne proxy on [Windows](https://github.com/ataue
 	```
 	Other service commands, such as `start`/`stop`/`restart`/`status`/`enable`/`disable`, also work.
 	
-*	On macOS it can be started from Terminal:
+*   On macOS launch `webone` from Terminal, as the application is not signed for developer verification.
 	```
 	$ ./webone				(simply)
 	$ ./webone 5170				(start on specific port, e.g. 5170)
 	$ sudo ./webone 80			(if port is less than 1024, root rights are need)
-	$ ./webone /media/flash/myconfig.conf	(to use specific configuration file instead of default)
+	$ ./webone /some/folder/myconfig.conf	(to use specific configuration file instead of default)
 	$ dotnet webone.dll			(alternative way)
 	```
 	These commands also can be used on Linux when systemd service is disabled.
+
+*	*Tip:* you may store your own configuration in `/etc/webone.conf.d/` directory. It will override `webone.conf` settings and will not be overwritten on package updates.
+
+
 
 Working of WebOne can be checked via web browser by opening http://proxyhost:port/.
 
@@ -55,17 +53,20 @@ Note that this app is not intended for daily use, as removing any encryption fro
 The server can be started even on public hosts. But don't forget to enable password protection in config file to make the proxy non-public.
 
 ## Build
-Latest source code can be always found in the __master__ branch of [Git repository](https://github.com/atauenis/webone). Forks and pull requests are welcome!
+Latest source code can be always found in the __master__ branch of [Git repository](https://github.com/atauenis/webone).
 
-The program is built using Microsoft .NET 6.0 SDK and [dotnet-packaging](https://github.com/qmfrederik/dotnet-packaging/) add-on. With it the building is easy: use `dotnet publish` & `dotnet deb || dotnet rpm || dotnet zip` tools.
+The program is built using Microsoft .NET 6.0 SDK and [dotnet-packaging](https://github.com/qmfrederik/dotnet-packaging/) add-on. With them the building is easy on all platforms: use `dotnet publish` & `dotnet deb || dotnet rpm || dotnet zip` tools.
 
 Windows developers can utilize `Build.bat` script for cross-platform building.
 
-## Who are the author(s)?
-Currently the project is maintained by a single person, Alexander Tauenis. However WebOne project welcomes any new contributors. 
-
 ## Feedback
 Any questions can be written on official [VOGONS thread](https://www.vogons.org/viewtopic.php?f=24&t=67165), [phantom.sannata.ru thread](https://phantom.sannata.org/viewtopic.php?f=16&t=33291), and GitHub [Issues](https://github.com/atauenis/webone/issues) and [Discussions](https://github.com/atauenis/webone/discussions) tabs.
+
+## Who are the author(s)?
+Currently the project is maintained by a single person, Alexander Tauenis (ATauenis).
+
+## How to contribute
+WebOne project welcomes any help in the development. Forks, pull requests, or bug reports are welcome.
 
 # Описание по-русски
 __WebOne__ - прокси-сервер HTTP, позволяющий открывать современные сайты на старых браузерах. Своеобразный переходник между реальным Web 2.0 и историческим Web 1.0. Работает по принципу MITM.
@@ -91,7 +92,7 @@ __WebOne__ - прокси-сервер HTTP, позволяющий открыв
 
 Файл протокола (__webone.log__) по умолчанию сохраняется по адресу ``/var/log/webone.log`` или `` C:\Users\username\AppData\Roaming\webone.log``.
 
-На Linux используются конвертеры из пакетов __imagemagick__ (convert) и __ffmpeg__. В Windows-версии прилагается конвертер **convert**, а в Full-версии дополнительно имеется **ffmpeg** и **youtube-dl** с вспомогательным скриптом для скачивания видео с YouTube (**yt.bat**).
+На Linux используются конвертеры из пакетов __imagemagick__ (convert) и __ffmpeg__. В Windows-версии прилагается конвертер **convert**, а в Full-версии дополнительно имеется **ffmpeg** и **youtube-dl** с вспомогательным скриптом для скачивания видео с YouTube (**yt.bat**, **yt.sh**).
 
 Проект открыт для всех желающих присоединиться к разработке. Автор и основатель проекта: Александр Тауенис (ATauenis).
 
