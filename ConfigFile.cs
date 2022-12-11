@@ -180,6 +180,13 @@ namespace WebOne
 		/// </summary>
 		public static string UpperProxy = "";
 
+		/// <summary>
+		/// Proxy Automatic Configuration script
+		/// </summary>
+		public static string PAC = "";
+
+
+
 		// Hint: All parser-related stuff known from v0.2.0 - 0.10.7 has been rewritten and moved to ConfigFileLoader class.
 		//       Don't look for the parser here.
 

@@ -418,11 +418,7 @@ namespace WebOne
 									string LocalHostAdress = GetServerName();
 									if (LocalHostAdress.StartsWith("[")) LocalHostAdress = ConfigFile.DefaultHostName + ":" + ConfigFile.Port; //on IPv6, fallback to DefaultHostName:Port
 
-									string PacString =
-									"function FindProxyForURL(url, host){\n" +
-									"if (url.substring(0, 5) == 'http:')\n" +
-									"{ return 'PROXY " + LocalHostAdress + "'; }\n" +
-									"} /*WebOne PAC*/ ";
+									string PacString = Program.ProcessUriMasks(ConfigFile.PAC, LocalHostAdress, false, new Dictionary<string, string>() { { "PACProxy", LocalHostAdress } });
 
 									byte[] PacBuffer = Encoding.Default.GetBytes(PacString);
 									try

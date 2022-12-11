@@ -332,6 +332,12 @@ namespace WebOne
 							}
 						}
 						break;
+					case "PAC":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							ConfigFile.PAC += Line.RawString + "\n";
+						}
+						break;
 					case "FixableURL":
 					case "FixableType":
 					case "ContentPatch":
@@ -343,6 +349,8 @@ namespace WebOne
 						break;
 				}
 			}
+
+			if (ConfigFile.PAC == "") ConfigFile.PAC = DefaultPAC;
 
 			Variables.Add("Proxy", ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString());
 			Variables.Add("ProxyHost", ConfigFile.DefaultHostName);

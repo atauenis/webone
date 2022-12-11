@@ -33,6 +33,12 @@ namespace WebOne
 		public static System.Net.Http.SocketsHttpHandler HTTPHandler = new();
 		public static System.Net.Http.HttpClient HTTPClient = new(HTTPHandler);
 
+		public const string DefaultPAC =
+			"function FindProxyForURL(url, host){\n" +
+			"if (url.substring(0, 5) == 'http:')\n" +
+			"{ return 'PROXY %PACProxy%'; }\n" +
+			"} /*WebOne PAC*/ ";
+
 		static void Main(string[] args)
 		{
 			Variables.Add("WOVer",
