@@ -155,7 +155,7 @@ namespace WebOne
 			FtpClient Backend = FtpTransitManager.Backends[ClientID];
 
 			Page.Header = "File Transfer: " + Backend.Server;
-			Page.Content = "Will work with FtpClient #" + RequestArguments["client"];
+			Page.Content = "";
 
 			if(!Backend.Connected)
 			{
@@ -165,12 +165,30 @@ namespace WebOne
 				return Page;
 			}
 
-			//1. Send a FTP command
+			//Send a FTP command and process its response
 			switch(RequestArguments["task"])
 			{
 				case "listdir":
-					FtpResponse cmd = Backend.TransmitCommand("PWD");
-					Page.Content = "<h2>" + cmd.Result + "</h2>";
+					//Get directory listing
+					FtpResponse cmd;
+					if (!string.IsNullOrEmpty(RequestArguments["cwd"]))
+					{
+						//Change current directory if need
+						cmd = Backend.TransmitCommand("CWD " + RequestArguments["cwd"]);
+						if(cmd.Code != 250)
+						{
+							Page.Content += "<p><b>Cannot change working directory:</b> " + cmd.ToString() + "</p>";
+						}
+					}
+
+					//Working with current directory
+					cmd = Backend.TransmitCommand("PWD");
+					Page.Content += "<h2>" + cmd.Result + "</h2>";
+					if(cmd.Code != 257)
+					{
+						Page.Content += "<p><b>&quot;Print Working Directory&quot; command has returned an unexpected result:</b> " + cmd.ToString() + "</p>";
+						return Page;
+					}
 
 					cmd = Backend.TransmitCommand("OPTS UTF8 ON");
 					if(cmd.Code == 200) {/*we have UTF-8 support*/}
@@ -198,8 +216,85 @@ namespace WebOne
 					}
 					System.IO.StreamReader sr = new System.IO.StreamReader(datastream);
 					string FileList = sr.ReadToEnd();
-					Page.Content += "<pre>" + FileList + "</pre>";
 
+					// Close data connection and get "226  Transfer complete"
+					Backend.CloseDataConnection();
+					cmd = Backend.Flush();
+
+					//               ===Examples of FTP LIST outputs:===
+					//
+					//         0   1    2       3             4   5  6     7     8
+					//drwxrwxr-x   4 1115     100          4096 Mar  2  2009 linux
+					//    rights   ? user       ?          size   m  d     y name
+					//                             ===or:===
+					//          0  1         2    3            4   5  6     7  8*   8*    8*
+					//drwxr-xr-x   3 oscollect 1011         4096 Nov 25 07:55 200 Best Games
+
+					//Format the directory listing
+					List<string[]> FileTable = new List<string[]>();
+
+					int FilenameField = int.MaxValue, FilenameStart = 0;
+					foreach (var Line in FileList.Split('\n'))
+					{
+						//split LIST entry to columns
+						string[] components = System.Text.RegularExpressions.Regex.Split(Line, @"\s{1,}");
+						if (components.Length < 2) continue;
+
+						//detect File Name column start and number
+						if (FilenameField > components.Length)
+						{
+							FilenameField = components.Length - 1;
+							FilenameStart = Line.IndexOf(components[FilenameField -1 ]);
+						}
+
+						//fill the table
+						if (FilenameField != 0)
+						{
+							string[] Row = new string[FilenameField];
+							for(int i = 0; i<FilenameField; i++)
+							{
+								Row[i] = components[i].Trim();
+							}
+							Row[FilenameField-1] = Line.Substring(FilenameStart).Trim();
+							FileTable.Add(Row);
+						}
+					}
+
+					Page.Content += "<table>\n";
+					foreach(string[] FileRow in FileTable)
+					{
+						bool IsDir = FileRow[0].StartsWith("d");
+						string FileName = FileRow[FilenameField - 1];
+
+						Page.Content += "<tr>";
+						Page.Content += "<td>";
+						if (IsDir)
+						{
+							Page.Content += "[<a href='/!ftp/?client=" + ClientID + "&task=listdir&cwd=" + FileName + "'>" + FileName + "</a>]";
+						}
+						else
+						{
+							Page.Content += "<a href='/!ftp/?client=" + ClientID + "&task=retr&name=" + FileName + "'>" + FileName + "</a>";
+						}
+						Page.Content += "</td>";
+						Page.Content += "<td>";
+						Page.Content += FileRow[4];
+						Page.Content += "</td>";
+						Page.Content += "<td>";
+						Page.Content += FileRow[5] + " " + FileRow[6];
+						Page.Content += "</td>";
+						Page.Content += "<td>";
+						Page.Content += FileRow[7];
+						Page.Content += "</td>";
+						Page.Content += "</tr>\n";
+					}
+					Page.Content += "\n</table>";
+
+					//Page.Content += "<pre>" + FileList + "</pre>";
+
+					return Page;
+				case "retr":
+					Page.Content = "File downloading is not currently implemented.";
 					return Page;
 				default:
 					Page.Content = "<h2>No or unknown task</h2>";
@@ -207,10 +302,6 @@ namespace WebOne
 					Page.Content += "<p><a href='/!ftp/?client=" + ClientID + "&task=listdir'>Click here</a> to see directory listing.</p>";
 					return Page;
 			}
-
-			//2. Process its response
-
-			//3. Display in usable form.
 
 			//how to dowload files? - хрен знает, переписать класс InfoPage, что ли надо
 

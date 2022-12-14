@@ -38,7 +38,7 @@ namespace WebOne
 			{
 				Client.Connect(Server, 21); //undone: custom port support
 				FtpLog += "\nEstablished a TCP/IP connection.";
-				FtpResponse resp = GetServerWelcome();
+				FtpResponse resp = Flush();
 				FtpLog += "\n" + resp.ToString();
 
 				resp = TransmitCommand("USER " + User);
@@ -97,9 +97,9 @@ namespace WebOne
 		}
 
 		/// <summary>
-		/// Get server welcome message
+		/// Flush incoming network buffer, and get server messages from it
 		/// </summary>
-		private FtpResponse GetServerWelcome()
+		public FtpResponse Flush()
 		{
 			try
 			{
@@ -145,6 +145,14 @@ namespace WebOne
 			PasvClient = new TcpClient();
 			PasvClient.Connect(PasvIP,PasvPort);
 			return PasvClient.GetStream();
+		}
+
+		/// <summary>
+		/// Close FTP data connection, previously opened via <see cref="GetPasvDataStream"/>
+		/// </summary>
+		public void CloseDataConnection()
+		{
+			PasvClient.Close();
 		}
 
 		/// <summary>
