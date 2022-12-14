@@ -186,24 +186,24 @@ namespace WebOne
 					//Working with current directory
 					cmd = Backend.TransmitCommand("PWD");
 					Page.Content += "<h2>" + cmd.Result + "</h2>";
-					if(cmd.Code != 257)
+					if (cmd.Code != 257)
 					{
 						Page.Content += "<p><b>&quot;Print Working Directory&quot; command has returned an unexpected result:</b> " + cmd.ToString() + "</p>";
 						return Page;
 					}
 
 					cmd = Backend.TransmitCommand("OPTS UTF8 ON");
-					if(cmd.Code == 200) {/*we have UTF-8 support*/}
+					if (cmd.Code == 200) {/*we have UTF-8 support*/}
 
 					cmd = Backend.TransmitCommand("TYPE A");
-					if(cmd.Code != 200)
+					if (cmd.Code != 200)
 					{
 						Page.Content += "<p><b>Cannot set ASCII mode:</b> " + cmd.ToString() + "</p>";
 						return Page;
 					}
 
 					cmd = Backend.TransmitCommand("PASV");
-					if(cmd.Code != 227)
+					if (cmd.Code != 227)
 					{
 						Page.Content += "<p><b>Cannot prepare data connection:</b> " + cmd.ToString() + "</p>";
 						return Page;
@@ -246,18 +246,18 @@ namespace WebOne
 						if (FilenameField > components.Length)
 						{
 							FilenameField = components.Length - 1;
-							FilenameStart = Line.IndexOf(components[FilenameField -1 ]);
+							FilenameStart = Line.IndexOf(components[FilenameField - 1]);
 						}
 
 						//fill the table
 						if (FilenameField != 0)
 						{
 							string[] Row = new string[FilenameField];
-							for(int i = 0; i<FilenameField; i++)
+							for (int i = 0; i < FilenameField; i++)
 							{
 								Row[i] = components[i].Trim();
 							}
-							Row[FilenameField-1] = Line.Substring(FilenameStart).Trim();
+							Row[FilenameField - 1] = Line.Substring(FilenameStart).Trim();
 							if (Row[FilenameField - 1] == ".") continue;
 							if (Row[FilenameField - 1] == "..") continue;
 							FileTable.Add(Row);
@@ -286,11 +286,11 @@ namespace WebOne
 						Page.Content += "<td>";
 						if (IsDir)
 						{
-							Page.Content += "[<a href='/!ftp/?client=" + ClientID + "&task=listdir&cwd=" + FileName + "'>" + FileName + "</a>]";
+							Page.Content += "[<a href='/!ftp/?client=" + ClientID + "&task=listdir&cwd=" + Uri.EscapeDataString(FileName) + "'>" + FileName + "</a>]";
 						}
 						else
 						{
-							Page.Content += "<a href='/!ftp/?client=" + ClientID + "&task=retr&name=" + FileName + "' target='_blank'>" + FileName + "</a>";
+							Page.Content += "<a href='/!ftp/?client=" + ClientID + "&task=retr&name=" + Uri.EscapeDataString(FileName) + "' target='_blank'>" + FileName + "</a>";
 						}
 						Page.Content += "</td>";
 						Page.Content += "<td>";
