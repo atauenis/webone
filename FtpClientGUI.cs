@@ -256,11 +256,25 @@ namespace WebOne
 								Row[i] = components[i].Trim();
 							}
 							Row[FilenameField-1] = Line.Substring(FilenameStart).Trim();
+							if (Row[FilenameField - 1] == ".") continue;
+							if (Row[FilenameField - 1] == "..") continue;
 							FileTable.Add(Row);
 						}
 					}
 
+					//Display file list as table
 					Page.Content += "<table>\n";
+					Page.Content += "<tr>";
+					Page.Content += "<td>";
+					Page.Content += "[<a href='/!ftp/?client=" + ClientID + "&task=listdir&cwd=..'>..</a>]";
+					Page.Content += "</td>";
+					Page.Content += "<td>";
+					Page.Content += "</td>";
+					Page.Content += "<td>";
+					Page.Content += "</td>";
+					Page.Content += "<td>";
+					Page.Content += "</td>";
+					Page.Content += "</tr>\n";
 					foreach(string[] FileRow in FileTable)
 					{
 						bool IsDir = FileRow[0].StartsWith("d");
