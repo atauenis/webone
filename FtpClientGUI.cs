@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -165,12 +166,13 @@ namespace WebOne
 				return Page;
 			}
 
+			FtpResponse cmd;
+
 			//Send a FTP command and process its response
-			switch(RequestArguments["task"])
+			switch (RequestArguments["task"])
 			{
 				case "listdir":
 					//Get directory listing
-					FtpResponse cmd;
 					if (!string.IsNullOrEmpty(RequestArguments["cwd"]))
 					{
 						//Change current directory if need
@@ -288,7 +290,7 @@ namespace WebOne
 						}
 						else
 						{
-							Page.Content += "<a href='/!ftp/?client=" + ClientID + "&task=retr&name=" + FileName + "'>" + FileName + "</a>";
+							Page.Content += "<a href='/!ftp/?client=" + ClientID + "&task=retr&name=" + FileName + "' target='_blank'>" + FileName + "</a>";
 						}
 						Page.Content += "</td>";
 						Page.Content += "<td>";
@@ -308,7 +310,43 @@ namespace WebOne
 
 					return Page;
 				case "retr":
-					Page.Content = "File downloading is not currently implemented.";
+					//Download a file
+					string filename = RequestArguments["name"];
+					if (string.IsNullOrEmpty(filename))
+					{
+						Page.Content += "<h2>Nothing to download</h2>";
+						return Page;
+					}
+
+					cmd = Backend.TransmitCommand("TYPE I");
+					if (cmd.Code != 200)
+					{
+						Page.Content += "<p><b>Cannot set BINARY mode:</b> " + cmd.ToString() + "</p>";
+						return Page;
+					}
+
+					cmd = Backend.TransmitCommand("PASV");
+					if (cmd.Code != 227)
+					{
+						Page.Content += "<p><b>Cannot prepare data connection:</b> " + cmd.ToString() + "</p>";
+						return Page;
+					}
+					System.Net.Sockets.NetworkStream datastream2 = Backend.GetPasvDataStream(cmd.Result);
+
+					cmd = Backend.TransmitCommand("RETR " + filename);
+					Page.Attachment = datastream2;
+					Page.AttachmentContentType = "application/octet-stream";
+					Page.HttpHeaders.Add("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+
+					// Close data connection and get "226  Transfer complete" when its time became
+					new Task(() =>
+					{
+						while (datastream2.CanWrite) {}
+						Backend.CloseDataConnection();
+						cmd = Backend.Flush();
+						Log.WriteLine(" Close data stream.");
+						return;
+					}).Start();
 					return Page;
 				default:
 					Page.Content = "<h2>No or unknown task</h2>";
@@ -316,10 +354,6 @@ namespace WebOne
 					Page.Content += "<p><a href='/!ftp/?client=" + ClientID + "&task=listdir'>Click here</a> to see directory listing.</p>";
 					return Page;
 			}
-
-			//how to dowload files? - хрен знает, переписать класс InfoPage, что ли надо
-
-			return Page;
 		}
 	}
 

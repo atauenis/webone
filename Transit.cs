@@ -1795,7 +1795,11 @@ namespace WebOne
 				if (Potok.CanSeek) ClientResponse.ContentLength64 = Potok.Length;
 				if (Potok.CanSeek) Potok.Position = 0;
 				Potok.CopyTo(ClientResponse.OutputStream);
-				if (Close) ClientResponse.OutputStream.Close();
+				if (Close)
+				{
+					ClientResponse.OutputStream.Close();
+					Potok.Close();
+				}
 			}
 			catch (Exception ex)
 			{
@@ -1837,7 +1841,7 @@ namespace WebOne
 				ClientResponse.StatusCode = 200;
 				ClientResponse.ProtocolVersion = new Version(1, 0);
 
-				ClientResponse.ContentType = "text/html";
+				//ClientResponse.ContentType = "text/html";
 				ClientResponse.ContentLength64 = Buffer.Length;
 				ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
 				ClientResponse.OutputStream.Close();
@@ -1856,7 +1860,13 @@ namespace WebOne
 		/// <param name="Page">The information page body</param>
 		private void SendInfoPage(InfoPage Page)
 		{
-			SendInfoPage(Page.Title, Page.Header, Page.Content);
+			if(Page.HttpHeaders != null)
+			foreach (var hdr in Page.HttpHeaders.AllKeys) ClientResponse.AddHeader(hdr, Page.HttpHeaders[hdr]);
+
+			if (Page.Attachment == null)
+				SendInfoPage(Page.Title, Page.Header, Page.Content);
+			else
+				SendStream(Page.Attachment, Page.AttachmentContentType);
 		}
 	}
 
@@ -1879,6 +1889,22 @@ namespace WebOne
 		public string Content { get; set; }
 
 		/// <summary>
+		/// Attached binary file (used instead of the page body)
+		/// </summary>
+		public Stream Attachment { get; set; }
+
+		public string AttachmentContentType 
+		{
+			get { return HttpHeaders["Content-Type"]; }
+			set { HttpHeaders["Content-Type"] = value; }
+		}
+
+		/// <summary>
+		/// Additional HTTP headers, which can be sent to the client
+		/// </summary>
+		public WebHeaderCollection HttpHeaders { get; set; }
+
+		/// <summary>
 		/// Create an information page
 		/// </summary>
 		/// <param name="Title">The information page title</param>
@@ -1889,6 +1915,7 @@ namespace WebOne
 			this.Title = Title;
 			this.Header = Header;
 			this.Content = Content;
+			HttpHeaders = new WebHeaderCollection();
 		}
 	}
 }
