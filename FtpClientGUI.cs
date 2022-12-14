@@ -216,7 +216,7 @@ namespace WebOne
 						Page.Content += "<p><b>Directory listing is inaccessible:</b> " + cmd.ToString() + "</p>";
 						return Page;
 					}
-					System.IO.StreamReader sr = new System.IO.StreamReader(datastream);
+					StreamReader sr = new StreamReader(datastream);
 					string FileList = sr.ReadToEnd();
 
 					// Close data connection and get "226  Transfer complete"
@@ -335,8 +335,17 @@ namespace WebOne
 
 					cmd = Backend.TransmitCommand("RETR " + filename);
 					Page.Attachment = datastream2;
-					Page.AttachmentContentType = "application/octet-stream";
-					Page.HttpHeaders.Add("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+
+					if (filename.ToLower().EndsWith(".txt"))
+					{
+						Page.AttachmentContentType = "text/plain";
+						Page.HttpHeaders.Add("Content-Disposition", "inline; filename=\"" + filename + "\"");
+					}
+					else
+					{
+						Page.AttachmentContentType = "application/octet-stream";
+						Page.HttpHeaders.Add("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+					}
 
 					// Close data connection and get "226  Transfer complete" when its time became
 					new Task(() =>
