@@ -407,6 +407,11 @@ namespace WebOne
 									}
 									SendError(200, "<b>" + FilesDeleted + "</b> temporary files have been deleted in <i>" + ConfigFile.TemporaryDirectory + "</i>.");
 									return;
+								case "/!ftp/":
+								case "/!ftp":
+									//FTP client
+									SendInfoPage(new FtpClientGUI(ClientRequest).GetPage());
+									return;
 								case "/!pac/":
 								case "/auto/":
 								case "/auto":
@@ -1656,6 +1661,7 @@ namespace WebOne
 
 				HelpString += "<h2>May be useful:</h2><ul>";
 				HelpString += "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>";
+				HelpString += "<li><a href='/!ftp/'>Web-based FTP client</a>.</li>";
 				HelpString += "</ul>";
 			}
 			else if (ConfigFile.DisplayStatusPage == "full")
@@ -1686,6 +1692,7 @@ namespace WebOne
 							  //"<li><a href='/!file/'>/!file/</a> - get a file from WebOne working directory (<a href='/!file/?name=webone.conf&type=text/plain'>demo</a>)</li>" +
 							  "<li><a href='/!clear/'>/!clear/</a> - remove temporary files in WebOne working directory</li>" +
 							  "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>" +
+							  "<li><a href='/!ftp/'>Web-based FTP client</a>.</li>" +
 							  "</ul>";
 			}
 			else
@@ -1841,6 +1848,47 @@ namespace WebOne
 				if (!ConfigFile.HideClientErrors)
 					Log.WriteLine("<!Cannot return information page {1}. {2}: {3}", null, Title, ex.GetType(), ex.Message);
 			}
+		}
+
+		/// <summary>
+		/// Send a information page to client
+		/// </summary>
+		/// <param name="Page">The information page body</param>
+		private void SendInfoPage(InfoPage Page)
+		{
+			SendInfoPage(Page.Title, Page.Header, Page.Content);
+		}
+	}
+
+	/// <summary>
+	/// An information page (used by internal status and other pages inside WebOne)
+	/// </summary>
+	public class InfoPage
+	{
+		/// <summary>
+		/// The information page title
+		/// </summary>
+		public string Title { get; set; }
+		/// <summary>
+		/// The information page 1st level header (or null if no title)
+		/// </summary>
+		public string Header { get; set; }
+		/// <summary>
+		/// The information page content (HTML)
+		/// </summary>
+		public string Content { get; set; }
+
+		/// <summary>
+		/// Create an information page
+		/// </summary>
+		/// <param name="Title">The information page title</param>
+		/// <param name="Header1">The information page 1st level header (or null if no title)</param>
+		/// <param name="Content">The information page content (HTML)</param>
+		public InfoPage(string Title = null, string Header = null, string Content = "No description is available.")
+		{
+			this.Title = Title;
+			this.Header = Header;
+			this.Content = Content;
 		}
 	}
 }
