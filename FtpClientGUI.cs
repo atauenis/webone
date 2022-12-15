@@ -37,7 +37,7 @@ namespace WebOne
 		/// Get the HTML page of current Web-FTP state
 		/// </summary>
 		/// <returns>WebOne internal page with Web-FTP response</returns>
-		public InfoPage GetPage()
+		public InfoPage GetPage(string DestinationUrl = null)
 		{
 			try
 			{
@@ -48,7 +48,7 @@ namespace WebOne
 				}
 				if (ClientID == -1) //new connection
 				{
-					return GetConnectPage();
+					return GetConnectPage(DestinationUrl);
 				}
 				if (ClientID != 0) //work with backend
 				{
@@ -90,12 +90,13 @@ namespace WebOne
 
 			string Form =
 			"<form action='/!ftp/' method='GET' name='Connect'>\n" +
-			"<input type='hidden' name='client' value='-1'>\n" +
+			"<center><input type='hidden' name='client' value='-1'>\n" +
 			"<p>Server: <input type='text' size='20' name='server' value='old-dos.ru'></p>\n" +
 			"<p>Username: <input type='text' size='20' name='user' value='oscollect'><br>\n" +
 			"Password: <input type='password' size='20' name='pass'value='oscollect'></p>\n" +
 			"<p><input type='submit' value=\"Let's go!\"></p>\n" +
-			"</form>";
+			"</center></form>";
+			//undone: remove example server info, added here for debug only
 
 			Page.Content += Form;
 
@@ -105,37 +106,65 @@ namespace WebOne
 		/// <summary>
 		/// Connect to a FTP server, and get a Web-FTP connection status page
 		/// </summary>
-		public FtpClientPage GetConnectPage()
+		public FtpClientPage GetConnectPage(string DestinationUrl = null)
 		{
 			string Server = RequestArguments["server"];
-			string User = RequestArguments["user"];
-			string Pass = RequestArguments["pass"];
-
-			if(string.IsNullOrEmpty (Server) || string.IsNullOrEmpty(User) || string.IsNullOrEmpty(Pass))
+			string User = RequestArguments["user"] ?? "Anonymous";
+			string Pass = RequestArguments["pass"] ?? "email@example.com";
+			string FtpUri = RequestArguments["uri"];
+			if (!string.IsNullOrEmpty(DestinationUrl)) FtpUri = DestinationUrl;
+			
+			if(string.IsNullOrEmpty (Server) && string.IsNullOrEmpty(FtpUri))
 			{
 				Page.Content = 
-				"<h2>Error - Incorrect Use</h2>" +
+				"<h2>Incorrect Use</h2>" +
 				"<p>Need to fill the connection request form first.</p>";
 				return Page;
 			}
 
-			Page.Header = "File Transfer: " + Server;
+			//prepare destination Web-FTP page URL
 			int NewClientId = new Random().Next();
-			FtpClient NewClient = new(Server, User, Pass, Log);
+			string URL = "/!ftp/?client=" + NewClientId;
+			if (string.IsNullOrEmpty(FtpUri))
+			{
+				URL += "&task=listdir";
+			}
+			else
+			{
+				const string PathCleanupMask = "(;type=.*)";
+				string RequestedPath = new Regex(PathCleanupMask).Replace(FtpUri, "");
+				RequestedPath = RequestedPath.Replace("ftp://", "", true, null).Replace("http://", "", true, null);
 
+				string srvname = RequestedPath.Substring(0, RequestedPath.IndexOf("/"));
+				RequestedPath = RequestedPath.Substring(RequestedPath.IndexOf("/"));
+
+				Server = srvname;
+
+				if (RequestedPath.EndsWith("/"))
+					URL += "&cwd=" + RequestedPath + "&task=listdir";
+				else
+					URL += "&name=" + RequestedPath + "&task=retr";
+			}
+
+			//Let's go! :)
+			FtpClient NewClient = new(Server, User, Pass, Log);
 			if (NewClient.Connected)
 			{
 				FtpTransitManager.Backends.Add(NewClientId, NewClient);
+				Page.Header = "File Transfer: " + FtpTransitManager.Backends[NewClientId].Server;
 				Page.Content = "<h2>Connecting to the server</h2>\n";
 				Page.Content += "<pre>" + NewClient.FtpLog + "</pre>\n";
-				Page.Content += "<p>Okay, <a href='/!ftp/?client=" + NewClientId + "&task=listdir'><b>click here</b></a>.</p>";
+				Page.Content += "<p>Okay, <a href='" + URL + "'><b>click here</b></a>.</p>";
+				Page.HttpStatusCode = 302;
+				Page.HttpHeaders.Add("Location", URL);
 				return Page;
 			}
 			else
 			{
-				Page.Content = "<h2>Sorry, an error occured while connecting.</h2>\n"+
+				Page.Header = "File Transfer: " + Server;
+				Page.Content = "<h2>The client could not connect to the server.</h2>\n"+
 				"<pre>" + NewClient.FtpLog + "</pre>\n"+
-				"<p><a href='/!ftp/'>Go back</a> and try again.</p>";
+				"<p><a href='/!ftp/'><b>Go back</b></a> and try again.</p>";
 				return Page;
 			}
 

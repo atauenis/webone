@@ -14,8 +14,9 @@ namespace WebOne
 	internal class FtpClient
 	{
 		public LogWriter Log;
-		
-		public string FtpLog, Server, User;
+
+		public string FtpLog, Server, User, Pass;
+		public int Port = 21;
 
 		TcpClient Client = new();
 		TcpClient PasvClient;
@@ -31,20 +32,45 @@ namespace WebOne
 		{
 			this.Log = Log;
 			this.Server = Server;
+			this.Port = 21;
 			this.User = User;
+			this.Pass = Pass;
 
-			Log.WriteLine(">FTP connect to: " + Server);
+			if (this.Server.Contains('/')) throw new ArgumentException("Use only \"user@password:ftp.example.com:21\" format or shorter");
+
+			if (this.Server.Contains('@'))
+			{
+				string[] srvparts = Server.Split('@');
+				string credentials = srvparts[0];
+				if (credentials.Contains(':'))
+				{
+					this.User = credentials.Split(':')[0];
+					this.Pass = credentials.Split(':')[1];
+				}
+				else this.User = credentials;
+
+				this.Server = srvparts[1];
+			}
+
+			if (this.Server.Contains(':'))
+			{
+				string[] srvparts = this.Server.Split(':');
+				this.Server = srvparts[0];
+				this.Port = Convert.ToInt32(srvparts[1]);
+			}
+
+			Log.WriteLine(">FTP connect to: " + this.Server);
 			try
 			{
-				Client.Connect(Server, 21); //undone: custom port support
+				Client.Connect(this.Server, this.Port);
 				FtpLog += "\nEstablished a TCP/IP connection.";
 				FtpResponse resp = Flush();
 				FtpLog += "\n" + resp.ToString();
 
-				resp = TransmitCommand("USER " + User);
+				resp = TransmitCommand("USER " + this.User);
 				FtpLog += "\nUSER => " + resp.ToString();
 				if (resp.Code != 331) { Client.Close(); FtpLog += "\nDisconnected by client."; }
-				resp = TransmitCommand("PASS " + Pass);
+				resp = TransmitCommand("PASS " + this.Pass);
 				FtpLog += "\nPASS => " + resp.ToString();
 				if (resp.Code == 230)
 				{

@@ -1838,7 +1838,7 @@ namespace WebOne
 			byte[] Buffer = (OutputContentEncoding ?? Encoding.Default).GetBytes(Html);
 			try
 			{
-				ClientResponse.StatusCode = 200;
+				//ClientResponse.StatusCode = 200;
 				ClientResponse.ProtocolVersion = new Version(1, 0);
 
 				//ClientResponse.ContentType = "text/html";
@@ -1862,7 +1862,8 @@ namespace WebOne
 		{
 			if(Page.HttpHeaders != null)
 			foreach (var hdr in Page.HttpHeaders.AllKeys) ClientResponse.AddHeader(hdr, Page.HttpHeaders[hdr]);
-
+			ClientResponse.StatusCode = Page.HttpStatusCode;
+			
 			if (Page.Attachment == null)
 				SendInfoPage(Page.Title, Page.Header, Page.Content);
 			else
@@ -1905,6 +1906,11 @@ namespace WebOne
 		public WebHeaderCollection HttpHeaders { get; set; }
 
 		/// <summary>
+		/// HTTP status code ("200 OK" by default)
+		/// </summary>
+		public int HttpStatusCode { get; set; }
+
+		/// <summary>
 		/// Create an information page
 		/// </summary>
 		/// <param name="Title">The information page title</param>
@@ -1912,6 +1918,7 @@ namespace WebOne
 		/// <param name="Content">The information page content (HTML)</param>
 		public InfoPage(string Title = null, string Header = null, string Content = "No description is available.")
 		{
+			this.HttpStatusCode = 200;
 			this.Title = Title;
 			this.Header = Header;
 			this.Content = Content;
