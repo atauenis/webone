@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using static WebOne.Program;
 
@@ -18,6 +19,7 @@ namespace WebOne
 		LogWriter Log = new();
 		HttpListenerRequest ClientRequest;
 		NameValueCollection RequestArguments;
+		FtpClientPage Page = new();
 
 		int ClientID = 0;
 
@@ -105,8 +107,6 @@ namespace WebOne
 		/// </summary>
 		public FtpClientPage GetConnectPage()
 		{
-			FtpClientPage Page = new();
-
 			string Server = RequestArguments["server"];
 			string User = RequestArguments["user"];
 			string Pass = RequestArguments["pass"];
@@ -152,7 +152,6 @@ namespace WebOne
 				return GetWelcomePage();
 			}
 
-			FtpClientPage Page = new();
 			FtpClient Backend = FtpTransitManager.Backends[ClientID];
 
 			Page.Header = "File Transfer: " + Backend.Server;
@@ -223,48 +222,24 @@ namespace WebOne
 					Backend.CloseDataConnection();
 					cmd = Backend.Flush();
 
-					//               ===Examples of FTP LIST outputs:===
-					//
-					//         0   1    2       3             4   5  6     7     8
-					//drwxrwxr-x   4 1115     100          4096 Mar  2  2009 linux
-					//    rights   ? user       ?          size   m  d     y name
-					//                             ===or:===
-					//          0  1         2    3            4   5  6     7  8*   8*    8*
-					//drwxr-xr-x   3 oscollect 1011         4096 Nov 25 07:55 200 Best Games
-
-					//Format the directory listing
-					List<string[]> FileTable = new List<string[]>();
-
-					int FilenameField = int.MaxValue, FilenameStart = 0;
-					foreach (var Line in FileList.Split('\n'))
+					//Decode the directory listing
+					List<FtpDirectoryListEntry> FileListTable = new List<FtpDirectoryListEntry>();
+					FtpDirectoryListEntry.LineType lineType = FtpDirectoryListEntry.LineType.Unknown;
+					foreach(string fileListLine in FileList.Split("\n"))
 					{
-						//split LIST entry to columns
-						string[] components = System.Text.RegularExpressions.Regex.Split(Line, @"\s{1,}");
-						if (components.Length < 2) continue;
-
-						//detect File Name column start and number
-						if (FilenameField > components.Length)
+						if (string.IsNullOrWhiteSpace(fileListLine)) continue;
+						if(lineType == FtpDirectoryListEntry.LineType.Unknown)
 						{
-							FilenameField = components.Length - 1;
-							FilenameStart = Line.IndexOf(components[FilenameField - 1]);
+							if(FtpDirectoryListEntry.IsUnixLine(fileListLine)) lineType = FtpDirectoryListEntry.LineType.UNIX;
+							if(FtpDirectoryListEntry.IsDosLine(fileListLine)) lineType = FtpDirectoryListEntry.LineType.DOS;
 						}
+						FtpDirectoryListEntry Line = FtpDirectoryListEntry.ParseLine(fileListLine.Trim('\r', '\n'), lineType);
 
-						//fill the table
-						if (FilenameField != 0)
-						{
-							string[] Row = new string[FilenameField];
-							for (int i = 0; i < FilenameField; i++)
-							{
-								Row[i] = components[i].Trim();
-							}
-							Row[FilenameField - 1] = Line.Substring(FilenameStart).Trim();
-							if (Row[FilenameField - 1] == ".") continue;
-							if (Row[FilenameField - 1] == "..") continue;
-							FileTable.Add(Row);
-						}
+						if (Line.Name == "." || Line.Name == "..") continue;
+						FileListTable.Add(Line);
 					}
 
-					//Display file list as table
+					//Format the directory listing
 					Page.Content += "<table>\n";
 					Page.Content += "<tr>";
 					Page.Content += "<td>";
@@ -277,10 +252,10 @@ namespace WebOne
 					Page.Content += "<td>";
 					Page.Content += "</td>";
 					Page.Content += "</tr>\n";
-					foreach(string[] FileRow in FileTable)
+					foreach (var Item in FileListTable)
 					{
-						bool IsDir = FileRow[0].StartsWith("d");
-						string FileName = FileRow[FilenameField - 1];
+						bool IsDir = Item.Directory;
+						string FileName = Item.Name;
 
 						Page.Content += "<tr>";
 						Page.Content += "<td>";
@@ -294,19 +269,14 @@ namespace WebOne
 						}
 						Page.Content += "</td>";
 						Page.Content += "<td>";
-						Page.Content += FileRow[4];
+						Page.Content += Item.Size;
 						Page.Content += "</td>";
 						Page.Content += "<td>";
-						Page.Content += FileRow[5] + " " + FileRow[6];
-						Page.Content += "</td>";
-						Page.Content += "<td>";
-						Page.Content += FileRow[7];
+						Page.Content += Item.Date;
 						Page.Content += "</td>";
 						Page.Content += "</tr>\n";
 					}
 					Page.Content += "\n</table>";
-
-					//Page.Content += "<pre>" + FileList + "</pre>";
 
 					return Page;
 				case "retr":
