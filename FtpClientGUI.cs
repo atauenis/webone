@@ -91,7 +91,8 @@ namespace WebOne
 			string Form =
 			"<form action='/!ftp/' method='GET' name='Connect'>\n" +
 			"<center><input type='hidden' name='client' value='-1'>\n" +
-			"<p>Server: <input type='text' size='23' name='server' value=''></p>\n" +
+			"<p>Server: <input type='text' size='23' name='server' value=''><br>\n" +
+			"or URI: <input type='text' size='23' name='uri' value=''></p>\n" +
 			"<p>Username: <input type='text' size='20' name='user' value='anonymous'><br>\n" +
 			"Password: <input type='password' size='20' name='pass'value='user@domain.su'></p>\n" +
 			"<p><input type='submit' value=\"Let's go!\"></p>\n" +
@@ -117,7 +118,7 @@ namespace WebOne
 			{
 				Page.Content = 
 				"<h2>Empty connection data</h2>\n" +
-				"<p>You need to speficy the remote server first.</p>" +
+				"<p>You need to specify the remote server first.</p>" +
 				"<p><a href='/!ftp/'><b>Go back.</b></a></p>"; 
 				return Page;
 			}
@@ -134,18 +135,21 @@ namespace WebOne
 				if (!FtpUri.StartsWith("ftp://"))
 				{
 					Page.Content =
-					"<h2>Incorrect Use</h2>\n" +
-					"<p>Malformed ftp:// Universal Resource Identificator.</p>";
+					"<h2>Malformed Universal Resource Identificator</h2>\n" +
+					"<p>URIs (locations) are accepted only in the following format:\n"+
+					"<pre>ftp://ftp.microsoft.com/MISC1/DESKAPPS/DOSWORD/KB/Q81/4/46.TXT</pre>\n" +
+					"Also the Identificator can contain FTP user name, password and port.</p>"+
+					"<p><a href='/!ftp/'><b>Go back.</b></a></p>";
 					return Page;
 				}
 				const string PathCleanupMask = "(;type=.*)";
 				string RequestedPath = new Regex(PathCleanupMask).Replace(FtpUri, "");
 				RequestedPath = RequestedPath.Replace("ftp://", "", true, null).Replace("http://", "", true, null);
 
-				string srvname = RequestedPath.Substring(0, RequestedPath.IndexOf("/"));
-				RequestedPath = RequestedPath.Substring(RequestedPath.IndexOf("/"));
+				if (!RequestedPath.Contains('/')) RequestedPath += "/"; //set root directory
 
-				Server = srvname;
+				Server = RequestedPath.Substring(0, RequestedPath.IndexOf("/"));
+				RequestedPath = RequestedPath.Substring(RequestedPath.IndexOf("/"));
 
 				if (RequestedPath.EndsWith("/"))
 					WebFtpUrl += "&cwd=" + RequestedPath + "&task=listdir";
@@ -168,6 +172,7 @@ namespace WebOne
 			}
 			else
 			{
+				Page.Title = "WebOne cannot open FTP connection";
 				Page.Header = "File Transfer: " + Server;
 				Page.Content = "<h2>The client could not connect to the server.</h2>\n"+
 				"<pre>" + NewClient.FtpLog + "</pre>\n"+
@@ -190,6 +195,7 @@ namespace WebOne
 
 			FtpClient Backend = FtpTransitManager.Backends[ClientID];
 
+			Page.Title = Backend.Server + " - FTP";
 			Page.Header = "File Transfer: " + Backend.Server;
 			Page.Content = "";
 
@@ -220,7 +226,7 @@ namespace WebOne
 
 					//Working with current directory
 					cmd = Backend.TransmitCommand("PWD");
-					Page.Content += "<h2>" + cmd.Result + "</h2>";
+					Page.Content += "<h2>" + cmd.Result + "</h2>\n";
 					if (cmd.Code != 257)
 					{
 						Page.Content += "<p><b>&quot;Print Working Directory&quot; command has returned an unexpected result:</b> " + cmd.ToString() + "</p>";
@@ -243,7 +249,17 @@ namespace WebOne
 						Page.Content += "<p><b>Cannot prepare data connection:</b> " + cmd.ToString() + "</p>";
 						return Page;
 					}
-					System.Net.Sockets.NetworkStream datastream = Backend.GetPasvDataStream(cmd.Result);
+
+					System.Net.Sockets.NetworkStream datastream = null;
+					try
+					{
+						datastream = Backend.GetPasvDataStream(cmd.Result);
+					}
+					catch
+					{
+						Page.Content += "<p><b>Cannot establish data connection:</b> " + cmd.ToString() + "</p>";
+						return Page;
+					}
 
 					cmd = Backend.TransmitCommand("LIST");
 					if (cmd.Code != 150)

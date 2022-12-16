@@ -507,11 +507,44 @@ namespace WebOne
 					return;
 				}
 
-				//check for HTTP-to-FTP requests
+				//check for HTTP-to-FTP (and similar) requests
 				//https://support.microsoft.com/en-us/help/166961/how-to-ftp-with-cern-based-proxy-using-wininet-api
-				string[] BadProtocols = { "ftp", "gopher", "wais" };
+				if (ClientRequest.RawUrl.ToLower().StartsWith("ftp://"))
+				{
+					//FTP mode (CERN)
+					//does not works as HttpListener (used since WebOne 0.8.5) ignores non-HTTP addresses
+					InfoPage WebFtpRedirect = new();
+					WebFtpRedirect.Title = "CERN Proxy Emulation Redirect";
+					WebFtpRedirect.HttpStatusCode = 302;
+					WebFtpRedirect.HttpHeaders.Add("Location", "http://" + GetServerName() + "/!ftp/?client=-1&uri=" + Uri.EscapeDataString(ClientRequest.RawUrl));
+					SendInfoPage(WebFtpRedirect);
+					return;
+				}
+				if (ClientRequest.RawUrl.ToLower().StartsWith("http://ftp:"))
+				{
+					//HTTP->FTP mode (Netscape)
+					InfoPage WebFtpRedirect = new();
+					WebFtpRedirect.Title = "CERN Proxy Emulation Redirect";
+					WebFtpRedirect.HttpStatusCode = 302;
+					WebFtpRedirect.HttpHeaders.Add("Location", "http://" + GetServerName() + "/!ftp/?client=-1&uri=" + Uri.EscapeDataString(ClientRequest.RawUrl.Substring(7)));
+					SendInfoPage(WebFtpRedirect);
+					return;
+				}
+				if (ClientRequest.RawUrl.ToLower().StartsWith("http://ftp//"))
+				{
+					//HTTP->FTP mode (MS IE)
+					InfoPage WebFtpRedirect = new();
+					WebFtpRedirect.Title = "CERN Proxy Emulation Redirect";
+					WebFtpRedirect.HttpStatusCode = 302;
+					WebFtpRedirect.HttpHeaders.Add("Location", "http://" + GetServerName() + "/!ftp/?client=-1&uri=" + Uri.EscapeDataString("ftp://" + ClientRequest.RawUrl.Substring(12)));
+					SendInfoPage(WebFtpRedirect);
+					return;
+				}
+				string[] BadProtocols = { "gopher", "wais" };
 				if (CheckString(RequestURL.Scheme, BadProtocols))
 				{
+					//does not works as HttpListener (used since WebOne 0.8.5) ignores non-HTTP addresses
+					//before v0.14 there was FTP ban too, now it's unbanned
 					Log.WriteLine(" CERN Proxy request to {0} detected.", RequestURL.Scheme.ToUpper());
 					ClientResponse.AddHeader("Upgrade", RequestURL.Scheme.ToUpper());
 					SendError(101, "Cannot work with " + RequestURL.Scheme.ToUpper() + " protocol. Please connect directly bypassing the proxy.");
@@ -1818,40 +1851,8 @@ namespace WebOne
 		/// <param name="Content">The information page content (HTML)</param>
 		private void SendInfoPage(string Title = null, string Header1 = null, string Content = "No description is available.")
 		{
-			Log.WriteLine("<Return information page: {0}.", Title);
-
-			string title = "<title>WebOne: untitled</title>"; if (Title != null) title = "<title>" + Title + "</title>\n";
-			string header1 = ""; if (Header1 != null) header1 = "<h1>" + Header1 + "</h1>\n";
-
-			string Html = "<html>\n" +
-			title +
-			string.Format("<meta charset=\"{0}\"/>", OutputContentEncoding == null ? "utf-8" : OutputContentEncoding.WebName) +
-			"<body>" +
-			header1 +
-			Content +
-			GetInfoString() +
-			"</body>\n</html>";
-
-			if ((OutputContentEncoding ?? Encoding.Default) != Encoding.Default)
-				Html = OutputContentEncoding.GetString(Encoding.Default.GetBytes(Html));
-
-			byte[] Buffer = (OutputContentEncoding ?? Encoding.Default).GetBytes(Html);
-			try
-			{
-				//ClientResponse.StatusCode = 200;
-				ClientResponse.ProtocolVersion = new Version(1, 0);
-
-				//ClientResponse.ContentType = "text/html";
-				ClientResponse.ContentLength64 = Buffer.Length;
-				ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
-				ClientResponse.OutputStream.Close();
-				Dump("End is information page: " + Header1);
-			}
-			catch (Exception ex)
-			{
-				if (!ConfigFile.HideClientErrors)
-					Log.WriteLine("<!Cannot return information page {1}. {2}: {3}", null, Title, ex.GetType(), ex.Message);
-			}
+			InfoPage infoPage = new(Title, Header1, Content);
+			SendInfoPage(infoPage);
 		}
 
 		/// <summary>
@@ -1863,11 +1864,54 @@ namespace WebOne
 			if(Page.HttpHeaders != null)
 			foreach (var hdr in Page.HttpHeaders.AllKeys) ClientResponse.AddHeader(hdr, Page.HttpHeaders[hdr]);
 			ClientResponse.StatusCode = Page.HttpStatusCode;
-			
+
 			if (Page.Attachment == null)
-				SendInfoPage(Page.Title, Page.Header, Page.Content);
+			{
+				Log.WriteLine("<Return information page: {0}.", Page.Title);
+
+				string title = "<title>WebOne: untitled</title>"; if (Page.Title != null) title = "<title>" + Page.Title + "</title>\n";
+				string header1 = ""; if (Page.Header != null) header1 = "<h1>" + Page.Header + "</h1>\n";
+
+				string Html = "<html>\n" +
+				title +
+				string.Format("<meta charset=\"{0}\"/>", OutputContentEncoding == null ? "utf-8" : OutputContentEncoding.WebName) +
+				"<body>\n" +
+				header1 + "\n" +
+				Page.Content + "\n" +
+				GetInfoString() + "\n" +
+				"</body>\n</html>";
+
+				if ((OutputContentEncoding ?? Encoding.Default) != Encoding.Default)
+					Html = OutputContentEncoding.GetString(Encoding.Default.GetBytes(Html));
+
+				byte[] Buffer = (OutputContentEncoding ?? Encoding.Default).GetBytes(Html);
+				try
+				{
+					ClientResponse.StatusCode = Page.HttpStatusCode;
+					ClientResponse.ProtocolVersion = new Version(1, 0);
+
+					if(Page.HttpHeaders["Content-Type"] != null)
+						ClientResponse.ContentType = Page.HttpHeaders["Content-Type"];
+					else
+						ClientResponse.ContentType = "text/html";
+
+					ClientResponse.ContentLength64 = Buffer.Length;
+
+					ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
+					ClientResponse.OutputStream.Close();
+					Dump("End is information page: " + Page.Header);
+				}
+				catch (Exception ex)
+				{
+					if (!ConfigFile.HideClientErrors)
+						Log.WriteLine("<!Cannot return information page {1}. {2}: {3}", null, Page.Title, ex.GetType(), ex.Message);
+				}
+
+			}
 			else
+			{
 				SendStream(Page.Attachment, Page.AttachmentContentType);
+			}
 		}
 	}
 
@@ -1914,15 +1958,16 @@ namespace WebOne
 		/// Create an information page
 		/// </summary>
 		/// <param name="Title">The information page title</param>
-		/// <param name="Header1">The information page 1st level header (or null if no title)</param>
+		/// <param name="Header">The information page 1st level header (or null if no title)</param>
 		/// <param name="Content">The information page content (HTML)</param>
-		public InfoPage(string Title = null, string Header = null, string Content = "No description is available.")
+		/// <param name="HttpStatusCode">The information page HTTP status code (200/404/302/500/etc)</param>
+		public InfoPage(string Title = null, string Header = null, string Content = "No description is available.", int HttpStatusCode = 200)
 		{
-			this.HttpStatusCode = 200;
+			this.HttpStatusCode = HttpStatusCode;
+			this.HttpHeaders = new WebHeaderCollection();
 			this.Title = Title;
 			this.Header = Header;
 			this.Content = Content;
-			HttpHeaders = new WebHeaderCollection();
 		}
 	}
 }
