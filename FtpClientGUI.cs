@@ -66,13 +66,13 @@ namespace WebOne
 				Log.WriteLine(" FTP Client Error: " + ex.GetType().Name + " - " + ex.Message);
 				page.Content = "<big>An error occured in FTP Client.</big>";
 				page.Content += "<p>" + ex.Message.Replace("\n","<br>") + "</p>";
-				page.Content += "<p>Navigation: "+
+#endif
+				page.Content += "<p>Navigation: " +
 				"<a href='javascript:history.back()'><b>Go back</b></a>. " +
 				"<a href='/!ftp/'><b>Reconnect</b></a>. Directory listing: " +
 				"<a href='/!ftp/?client=" + ClientID + "&task=listdir&cwd=/'><b>root</b></a>, " +
-				"<a href='/!ftp/?client=" + ClientID + "&task=listdir'><b>current</b>.</a> "+
+				"<a href='/!ftp/?client=" + ClientID + "&task=listdir'><b>current</b>.</a> " +
 				"</p>";
-#endif
 				return page;
 			}
 		}
@@ -91,12 +91,11 @@ namespace WebOne
 			string Form =
 			"<form action='/!ftp/' method='GET' name='Connect'>\n" +
 			"<center><input type='hidden' name='client' value='-1'>\n" +
-			"<p>Server: <input type='text' size='20' name='server' value='old-dos.ru'></p>\n" +
-			"<p>Username: <input type='text' size='20' name='user' value='oscollect'><br>\n" +
-			"Password: <input type='password' size='20' name='pass'value='oscollect'></p>\n" +
+			"<p>Server: <input type='text' size='23' name='server' value=''></p>\n" +
+			"<p>Username: <input type='text' size='20' name='user' value='anonymous'><br>\n" +
+			"Password: <input type='password' size='20' name='pass'value='user@domain.su'></p>\n" +
 			"<p><input type='submit' value=\"Let's go!\"></p>\n" +
 			"</center></form>";
-			//undone: remove example server info, added here for debug only
 
 			Page.Content += Form;
 
@@ -109,7 +108,7 @@ namespace WebOne
 		public FtpClientPage GetConnectPage(string DestinationUrl = null)
 		{
 			string Server = RequestArguments["server"];
-			string User = RequestArguments["user"] ?? "Anonymous";
+			string User = RequestArguments["user"] ?? "anonymous";
 			string Pass = RequestArguments["pass"] ?? "email@example.com";
 			string FtpUri = RequestArguments["uri"];
 			if (!string.IsNullOrEmpty(DestinationUrl)) FtpUri = DestinationUrl;
@@ -117,20 +116,28 @@ namespace WebOne
 			if(string.IsNullOrEmpty (Server) && string.IsNullOrEmpty(FtpUri))
 			{
 				Page.Content = 
-				"<h2>Incorrect Use</h2>" +
-				"<p>Need to fill the connection request form first.</p>";
+				"<h2>Empty connection data</h2>\n" +
+				"<p>You need to speficy the remote server first.</p>" +
+				"<p><a href='/!ftp/'><b>Go back.</b></a></p>"; 
 				return Page;
 			}
 
 			//prepare destination Web-FTP page URL
 			int NewClientId = new Random().Next();
-			string URL = "/!ftp/?client=" + NewClientId;
+			string WebFtpUrl = "/!ftp/?client=" + NewClientId;
 			if (string.IsNullOrEmpty(FtpUri))
 			{
-				URL += "&task=listdir";
+				WebFtpUrl += "&task=listdir";
 			}
 			else
 			{
+				if (!FtpUri.StartsWith("ftp://"))
+				{
+					Page.Content =
+					"<h2>Incorrect Use</h2>\n" +
+					"<p>Malformed ftp:// Universal Resource Identificator.</p>";
+					return Page;
+				}
 				const string PathCleanupMask = "(;type=.*)";
 				string RequestedPath = new Regex(PathCleanupMask).Replace(FtpUri, "");
 				RequestedPath = RequestedPath.Replace("ftp://", "", true, null).Replace("http://", "", true, null);
@@ -141,9 +148,9 @@ namespace WebOne
 				Server = srvname;
 
 				if (RequestedPath.EndsWith("/"))
-					URL += "&cwd=" + RequestedPath + "&task=listdir";
+					WebFtpUrl += "&cwd=" + RequestedPath + "&task=listdir";
 				else
-					URL += "&name=" + RequestedPath + "&task=retr";
+					WebFtpUrl += "&name=" + RequestedPath + "&task=retr";
 			}
 
 			//Let's go! :)
@@ -154,9 +161,9 @@ namespace WebOne
 				Page.Header = "File Transfer: " + FtpTransitManager.Backends[NewClientId].Server;
 				Page.Content = "<h2>Connecting to the server</h2>\n";
 				Page.Content += "<pre>" + NewClient.FtpLog + "</pre>\n";
-				Page.Content += "<p>Okay, <a href='" + URL + "'><b>click here</b></a>.</p>";
+				Page.Content += "<p>Okay, <a href='" + WebFtpUrl + "'><b>click here</b></a>.</p>";
 				Page.HttpStatusCode = 302;
-				Page.HttpHeaders.Add("Location", URL);
+				Page.HttpHeaders.Add("Location", WebFtpUrl);
 				return Page;
 			}
 			else
@@ -164,7 +171,7 @@ namespace WebOne
 				Page.Header = "File Transfer: " + Server;
 				Page.Content = "<h2>The client could not connect to the server.</h2>\n"+
 				"<pre>" + NewClient.FtpLog + "</pre>\n"+
-				"<p><a href='/!ftp/'><b>Go back</b></a> and try again.</p>";
+				"<p>Return to <a href='/!ftp/'><b>connection page</b></a> and try again.</p>";
 				return Page;
 			}
 
@@ -190,7 +197,7 @@ namespace WebOne
 			{
 				Page.Content = "<h2>Connection lost</h2>";
 				Page.Content += "<p>The FTP connection to the server is closed.</p>";
-				Page.Content += "<p><a href='/!ftp/'>Go to start</a> and try again.</p>";
+				Page.Content += "<p><a href='/!ftp/'><b>Go to start</b></a> and try again.</p>";
 				return Page;
 			}
 

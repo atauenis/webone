@@ -28,7 +28,7 @@ namespace WebOne
 		/// <param name="User">FTP user name</param>
 		/// <param name="Pass">FTP user password</param>
 		/// <param name="Log">WebOne.log writer</param>
-		public FtpClient(string Server, string User = "Anonymous", string Pass = "email@example.com", LogWriter Log = null)
+		public FtpClient(string Server, string User = "anonymous", string Pass = "email@example.com", LogWriter Log = null)
 		{
 			this.Log = Log;
 			this.Server = Server;
@@ -36,11 +36,11 @@ namespace WebOne
 			this.User = User;
 			this.Pass = Pass;
 
-			if (this.Server.Contains('/')) throw new ArgumentException("Use only \"user@password:ftp.example.com:21\" format or shorter");
+			if (this.Server.Contains('/')) throw new ArgumentException("Malformed server name. Use only \"user@password:ftp.example.com:21\" format or shorter.");
 
 			if (this.Server.Contains('@'))
 			{
-				string[] srvparts = Server.Split('@');
+				string[] srvparts = this.Server.Split('@');
 				string credentials = srvparts[0];
 				if (credentials.Contains(':'))
 				{
@@ -69,7 +69,8 @@ namespace WebOne
 
 				resp = TransmitCommand("USER " + this.User);
 				FtpLog += "\nUSER => " + resp.ToString();
-				if (resp.Code != 331) { Client.Close(); FtpLog += "\nDisconnected by client."; }
+				if (resp.Code != 331) { Client.Close(); FtpLog += "\nUser name not accepted. Disconnecting."; return; }
+
 				resp = TransmitCommand("PASS " + this.Pass);
 				FtpLog += "\nPASS => " + resp.ToString();
 				if (resp.Code == 230)
@@ -82,14 +83,32 @@ namespace WebOne
 					FtpLog += "\nDisconnected by client.";
 				}
 			}
-			catch(Exception ex)
+			catch(SocketException ex)
+			{
+				Log.WriteLine(" Connecting error: " + ex.ErrorCode + "=" + ex.Message);
+				switch(ex.ErrorCode)
+				{
+					case 11001:
+						FtpLog += "\nUnknown host name.";
+						break;
+					case 10061:
+						FtpLog += "\nConnection refused.";
+						break;
+					case 10060:
+						FtpLog += "\nConnection request was sent, but no reply has received in a reasonable time.";
+						break;
+					default:
+						FtpLog += "\n" + ex.Message + " (" + ex.ErrorCode + ").";
+						break;
+				}
+			}
+			catch (Exception ex)
 			{
 				Log.WriteLine(" Connecting error: " + ex.GetType().FullName + " " + ex.Message);
 #if DEBUG
 				FtpLog += "\nERROR: " + ex.ToString();
 #else
 				FtpLog += "\nERROR: " + ex.Message;
-
 #endif
 			}
 
