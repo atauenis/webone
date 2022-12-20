@@ -1500,7 +1500,7 @@ namespace WebOne
 				if (HeaderCharset.Success)
 				{
 					Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-					return Encoding.GetEncoding(HeaderCharset.Groups[1].Value);
+					return Encoding.GetEncoding(HeaderCharset.Groups[1].Value.ToLower() == "utf8" ? "utf-8" : HeaderCharset.Groups[1].Value);
 				}
 			}
 
