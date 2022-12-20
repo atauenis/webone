@@ -1,3 +1,4 @@
 *.csproj text eol=lf
 *.service text eol=lf
 *.logrotate text eol=lf
+*.sh text eol=lf
