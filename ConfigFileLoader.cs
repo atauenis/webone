@@ -232,6 +232,9 @@ namespace WebOne
 								case "UpperProxy":
 									ConfigFile.UpperProxy = Option.Value;
 									break;
+								case "PageStyleHtml":
+									ConfigFile.PageStyleHtml = Option.Value;
+									break;
 								default:
 									Log.WriteLine(true, false, "Warning: Unknown server option {0} in {1}.", Option.Key, Option.Location);
 									break;
@@ -336,6 +339,12 @@ namespace WebOne
 						foreach (ConfigFileOption Line in Section.Options)
 						{
 							ConfigFile.PAC += Line.RawString + "\n";
+						}
+						break;
+					case "PageStyleCss":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							ConfigFile.PageStyleCss += Line.RawString + "\n";
 						}
 						break;
 					case "FixableURL":

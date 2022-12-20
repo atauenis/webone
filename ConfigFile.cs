@@ -185,6 +185,15 @@ namespace WebOne
 		/// </summary>
 		public static string PAC = "";
 
+		/// <summary>
+		/// Internal pages style in HTML format (TEXT="#000000" BGCOLOR="#C0C0C0" LINK="#0000EE" VLINK="#551A8B" ALINK="#FF0000")
+		/// </summary>
+		public static string PageStyleHtml = "";
+		/// <summary>
+		/// Internal pages style in CSS format (body { background-color: #C0C0C0; color: #000000; })
+		/// </summary>
+		public static string PageStyleCss = "";
+
 
 
 		// Hint: All parser-related stuff known from v0.2.0 - 0.10.7 has been rewritten and moved to ConfigFileLoader class.

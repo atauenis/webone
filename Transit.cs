@@ -1756,10 +1756,12 @@ namespace WebOne
 			Log.WriteLine("<Return code {0}.", Code);
 			Text += GetInfoString();
 			string CodeStr = Code.ToString() + " " + ((HttpStatusCode)Code).ToString();
-			string Refresh = "";
-			if (ClientResponse.Headers["Refresh"] != null) Refresh = "<META HTTP-EQUIV=\"REFRESH\" CONTENT=\"" + ClientResponse.Headers["Refresh"] + "\">";
-			Refresh += "<META CHARSET=\"" + (OutputContentEncoding ?? Encoding.Default).WebName + "\">";
-			string Html = "<HTML>" + Refresh + "<BODY><H1>" + CodeStr + "</H1>" + Text + "</BODY></HTML>";
+			string BodyStyleHtml = ConfigFile.PageStyleHtml == "" ? "" : " " + ConfigFile.PageStyleHtml;
+			string HtmlHead = "";
+			if (ClientResponse.Headers["Refresh"] != null) HtmlHead = "<META HTTP-EQUIV=\"REFRESH\" CONTENT=\"" + ClientResponse.Headers["Refresh"] + "\">";
+			HtmlHead += "<META CHARSET=\"" + (OutputContentEncoding ?? Encoding.Default).WebName + "\">";
+			HtmlHead += ConfigFile.PageStyleCss == "" ? "" : "<style type='text/css'>" + ConfigFile.PageStyleCss + "</style>";
+			string Html = "<HTML>" + HtmlHead + "<BODY" + BodyStyleHtml + "><H1>" + CodeStr + "</H1>" + Text + "</BODY></HTML>";
 
 			byte[] Buffer = (OutputContentEncoding ?? Encoding.Default).GetBytes(Html);
 			try
@@ -1869,13 +1871,16 @@ namespace WebOne
 			{
 				Log.WriteLine("<Return information page: {0}.", Page.Title);
 
+				string BodyStyleHtml = ConfigFile.PageStyleHtml == "" ? "" : " " + ConfigFile.PageStyleHtml;
+				string BodyStyleCss = ConfigFile.PageStyleCss == "" ? "" : "<style type='text/css'>" + ConfigFile.PageStyleCss + "</style>";
 				string title = "<title>WebOne: untitled</title>"; if (Page.Title != null) title = "<title>" + Page.Title + "</title>\n";
 				string header1 = ""; if (Page.Header != null) header1 = "<h1>" + Page.Header + "</h1>\n";
 
 				string Html = "<html>\n" +
 				title +
-				string.Format("<meta charset=\"{0}\"/>", OutputContentEncoding == null ? "utf-8" : OutputContentEncoding.WebName) +
-				"<body>\n" +
+				string.Format("<meta charset=\"{0}\"/>", OutputContentEncoding == null ? "utf-8" : OutputContentEncoding.WebName) + "\n" +
+				BodyStyleCss +
+				"<body" + BodyStyleHtml + ">\n" +
 				header1 + "\n" +
 				Page.Content + "\n" +
 				GetInfoString() + "\n" +
