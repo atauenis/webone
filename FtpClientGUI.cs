@@ -379,6 +379,12 @@ namespace WebOne
 						return;
 					}).Start();
 					return Page;
+				case "close":
+					Backend.Close();
+					Page.Content = "<h2>Disconnected from the server</h2>\n" +
+					"<p>The file transfer session has been ended.</p>\n" +
+					"<p>Return to <a href='/!ftp/'><b>connection page</b></a>.</p>";
+					return Page;
 				default:
 					Page.Content = "<h2>No or unknown task</h2>";
 					Page.Content += "<p>The specified <i>task</i> argument is not recognized by WebOne.</p>";

@@ -15,6 +15,8 @@ namespace WebOne
 	{
 		public LogWriter Log;
 
+		public DateTime LastUsed = DateTime.Now;
+
 		public string FtpLog, Server, User, Pass;
 		public int Port = 21;
 
@@ -76,6 +78,7 @@ namespace WebOne
 				if (resp.Code == 230)
 				{
 					FtpLog += "\nSuccessfull.";
+					LastUsed = DateTime.Now;
 				}
 				else
 				{
@@ -122,6 +125,7 @@ namespace WebOne
 		/// <param name="Command">The FTP command with arguments (if any)</param>
 		public FtpResponse TransmitCommand(string Command)
 		{
+			LastUsed = DateTime.Now;
 			NetworkStream networkStream = Client.GetStream();
 			if (!networkStream.CanWrite || !networkStream.CanRead)
 				return new FtpResponse("000 CLIENT ERROR: cannot use NetworkStream");
@@ -146,6 +150,7 @@ namespace WebOne
 		/// </summary>
 		public FtpResponse Flush()
 		{
+			LastUsed = DateTime.Now;
 			try
 			{
 				NetworkStream networkStream = Client.GetStream();
@@ -175,6 +180,7 @@ namespace WebOne
 		/// <exception cref="IOException">If the data connection is not working</exception>
 		public NetworkStream GetPasvDataStream(string PasvInfo)
 		{
+			LastUsed = DateTime.Now;
 			System.Text.RegularExpressions.Match PasvMatch = System.Text.RegularExpressions.Regex.Match(PasvInfo, @"\([0-9,]*\)");
 			if (!PasvMatch.Success) throw new ArgumentException("PASV 227 reply is not correct", nameof(PasvInfo));
 			string PasvData = PasvMatch.Value.Substring(1, PasvMatch.Value.Length - 2);
@@ -197,7 +203,21 @@ namespace WebOne
 		/// </summary>
 		public void CloseDataConnection()
 		{
+			LastUsed = DateTime.Now;
 			PasvClient.Close();
+		}
+		
+		/// <summary>
+		/// Close FTP command connection and this client at all
+		/// </summary>
+		public void Close()
+		{
+			try
+			{
+				Client.Close();
+				PasvClient.Close();
+			}
+			catch { };
 		}
 
 		/// <summary>
