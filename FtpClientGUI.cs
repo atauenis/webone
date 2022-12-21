@@ -230,6 +230,7 @@ namespace WebOne
 					if (cmd.Code != 257)
 					{
 						Page.Content += "<p><b>&quot;Print Working Directory&quot; command has returned an unexpected result:</b> " + cmd.ToString() + "</p>";
+						Page.Content += "<p>Return to <a href='/!ftp/'><b>start page</b></a> and try to connect again.</p>";
 						return Page;
 					}
 
@@ -240,6 +241,7 @@ namespace WebOne
 					if (cmd.Code != 200)
 					{
 						Page.Content += "<p><b>Cannot set ASCII mode:</b> " + cmd.ToString() + "</p>";
+						Page.Content += "<p>Return to <a href='/!ftp/'><b>start page</b></a> and try to connect again.</p>";
 						return Page;
 					}
 
@@ -247,6 +249,7 @@ namespace WebOne
 					if (cmd.Code != 227)
 					{
 						Page.Content += "<p><b>Cannot prepare data connection:</b> " + cmd.ToString() + "</p>";
+						Page.Content += "<p>Return to <a href='/!ftp/'><b>start page</b></a> and try to connect again.</p>";
 						return Page;
 					}
 
@@ -258,6 +261,7 @@ namespace WebOne
 					catch
 					{
 						Page.Content += "<p><b>Cannot establish data connection:</b> " + cmd.ToString() + "</p>";
+						Page.Content += "<p>Return to <a href='/!ftp/'><b>start page</b></a> and try to connect again.</p>";
 						return Page;
 					}
 
@@ -265,6 +269,7 @@ namespace WebOne
 					if (cmd.Code != 150)
 					{
 						Page.Content += "<p><b>Directory listing is inaccessible:</b> " + cmd.ToString() + "</p>";
+						Page.Content += "<p>Return to <a href='/!ftp/'><b>start page</b></a> and try to connect again.</p>";
 						return Page;
 					}
 					StreamReader sr = new StreamReader(datastream);
@@ -337,6 +342,7 @@ namespace WebOne
 					if (string.IsNullOrEmpty(filename))
 					{
 						Page.Content += "<h2>Nothing to download</h2>";
+						Page.Content += "<p><a href='/!ftp/?client=" + ClientID + "&task=listdir'>Click here</a> to see directory listing.</p>";
 						return Page;
 					}
 
@@ -344,6 +350,7 @@ namespace WebOne
 					if (cmd.Code != 200)
 					{
 						Page.Content += "<p><b>Cannot set BINARY mode:</b> " + cmd.ToString() + "</p>";
+						Page.Content += "<p>Return to <a href='/!ftp/'><b>start page</b></a> and try to connect again.</p>";
 						return Page;
 					}
 
@@ -351,6 +358,7 @@ namespace WebOne
 					if (cmd.Code != 227)
 					{
 						Page.Content += "<p><b>Cannot prepare data connection:</b> " + cmd.ToString() + "</p>";
+						Page.Content += "<p>Return to <a href='/!ftp/'><b>start page</b></a> and try to connect again.</p>";
 						return Page;
 					}
 					System.Net.Sockets.NetworkStream datastream2 = Backend.GetPasvDataStream(cmd.Result);

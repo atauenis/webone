@@ -192,7 +192,9 @@ namespace WebOne
 			int PasvPort2 = Convert.ToInt32(PasvParts[5]);
 			int PasvPort = (PasvPort1 * 256) + PasvPort2; //(p1 * 256) + p2 = data port
 
+			#if DEBUG
 			Log.WriteLine(" Passive connect: " + PasvIP + ":" + PasvPort);
+			#endif
 			PasvClient = new TcpClient();
 			PasvClient.Connect(PasvIP,PasvPort);
 			return PasvClient.GetStream();
