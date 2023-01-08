@@ -336,12 +336,14 @@ namespace WebOne
 						}
 						break;
 					case "PAC":
+						ConfigFile.PAC = "";
 						foreach (ConfigFileOption Line in Section.Options)
 						{
 							ConfigFile.PAC += Line.RawString + "\n";
 						}
 						break;
 					case "PageStyleCss":
+						ConfigFile.PageStyleCss = "";
 						foreach (ConfigFileOption Line in Section.Options)
 						{
 							ConfigFile.PageStyleCss += Line.RawString + "\n";
