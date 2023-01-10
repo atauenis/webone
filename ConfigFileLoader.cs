@@ -235,6 +235,9 @@ namespace WebOne
 								case "PageStyleHtml":
 									ConfigFile.PageStyleHtml = Option.Value;
 									break;
+								case "MultipleHttp2Connections":
+									ConfigFile.MultipleHttp2Connections = ToBoolean(Option.Value);
+									break;
 								default:
 									Log.WriteLine(true, false, "Warning: Unknown server option {0} in {1}.", Option.Key, Option.Location);
 									break;

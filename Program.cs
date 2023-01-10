@@ -109,6 +109,7 @@ namespace WebOne
 					HTTPHandler.Proxy = UpperProxy;
 				}
 			}
+			HTTPHandler.EnableMultipleHttp2Connections = ConfigFile.MultipleHttp2Connections;
 
 			//set console window title
 			if (!DaemonMode) Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + ConfigFile.Port;

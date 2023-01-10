@@ -41,36 +41,6 @@ namespace WebOne
 		public static List<string> Authenticate = new List<string>();
 
 		/// <summary>
-		/// (Legacy) List of URLs that should be always 302ed
-		/// </summary>
-		public static List<string> FixableURLs = new List<string>();
-
-		/// <summary>
-		/// (Legacy) Dictionary of URLs that should be always 302ed if they're looks like too new JS frameworks
-		/// </summary>
-		public static Dictionary<string, Dictionary<string, string>> FixableUrlActions = new Dictionary<string, Dictionary<string, string>>();
-
-		/// <summary>
-		/// (Legacy) List of Content-Types that should be always 302ed
-		/// </summary>
-		public static List<string> FixableTypes = new List<string>();
-
-		/// <summary>
-		/// (Legacy) Dictionary of Content-Types that should be always 302ed to converter
-		/// </summary>
-		public static Dictionary<string, Dictionary<string, string>> FixableTypesActions = new Dictionary<string, Dictionary<string, string>>();
-
-		/// <summary>
-		/// (Legacy) List of possible content patches
-		/// </summary>
-		public static List<string> ContentPatches = new List<string>();
-
-		/// <summary>
-		/// (Legacy) Dictionary of possible content patches
-		/// </summary>
-		public static Dictionary<string, Dictionary<string, string>> ContentPatchActions = new Dictionary<string, Dictionary<string, string>>();
-
-		/// <summary>
 		/// Hide "Can't read from client" and "Cannot return reply to the client" error messages in log
 		/// </summary>
 		public static bool HideClientErrors = false;
@@ -189,10 +159,16 @@ namespace WebOne
 		/// Internal pages style in HTML format (TEXT="#000000" BGCOLOR="#C0C0C0" LINK="#0000EE" VLINK="#551A8B" ALINK="#FF0000")
 		/// </summary>
 		public static string PageStyleHtml = "";
+
 		/// <summary>
 		/// Internal pages style in CSS format (body { background-color: #C0C0C0; color: #000000; })
 		/// </summary>
 		public static string PageStyleCss = "";
+
+		/// <summary>
+		/// Allow multiple HTTP/2.0 connections to servers (faster, but may overload remote servers)
+		/// </summary>
+		public static bool MultipleHttp2Connections = true;
 
 
 

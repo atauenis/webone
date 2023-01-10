@@ -67,6 +67,8 @@ namespace WebOne
 			Request = new HttpRequestMessage();
 			Request.RequestUri = URL;
 			Request.Method = new HttpMethod(Method);
+			Request.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+			Request.Version = new Version(2, 0);
 			foreach (var rqhdr in RequestHeaders.AllKeys)
 			{
 				if (!rqhdr.StartsWith("Proxy-") && rqhdr != "Host" && rqhdr != "Content-Encoding")
@@ -97,7 +99,17 @@ namespace WebOne
 				}
 			}
 
-			Response = Program.HTTPClient.Send(Request);
+			try
+			{
+				var resp = Program.HTTPClient.SendAsync(Request);
+				resp.Wait();
+				Response = resp.Result;
+				//Response = Program.HTTPClient.Send(Request);
+			}
+			catch (AggregateException ex)
+			{
+				throw ex.InnerException;
+			}
 			ResponseHeaders = null;
 			ResponseStream = null;
 		}
