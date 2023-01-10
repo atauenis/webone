@@ -311,14 +311,21 @@ namespace WebOne
 					Page.Content += "</tr>\n";
 					foreach (var Item in FileListTable)
 					{
-						bool IsDir = Item.Directory;
 						string FileName = Item.Name;
 
 						Page.Content += "<tr>";
 						Page.Content += "<td>";
-						if (IsDir)
+						if (Item.Directory && !Item.SymLink)
 						{
 							Page.Content += "[<a href='/!ftp/?client=" + ClientID + "&task=listdir&cwd=" + Uri.EscapeDataString(FileName) + "'>" + FileName + "</a>]";
+						}
+						else if (Item.Directory && Item.SymLink)
+						{
+							Page.Content += "<i>[" + FileName + "]</i>";
+						}
+						else if(!Item.Directory && Item.SymLink)
+						{
+							Page.Content += "<i>" + FileName + "</i>";
 						}
 						else
 						{

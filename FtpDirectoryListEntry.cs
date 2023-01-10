@@ -44,6 +44,10 @@ namespace WebOne
 		/// Is the item a directory (true) or a file (false)
 		/// </summary>
 		public bool Directory { get; private set; }
+		/// <summary>
+		/// Is the item a symbolic link
+		/// </summary>
+		public bool SymLink { get; private set; }
 
 		public new string ToString()
 		{
@@ -105,6 +109,7 @@ namespace WebOne
 			entry.Date = match.Groups[6].Value;
 			entry.Name = match.Groups[7].Value;
 			entry.Directory = entry.Permissions.StartsWith("d");
+			entry.SymLink = entry.Permissions.StartsWith("l");
 			return entry;
 		}
 
@@ -125,6 +130,7 @@ namespace WebOne
 			if (!entry.Directory) entry.Size = long.Parse(match.Groups[2].Value);
 			else entry.Size = -1;
 			entry.Name = match.Groups[3].Value;
+			entry.SymLink = false; //DOS don't support symbolic links
 			return entry;
 		}
 
