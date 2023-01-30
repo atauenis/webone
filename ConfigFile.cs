@@ -170,6 +170,11 @@ namespace WebOne
 		/// </summary>
 		public static bool MultipleHttp2Connections = true;
 
+		/// <summary>
+		/// Version of HTTP(S) protocol, used to communicate with servers
+		/// </summary>
+		public static string RemoteHttpVersion = "auto";
+
 
 
 		// Hint: All parser-related stuff known from v0.2.0 - 0.10.7 has been rewritten and moved to ConfigFileLoader class.

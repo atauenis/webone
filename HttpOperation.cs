@@ -67,8 +67,41 @@ namespace WebOne
 			Request = new HttpRequestMessage();
 			Request.RequestUri = URL;
 			Request.Method = new HttpMethod(Method);
-			Request.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
-			Request.Version = new Version(2, 0);
+
+			if(ConfigFile.RemoteHttpVersion == "auto")
+			{
+				if (Environment.OSVersion.Platform == PlatformID.Win32NT && Environment.OSVersion.Version.Major < 10)
+				{
+					Request.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+					Request.Version = new Version(1, 1);
+					//HTTP/2 in .NET 6 works only on Linux, macOS and Windows 10+ (partial support on Win8+ too)
+				}
+				else
+				{
+					Request.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+					Request.Version = new Version(2, 0);
+					//Why not HTTP/3? Its support is limited in .NET 6: https://devblogs.microsoft.com/dotnet/http-3-support-in-dotnet-6/
+				}
+			}
+			else
+			{
+				Request.Version = new Version(ConfigFile.RemoteHttpVersion[1..]);
+				switch(ConfigFile.RemoteHttpVersion[0])
+				{
+					case '=':
+						Request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+						break;
+					case '>':
+						Request.VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+						break;
+					case '<':
+						Request.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+						break;
+					default:
+						throw new ArgumentException("Bad RemoteHttpVersion option in configuration file");
+				}
+			}
+
 			foreach (var rqhdr in RequestHeaders.AllKeys)
 			{
 				if (!rqhdr.StartsWith("Proxy-") && rqhdr != "Host" && rqhdr != "Content-Encoding")

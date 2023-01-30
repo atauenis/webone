@@ -238,6 +238,12 @@ namespace WebOne
 								case "MultipleHttp2Connections":
 									ConfigFile.MultipleHttp2Connections = ToBoolean(Option.Value);
 									break;
+								case "RemoteHttpVersion":
+									if (System.Text.RegularExpressions.Regex.IsMatch(Option.Value, @"([=><a])[u0-3][t\.][o0-9]"))
+									{ ConfigFile.RemoteHttpVersion = Option.Value; }
+									else
+									{ Log.WriteLine(true, false, "Warning: Incorrect RemoteHttpVersion '{0}'.", Option.Value); }
+									break;
 								default:
 									Log.WriteLine(true, false, "Warning: Unknown server option {0} in {1}.", Option.Key, Option.Location);
 									break;

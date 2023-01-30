@@ -65,6 +65,10 @@
     <RpmDependency Include="ImageMagick" />
   </ItemGroup>
 
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Net.SocketsHttpHandler.Http3Support" Value="true" />
+  </ItemGroup>
+
 	<ItemGroup Condition="$(SelfContained)==true">
 		<!--
     Fix for self-contained debs on Ubuntu 20.xx
