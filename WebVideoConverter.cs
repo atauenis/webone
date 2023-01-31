@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using static WebOne.Program;
 
@@ -17,7 +18,7 @@ namespace WebOne
 		/// <summary>
 		/// Download and convert an online video (from hostings like YouTube, VK, etc)
 		/// </summary>
-		public WebVideo ConvertVideo (Dictionary<string,string> Arguments, LogWriter Log)
+		public WebVideo ConvertVideo(Dictionary<string, string> Arguments, LogWriter Log)
 		{
 			WebVideo video = new WebVideo();
 			try
@@ -26,26 +27,26 @@ namespace WebOne
 				string FFmpegArgs = "";
 				bool NoFFmpeg = false;
 
-				if(!Arguments.ContainsKey("url"))
+				if (!Arguments.ContainsKey("url"))
 				{ throw new InvalidOperationException("Internet video address is missing."); }
 
-				if(!Arguments.ContainsKey("content-type"))
+				if (!Arguments.ContainsKey("content-type"))
 				{ Arguments.Add("content-type", "application/octet-stream"); }
 
-				if(!Arguments.ContainsKey("filename"))
+				if (!Arguments.ContainsKey("filename"))
 				{ Arguments.Add("filename", "converted.avi"); }
 
-				foreach(var Arg in Arguments)
+				foreach (var Arg in Arguments)
 				{
-					switch(Arg.Key.ToLowerInvariant())
+					switch (Arg.Key.ToLowerInvariant())
 					{
 						case "url":
 						case "content-type":
 						case "filename":
 							continue;
 						case "dont-convert":
-							if(ToBoolean(Arg.Value))
-							NoFFmpeg = true;
+							if (ToBoolean(Arg.Value))
+								NoFFmpeg = true;
 							continue;
 						case "abort-on-error":
 						case "ignore-config":
@@ -180,6 +181,7 @@ namespace WebOne
 				YoutubeDlStart.FileName = "youtube-dl";
 				YoutubeDlStart.Arguments = string.Format("\"{0}\"{1} -o -", Arguments["url"], YoutubeDlArgs);
 				YoutubeDlStart.RedirectStandardOutput = true;
+				YoutubeDlStart.RedirectStandardError = true;
 
 				ProcessStartInfo FFmpegStart = new();
 				FFmpegStart.FileName = "ffmpeg";
@@ -187,34 +189,91 @@ namespace WebOne
 				FFmpegStart.RedirectStandardInput = true;
 				FFmpegStart.RedirectStandardOutput = true;
 
+				video.Available = true;
+				video.ErrorMessage = "";
+				video.ContentType = Arguments["content-type"];
+				video.FileName = Arguments["filename"];
+
 				if (NoFFmpeg)
 				{
 					Log.WriteLine(" Video convert: {0} {1}", YoutubeDlStart.FileName, YoutubeDlStart.Arguments);
 					Process YoutubeDl = Process.Start(YoutubeDlStart);
 					video.VideoStream = YoutubeDl.StandardOutput.BaseStream;
+
+					YoutubeDl.ErrorDataReceived += (o, e) =>
+					{
+						Console.WriteLine("{0}", e.Data);
+						if (e.Data != null && e.Data.StartsWith("ERROR:"))
+						{
+							video.Available = false;
+							video.ErrorMessage = "Online video failed to download: " + e.Data[7..];
+							Log.WriteLine(false, false, " youtube-dl: {0}", e.Data);
+						}
+						if (e.Data != null && e.Data.StartsWith("WARNING:"))
+						{
+							Log.WriteLine(false, false, " youtube-dl: {0}", e.Data);
+						}
+					};
+					YoutubeDl.BeginErrorReadLine();
+
+					new Task(() =>
+					{
+						Thread.Sleep(60000);
+						float YoutubeDlCpuLoad = 0;
+						while (!YoutubeDl.HasExited)
+						{ Thread.Sleep(1000); PreventProcessIdle(ref YoutubeDl, ref YoutubeDlCpuLoad, Log); }
+					}).Start();
+
+					Thread.Sleep(5000); //wait for youtube-dl to start work or end with error
 				}
-				else 
+				else
 				{
 					Log.WriteLine(" Video convert: {0} {1} | {2} {3}", YoutubeDlStart.FileName, YoutubeDlStart.Arguments, FFmpegStart.FileName, FFmpegStart.Arguments);
 					Process YoutubeDl = Process.Start(YoutubeDlStart);
 					Process FFmpeg = Process.Start(FFmpegStart);
+
+					YoutubeDl.ErrorDataReceived += (o, e) =>
+					{
+						Console.WriteLine("{0}", e.Data);
+						if (e.Data != null && e.Data.StartsWith("ERROR:"))
+						{
+							video.Available = false;
+							video.ErrorMessage = "Online video failed to download: " + e.Data[7..];
+							Log.WriteLine(false, false, " youtube-dl: {0}", e.Data);
+						}
+						if (e.Data != null && e.Data.StartsWith("WARNING:"))
+						{
+							Log.WriteLine(false, false, " youtube-dl: {0}", e.Data);
+						}
+					};
+					YoutubeDl.BeginErrorReadLine();
+
 					new Task(() =>
 					{
 						YoutubeDl.StandardOutput.BaseStream.CopyTo(FFmpeg.StandardInput.BaseStream);
 					}).Start();
 					video.VideoStream = FFmpeg.StandardOutput.BaseStream;
 
-					//UNDONE: add kill of ffmpeg on youtube-dl end or on stream close
+					new Task(() =>
+					{
+						Thread.Sleep(60000);
+						float YoutubeDlCpuLoad = 0;
+						while (!YoutubeDl.HasExited)
+						{ Thread.Sleep(1000); PreventProcessIdle(ref YoutubeDl, ref YoutubeDlCpuLoad, Log); }
+					}).Start();
+
+					new Task(() =>
+					{
+						Thread.Sleep(60000);
+						float FFmpegCpuLoad = 0;
+						while (!FFmpeg.HasExited)
+						{ Thread.Sleep(1000); PreventProcessIdle(ref FFmpeg, ref FFmpegCpuLoad, Log); }
+					}).Start();
+
+					Thread.Sleep(5000); //wait for youtube-dl & ffmpeg to start work or end with error
 				}
-
-				//UNDONE: add youtube-dl & ffmpeg error processing and returning
-
-				video.ErrorMessage = "Ol korrekt.";
-				video.Available = true;
-				video.ContentType = Arguments["content-type"];
-				video.FileName = Arguments["filename"];
 			}
-			catch(Exception VidCvtError)
+			catch (Exception VidCvtError)
 			{
 				video.Available = false;
 				video.ErrorMessage = VidCvtError.Message;
