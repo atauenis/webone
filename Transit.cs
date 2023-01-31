@@ -366,37 +366,77 @@ namespace WebOne
 									"<p>This converter is not listed in configuration file.</p>" +
 									"<p>See <a href=\"http://github.com/atauenis/webone/wiki\">WebOne wiki</a> for help on this.</p>");
 									break;
-								case "/!file/":
-									/*string FileName, MimeType="text/plain";
-									Match FindName = Regex.Match(RequestURL.Query, @"(name)=([^&]+)");
-									Match FindMime = Regex.Match(RequestURL.Query, @"(type)=([^&]+)");
+								case "/!webvideo/":
+									//UNDONE: made default values configurable
+									Dictionary<string, string> VidArgs = new();
+									//VidArgs.Add("url", "https://www.youtube.com/watch?v=fPnO26CwqYU");
+									VidArgs.Add("content-type", "video/mp4");
+									VidArgs.Add("filename", "youtubevideo.mp4");
+									VidArgs.Add("format", "best");
+									VidArgs.Add("merge-output-format", "mp4");
+									VidArgs.Add("vcodec", "mpeg2video");
+									VidArgs.Add("acodec", "mp2");
+									VidArgs.Add("f", "mpegts");
 
-									if (FindMime.Success)
-										MimeType = FindMime.Groups[2].Value;
-
-									if (FindName.Success)
+									foreach(string UrlArg in System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query).AllKeys)
 									{
-										FileName = FindName.Groups[2].Value;
+										VidArgs[UrlArg] = System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query)[UrlArg];
+									}
 
-										if (!File.Exists(FileName))
-										{ FileName = new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + FileName; }
-
-										if (Path.TrimEndingDirectorySeparator(new FileInfo(FileName).DirectoryName) != Path.TrimEndingDirectorySeparator(Directory.GetCurrentDirectory()) &&
-											Path.TrimEndingDirectorySeparator(new FileInfo(FileName).DirectoryName) != Path.TrimEndingDirectorySeparator(System.Reflection.Assembly.GetExecutingAssembly().Location))
-										{
-											SendError(403, "Cannot access to files outside current and proxy installation directory");
-											return;
-										}
-									
-										SendFile(FileName, MimeType);
+									if(!VidArgs.ContainsKey("url"))
+									{
+										string HelpMsg =
+										"<p>You can use WebOne to download videos from popular sites in preferred format.</p>" +
+										"<ul>" +
+										"<li><b>url</b> - Address of the video (e.g. https://www.youtube.com/watch?v=fPnO26CwqYU or similar)</li>" +
+										"<li><b>filename</b> - Expected file name to download (e.g. film.avi)</li>" +
+										"<li><b>content-type</b> - Expected MIME content type of the downloaded file (optional)</li>" +
+										"<li>Also you can use many <i>youtube-dl</i> and <i>ffmpeg</i> options like <b>vcodec</b>, <b>ar</b>, <b>no-mark-watched</b> and other.</li>" +
+										"</ul>" +
+										"<form action='/!webvideo/' method='GET'>" +
+										"    <table border='0'>" +
+										"        <tr>" +
+										"            <td align='right'>Video URL</td>" +
+										"            <td align='center'><input type='text' size='48'" +
+										"            name='url'" +
+										"            value='https://www.youtube.com/watch?v=XXXXXXX'></td>" +
+										"        </tr>" +
+										"        <tr>" +
+										"            <td align='right'>File name</td>" +
+										"            <td align='center'><input type='text' size='20'" +
+										"            name='filename' value='onlinefilm.avi'></td>" +
+										"        </tr>" +
+										"        <tr>" +
+										"            <td align='right'>Content type</td>" +
+										"            <td align='center'><input type='text' size='20'" +
+										"            name='content-type' value='video/avi'></td>" +
+										"        </tr>" +
+										"        <tr>" +
+										"            <td align='right'>&nbsp;</td>" +
+										"            <td align='center'><input type='submit'" +
+										"            value='Download'></td>" +
+										"        </tr>" +
+										"    </table>"+
+										"</form>"+
+										"<p><b>This feature is currently unstable! Is you see a &quot;freeze&quot; on 100% done in console, try to kill ffmpeg process, and file will got a valid EOF mark.</b></p>";
+										SendInfoPage("Web video converter", "Web video converting", HelpMsg);
 										return;
 									}
-									SendError(200, "Get a local file.<br>Usage: /!file/?name=filename.ext&type=text/plain");
-									return;
-									*/
-									SendError(403, "<del>Get a local file.<br>Usage: /!file/?name=filename.ext&type=text/plain</del>" +
-									"<br><b>Disabled in this version due to security reasons.</b>" +
-									"<br>To see used configuration file, open <a href=/!webone.conf>/!webone.conf</a>.");
+
+									WebVideo vid = new WebVideoConverter().ConvertVideo(VidArgs, Log);
+									if(vid.Available)
+									{
+										ClientResponse.AddHeader("Content-Disposition", "attachment; filename=\"" + vid.FileName + "\"");
+										SendStream(vid.VideoStream, vid.ContentType);
+									}
+									else
+									{
+										string ErrMsg = 
+										"<p>" + vid.ErrorMessage + "</p>" + 
+										"<p>Make sure that parameters are correct, and both <i>youtube-dl</i> and <i>ffmpeg</i> are properly installed on the server.</p>";
+										SendInfoPage("Video convert error", "WebOne is unable to convert the video", ErrMsg);
+										return;
+									}
 									return;
 								case "/!clear/":
 									int FilesDeleted = 0;
