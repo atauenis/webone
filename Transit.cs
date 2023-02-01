@@ -370,8 +370,8 @@ namespace WebOne
 									//UNDONE: made default values configurable
 									Dictionary<string, string> VidArgs = new();
 									//VidArgs.Add("url", "https://www.youtube.com/watch?v=fPnO26CwqYU");
-									VidArgs.Add("content-type", "video/mp4");
-									VidArgs.Add("filename", "youtubevideo.mp4");
+									//VidArgs.Add("content-type", "video/mp4");
+									//VidArgs.Add("filename", "youtubevideo.mp4");
 									VidArgs.Add("format", "best");
 									VidArgs.Add("merge-output-format", "mp4");
 									VidArgs.Add("vcodec", "mpeg2video");
@@ -386,39 +386,83 @@ namespace WebOne
 									if(!VidArgs.ContainsKey("url"))
 									{
 										string HelpMsg =
-										"<p>You can use WebOne to download videos from popular sites in preferred format.</p>" +
+										"<p>This page allows download videos from popular sites in preferred format.</p>" +
+										"<center>" +
+										"<form action='/!webvideo/' method='GET'>" +
+										"<table border='0'>" +
+										"<tr>" +
+										"    <td align='right'>Video URL</td>" +
+										"    <td align='center'><input type='text' size='65'" +
+										"    name='url'" +
+										"    value='https://www.youtube.com/watch?v=XXXXXXX'></td>" +
+										"</tr>" +
+										"<tr>" +
+										"    <td align='right'>Format</td>" +
+										"    <td><select name='f' size='1'>" +
+										"        <option selected value='avi'>AVI</option>" +
+										"        <option value='mpeg1video'>MPEG 1</option>" +
+										"        <option value='mpeg2video'>MPEG 2</option>" +
+										"        <option value='mp4'>MPEG 4</option>" +
+										"        <option value='mpegts'>MPEG TS</option>" +
+										"        <option value='asf'>Microsoft ASF</option>" +
+										"        <option value='asf_stream'>Microsoft ASF (stream)</option>" +
+										"        <option value='mov'>QuickTime</option>" +
+										"        <option value='ogg'>Ogg</option>" +
+										"        <option value='webm'>WebM</option>" +
+										"        <option value='swf'>Macromedia Flash</option>" +
+										"        <option value='rm'>RealMedia</option>" +
+										"        <option value='3gp'>3GPP</option>" +
+										"    </select></td>" +
+										"</tr>" +
+										"<tr>" +
+										"    <td align='right'>Video</td>" +
+										"    <td><select name='vcodec' size='1'>" +
+										"        <option value='mpeg1video'>MPEG 1</option>" +
+										"        <option selected value='mpeg2video'>MPEG 2</option>" +
+										"        <option value='mpeg4'>MPEG 4</option>" +
+										"        <option value='wmv1'>WMV 7</option>" +
+										"        <option value='wmv2'>WMV 8</option>" +
+										"        <option value='h263'>H.263</option>" +
+										"        <option value='h264'>H.264 AVC</option>" +
+										"        <option value='hevc'>H.265 HEVC</option>" +
+										"        <option value='theora'>Ogg Theora</option>" +
+										"        <option value='mjpeg'>MJPEG</option>" +
+										"        <option value='msvideo1'>MS Video 1</option>" +
+										"        <option value='copy'>(original)</option>" +
+										"    </select></td>" +
+										"</tr>" +
+										"<tr>" +
+										"    <td align='right'>Audio</td>" +
+										"    <td><select name='acodec' size='1'>" +
+										"        <option value='mp2'>MPEG 2</option>" +
+										"        <option selected value='mp3'>MPEG 3</option>" +
+										"        <option value='wmav1'>WMA 1</option>" +
+										"        <option value='wmav2'>WMA 2</option>" +
+										"        <option value='pcm_dvd'>PCM</option>" +
+										"        <option value='libvorbis'>Ogg Vorbis</option>" +
+										"        <option value='ra_144'>RealAudio 1</option>" +
+										"        <option value='copy'>(original)</option>" +
+										"    </select> <select name='ac' size='1'>" +
+										"        <option selected value='1'>Mono</option>" +
+										"        <option value='2'>Stereo</option>" +
+										"    </select></td>" +
+										"</tr>" +
+										"<tr>" +
+										"    <td align='center' colspan='2'><input type='submit'" +
+										"    value='Download'></td>" +
+										"</tr>" +
+										"</table>" +
+										"</form>" +
+										"</center>" +
+										"<p>Manual use parameters:</p>" +
 										"<ul>" +
 										"<li><b>url</b> - Address of the video (e.g. https://www.youtube.com/watch?v=fPnO26CwqYU or similar)</li>" +
-										"<li><b>filename</b> - Expected file name to download (e.g. film.avi)</li>" +
-										"<li><b>content-type</b> - Expected MIME content type of the downloaded file (optional)</li>" +
-										"<li>Also you can use many <i>youtube-dl</i> and <i>ffmpeg</i> options like <b>vcodec</b>, <b>ar</b>, <b>no-mark-watched</b> and other.</li>" +
-										"</ul>" +
-										"<form action='/!webvideo/' method='GET'>" +
-										"    <table border='0'>" +
-										"        <tr>" +
-										"            <td align='right'>Video URL</td>" +
-										"            <td align='center'><input type='text' size='48'" +
-										"            name='url'" +
-										"            value='https://www.youtube.com/watch?v=XXXXXXX'></td>" +
-										"        </tr>" +
-										"        <tr>" +
-										"            <td align='right'>File name</td>" +
-										"            <td align='center'><input type='text' size='20'" +
-										"            name='filename' value='onlinefilm.avi'></td>" +
-										"        </tr>" +
-										"        <tr>" +
-										"            <td align='right'>Content type</td>" +
-										"            <td align='center'><input type='text' size='20'" +
-										"            name='content-type' value='video/avi'></td>" +
-										"        </tr>" +
-										"        <tr>" +
-										"            <td align='right'>&nbsp;</td>" +
-										"            <td align='center'><input type='submit'" +
-										"            value='Download'></td>" +
-										"        </tr>" +
-										"    </table>"+
-										"</form>"+
-										"<p><b>This feature is currently unstable! Is you see a &quot;freeze&quot; on 100% done in console, try to kill ffmpeg process, and file will got a valid EOF mark.</b></p>";
+										"<li><b>f</b> - Target format of the file (e.g. avi)</li>" +
+										"<li><b>vcodec</b> - Codec for video (e.g. mpeg4)</li>" +
+										"<li><b>acodec</b> - Codec for audio (e.g. mp3)</li>" +
+										"<li><b>content-type</b> - override MIME content type for the file (optional).</li>" +
+										"<li>Also you can use many <i>youtube-dl</i> and <i>ffmpeg</i> options like <b>aspect</b>, <b>b</b>, <b>no-mark-watched</b> and other.</li>" +
+										"</ul>";
 										SendInfoPage("Web video converter", "Web video converting", HelpMsg);
 										return;
 									}
@@ -433,8 +477,9 @@ namespace WebOne
 									{
 										string ErrMsg = 
 										"<p>" + vid.ErrorMessage + "</p>" + 
-										"<p>Make sure that parameters are correct, and both <i>youtube-dl</i> and <i>ffmpeg</i> are properly installed on the server.</p>";
-										SendInfoPage("Video convert error", "WebOne is unable to convert the video", ErrMsg);
+										"<p>Make sure that parameters are correct, and both <i>youtube-dl</i> and <i>ffmpeg</i> are properly installed on the server.</p>"+
+										"<a href='/!webvideo/'>Go back.</a>";
+										SendInfoPage("Web video converter", "Web video converting", ErrMsg);
 										return;
 									}
 									return;

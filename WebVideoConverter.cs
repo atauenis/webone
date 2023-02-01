@@ -25,16 +25,72 @@ namespace WebOne
 			{
 				string YoutubeDlArgs = "";
 				string FFmpegArgs = "";
-				bool NoFFmpeg = false;
+				//bool NoFFmpeg = false;
 
 				if (!Arguments.ContainsKey("url"))
 				{ throw new InvalidOperationException("Internet video address is missing."); }
 
+				string PreferredMIME = "application/octet-stream", PreferredName = "converted.avi";
+
+				if(Arguments.ContainsKey("f"))
+				{
+					switch(Arguments["f"])
+					{
+						case "avi":
+							PreferredMIME = "video/avi";
+							PreferredName = "onlinevideo.avi";
+							break;
+						case "mpeg1video":
+						case "mpeg2video":
+							PreferredMIME = "video/mpeg";
+							PreferredName = "onlinevideo.mpg";
+							break;
+						case "mpeg4":
+							PreferredMIME = "video/mp4";
+							PreferredName = "onlinevideo.mp4";
+							break;
+						case "mpegts":
+							PreferredMIME = "video/mp2t";
+							PreferredName = "onlinevideo.mts";
+							break;
+						case "asf":
+						case "asf_stream":
+						case "wmv":
+							PreferredMIME = "video/x-ms-asf";
+							PreferredName = "onlinevideo.asf";
+							break;
+						case "mov":
+							PreferredMIME = "video/qucktime";
+							PreferredName = "onlinevideo.mov";
+							break;
+						case "ogg":
+							PreferredMIME = "video/ogg";
+							PreferredName = "onlinevideo.ogg";
+							break;
+						case "webm":
+							PreferredMIME = "video/webm";
+							PreferredName = "onlinevideo.webm";
+							break;
+						case "swf":
+							PreferredMIME = "application/x-shockwave-flash";
+							PreferredName = "onlinevideo.swf";
+							break;
+						case "rm":
+							PreferredMIME = "application/vnd.rn-realmedia";
+							PreferredName = "onlinevideo.rm";
+							break;
+						case "3gp":
+							PreferredMIME = "video/3gpp";
+							PreferredName = "onlinevideo.3gp";
+							break;
+					}
+				}
+
 				if (!Arguments.ContainsKey("content-type"))
-				{ Arguments.Add("content-type", "application/octet-stream"); }
+				{ Arguments.Add("content-type", PreferredMIME); }
 
 				if (!Arguments.ContainsKey("filename"))
-				{ Arguments.Add("filename", "converted.avi"); }
+				{ Arguments.Add("filename", PreferredName); }
 
 				foreach (var Arg in Arguments)
 				{
@@ -44,10 +100,10 @@ namespace WebOne
 						case "content-type":
 						case "filename":
 							continue;
-						case "dont-convert":
+						/*case "dont-convert":
 							if (ToBoolean(Arg.Value))
 								NoFFmpeg = true;
-							continue;
+							continue;*/
 						case "abort-on-error":
 						case "ignore-config":
 						case "mark-watched":
@@ -194,7 +250,7 @@ namespace WebOne
 				video.ContentType = Arguments["content-type"];
 				video.FileName = Arguments["filename"];
 
-				if (NoFFmpeg)
+/*				if (NoFFmpeg)
 				{
 					Log.WriteLine(" Video convert: {0} {1}", YoutubeDlStart.FileName, YoutubeDlStart.Arguments);
 					Process YoutubeDl = Process.Start(YoutubeDlStart);
@@ -227,7 +283,7 @@ namespace WebOne
 					Thread.Sleep(5000); //wait for youtube-dl to start work or end with error
 				}
 				else
-				{
+				{*/
 					Log.WriteLine(" Video convert: {0} {1} | {2} {3}", YoutubeDlStart.FileName, YoutubeDlStart.Arguments, FFmpegStart.FileName, FFmpegStart.Arguments);
 					Process YoutubeDl = Process.Start(YoutubeDlStart);
 					Process FFmpeg = Process.Start(FFmpegStart);
@@ -271,7 +327,7 @@ namespace WebOne
 					}).Start();
 
 					Thread.Sleep(5000); //wait for youtube-dl & ffmpeg to start work or end with error
-				}
+				/*}*/
 			}
 			catch (Exception VidCvtError)
 			{
