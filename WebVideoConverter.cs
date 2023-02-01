@@ -27,12 +27,17 @@ namespace WebOne
 				string FFmpegArgs = "";
 				//bool NoFFmpeg = false;
 
+				// Check options
 				if (!Arguments.ContainsKey("url"))
 				{ throw new InvalidOperationException("Internet video address is missing."); }
 
-				string PreferredMIME = "application/octet-stream", PreferredName = "converted.avi";
+				// Load default options
+				foreach (var x in ConfigFile.WebVideoOptions)
+				{ if (!Arguments.ContainsKey(x.Key)) Arguments[x.Key] = x.Value; }
 
-				if(Arguments.ContainsKey("f"))
+				// Configure output file type
+				string PreferredMIME = "application/octet-stream", PreferredName = "video.avi";
+				if(Arguments.ContainsKey("f")) // (ffmpeg output format)
 				{
 					switch(Arguments["f"])
 					{
@@ -83,15 +88,20 @@ namespace WebOne
 							PreferredMIME = "video/3gpp";
 							PreferredName = "onlinevideo.3gp";
 							break;
+						default:
+							PreferredMIME = "application/octet-stream";
+							PreferredName = "onlinevideo." + Arguments["f"];
+							break;
 					}
 				}
 
+				// Set output file type over auto-detected (if need)
 				if (!Arguments.ContainsKey("content-type"))
 				{ Arguments.Add("content-type", PreferredMIME); }
-
 				if (!Arguments.ContainsKey("filename"))
 				{ Arguments.Add("filename", PreferredName); }
 
+				// Load all parameters
 				foreach (var Arg in Arguments)
 				{
 					switch (Arg.Key.ToLowerInvariant())
@@ -233,6 +243,7 @@ namespace WebOne
 					}
 				}
 
+				// Configure Youtube-DL and FFmpeg processes and prepare data stream
 				ProcessStartInfo YoutubeDlStart = new();
 				YoutubeDlStart.FileName = "youtube-dl";
 				YoutubeDlStart.Arguments = string.Format("\"{0}\"{1} -o -", Arguments["url"], YoutubeDlArgs);
@@ -284,10 +295,12 @@ namespace WebOne
 				}
 				else
 				{*/
+					// Start both processes
 					Log.WriteLine(" Video convert: {0} {1} | {2} {3}", YoutubeDlStart.FileName, YoutubeDlStart.Arguments, FFmpegStart.FileName, FFmpegStart.Arguments);
 					Process YoutubeDl = Process.Start(YoutubeDlStart);
 					Process FFmpeg = Process.Start(FFmpegStart);
 
+					// Enable Youtube-DL error handling
 					YoutubeDl.ErrorDataReceived += (o, e) =>
 					{
 						Console.WriteLine("{0}", e.Data);
@@ -304,12 +317,14 @@ namespace WebOne
 					};
 					YoutubeDl.BeginErrorReadLine();
 
+					// Redirect Youtube-DL STDOUT to FFmpeg STDIN stream, and FFmpeg STDOUT to return stream
 					new Task(() =>
 					{
 						YoutubeDl.StandardOutput.BaseStream.CopyTo(FFmpeg.StandardInput.BaseStream);
 					}).Start();
 					video.VideoStream = FFmpeg.StandardOutput.BaseStream;
 
+					// Initialize idleness hunters
 					new Task(() =>
 					{
 						Thread.Sleep(60000);
@@ -317,7 +332,6 @@ namespace WebOne
 						while (!YoutubeDl.HasExited)
 						{ Thread.Sleep(1000); PreventProcessIdle(ref YoutubeDl, ref YoutubeDlCpuLoad, Log); }
 					}).Start();
-
 					new Task(() =>
 					{
 						Thread.Sleep(60000);
@@ -326,7 +340,8 @@ namespace WebOne
 						{ Thread.Sleep(1000); PreventProcessIdle(ref FFmpeg, ref FFmpegCpuLoad, Log); }
 					}).Start();
 
-					Thread.Sleep(5000); //wait for youtube-dl & ffmpeg to start work or end with error
+					// Wait for Youtube-DL & FFmpeg to start working or end with error
+					Thread.Sleep(5000);
 				/*}*/
 			}
 			catch (Exception VidCvtError)

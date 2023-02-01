@@ -358,6 +358,13 @@ namespace WebOne
 							ConfigFile.PageStyleCss += Line.RawString + "\n";
 						}
 						break;
+					case "WebVideoOptions":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							if (Line.HaveKeyValue) ConfigFile.WebVideoOptions.Add(new KeyValuePair<string, string>(Line.Key, Line.Value));
+							else Log.WriteLine(true, false, "Warning: Incorrect online video convert option at {0}.", Line.Location);
+						}
+						break;
 					case "FixableURL":
 					case "FixableType":
 					case "ContentPatch":

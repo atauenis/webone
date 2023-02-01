@@ -367,16 +367,7 @@ namespace WebOne
 									"<p>See <a href=\"http://github.com/atauenis/webone/wiki\">WebOne wiki</a> for help on this.</p>");
 									break;
 								case "/!webvideo/":
-									//UNDONE: made default values configurable
 									Dictionary<string, string> VidArgs = new();
-									//VidArgs.Add("url", "https://www.youtube.com/watch?v=fPnO26CwqYU");
-									//VidArgs.Add("content-type", "video/mp4");
-									//VidArgs.Add("filename", "youtubevideo.mp4");
-									VidArgs.Add("format", "best");
-									VidArgs.Add("merge-output-format", "mp4");
-									VidArgs.Add("vcodec", "mpeg2video");
-									VidArgs.Add("acodec", "mp2");
-									VidArgs.Add("f", "mpegts");
 
 									foreach(string UrlArg in System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query).AllKeys)
 									{
@@ -463,7 +454,7 @@ namespace WebOne
 										"<li><b>content-type</b> - override MIME content type for the file (optional).</li>" +
 										"<li>Also you can use many <i>youtube-dl</i> and <i>ffmpeg</i> options like <b>aspect</b>, <b>b</b>, <b>no-mark-watched</b> and other.</li>" +
 										"</ul>";
-										SendInfoPage("Web video converter", "Web video converting", HelpMsg);
+										SendInfoPage("Online video converter", "Web video converting", HelpMsg);
 										return;
 									}
 
@@ -472,6 +463,7 @@ namespace WebOne
 									{
 										ClientResponse.AddHeader("Content-Disposition", "attachment; filename=\"" + vid.FileName + "\"");
 										SendStream(vid.VideoStream, vid.ContentType);
+										return;
 									}
 									else
 									{
@@ -479,10 +471,9 @@ namespace WebOne
 										"<p>" + vid.ErrorMessage + "</p>" + 
 										"<p>Make sure that parameters are correct, and both <i>youtube-dl</i> and <i>ffmpeg</i> are properly installed on the server.</p>"+
 										"<a href='/!webvideo/'>Go back.</a>";
-										SendInfoPage("Web video converter", "Web video converting", ErrMsg);
+										SendInfoPage("Online video converter", "Web video converting", ErrMsg);
 										return;
 									}
-									return;
 								case "/!clear/":
 									int FilesDeleted = 0;
 									foreach (FileInfo file in (new DirectoryInfo(ConfigFile.TemporaryDirectory)).EnumerateFiles("convert-*.*"))

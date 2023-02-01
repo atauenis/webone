@@ -175,6 +175,12 @@ namespace WebOne
 		/// </summary>
 		public static string RemoteHttpVersion = "auto";
 
+		/// <summary>
+		/// Options for online video converting
+		/// </summary>
+		public static List<KeyValuePair<string, string>> WebVideoOptions = new List<KeyValuePair<string, string>>();
+
+
 
 
 		// Hint: All parser-related stuff known from v0.2.0 - 0.10.7 has been rewritten and moved to ConfigFileLoader class.
