@@ -371,6 +371,7 @@ namespace WebOne
 
 									foreach(string UrlArg in System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query).AllKeys)
 									{
+										if (UrlArg != null)
 										VidArgs[UrlArg] = System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query)[UrlArg];
 									}
 
@@ -474,6 +475,9 @@ namespace WebOne
 										SendInfoPage("Online video converter", "Web video converting", ErrMsg);
 										return;
 									}
+								case "/!player/":
+									SendInfoPage(new WebVideoPlayer(System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query)).Page);
+									return;
 								case "/!clear/":
 									int FilesDeleted = 0;
 									foreach (FileInfo file in (new DirectoryInfo(ConfigFile.TemporaryDirectory)).EnumerateFiles("convert-*.*"))
@@ -1771,6 +1775,8 @@ namespace WebOne
 				HelpString += "<h2>May be useful:</h2><ul>";
 				HelpString += "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>";
 				HelpString += "<li><a href='/!ftp/'>Web-based FTP client</a>.</li>";
+				HelpString += "<li><a href='/!player/'>Online video player</a>.</li>";
+				HelpString += "<li><a href='/!webvideo/'>Online video downloader</a>.</li>";
 				HelpString += "</ul>";
 			}
 			else if (ConfigFile.DisplayStatusPage == "full")
@@ -1801,7 +1807,9 @@ namespace WebOne
 							  //"<li><a href='/!file/'>/!file/</a> - get a file from WebOne working directory (<a href='/!file/?name=webone.conf&type=text/plain'>demo</a>)</li>" +
 							  "<li><a href='/!clear/'>/!clear/</a> - remove temporary files in WebOne working directory</li>" +
 							  "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>" +
-							  "<li><a href='/!ftp/'>Web-based FTP client</a>.</li>" +
+							  "<li><a href='/!ftp/'>/!ftp/</a> - Web-based FTP client.</li>" +
+							  "<li><a href='/!player/'>/!player/</a> - online video player.</li>" +
+							  "<li><a href='/!webvideo/'>/!webvideo/</a> - online video downloader.</li>" +
 							  "</ul>";
 			}
 			else
@@ -1955,11 +1963,11 @@ namespace WebOne
 				string Html = "<html>\n" +
 				title +
 				string.Format("<meta charset=\"{0}\"/>", OutputContentEncoding == null ? "utf-8" : OutputContentEncoding.WebName) + "\n" +
-				BodyStyleCss +
+				(Page.AddCss ? BodyStyleCss : "") +
 				"<body" + BodyStyleHtml + ">\n" +
 				header1 + "\n" +
 				Page.Content + "\n" +
-				GetInfoString() + "\n" +
+				(Page.ShowFooter ? GetInfoString() + "\n" : "") +
 				"</body>\n</html>";
 
 				if ((OutputContentEncoding ?? Encoding.Default) != Encoding.Default)
@@ -2036,6 +2044,16 @@ namespace WebOne
 		public int HttpStatusCode { get; set; }
 
 		/// <summary>
+		/// Show the WebOne &amp; OS version in the page footer
+		/// </summary>
+		public bool ShowFooter { get; set; }
+
+		/// <summary>
+		/// Add default CSS styles to the page HTML header
+		/// </summary>
+		public bool AddCss { get; set; }
+
+		/// <summary>
 		/// Create an information page
 		/// </summary>
 		/// <param name="Title">The information page title</param>
@@ -2049,6 +2067,8 @@ namespace WebOne
 			this.Title = Title;
 			this.Header = Header;
 			this.Content = Content;
+			ShowFooter = true;
+			AddCss = true;
 		}
 	}
 }
