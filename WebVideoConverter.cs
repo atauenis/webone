@@ -42,7 +42,7 @@ namespace WebOne
 					switch(Arguments["f"])
 					{
 						case "avi":
-							PreferredMIME = "video/avi";
+							PreferredMIME = "video/msvideo";
 							PreferredName = "onlinevideo.avi";
 							break;
 						case "mpeg1video":

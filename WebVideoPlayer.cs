@@ -158,10 +158,21 @@ namespace WebOne
 				case "objectns":
 					// ActiveMovie Control or NetShow Player 2.x - ActiveX
 					// Download: http://www.microsoft.com/netshow/download/player.htm
-					string NSActiveXhtml = "<object ID='MediaPlayer' style='width: 100%; height: 100%;' "+
-					"CLASSID='CLSID:2179C5D3-EBFF-11CF-B6FD-00AA00B4E220' CODEBASE='http://www.microsoft.com/netshow/download/en/nsasfinf.cab#Version=2,0,0,912'>" +
-					"<param name='URL' value='" + VideoUrl + "'>" +
-					"</object>";
+					// CODEBASE='http://www.microsoft.com/netshow/download/en/nsasfinf.cab#Version=2,0,0,912'
+					// CODEBASE='http://www.microsoft.com/netshow/download/en/nsmp2inf.cab#Version=5,1,51,415'
+					// NetShow 2.0 for Win95/NT -> nscore.exe from nscore.cab
+					string NSActiveXhtml = "<center><object ID='MediaPlayer' style='width: 100%; height: 100%;' "+
+					"CLASSID='CLSID:2179C5D3-EBFF-11CF-B6FD-00AA00B4E220' " +
+					"codebase='http://www.microsoft.com/netshow/download/en/nsasfinf.cab#Version=2,0,0,912'>" +
+					"<param name='FileName' value='" + VideoUrl + "'>" +
+					"<param name='ShowControls' value='true'>" +
+					"<param name='ShowDisplay' value='true'>" +
+					"<param name='ShowStatusBar' value='true'>" +
+					"<param name='ShowPositionControls' value='true'>" +
+					"<param name='ShowGoToBar' value='true'>" +
+					"<param name='Controls' value='true'>" +
+					"<param name='AutoSize' value='true'>" +
+					"</object></center>";
 					Page.Content = NSActiveXhtml;
 					Page.AddCss = false;
 					Page.Title = "Video player - NetShow ActiveX";
@@ -170,7 +181,9 @@ namespace WebOne
 					// Windows Media Player 6.4 - ActiveX
 					// Download: http://microsoft.com/windows/mediaplayer/en/download/
 					string WMPActiveXhtml = "<object ID='MediaPlayer' style='width: 100%; height: 100%;' "+
-					"CLASSID='CLSID:6BF52A52-394A-11d3-B153-00C04F79FAA6' codebase='http://activex.microsoft.com/activex/controls/mplayer/en/nsmp2inf.cab#Version=6,4,7,1112'>" +
+					"CLASSID='CLSID:6BF52A52-394A-11d3-B153-00C04F79FAA6' "+
+					"standby='Loading Microsoft Windows Media Player components...' " +
+					"codebase='http://activex.microsoft.com/activex/controls/mplayer/en/nsmp2inf.cab#Version=6,4,7,1112'>" +
 					"<param name='URL' value='" + VideoUrl + "'>" +
 					"</object>";
 					Page.Content = WMPActiveXhtml;
