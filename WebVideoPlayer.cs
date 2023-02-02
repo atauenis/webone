@@ -114,7 +114,8 @@ namespace WebOne
 					"            <td align='right'></td>" +
 					"            <td align='center' colspan='4'>" +
 					"            <input type='radio'name='type' value='embed'>Embed, " +
-					"            <input type='radio'name='type' value='embedwm' checked>Mplayer2, " +
+					"            <input type='radio'name='type' value='embedwm' checked>WMP, " +
+					"            <input type='radio'name='type' value='embedvlc'>VLC, " +
 					"            <input type='radio' name='type' value='objectwm'>WinMedia, " +
 					"            <input type='radio' name='type' value='objectns'>NetShow, " +
 					"            <input type='radio' name='type' value='dynimg'>DynImg, " +
@@ -154,6 +155,17 @@ namespace WebOne
 					Page.Content = WMP64html;
 					Page.AddCss = false;
 					Page.Title = "Video player - WMP";
+					break;
+				case "embedvlc":
+					// VLC Mediaplayer - plugin
+					string VlcHtml = "<embed id='MediaPlayer' type='application/x-vlc-plugin'" +
+					"codebase='http://download.videolan.org/pub/videolan/vlc/last/win32/axvlc.cab'" +
+					"pluginspage='http://www.videolan.org'" +
+					"showcontrols='true' showpositioncontrols='true' showstatusbar='tue' showgotobar='true'" +
+					"src='" + VideoUrl + "' autostart='true' style='width: 100%; height: 100%;' />";
+					Page.Content = VlcHtml;
+					Page.AddCss = false;
+					Page.Title = "Video player - VLC";
 					break;
 				case "objectns":
 					// ActiveMovie Control or NetShow Player 2.x - ActiveX
