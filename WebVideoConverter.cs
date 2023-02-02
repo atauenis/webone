@@ -104,8 +104,19 @@ namespace WebOne
 				// Load all parameters
 				foreach (var Arg in Arguments)
 				{
-					if(Arg.Key.StartsWith("vf") || Arg.Key.StartsWith("af") || Arg.Key.StartsWith("filter"))
+					if((Arg.Key.StartsWith("vf") && Arguments["vcodec"] != "copy") ||
+					   (Arg.Key.StartsWith("af") && Arguments["acodec"] != "copy"))
 					{
+						// Don't apply filters if codec is original
+						FFmpegArgs += string.Format(" -{0} {1}", Arg.Key, Arg.Value);
+						continue;
+					}
+					if(Arg.Key.StartsWith("filter"))
+					{
+						/* Currently may cause FFMPEG errors if combined with `-vcodec copy`:
+						 * Filtergraph 'scale=480:-1' was defined for video output stream 0:0 but codec copy was selected.
+						 * Filtering and streamcopy cannot be used together.
+						 */
 						FFmpegArgs += string.Format(" -{0} {1}", Arg.Key, Arg.Value);
 						continue;
 					}
@@ -209,7 +220,6 @@ namespace WebOne
 						case "target":
 						case "apad":
 						case "frames":
-						case "filter":
 						case "filter_script":
 						case "reinit_filter":
 						case "discard":
@@ -222,7 +232,6 @@ namespace WebOne
 						case "vcodec":
 						case "timecode":
 						case "pass":
-						case "vf":
 						case "ab":
 						case "b":
 						case "dn":
@@ -232,7 +241,6 @@ namespace WebOne
 						case "ac":
 						case "an":
 						case "acodec":
-						case "af":
 						case "sn":
 						case "scodec":
 						case "stag":
@@ -241,6 +249,11 @@ namespace WebOne
 						case "spre":
 						case "f":
 							FFmpegArgs += string.Format(" -{0} {1}", Arg.Key, Arg.Value);
+							continue;
+						case "vf":
+						case "af":
+						case "filter":
+							//ffmpeg filters parsed above
 							continue;
 						default:
 							Log.WriteLine(" Unsupported argument: {0}", Arg.Key);
