@@ -35,11 +35,11 @@ namespace WebOne
 					"    <table border='0' width='100%'>" +
 					"        <tr>" +
 					"            <td align='right'>Video</td>" +
-					"            <td align='center' colspan='3'><input type='text'" +
+					"            <td align='center' colspan='4'><input type='text'" +
 					"            size='65' name='url' style='width: 100%'" +
 					"            value='https://www.youtube.com/watch?v=XXXXXXX'></td>" +
 					"            <td align='center' rowspan='3' colspan='2'><input" +
-					"            type='submit' value='Download'" +
+					"            type='submit' value='Load video'" +
 					"            style='height: 70px;'></td>" +
 					"        </tr>" +
 					"        <tr>" +
@@ -65,17 +65,17 @@ namespace WebOne
 					"            title='Video codec'>" +
 					"                <option value='mpeg1video'>MPEG 1</option>" +
 					"                <option value='mpeg2video'>MPEG 2</option>" +
-					"                <option selected value='mpeg4'>MPEG 4</option>" +
+					"                <option value='mpeg4'>MPEG 4</option>" +
 					"                <option value='wmv1'>WMV 7</option>" +
 					"                <option value='wmv2'>WMV 8</option>" +
-					"                <option value='h263'>H.263</option>" +
-					"                <option value='h264'>H.264 AVC</option>" +
+					"                <option value='h263'>H.263</option>" +          //Valid sizes are 128x96, 176x144, 352x288, 704x576, and 1408x1152.
+					"                <option selected value='h264'>H.264 AVC</option>" +
 					"                <option value='hevc'>H.265 HEVC</option>" +
 					"                <option value='theora'>Ogg Theora</option>" +
 					"                <option value='vp8'>VP8</option>" +
 					"                <option value='vp9'>VP9</option>" +
 					"                <option value='mjpeg'>MJPEG</option>" +
-					"                <option value='msvideo1'>MS Video 1</option>" +
+					"                <option value='msvideo1'>MS Video 1</option>" + //width and height must be multiples of 4
 					"                <option value='copy'>(original)</option>" +
 					"            </select> <select name='vf' size='1'" +
 					"            title='Video resolution'>" +
@@ -85,7 +85,13 @@ namespace WebOne
 					"                <option value='scale=\"360:-1\"'>360p</option>" +
 					"                <option value='scale=\"240:-1\"'>240p</option>" +
 					"                <option value='scale=\"144:-1\"'>144p</option>" +
-					"                <option value='scale=\"-1:-1\"'>1:1</option>" +
+					"                <option value='scale=\"1024x768\"'>1024x768</option>" +
+					"                <option value='scale=\"800x600\"'>800x600</option>" +
+					"                <option value='scale=\"640x480\"'>640x480</option>" +
+					"                <option value='scale=\"320x200\"'>320x200</option>" +
+					"                <option value='scale=\"176x144\"'>176x144</option>" +
+					"                <option value='scale=\"128x96\"'>128x96</option>" +
+					"                <option value='scale=\"-1:-1\"'>(original)</option>" +
 					"            </select> &nbsp; <select name='acodec' size='1'" +
 					"            title='Audio codec'>" +
 					"                <option value='mp2'>MPEG 2</option>" +
@@ -102,10 +108,11 @@ namespace WebOne
 					"                <option selected value='1'>Mono</option>" +
 					"                <option value='2'>Stereo</option>" +
 					"            </select></td>" +
+					"            <td>(<a href='http://github.com/atauenis/webone/wiki/YouTube-playback'>?</a>)</td>" +
 					"        </tr>" +
 					"        <tr>" +
 					"            <td align='right'></td>" +
-					"            <td align='center' colspan='3'>" +
+					"            <td align='center' colspan='4'>" +
 					"            <input type='radio'name='type' value='embed'>Embed, " +
 					"            <input type='radio'name='type' value='embedwm' checked>Mplayer2, " +
 					"            <input type='radio' name='type' value='objectwm'>WinMedia, " +
@@ -113,22 +120,21 @@ namespace WebOne
 					"            <input type='radio' name='type' value='dynimg'>DynImg, " +
 					"            <input type='radio' name='type' value='html5'>HTML5, " +
 					"            <input type='radio' name='type' value='link'>link, " +
-					"            <input type='radio' name='type' value='file'>file"+
+					"            <input type='radio' name='type' value='file'>file" +
 					"        </td>" +
 					"        </tr>" +
 					"    </table>" +
 					"</form>" +
 					"" +
-					"<iframe name='player_frame' src='/!player/?type=intro' "+
-					"border='0' width='100%' height='100%' style='border-style: none;'>"+
-					"Sorry, your browser don't support IFRAMEs.</iframe>" +
-					"" +
-					"<p>The feature is in development stage.</p>";
+					"<iframe name='player_frame' src='/!player/?type=intro' " +
+					"border='0' width='100%' height='100%' style='border-style: none;'>" +
+					"Use the toolbar to watch a video.</iframe>"; ;
 					Page.Content = Frameset;
 					break;
 				case "intro":
-					Page.Content = "<p align='center'><big>Use the toolbar below watch a video.</big></p>";
+					Page.Content = "<p align='center'><big>Use the toolbar above to watch a video.</big></p>";
 					Page.AddCss = false;
+					Page.Title = "Video player - INTRO";
 					break;
 				case "embed":
 					// universal AVI - plugin
@@ -137,6 +143,7 @@ namespace WebOne
 					"src='" + VideoUrl + "' autostart='true' style='width: 100%; height: 100%;' />";
 					Page.Content = EmbHtml;
 					Page.AddCss = false;
+					Page.Title = "Video player - Universal";
 					break;
 				case "embedwm":
 					// Windows Media Player - plugin
@@ -146,6 +153,7 @@ namespace WebOne
 					"src='" + VideoUrl + "' autostart='true' style='width: 100%; height: 100%;' />";
 					Page.Content = WMP64html;
 					Page.AddCss = false;
+					Page.Title = "Video player - WMP";
 					break;
 				case "objectns":
 					// ActiveMovie Control or NetShow Player 2.x - ActiveX
@@ -156,6 +164,7 @@ namespace WebOne
 					"</object>";
 					Page.Content = NSActiveXhtml;
 					Page.AddCss = false;
+					Page.Title = "Video player - NetShow ActiveX";
 					break;
 				case "objectwm":
 					// Windows Media Player 6.4 - ActiveX
@@ -166,34 +175,39 @@ namespace WebOne
 					"</object>";
 					Page.Content = WMPActiveXhtml;
 					Page.AddCss = false;
+					Page.Title = "Video player - WMP ActiveX";
 					break;
 				case "html5":
 					Page.Content = "<center><video id='MediaPlayer' src='" + VideoUrl + "' controls='yes' style='width: 100%; height: 100%;'>"
 					+"Try another player type, as HTML5 is not supported.</video></center>";
 					Page.AddCss = false;
 					//idea: made multi-source code with hard-coded containers (ogg, webm, etc)
-					//Only VP8 or VP9 or AV1 video and Vorbis or Opus audio and WebVTT subtitles are supported for WebM.
-					//also for Ogg - the only Ogg Theora+Ogg Vorbis available
+					Page.Title = "Video player - HTML5";
 					break;
 				case "dynimg":
 					// IE 2.0 only (http://www.jmcgowan.com/aviweb.html)
 					// also: https://web.archive.org/web/19990117015933/http://www.microsoft.com/devonly/tech/amov1doc/amsdk008.htm
-					Page.Content = "<IMG DYNSRC='" + VideoUrl + "' CONTROLS SRC='about:logo'>"
-					+ "<br>For use with AVI format and MSIE 2.0, 3.0 only.";
+					// tries to work also in IE 3-6.
+					string PlaceholderUrl = "http://www.linuxtopia.org/HowToGuides/HTML_tutorials/graphics/moonflag.gif";
+					Page.Content = "<center><IMG DYNSRC='" + VideoUrl + "' CONTROLS START='FILEOPEN' SRC='" + PlaceholderUrl + "'></center>";
 					Page.AddCss = false;
+					Page.Title = "Video player - Dynamic Image";
 					break;
 				case "link":
 					Page.Content = "<center><big><a href='" + VideoUrl + "'>Download the video</a></big></center>";
 					Page.AddCss = false;
+					Page.Title = "Video player - link only";
 					break;
 				case "file":
 					Page.Content = "<center>Please wait up to 30 sec.<br>If nothing appear, <a href='" + VideoUrl + "'>click here</a> to download manually.</center>";
 					Page.HttpHeaders.Add("Refresh", "0; url=" + VideoUrl);
 					Page.AddCss = false;
+					Page.Title = "Video player - FILE REDIRECT";
 					break;
 				default:
 					Page.Content = "Unknown player type.";
 					Page.AddCss = false;
+					Page.Title = "Video player - ERROR";
 					break;
 			}
 		}

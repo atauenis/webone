@@ -378,82 +378,12 @@ namespace WebOne
 									if(!VidArgs.ContainsKey("url"))
 									{
 										string HelpMsg =
-										"<p>This page allows download videos from popular sites in preferred format.</p>" +
-										"<center>" +
-										"<form action='/!webvideo/' method='GET'>" +
-										"<table border='0'>" +
-										"<tr>" +
-										"    <td align='right'>Video URL</td>" +
-										"    <td align='center'><input type='text' size='65'" +
-										"    name='url'" +
-										"    value='https://www.youtube.com/watch?v=XXXXXXX'></td>" +
-										"</tr>" +
-										"<tr>" +
-										"    <td align='right'>Format</td>" +
-										"    <td><select name='f' size='1'>" +
-										"        <option selected value='avi'>AVI</option>" +
-										"        <option value='mpeg1video'>MPEG 1</option>" +
-										"        <option value='mpeg2video'>MPEG 2</option>" +
-										"        <option value='mpegts'>MPEG TS</option>" +
-										"        <option value='asf'>Microsoft ASF</option>" +
-										"        <option value='asf_stream'>Microsoft ASF (stream)</option>" +
-										"        <option value='ogg'>Ogg</option>" +
-										"        <option value='webm'>WebM</option>" +
-										"        <option value='swf'>Macromedia Flash</option>" +
-										"    </select></td>" +
-										"</tr>" +
-										"<tr>" +
-										"    <td align='right'>Video</td>" +
-										"    <td><select name='vcodec' size='1'>" +
-										"        <option value='mpeg1video'>MPEG 1</option>" +
-										"        <option selected value='mpeg2video'>MPEG 2</option>" +
-										"        <option value='mpeg4'>MPEG 4</option>" +
-										"        <option value='wmv1'>WMV 7</option>" +
-										"        <option value='wmv2'>WMV 8</option>" +
-										"        <option value='h263'>H.263</option>" +
-										"        <option value='h264'>H.264 AVC</option>" +
-										"        <option value='hevc'>H.265 HEVC</option>" +
-										"        <option value='theora'>Ogg Theora</option>" +
-										"        <option value='vp8'>VP8</option>" +
-										"        <option value='vp9'>VP9</option>" +
-										"        <option value='mjpeg'>MJPEG</option>" +
-										"        <option value='msvideo1'>MS Video 1</option>" +
-										"        <option value='copy'>(original)</option>" +
-										"    </select> <select name='vf' size='1'>" +
-										"        <option value='scale=\"1080:-1\"'>1080p</option>" +
-										"        <option value='scale=\"720:-1\"'>720p</option>" +
-										"        <option selected value='scale=\"480:-1\"'>480p</option>" +
-										"        <option value='scale=\"360:-1\"'>360p</option>" +
-										"        <option value='scale=\"240:-1\"'>240p</option>" +
-										"        <option value='scale=\"144:-1\"'>144p</option>" +
-										"        <option value='scale=\"-1:-1\"'>1:1</option>" +
-										"    </select></td>" +
-										"</tr>" +
-										"<tr>" +
-										"    <td align='right'>Audio</td>" +
-										"    <td><select name='acodec' size='1'>" +
-										"        <option value='mp2'>MPEG 2</option>" +
-										"        <option selected value='mp3'>MPEG 3</option>" +
-										"        <option value='wmav1'>WMA 1</option>" +
-										"        <option value='wmav2'>WMA 2</option>" +
-										"        <option value='pcm_dvd'>PCM</option>" +
-										"        <option value='libvorbis'>Ogg Vorbis</option>" +
-										"        <option value='opus'>Opus</option>" +
-										"        <option value='ra_144'>RealAudio 1</option>" +
-										"        <option value='copy'>(original)</option>" +
-										"    </select> <select name='ac' size='1'>" +
-										"        <option selected value='1'>Mono</option>" +
-										"        <option value='2'>Stereo</option>" +
-										"    </select></td>" +
-										"</tr>" +
-										"<tr>" +
-										"    <td align='center' colspan='2'><input type='submit'" +
-										"    value='Download'></td>" +
-										"</tr>" +
-										"</table>" +
-										"</form>" +
-										"</center>" +
-										"<p>Manual use parameters:</p>" +
+										"<p>WebOne can help download videos from popular sites in preferred format.</p>" +
+										"<p>To download a video, go to <b><a href='/!player/'>Online Video Player</a></b>, enter URL of the video, "+
+										"choose container and codecs valid for your system, and then select <b>file</b> or <b>link</b> option.</p>" +
+										"<p>If you choose <b>file</b> option, the video file will start download automatically. "+
+										"If you choose <b>link</b> option, you will get a link, which can be copied to multimedia player program.</p>"+
+										"<p>Manual use parameters:" +
 										"<ul>" +
 										"<li><b>url</b> - Address of the video (e.g. https://www.youtube.com/watch?v=fPnO26CwqYU or similar)</li>" +
 										"<li><b>f</b> - Target format of the file (e.g. avi)</li>" +
@@ -461,7 +391,7 @@ namespace WebOne
 										"<li><b>acodec</b> - Codec for audio (e.g. mp3)</li>" +
 										"<li><b>content-type</b> - override MIME content type for the file (optional).</li>" +
 										"<li>Also you can use many <i>youtube-dl</i> and <i>ffmpeg</i> options like <b>aspect</b>, <b>b</b>, <b>no-mark-watched</b> and other.</li>" +
-										"</ul>";
+										"</ul></p>";
 										SendInfoPage("Online video converter", "Web video converting", HelpMsg);
 										return;
 									}
@@ -475,10 +405,9 @@ namespace WebOne
 									}
 									else
 									{
-										string ErrMsg = 
-										"<p>" + vid.ErrorMessage + "</p>" + 
-										"<p>Make sure that parameters are correct, and both <i>youtube-dl</i> and <i>ffmpeg</i> are properly installed on the server.</p>"+
-										"<a href='/!webvideo/'>Go back.</a>";
+										string ErrMsg =
+										"<p>" + vid.ErrorMessage + "</p>" +
+										"<p>Make sure that parameters are correct, and both <i>youtube-dl</i> and <i>ffmpeg</i> are properly installed on the server.</p>";
 										SendInfoPage("Online video converter", "Web video converting", ErrMsg);
 										return;
 									}
@@ -1783,7 +1712,6 @@ namespace WebOne
 				HelpString += "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>";
 				HelpString += "<li><a href='/!ftp/'>Web-based FTP client</a>.</li>";
 				HelpString += "<li><a href='/!player/'>Online video player</a>.</li>";
-				HelpString += "<li><a href='/!webvideo/'>Online video downloader</a>.</li>";
 				HelpString += "</ul>";
 			}
 			else if (ConfigFile.DisplayStatusPage == "full")
@@ -1811,7 +1739,6 @@ namespace WebOne
 							  "<li><a href='/!codepages/'>/!codepages/</a> - list of available encodings for OutputEncoding setting</li>" +
 							  "<li><a href='/!img-test/'>/!img-test/</a> - test if ImageMagick is working</li>" +
 							  "<li><a href='/!convert/'>/!convert/</a> - run a file format converter (<a href='/!convert/?src=logo.webp&dest=gif&type=image/gif'>demo</a>)</li>" +
-							  //"<li><a href='/!file/'>/!file/</a> - get a file from WebOne working directory (<a href='/!file/?name=webone.conf&type=text/plain'>demo</a>)</li>" +
 							  "<li><a href='/!clear/'>/!clear/</a> - remove temporary files in WebOne working directory</li>" +
 							  "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>" +
 							  "<li><a href='/!ftp/'>/!ftp/</a> - Web-based FTP client.</li>" +
