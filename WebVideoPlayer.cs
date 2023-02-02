@@ -77,7 +77,16 @@ namespace WebOne
 					"                <option value='mjpeg'>MJPEG</option>" +
 					"                <option value='msvideo1'>MS Video 1</option>" +
 					"                <option value='copy'>(original)</option>" +
-					"            </select> <select name='acodec' size='1'" +
+					"            </select> <select name='vf' size='1'" +
+					"            title='Video resolution'>" +
+					"                <option value='scale=\"1080:-1\"'>1080p</option>" +
+					"                <option value='scale=\"720:-1\"'>720p</option>" +
+					"                <option selected value='scale=\"480:-1\"'>480p</option>" +
+					"                <option value='scale=\"360:-1\"'>360p</option>" +
+					"                <option value='scale=\"240:-1\"'>240p</option>" +
+					"                <option value='scale=\"144:-1\"'>144p</option>" +
+					"                <option value='scale=\"-1:-1\"'>1:1</option>" +
+					"            </select> &nbsp; <select name='acodec' size='1'" +
 					"            title='Audio codec'>" +
 					"                <option value='mp2'>MPEG 2</option>" +
 					"                <option selected value='mp3'>MPEG 3</option>" +

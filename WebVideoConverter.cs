@@ -104,6 +104,11 @@ namespace WebOne
 				// Load all parameters
 				foreach (var Arg in Arguments)
 				{
+					if(Arg.Key.StartsWith("vf") || Arg.Key.StartsWith("af") || Arg.Key.StartsWith("filter"))
+					{
+						FFmpegArgs += string.Format(" -{0} {1}", Arg.Key, Arg.Value);
+						continue;
+					}
 					switch (Arg.Key.ToLowerInvariant())
 					{
 						case "url":
