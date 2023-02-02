@@ -394,16 +394,12 @@ namespace WebOne
 										"        <option selected value='avi'>AVI</option>" +
 										"        <option value='mpeg1video'>MPEG 1</option>" +
 										"        <option value='mpeg2video'>MPEG 2</option>" +
-										"        <option value='mp4'>MPEG 4</option>" +
 										"        <option value='mpegts'>MPEG TS</option>" +
 										"        <option value='asf'>Microsoft ASF</option>" +
 										"        <option value='asf_stream'>Microsoft ASF (stream)</option>" +
-										"        <option value='mov'>QuickTime</option>" +
 										"        <option value='ogg'>Ogg</option>" +
 										"        <option value='webm'>WebM</option>" +
 										"        <option value='swf'>Macromedia Flash</option>" +
-										"        <option value='rm'>RealMedia</option>" +
-										"        <option value='3gp'>3GPP</option>" +
 										"    </select></td>" +
 										"</tr>" +
 										"<tr>" +
@@ -418,6 +414,8 @@ namespace WebOne
 										"        <option value='h264'>H.264 AVC</option>" +
 										"        <option value='hevc'>H.265 HEVC</option>" +
 										"        <option value='theora'>Ogg Theora</option>" +
+										"        <option value='vp8'>VP8</option>" +
+										"        <option value='vp9'>VP9</option>" +
 										"        <option value='mjpeg'>MJPEG</option>" +
 										"        <option value='msvideo1'>MS Video 1</option>" +
 										"        <option value='copy'>(original)</option>" +
@@ -432,6 +430,7 @@ namespace WebOne
 										"        <option value='wmav2'>WMA 2</option>" +
 										"        <option value='pcm_dvd'>PCM</option>" +
 										"        <option value='libvorbis'>Ogg Vorbis</option>" +
+										"        <option value='opus'>Opus</option>" +
 										"        <option value='ra_144'>RealAudio 1</option>" +
 										"        <option value='copy'>(original)</option>" +
 										"    </select> <select name='ac' size='1'>" +

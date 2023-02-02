@@ -49,16 +49,16 @@ namespace WebOne
 					"                <option value='avi'>AVI</option>" +
 					"                <option value='mpeg1video'>MPEG 1</option>" +
 					"                <option value='mpeg2video'>MPEG 2</option>" +
-					"                <option value='mp4'>MPEG 4</option>" +
+					//"                <option value='mp4'>MPEG 4</option>" + //muxer does not support non seekable output
 					"                <option selected value='mpegts'>MPEG TS</option>" +
 					"                <option value='asf'>Microsoft ASF</option>" +
 					"                <option value='asf_stream'>Microsoft ASF (stream)</option>" +
-					"                <option value='mov'>QuickTime</option>" +
-					"                <option value='ogg'>Ogg</option>" +
-					"                <option value='webm'>WebM</option>" +
-					"                <option value='swf'>Macromedia Flash</option>" +
-					"                <option value='rm'>RealMedia</option>" +
-					"                <option value='3gp'>3GPP</option>" +
+					//"                <option value='mov'>QuickTime</option>" + //muxer does not support non seekable output
+					"                <option value='ogg'>Ogg</option>" +              // Theora & Vorbis only
+					"                <option value='webm'>WebM</option>" +            // Only VP8 or VP9 or AV1 video and Vorbis or Opus audio and WebVTT subtitles are supported for WebM.
+					"                <option value='swf'>Macromedia Flash</option>" + // SWF muxer only supports VP6, FLV1 and MJPEG
+					//"                <option value='rm'>RealMedia</option>" + //[rm @ 06cc61c0] Invalid codec tag
+					//"                <option value='3gp'>3GPP</option>" + //muxer does not support non seekable output
 					"            </select></td>" +
 					"            <td align='right'>Codecs</td>" +
 					"            <td align='left'><select name='vcodec' size='1'" +
@@ -72,6 +72,8 @@ namespace WebOne
 					"                <option value='h264'>H.264 AVC</option>" +
 					"                <option value='hevc'>H.265 HEVC</option>" +
 					"                <option value='theora'>Ogg Theora</option>" +
+					"                <option value='vp8'>VP8</option>" +
+					"                <option value='vp9'>VP9</option>" +
 					"                <option value='mjpeg'>MJPEG</option>" +
 					"                <option value='msvideo1'>MS Video 1</option>" +
 					"                <option value='copy'>(original)</option>" +
@@ -83,6 +85,7 @@ namespace WebOne
 					"                <option value='wmav2'>WMA 2</option>" +
 					"                <option value='pcm_dvd'>PCM</option>" +
 					"                <option value='vorbis'>Ogg Vorbis</option>" +
+					"                <option value='opus'>Opus</option>" +
 					"                <option value='ra_144'>RealAudio 1</option>" +
 					"                <option value='copy'>(original)</option>" +
 					"            </select> <select name='ac' size='1'" +
