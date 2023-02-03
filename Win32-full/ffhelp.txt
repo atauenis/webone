@@ -1,3 +1,5 @@
+ffmpeg version n5.1.2-11-g30d432f205-20230202 Copyright (c) 2000-2022 the FFmpeg developers
+
 Hyper fast Audio and Video encoder
 usage: ffmpeg [options] [[infile options] -i infile]... {[outfile options] outfile}...
 
@@ -29,6 +31,7 @@ Print help / information / capabilities:
 -pix_fmts           show available pixel formats
 -layouts            show standard channel layouts
 -sample_fmts        show available audio sample formats
+-dispositions       show available stream dispositions
 -colors             show available color names
 -sources device     list sources of the input device
 -sinks device       list sinks of the output device
@@ -45,8 +48,7 @@ Global options (affect whole program instead of just one file):
 -filter_threads     number of non-complex filter threads
 -filter_complex_threads  number of threads for -filter_complex
 -stats              print progress report during encoding
--max_error_rate maximum error rate  ratio of errors (0.0: no errors, 1.0: 100% errors) above which ffmpeg returns an error instead of success.
--bits_per_raw_sample number  set the number of bits per raw sample
+-max_error_rate maximum error rate  ratio of decoding errors (0.0: no errors, 1.0: 100% errors) above which ffmpeg returns an error instead of success.
 -vol volume         change audio volume (256=normal)
 
 Per-file main options:
@@ -76,9 +78,9 @@ Per-file main options:
 Video options:
 -vframes number     set the number of video frames to output
 -r rate             set frame rate (Hz value, fraction or abbreviation)
+-fpsmax rate        set max frame rate (Hz value, fraction or abbreviation)
 -s size             set frame size (WxH or abbreviation)
 -aspect aspect      set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)
--bits_per_raw_sample number  set the number of bits per raw sample
 -vn                 disable video
 -vcodec codec       force video codec ('copy' to copy stream)
 -timecode hh:mm:ss[:;.]ff  set initial TimeCode value.
