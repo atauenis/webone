@@ -97,6 +97,8 @@ namespace WebOne
 					"                <option value='scale=\"800x600\"'>800x600</option>" +
 					"                <option value='scale=\"640x480\"'>640x480</option>" +
 					"                <option value='scale=\"320x200\"'>320x200</option>" +
+					"                <option value='scale=\"704x576\"'>704x576</option>" +
+					"                <option value='scale=\"352x288\"'>352x288</option>" +
 					"                <option value='scale=\"176x144\"'>176x144</option>" +
 					"                <option value='scale=\"128x96\"'>128x96</option>" +
 					"                <option value='scale=\"-1:-1\"'>(original)</option>" +
@@ -106,6 +108,7 @@ namespace WebOne
 					"                <option selected value='mp3'>MPEG 3</option>" +
 					"                <option value='wmav1'>WMA 1</option>" +
 					"                <option value='wmav2'>WMA 2</option>" +
+					"                <option value='aac'>AAC</option>" +
 					"                <option value='pcm_dvd'>PCM</option>" +
 					"                <option value='vorbis -strict -2'>Ogg Vorbis</option>" + // Current FFmpeg Vorbis encoder only supports 2 channels.
 					"                <option value='opus -strict -2'>Opus</option>" +
