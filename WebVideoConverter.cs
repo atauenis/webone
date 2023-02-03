@@ -125,6 +125,8 @@ namespace WebOne
 						case "url":
 						case "content-type":
 						case "filename":
+						case "prefer":
+						case "gui":
 							continue;
 						/*case "dont-convert":
 							if (ToBoolean(Arg.Value))

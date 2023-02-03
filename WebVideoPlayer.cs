@@ -25,6 +25,14 @@ namespace WebOne
 			foreach (string Par in Parameters.AllKeys)
 			{ if (Par != "type") VideoUrl += Par + "=" + HttpUtility.UrlEncode(Parameters[Par]) + "&"; }
 
+			// Initial page & iframe status
+			string SampleUrl = Parameters["url"] ?? "https://www.youtube.com/watch?v=XXXXXXX";
+			string PreferPage = "intro";
+			if(Parameters["gui"]=="1")
+			{
+				Parameters["type"] = null;
+				if (Parameters["prefer"] != null) PreferPage = Parameters["prefer"] + "&url=" + SampleUrl;
+			}
 
 			switch (Parameters["type"])
 			{
@@ -37,7 +45,7 @@ namespace WebOne
 					"            <td align='right'>Video</td>" +
 					"            <td align='center' colspan='4'><input type='text'" +
 					"            size='65' name='url' style='width: 100%'" +
-					"            value='https://www.youtube.com/watch?v=XXXXXXX'></td>" +
+					"            value='" + SampleUrl + "'></td>" +
 					"            <td align='center' rowspan='3' colspan='2'><input" +
 					"            type='submit' value='Load video'" +
 					"            style='height: 70px;'></td>" +
@@ -127,7 +135,7 @@ namespace WebOne
 					"    </table>" +
 					"</form>" +
 					"" +
-					"<iframe name='player_frame' src='/!player/?type=intro' " +
+					"<iframe name='player_frame' src='/!player/?type=" + PreferPage + "' " +
 					"border='0' width='100%' height='100%' style='border-style: none;'>" +
 					"Use the toolbar to watch a video.</iframe>"; ;
 					Page.Content = Frameset;
@@ -203,14 +211,16 @@ namespace WebOne
 					Page.Title = "Video player - WMP ActiveX";
 					break;
 				case "html5":
+					// HTML5 VIDEO tag
 					Page.Content = "<center><video id='MediaPlayer' src='" + VideoUrl + "' controls='yes' style='width: 100%; height: 100%;'>"
-					+"Try another player type, as HTML5 is not supported.</video></center>";
+					+ "Try another player type, as HTML5 is not supported.</video></center>";
 					Page.AddCss = false;
 					//idea: made multi-source code with hard-coded containers (ogg, webm, etc)
 					Page.Title = "Video player - HTML5";
 					break;
 				case "dynimg":
-					// IE 2.0 only (http://www.jmcgowan.com/aviweb.html)
+					// Dynamic Image - IE 2.0 only 
+					// (http://www.jmcgowan.com/aviweb.html)
 					// also: https://web.archive.org/web/19990117015933/http://www.microsoft.com/devonly/tech/amov1doc/amsdk008.htm
 					// tries to work also in IE 3-6.
 					string PlaceholderUrl = "http://www.linuxtopia.org/HowToGuides/HTML_tutorials/graphics/moonflag.gif";
@@ -219,11 +229,14 @@ namespace WebOne
 					Page.Title = "Video player - Dynamic Image";
 					break;
 				case "link":
+					// Link only
 					Page.Content = "<center><big><a href='" + VideoUrl + "'>Download the video</a></big></center>";
+					if (Parameters["f"] == null) Page.Content += "<center><p>Or select format, codecs and convert the video online.</p></center>";
 					Page.AddCss = false;
 					Page.Title = "Video player - link only";
 					break;
 				case "file":
+					// Redirect to file only
 					Page.Content = "<center>Please wait up to 30 sec.<br>If nothing appear, <a href='" + VideoUrl + "'>click here</a> to download manually.</center>";
 					Page.HttpHeaders.Add("Refresh", "0; url=" + VideoUrl);
 					Page.AddCss = false;
