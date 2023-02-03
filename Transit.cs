@@ -390,7 +390,10 @@ namespace WebOne
 										"<li><b>vcodec</b> - Codec for video (e.g. mpeg4)</li>" +
 										"<li><b>acodec</b> - Codec for audio (e.g. mp3)</li>" +
 										"<li><b>content-type</b> - override MIME content type for the file (optional).</li>" +
-										"<li>Also you can use many <i>youtube-dl</i> and <i>ffmpeg</i> options like <b>aspect</b>, <b>b</b>, <b>no-mark-watched</b> and other.</li>" +
+										"<li>Also you can use many <i>" + (ConfigFile.WebVideoOptions["YouTubeDlApp"] ?? "youtube-dl") + 
+										"</i> and <i>" + (ConfigFile.WebVideoOptions["FFmpegApp"] ?? "ffmpeg") + 
+										"</i> options like <b>aspect</b>, <b>b</b>, <b>no-mark-watched</b> and other.</li>" +
+										"<li>Default parameter values are stored in configuration file.</li>" +
 										"</ul></p>";
 										SendInfoPage("Online video converter", "Web video converting", HelpMsg);
 										return;

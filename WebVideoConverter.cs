@@ -127,6 +127,8 @@ namespace WebOne
 						case "filename":
 						case "prefer":
 						case "gui":
+						case "youtubedlapp":
+						case "ffmpegapp":
 							continue;
 						/*case "dont-convert":
 							if (ToBoolean(Arg.Value))
@@ -265,13 +267,13 @@ namespace WebOne
 
 				// Configure Youtube-DL and FFmpeg processes and prepare data stream
 				ProcessStartInfo YoutubeDlStart = new();
-				YoutubeDlStart.FileName = "youtube-dl";
+				YoutubeDlStart.FileName = ConfigFile.WebVideoOptions["YouTubeDlApp"] ?? "youtube-dl";
 				YoutubeDlStart.Arguments = string.Format("\"{0}\"{1} -o -", Arguments["url"], YoutubeDlArgs);
 				YoutubeDlStart.RedirectStandardOutput = true;
 				YoutubeDlStart.RedirectStandardError = true;
 
 				ProcessStartInfo FFmpegStart = new();
-				FFmpegStart.FileName = "ffmpeg";
+				FFmpegStart.FileName = ConfigFile.WebVideoOptions["FFmpegApp"] ?? "ffmpeg";
 				FFmpegStart.Arguments = string.Format("-i pipe: {0} pipe:", FFmpegArgs);
 				FFmpegStart.RedirectStandardInput = true;
 				FFmpegStart.RedirectStandardOutput = true;

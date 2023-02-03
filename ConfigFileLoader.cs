@@ -361,7 +361,7 @@ namespace WebOne
 					case "WebVideoOptions":
 						foreach (ConfigFileOption Line in Section.Options)
 						{
-							if (Line.HaveKeyValue) ConfigFile.WebVideoOptions.Add(new KeyValuePair<string, string>(Line.Key, Line.Value));
+							if (Line.HaveKeyValue) ConfigFile.WebVideoOptions[Line.Key] = Line.Value;
 							else Log.WriteLine(true, false, "Warning: Incorrect online video convert option at {0}.", Line.Location);
 						}
 						break;
