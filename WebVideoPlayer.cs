@@ -76,14 +76,14 @@ namespace WebOne
 					"                <option value='mpeg4'>MPEG 4</option>" +
 					"                <option value='wmv1'>WMV 7</option>" +
 					"                <option value='wmv2'>WMV 8</option>" +
-					"                <option value='h263'>H.263</option>" +          //Valid sizes are 128x96, 176x144, 352x288, 704x576, and 1408x1152.
+					"                <option value='h263'>H.263</option>" +          // Valid sizes are 128x96, 176x144, 352x288, 704x576, and 1408x1152.
 					"                <option selected value='h264'>H.264 AVC</option>" +
 					"                <option value='hevc'>H.265 HEVC</option>" +
 					"                <option value='theora'>Ogg Theora</option>" +
 					"                <option value='vp8'>VP8</option>" +
 					"                <option value='vp9'>VP9</option>" +
 					"                <option value='mjpeg'>MJPEG</option>" +
-					"                <option value='msvideo1'>MS Video 1</option>" + //width and height must be multiples of 4
+					"                <option value='msvideo1'>MS Video 1</option>" + // width and height must be multiples of 4
 					"                <option value='copy'>(original)</option>" +
 					"            </select> <select name='vf' size='1'" +
 					"            title='Video resolution'>" +
@@ -107,8 +107,8 @@ namespace WebOne
 					"                <option value='wmav1'>WMA 1</option>" +
 					"                <option value='wmav2'>WMA 2</option>" +
 					"                <option value='pcm_dvd'>PCM</option>" +
-					"                <option value='vorbis'>Ogg Vorbis</option>" +
-					"                <option value='opus'>Opus</option>" +
+					"                <option value='vorbis -strict -2'>Ogg Vorbis</option>" + // Current FFmpeg Vorbis encoder only supports 2 channels.
+					"                <option value='opus -strict -2'>Opus</option>" +
 					"                <option value='ra_144'>RealAudio 1</option>" +
 					"                <option value='copy'>(original)</option>" +
 					"            </select> <select name='ac' size='1'" +
