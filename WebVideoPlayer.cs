@@ -34,7 +34,7 @@ namespace WebOne
 				if (Parameters["prefer"] != null) PreferPage = Parameters["prefer"] + "&url=" + SampleUrl;
 			}
 
-			if(!Program.ToBoolean(ConfigFile.WebVideoOptions["enable"] ?? "yes"))
+			if(!Program.ToBoolean(ConfigFile.WebVideoOptions["Enable"] ?? "yes"))
 			{
 				Page.Content = "Sorry, proxy server administrator has disabled the online video download feature.";
 				return;
