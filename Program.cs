@@ -868,7 +868,7 @@ namespace WebOne
 		{
 			//from https://stackoverflow.com/posts/21864625/revisions
 			string[] trueStrings = { "1", "y", "yes", "on", "enable", "true" };
-			string[] falseStrings = { "0", "n", "no", "off", "disable", "false" };
+			string[] falseStrings = { "0", "n", "no", "off", "disable", "false", "", null };
 
 
 			if (trueStrings.Contains(s, StringComparer.OrdinalIgnoreCase))
@@ -876,10 +876,11 @@ namespace WebOne
 			if (falseStrings.Contains(s, StringComparer.OrdinalIgnoreCase))
 				return false;
 
-			throw new InvalidCastException("only the following are supported for converting strings to boolean: "
+			throw new InvalidCastException("Only the following are supported for converting strings to boolean: "
 				+ string.Join(",", trueStrings)
 				+ " and "
-				+ string.Join(",", falseStrings));
+				+ string.Join(",", falseStrings)
+				.Replace(",,", "")); //hide empty & null
 		}
 
 	}

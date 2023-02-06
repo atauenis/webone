@@ -122,6 +122,9 @@ namespace WebOne
 					}
 					switch (Arg.Key.ToLowerInvariant())
 					{
+						case "enable":
+							if (!ToBoolean(Arg.Value)) throw new Exception("This feature is disabled by administrator.");
+							continue;
 						case "url":
 						case "content-type":
 						case "filename":
