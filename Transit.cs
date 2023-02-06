@@ -189,6 +189,7 @@ namespace WebOne
 								case "/!/":
 									SendInternalStatusPage();
 									return;
+								case "/!codepages":
 								case "/!codepages/":
 									string codepages = "<p>The following code pages are available: <br>\n" +
 													   "<table><tr><td><b>Name</b></td><td><b>#</b></td><td><b>Description</b></td></tr>\n";
@@ -230,9 +231,11 @@ namespace WebOne
 
 									SendInfoPage("WebOne: List of supported code pages", "Content encodings", codepages);
 									break;
+								case "/!img-test":
 								case "/!img-test/":
 									SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
 									break;
+								case "/!convert":
 								case "/!convert/":
 									string SrcUrl = "", Src = "", Dest = "xbm", DestMime = "image/x-xbitmap", Converter = "convert", Args1 = "", Args2 = "";
 
@@ -366,6 +369,7 @@ namespace WebOne
 									"<p>This converter is not listed in configuration file.</p>" +
 									"<p>See <a href=\"http://github.com/atauenis/webone/wiki\">WebOne wiki</a> for help on this.</p>");
 									break;
+								case "/!webvideo":
 								case "/!webvideo/":
 									Dictionary<string, string> VidArgs = new();
 
@@ -414,9 +418,11 @@ namespace WebOne
 										SendInfoPage("Online video converter", "Web video converting", ErrMsg);
 										return;
 									}
+								case "/!player":
 								case "/!player/":
 									SendInfoPage(new WebVideoPlayer(System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query)).Page);
 									return;
+								case "/!clear":
 								case "/!clear/":
 									int FilesDeleted = 0;
 									foreach (FileInfo file in (new DirectoryInfo(ConfigFile.TemporaryDirectory)).EnumerateFiles("convert-*.*"))
@@ -426,14 +432,15 @@ namespace WebOne
 									}
 									SendError(200, "<b>" + FilesDeleted + "</b> temporary files have been deleted in <i>" + ConfigFile.TemporaryDirectory + "</i>.");
 									return;
-								case "/!ftp/":
 								case "/!ftp":
+								case "/!ftp/":
 									//FTP client
 									SendInfoPage(new FtpClientGUI(ClientRequest).GetPage());
 									return;
+								case "/!pac":
 								case "/!pac/":
-								case "/auto/":
 								case "/auto":
+								case "/auto/":
 								case "/auto.pac":
 								case "/wpad.dat":
 								case "/wpad.da":
