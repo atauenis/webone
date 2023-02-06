@@ -1,73 +1,73 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <AssemblyName>webone</AssemblyName>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
-    <Authors>Alexander Tauenis</Authors>
-    <Version>0.15.0</Version>
-    <VersionSuffix>-pre</VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
-    <PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
-    <Company>World</Company>
-    <Product>WebOne HTTP Proxy Server</Product>
-    <Description>HTTP 1.x proxy that makes old web browsers usable again in the Web 2.0 world.</Description>
-    <RepositoryType>GitHub</RepositoryType>
-    <RepositoryUrl>https://github.com/atauenis/webone/</RepositoryUrl>
-    <StartupObject>WebOne.Program</StartupObject>
-    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-    <Configurations>Debug;Release;ReleaseSC</Configurations>
-    <RuntimeIdentifiers>win-x86;win-x64;win-arm;linux-x64;linux-arm;linux-arm64;osx-x64</RuntimeIdentifiers>
-    <NoWarn>$(NoWarn);NETSDK1179;NETSDK1182</NoWarn>
-    <!-- https://github.com/dotnet/sdk/issues/24269, https://stackoverflow.com/questions/69773547/visual-studio-2019-not-showing-net-6-framework/ -->
-  </PropertyGroup>
+	<PropertyGroup>
+		<AssemblyName>webone</AssemblyName>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net6.0</TargetFramework>
+		<Authors>Alexander Tauenis</Authors>
+		<Version>0.15.0</Version>
+		<VersionSuffix></VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
+		<PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
+		<Company>World</Company>
+		<Product>WebOne HTTP Proxy Server</Product>
+		<Description>HTTP 1.x proxy that makes old web browsers usable again in the Web 2.0 world.</Description>
+		<RepositoryType>GitHub</RepositoryType>
+		<RepositoryUrl>https://github.com/atauenis/webone/</RepositoryUrl>
+		<StartupObject>WebOne.Program</StartupObject>
+		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+		<Configurations>Debug;Release;ReleaseSC</Configurations>
+		<RuntimeIdentifiers>win-x86;win-x64;win-arm;linux-x64;linux-arm;linux-arm64;osx-x64</RuntimeIdentifiers>
+		<NoWarn>$(NoWarn);NETSDK1179;NETSDK1182</NoWarn>
+		<!-- https://github.com/dotnet/sdk/issues/24269, https://stackoverflow.com/questions/69773547/visual-studio-2019-not-showing-net-6-framework/ -->
+	</PropertyGroup>
 
-  <PropertyGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
-    <PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-x64'">amd64</PackageArchitecture>
-    <PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-arm'">armhf</PackageArchitecture>
-    <PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-arm64'">arm64</PackageArchitecture>
-    <PackageName>webone.$(PackageVersion).linux-$(PackageArchitecture)</PackageName>
-  </PropertyGroup>
+	<PropertyGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
+		<PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-x64'">amd64</PackageArchitecture>
+		<PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-arm'">armhf</PackageArchitecture>
+		<PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-arm64'">arm64</PackageArchitecture>
+		<PackageName>webone.$(PackageVersion).linux-$(PackageArchitecture)</PackageName>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="$(RuntimeIdentifier.Contains('win')) OR $(RuntimeIdentifier.Contains('osx'))">
-    <PackageName>WebOne.$(PackageVersion).$(RuntimeIdentifier)</PackageName>
-  </PropertyGroup>
+	<PropertyGroup Condition="$(RuntimeIdentifier.Contains('win')) OR $(RuntimeIdentifier.Contains('osx'))">
+		<PackageName>WebOne.$(PackageVersion).$(RuntimeIdentifier)</PackageName>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="$(Configuration)!='Debug'">
-    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
-    <DebugType>None</DebugType>
-    <DebugSymbols>false</DebugSymbols>
-  </PropertyGroup>
+	<PropertyGroup Condition="$(Configuration)!='Debug'">
+		<CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
+		<DebugType>None</DebugType>
+		<DebugSymbols>false</DebugSymbols>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="$(Configuration)=='Release' AND !$(RuntimeIdentifier.Contains('linux-arm'))">
-    <SelfContained>False</SelfContained>
-  </PropertyGroup>
+	<PropertyGroup Condition="$(Configuration)=='Release' AND !$(RuntimeIdentifier.Contains('linux-arm'))">
+		<SelfContained>False</SelfContained>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="$(Configuration)=='ReleaseSC' OR ($(Configuration)=='Release' AND $(RuntimeIdentifier.Contains('linux-arm')))">
-    <SelfContained>True</SelfContained>
-  </PropertyGroup>
+	<PropertyGroup Condition="$(Configuration)=='ReleaseSC' OR ($(Configuration)=='Release' AND $(RuntimeIdentifier.Contains('linux-arm')))">
+		<SelfContained>True</SelfContained>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="$(RuntimeIdentifier.Contains('win')) AND $(SelfContained)==true">
+	<PropertyGroup Condition="$(RuntimeIdentifier.Contains('win')) AND $(SelfContained)==true">
 		<PackageName>WebOne.$(PackageVersion).$(RuntimeIdentifier).full.self-contained</PackageName>
 	</PropertyGroup>
 
-  <ItemGroup Condition="$(SelfContained)==false">
-    <DebDotNetDependencies Include="dotnet-runtime-6.0" />
-    <RpmDotNetDependencies Include="dotnet-runtime-6.0" />
-  </ItemGroup>
+	<ItemGroup Condition="$(SelfContained)==false">
+		<DebDotNetDependencies Include="dotnet-runtime-6.0" />
+		<RpmDotNetDependencies Include="dotnet-runtime-6.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <DebDependency Include="imagemagick-6.q16" />
-    <DebRecommends Include="ffmpeg" />
-    <DebRecommends Include="youtube-dl" />
-  </ItemGroup>
+	<ItemGroup>
+		<DebDependency Include="imagemagick-6.q16" />
+		<DebRecommends Include="ffmpeg" />
+		<DebRecommends Include="youtube-dl" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <RpmDependency Include="ImageMagick" />
-  </ItemGroup>
+	<ItemGroup>
+		<RpmDependency Include="ImageMagick" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <RuntimeHostConfigurationOption Include="System.Net.SocketsHttpHandler.Http3Support" Value="true" />
-  </ItemGroup>
+	<ItemGroup>
+		<RuntimeHostConfigurationOption Include="System.Net.SocketsHttpHandler.Http3Support" Value="true" />
+	</ItemGroup>
 
 	<ItemGroup Condition="$(SelfContained)==true">
 		<!--
@@ -78,9 +78,9 @@
 		<DebDotNetDependencies Include="libc6, libgcc1, libgssapi-krb5-2, libstdc++6, zlib1g, libssl3 | libssl1.1 | libssl1.0.2 | libssl1.0.1 | libssl1.0.0 | libssl0.9.8, libicu70 | libicu69 | libicu68 | libicu67 | libicu66 | libicu65 | libicu64 | libicu63 | libicu62 | libicu61 | libicu60 | libicu59 | libicu58 | libicu57 | libicu56 | libicu55 | libicu54 | libicu53 | libicu52" />
 	</ItemGroup>
 
-  <PropertyGroup>
-    <PostInstallScript>
-      <![CDATA[
+	<PropertyGroup>
+		<PostInstallScript>
+			<![CDATA[
 WOOldConfDir=/etc/WebOne/
 WOOldConfFile=/etc/WebOne/webone.conf
 WONewConfFile=/etc/webone.conf.d/migrated.conf
@@ -103,9 +103,9 @@ if [ -f /bin/systemctl ]; then
   systemctl enable --now webone
 fi
       ]]>
-    </PostInstallScript>
-    <PreRemoveScript>
-      <![CDATA[
+		</PostInstallScript>
+		<PreRemoveScript>
+			<![CDATA[
 if [ -f /bin/systemctl ]; then
   systemctl stop webone
   systemctl disable webone
@@ -114,116 +114,116 @@ if [ -f /usr/bin/killall ]; then
   killall webone || true
 fi
       ]]>
-    </PreRemoveScript>
-    <PostRemoveScript>
-      <![CDATA[
+		</PreRemoveScript>
+		<PostRemoveScript>
+			<![CDATA[
 if [ -f /bin/systemctl ]; then
   systemctl daemon-reload
 fi
       ]]>
-    </PostRemoveScript>
-  </PropertyGroup>
+		</PostRemoveScript>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="docs/**" />
-    <None Remove="EXE/**" />
-    <None Remove="ImageMagic/**" />
-    <None Remove="Netscape/**" />
-    <None Remove="Screenshots/**" />
-    <None Remove="viewtube/**" />
-    <None Remove="WebFixes/**" />
-    <None Remove="convert.txt" />
-    <None Remove="*.rar" />
-    <None Remove="*.lnk" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="docs/**" />
+		<None Remove="EXE/**" />
+		<None Remove="ImageMagic/**" />
+		<None Remove="Netscape/**" />
+		<None Remove="Screenshots/**" />
+		<None Remove="viewtube/**" />
+		<None Remove="WebFixes/**" />
+		<None Remove="convert.txt" />
+		<None Remove="*.rar" />
+		<None Remove="*.lnk" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Properties\" />
-  </ItemGroup>
+	<ItemGroup>
+		<Folder Include="Properties\" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.7.0" />
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.7.0" />
+		<PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Update="LICENSE.txt">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="README.md">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="CONTRIBUTING.md">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="logo.webp">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<None Update="LICENSE.txt">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="README.md">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="CONTRIBUTING.md">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="logo.webp">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 
-  <ItemGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
-    <Content Include="webone.service" CopyToPublishDirectory="Always" LinuxFileMode="1755">
-        <LinuxPath>/etc/systemd/system/webone.service</LinuxPath>
-    </Content>
-    <Content Include="webone.logrotate" CopyToPublishDirectory="Always" LinuxFileMode="1755">
-        <LinuxPath>/etc/logrotate.d/webone</LinuxPath>
-    </Content>
-  </ItemGroup>
+	<ItemGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
+		<Content Include="webone.service" CopyToPublishDirectory="Always" LinuxFileMode="1755">
+			<LinuxPath>/etc/systemd/system/webone.service</LinuxPath>
+		</Content>
+		<Content Include="webone.logrotate" CopyToPublishDirectory="Always" LinuxFileMode="1755">
+			<LinuxPath>/etc/logrotate.d/webone</LinuxPath>
+		</Content>
+	</ItemGroup>
 
-  <ItemGroup>
-    <Content Include="webone.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
-        <LinuxPath Condition="$(RuntimeIdentifier.Contains('linux'))">/etc/webone.conf</LinuxPath>
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-
-    <Content Include="codepage.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
-        <LinuxPath Condition="$(RuntimeIdentifier.Contains('linux'))">/etc/webone.conf.d/codepage.conf</LinuxPath>
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup Condition="$(RuntimeIdentifier.Contains('win'))">
-    <None Update="convert.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="LICENSE-ImageMagick.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup Condition="$(RuntimeIdentifier.Contains('win')) AND $(SelfContained)==true">
-    <None Include="Win32-full/*.*">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <Link>%(Filename)%(Extension)</Link>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup Condition="$(RuntimeIdentifier.Contains('win')) AND $(Configuration)=='Debug'">
-    <None Include="convert.exe">
+	<ItemGroup>
+		<Content Include="webone.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
+			<LinuxPath Condition="$(RuntimeIdentifier.Contains('linux'))">/etc/webone.conf</LinuxPath>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Win32-full/*.*">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <Link>%(Filename)%(Extension)</Link>
-    </None>
-  </ItemGroup>
+		</Content>
 
-  <ItemGroup Condition="$(RuntimeIdentifier.Contains('osx'))">
-    <None Include="macOS-resforks/*.*">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <Link>__MACOSX/%(Filename)%(Extension)</Link>
-    </None>
-  </ItemGroup>
+		<Content Include="codepage.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
+			<LinuxPath Condition="$(RuntimeIdentifier.Contains('linux'))">/etc/webone.conf.d/codepage.conf</LinuxPath>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
 
-   <ItemGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
-    <Content Include="LinuxAndMacOS/yt.sh" CopyToPublishDirectory="Always" LinuxFileMode="1755">
+	<ItemGroup Condition="$(RuntimeIdentifier.Contains('win'))">
+		<None Update="convert.exe">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="LICENSE-ImageMagick.txt">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup Condition="$(RuntimeIdentifier.Contains('win')) AND $(SelfContained)==true">
+		<None Include="Win32-full/*.*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<Link>%(Filename)%(Extension)</Link>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup Condition="$(Configuration)=='Debug'">
+		<None Include="convert.exe">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Include="Win32-full/*.*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<Link>%(Filename)%(Extension)</Link>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup Condition="$(RuntimeIdentifier.Contains('osx'))">
+		<None Include="macOS-resforks/*.*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<Link>__MACOSX/%(Filename)%(Extension)</Link>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
+		<Content Include="LinuxAndMacOS/yt.sh" CopyToPublishDirectory="Always" LinuxFileMode="1755">
 			<LinuxPath>/usr/share/webone/yt.sh</LinuxPath>
-    </Content>
-  </ItemGroup>
+		</Content>
+	</ItemGroup>
 
-  <ItemGroup Condition="$(RuntimeIdentifier.Contains('osx'))">
-    <Content Include="LinuxAndMacOS/yt.sh" CopyToPublishDirectory="Always">
-      <Link>yt.sh</Link>
-    </Content>
-  </ItemGroup>
+	<ItemGroup Condition="$(RuntimeIdentifier.Contains('osx'))">
+		<Content Include="LinuxAndMacOS/yt.sh" CopyToPublishDirectory="Always">
+			<Link>yt.sh</Link>
+		</Content>
+	</ItemGroup>
 </Project>
