@@ -16,7 +16,7 @@ Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET 6.0 Runtime are required on se
 
 ## Image and video converting
 * Picture format converting is performing via `convert` utility from ImageMagick (bundled with WebOne).
-* To watch YouTube.com videos through proxy, install `ffmpeg` together with `youtube-dl` (included in `win-x64.Full` zips, and can be installed manually on Linux/macOS).
+* To watch YouTube.com videos through proxy, install `ffmpeg` together with `youtube-dl` (included in `win-x64.full` zips, and can be installed manually on Linux/macOS).
 
 ## Install
 Manuals about how to set up a WebOne proxy on [Windows](https://github.com/atauenis/webone/wiki/Windows-installation) / [Linux](https://github.com/atauenis/webone/wiki/Linux-installation) / [macOS](https://github.com/atauenis/webone/wiki/MacOS-X-installation) servers are in the Wiki.
@@ -65,7 +65,7 @@ Any questions can be written on official [VOGONS thread](https://www.vogons.org/
 ## Who are the author(s)?
 Currently the project is maintained by a single person, Alexander Tauenis (ATauenis).
 
-## How to contribute
+## How to contribute help
 WebOne project welcomes any help in the development. Forks, pull requests, or bug reports are welcome.
 
 # Описание по-русски
@@ -78,6 +78,7 @@ __WebOne__ - прокси-сервер HTTP, позволяющий открыв
 * Корректирование частей текстового трафика (например, патчинг JS или XML/CDF/RSS).
 * Конвертация или пережатие графических и видеофайлов "на лету" (используя внешние конвертеры).
 * Переадресация с несуществующих адресов на Web Archive.
+* Скачивание и конвертация видео с YouTube для воспроизведения на старых ПК в браузере.
 
 Этот прокси-сервер необходимо запускать на любом современном ПК с Microsoft .NET 6.0 Runtime, IP адрес которого указывается в настройках устаревшего веб-обозревателя. Порт по умолчанию 8080, тип прокси HTTP 1.0. Доступен файл автоматической настройки: http://proxyhost:port/auto.pac .
 
@@ -92,7 +93,7 @@ __WebOne__ - прокси-сервер HTTP, позволяющий открыв
 
 Файл протокола (__webone.log__) по умолчанию сохраняется по адресу ``/var/log/webone.log`` или `` C:\Users\username\AppData\Roaming\webone.log``.
 
-На Linux используются конвертеры из пакетов __imagemagick__ (convert) и __ffmpeg__. В Windows-версии прилагается конвертер **convert**, а в Full-версии дополнительно имеется **ffmpeg** и **youtube-dl** с вспомогательным скриптом для скачивания видео с YouTube (**yt.bat**, **yt.sh**).
+На Linux используются конвертеры из пакетов __imagemagick__ (convert) и __ffmpeg__. В Windows-версии прилагается конвертер **convert**, а в Full-версии дополнительно имеются **ffmpeg** и **youtube-dl**.
 
 Проект открыт для всех желающих присоединиться к разработке. Автор и основатель проекта: Александр Тауенис (ATauenis).
 
