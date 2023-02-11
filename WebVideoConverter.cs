@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using static WebOne.Program;
@@ -325,6 +326,9 @@ namespace WebOne
 					Process YoutubeDl = Process.Start(YoutubeDlStart);
 					Process FFmpeg = Process.Start(FFmpegStart);
 
+					// Calculate approximately end time
+					DateTime EndTime = DateTime.Now.AddSeconds(30);
+
 					// Enable Youtube-DL error handling
 					YoutubeDl.ErrorDataReceived += (o, e) =>
 					{
@@ -339,6 +343,14 @@ namespace WebOne
 						{
 							Log.WriteLine(false, false, " youtube-dl: {0}", e.Data);
 						}
+						if (e.Data != null && Regex.IsMatch(e.Data, @"\[download\].*ETA (\d\d:\d\d:\d\d|\d\d:\d\d)"))
+						{
+							Match match = Regex.Match(e.Data, @"\[download\].*ETA (\d\d:\d\d:\d\d|\d\d:\d\d)");
+							//assuming, it's succcessfull & have 2 groups
+
+							string ETA = (Regex.IsMatch(match.Groups[1].Value, @"\d\d:\d\d:\d\d")) ? match.Groups[1].Value : "00:" + match.Groups[1].Value;
+							EndTime = DateTime.Now.Add(TimeSpan.Parse(ETA));
+						}
 					};
 					YoutubeDl.BeginErrorReadLine();
 
@@ -352,17 +364,23 @@ namespace WebOne
 					// Initialize idleness hunters
 					new Task(() =>
 					{
-						Thread.Sleep(60000);
+						while (DateTime.Now < EndTime) { Thread.Sleep(1000); }
 						float YoutubeDlCpuLoad = 0;
 						while (!YoutubeDl.HasExited)
-						{ Thread.Sleep(1000); PreventProcessIdle(ref YoutubeDl, ref YoutubeDlCpuLoad, Log); }
+						{
+							Thread.Sleep(1000);
+							PreventProcessIdle(ref YoutubeDl, ref YoutubeDlCpuLoad, Log);
+						}
 					}).Start();
 					new Task(() =>
 					{
-						Thread.Sleep(60000);
+						while (DateTime.Now < EndTime) { Thread.Sleep(1000); }
 						float FFmpegCpuLoad = 0;
 						while (!FFmpeg.HasExited)
-						{ Thread.Sleep(1000); PreventProcessIdle(ref FFmpeg, ref FFmpegCpuLoad, Log); }
+						{
+							Thread.Sleep(1000);
+							PreventProcessIdle(ref FFmpeg, ref FFmpegCpuLoad, Log);
+						}
 					}).Start();
 
 					// Wait for Youtube-DL & FFmpeg to start working or end with error
