@@ -26,7 +26,8 @@ namespace WebOne
 			{
 				string YoutubeDlArgs = "";
 				string FFmpegArgs = "";
-				//bool NoFFmpeg = false;
+				bool UseFFmpeg = true;
+				bool GetYoutubeJson = false;
 
 				// Check options
 				if (!Arguments.ContainsKey("url"))
@@ -95,6 +96,15 @@ namespace WebOne
 							break;
 					}
 				}
+				if(Arguments.ContainsKey("j") ||
+				   Arguments.ContainsKey("J") ||
+				   Arguments.ContainsKey("dump-json") ||
+				   Arguments.ContainsKey("dump-single-json") ||
+				   Arguments.ContainsKey("print-json"))
+				{
+					PreferredMIME = "application/json";
+					PreferredName = "metadata.json";
+				}
 
 				// Set output file type over auto-detected (if need)
 				if (!Arguments.ContainsKey("content-type"))
@@ -134,10 +144,9 @@ namespace WebOne
 						case "youtubedlapp":
 						case "ffmpegapp":
 							continue;
-						/*case "dont-convert":
-							if (ToBoolean(Arg.Value))
-								NoFFmpeg = true;
-							continue;*/
+						case "noffmpeg":
+							UseFFmpeg = !ToBoolean(Arg.Value);
+							continue;
 						case "abort-on-error":
 						case "ignore-config":
 						case "mark-watched":
@@ -205,6 +214,15 @@ namespace WebOne
 						case "prefer-ffmpeg":
 						case "convert-subs":
 							YoutubeDlArgs += string.Format(" --{0} {1}", Arg.Key, Arg.Value);
+							continue;
+						case "j":
+						case "J":
+						case "dump-json":
+						case "dump-single-json":
+						case "print-json":
+							YoutubeDlArgs += string.Format(" --{0} {1}", Arg.Key, Arg.Value);
+							UseFFmpeg = false;
+							GetYoutubeJson = true;
 							continue;
 						case "loglevel":
 						case "max_alloc":
@@ -281,55 +299,34 @@ namespace WebOne
 				FFmpegStart.Arguments = string.Format("-i pipe: {0} pipe:", FFmpegArgs);
 				FFmpegStart.RedirectStandardInput = true;
 				FFmpegStart.RedirectStandardOutput = true;
+				FFmpegStart.RedirectStandardError = false;
 
 				video.Available = true;
 				video.ErrorMessage = "";
 				video.ContentType = Arguments["content-type"];
 				video.FileName = Arguments["filename"];
 
-/*				if (NoFFmpeg)
+				// Start both processes
+				Process YoutubeDl = null;
+				Process FFmpeg = null;
+				if (UseFFmpeg)
 				{
-					Log.WriteLine(" Video convert: {0} {1}", YoutubeDlStart.FileName, YoutubeDlStart.Arguments);
-					Process YoutubeDl = Process.Start(YoutubeDlStart);
-					video.VideoStream = YoutubeDl.StandardOutput.BaseStream;
-
-					YoutubeDl.ErrorDataReceived += (o, e) =>
-					{
-						Console.WriteLine("{0}", e.Data);
-						if (e.Data != null && e.Data.StartsWith("ERROR:"))
-						{
-							video.Available = false;
-							video.ErrorMessage = "Online video failed to download: " + e.Data[7..];
-							Log.WriteLine(false, false, " youtube-dl: {0}", e.Data);
-						}
-						if (e.Data != null && e.Data.StartsWith("WARNING:"))
-						{
-							Log.WriteLine(false, false, " youtube-dl: {0}", e.Data);
-						}
-					};
-					YoutubeDl.BeginErrorReadLine();
-
-					new Task(() =>
-					{
-						Thread.Sleep(60000);
-						float YoutubeDlCpuLoad = 0;
-						while (!YoutubeDl.HasExited)
-						{ Thread.Sleep(1000); PreventProcessIdle(ref YoutubeDl, ref YoutubeDlCpuLoad, Log); }
-					}).Start();
-
-					Thread.Sleep(5000); //wait for youtube-dl to start work or end with error
+					Log.WriteLine(" Video convert: {0} {1} | {2} {3}", YoutubeDlStart.FileName, YoutubeDlStart.Arguments, FFmpegStart.FileName, FFmpegStart.Arguments);
+					YoutubeDl = Process.Start(YoutubeDlStart);
+					FFmpeg = Process.Start(FFmpegStart);
 				}
 				else
-				{*/
-					// Start both processes
-					Log.WriteLine(" Video convert: {0} {1} | {2} {3}", YoutubeDlStart.FileName, YoutubeDlStart.Arguments, FFmpegStart.FileName, FFmpegStart.Arguments);
-					Process YoutubeDl = Process.Start(YoutubeDlStart);
-					Process FFmpeg = Process.Start(FFmpegStart);
+				{
+					Log.WriteLine(" Video convert: {0} {1}", YoutubeDlStart.FileName, YoutubeDlStart.Arguments);
+					YoutubeDl = Process.Start(YoutubeDlStart);
+				}
 
-					// Calculate approximately end time
-					DateTime EndTime = DateTime.Now.AddSeconds(30);
+				// Calculate approximately end time
+				DateTime EndTime = DateTime.Now.AddSeconds(30);
 
-					// Enable Youtube-DL error handling
+				// Enable Youtube-DL error handling
+				if (!GetYoutubeJson)
+				{
 					YoutubeDl.ErrorDataReceived += (o, e) =>
 					{
 						Console.WriteLine("{0}", e.Data);
@@ -346,46 +343,65 @@ namespace WebOne
 						if (e.Data != null && Regex.IsMatch(e.Data, @"\[download\].*ETA (\d\d:\d\d:\d\d|\d\d:\d\d)"))
 						{
 							Match match = Regex.Match(e.Data, @"\[download\].*ETA (\d\d:\d\d:\d\d|\d\d:\d\d)");
-							//assuming, it's succcessfull & have 2 groups
+											//assuming, it's succcessfull & have 2 groups
 
-							string ETA = (Regex.IsMatch(match.Groups[1].Value, @"\d\d:\d\d:\d\d")) ? match.Groups[1].Value : "00:" + match.Groups[1].Value;
+											string ETA = (Regex.IsMatch(match.Groups[1].Value, @"\d\d:\d\d:\d\d")) ? match.Groups[1].Value : "00:" + match.Groups[1].Value;
 							EndTime = DateTime.Now.Add(TimeSpan.Parse(ETA));
 						}
 					};
 					YoutubeDl.BeginErrorReadLine();
+				}
 
-					// Redirect Youtube-DL STDOUT to FFmpeg STDIN stream, and FFmpeg STDOUT to return stream
-					new Task(() =>
-					{
-						YoutubeDl.StandardOutput.BaseStream.CopyTo(FFmpeg.StandardInput.BaseStream);
-					}).Start();
-					video.VideoStream = FFmpeg.StandardOutput.BaseStream;
+				// (Here FFmpeg error handling might be useful, but it's output is hard to parse)
 
-					// Initialize idleness hunters
-					new Task(() =>
+				// Redirect STDIN/STDOUT streams
+				if (!GetYoutubeJson)
+				{
+					if (UseFFmpeg)
 					{
-						while (DateTime.Now < EndTime) { Thread.Sleep(1000); }
-						float YoutubeDlCpuLoad = 0;
-						while (!YoutubeDl.HasExited)
+						// - Redirect Youtube-DL STDOUT to FFmpeg STDIN stream, and FFmpeg STDOUT to return stream
+						new Task(() =>
 						{
-							Thread.Sleep(1000);
-							PreventProcessIdle(ref YoutubeDl, ref YoutubeDlCpuLoad, Log);
-						}
-					}).Start();
-					new Task(() =>
+							YoutubeDl.StandardOutput.BaseStream.CopyTo(FFmpeg.StandardInput.BaseStream);
+						}).Start();
+						video.VideoStream = FFmpeg.StandardOutput.BaseStream;
+					}
+					else
 					{
-						while (DateTime.Now < EndTime) { Thread.Sleep(1000); }
-						float FFmpegCpuLoad = 0;
-						while (!FFmpeg.HasExited)
-						{
-							Thread.Sleep(1000);
-							PreventProcessIdle(ref FFmpeg, ref FFmpegCpuLoad, Log);
-						}
-					}).Start();
+						// - Redirect Youtube-DL STDOUT to return stream
+						video.VideoStream = YoutubeDl.StandardOutput.BaseStream;
+					}
+				}
+				if(GetYoutubeJson)
+				{
+					// - Redirect Youtube-DL STDERR to return stream (video metadata JSON)
+					video.VideoStream = YoutubeDl.StandardError.BaseStream;
+				}
 
-					// Wait for Youtube-DL & FFmpeg to start working or end with error
-					Thread.Sleep(5000);
-				/*}*/
+				// Initialize idleness hunters
+				new Task(() =>
+				{
+					while (DateTime.Now < EndTime) { Thread.Sleep(1000); }
+					float YoutubeDlCpuLoad = 0;
+					while (!YoutubeDl.HasExited)
+					{
+						Thread.Sleep(1000);
+						PreventProcessIdle(ref YoutubeDl, ref YoutubeDlCpuLoad, Log);
+					}
+				}).Start();
+				if(UseFFmpeg) new Task(() =>
+				{
+					while (DateTime.Now < EndTime) { Thread.Sleep(1000); }
+					float FFmpegCpuLoad = 0;
+					while (!FFmpeg.HasExited)
+					{
+						Thread.Sleep(1000);
+						PreventProcessIdle(ref FFmpeg, ref FFmpegCpuLoad, Log);
+					}
+				}).Start();
+
+				// Wait for Youtube-DL & FFmpeg to start working or end with error
+				Thread.Sleep(5000);
 			}
 			catch (Exception VidCvtError)
 			{
