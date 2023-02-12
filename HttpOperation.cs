@@ -101,10 +101,13 @@ namespace WebOne
 						throw new ArgumentException("Bad RemoteHttpVersion option in configuration file");
 				}
 			}
-
+			
 			foreach (var rqhdr in RequestHeaders.AllKeys)
 			{
-				if (!rqhdr.StartsWith("Proxy-") && rqhdr != "Host" && rqhdr != "Content-Encoding")
+				if (!rqhdr.StartsWith("Proxy-") &&
+				rqhdr != "Host" && 
+				rqhdr != "Content-Encoding" &&
+				rqhdr != "Accept-Encoding")
 					Request.Headers.TryAddWithoutValidation(rqhdr, RequestHeaders[rqhdr]);
 			}
 			if (RequestStream != null)
@@ -164,6 +167,14 @@ namespace WebOne
 			}
 
 			foreach (var rshdr in Response.Content.Headers)
+			{
+				foreach (var rshdrval in rshdr.Value)
+				{
+					ResponseHeaders.Add(rshdr.Key, rshdrval);
+				}
+			}
+
+			foreach (var rshdr in Response.TrailingHeaders)
 			{
 				foreach (var rshdrval in rshdr.Value)
 				{
