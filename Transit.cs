@@ -1245,6 +1245,11 @@ namespace WebOne
 						{
 							ClientResponse.AppendHeader(header, corrvalue);
 						}
+
+						if (header == "Content-Length")
+						{
+							ClientResponse.ContentLength64 = long.Parse(corrvalue);
+						}
 					}
 				}
 		}
