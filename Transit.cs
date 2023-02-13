@@ -907,6 +907,22 @@ namespace WebOne
 					ErrorMessage += "<br>URL: " + RequestURL.AbsoluteUri;
 					SendInfoPage("WebOne: Operation timeout", ErrorMessageHeader, ErrorMessage);
 				}
+				catch (System.IO.InvalidDataException)
+				{
+					Dump("!Decompression failed");
+					BreakTransit = true;
+
+					string ErrorMessageHeader = "Invalid data has been recieved";
+					string ErrorMessage = "<p><big>Cannot decode HTTP data.</big></p>" +
+					"<ul>Remote server may use unsupported HTTP compression algorithm." +
+					"<li>Try to set AllowHttpCompression=false option in configuration file to skip HTTP decompression, which may cause this error due to .NET bug.</li>" +
+					"<li>Installing a newer version of .NET Runtime also <i>may</i> solve the problem.</li>" +
+					"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
+					"</ul>";
+
+					ErrorMessage += "<br>URL: " + RequestURL.AbsoluteUri;
+					SendInfoPage("WebOne: Decompression failed", ErrorMessageHeader, ErrorMessage, 500);
+				}
 				catch (UriFormatException)
 				{
 					Dump("!Invalid URL");
@@ -1879,9 +1895,10 @@ namespace WebOne
 		/// <param name="Title">The information page title</param>
 		/// <param name="Header1">The information page 1st level header (or null if no title)</param>
 		/// <param name="Content">The information page content (HTML)</param>
-		private void SendInfoPage(string Title = null, string Header1 = null, string Content = "No description is available.")
+		/// <param name="StatusCode">The information page HTTP status code</param>
+		private void SendInfoPage(string Title = null, string Header1 = null, string Content = "No description is available.", int StatusCode = 200)
 		{
-			InfoPage infoPage = new(Title, Header1, Content);
+			InfoPage infoPage = new(Title, Header1, Content, StatusCode);
 			SendInfoPage(infoPage);
 		}
 

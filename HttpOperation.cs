@@ -104,10 +104,12 @@ namespace WebOne
 			
 			foreach (var rqhdr in RequestHeaders.AllKeys)
 			{
+				if(rqhdr.EndsWith("-Encoding") && RequestHeaders[rqhdr].Contains("xpress") && ConfigFile.AllowHttpCompression)
+				{ Log.WriteLine(" Warning: This connection to server may use unsupported 'xpress' compression algorithm. Consider set AllowHttpCompression=false to get out some possible errors."); }
+
 				if (!rqhdr.StartsWith("Proxy-") &&
-				rqhdr != "Host" && 
-				rqhdr != "Content-Encoding" &&
-				rqhdr != "Accept-Encoding")
+				!rqhdr.EndsWith("-Encoding") &&
+				rqhdr != "Host")
 					Request.Headers.TryAddWithoutValidation(rqhdr, RequestHeaders[rqhdr]);
 			}
 			if (RequestStream != null)

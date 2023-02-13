@@ -96,7 +96,7 @@ namespace WebOne
 			//initialize system HTTP socket message handler for static HttpClient used by HttpOperation class instances
 			HTTPHandler.SslOptions.RemoteCertificateValidationCallback = CheckServerCertificate;
 			HTTPHandler.AllowAutoRedirect = false;
-			HTTPHandler.AutomaticDecompression = DecompressionMethods.All;
+			HTTPHandler.AutomaticDecompression = ConfigFile.AllowHttpCompression ? DecompressionMethods.All : DecompressionMethods.None;
 			HTTPHandler.UseCookies = false;
 			if(ConfigFile.UpperProxy != ""){
 				if (ConfigFile.UpperProxy == "no" || ConfigFile.UpperProxy == "off" || ConfigFile.UpperProxy == "disable" || ConfigFile.UpperProxy == "false" || ConfigFile.UpperProxy == "direct")

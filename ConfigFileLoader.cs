@@ -244,6 +244,9 @@ namespace WebOne
 									else
 									{ Log.WriteLine(true, false, "Warning: Incorrect RemoteHttpVersion '{0}'.", Option.Value); }
 									break;
+								case "AllowHttpCompression":
+									ConfigFile.AllowHttpCompression = ToBoolean(Option.Value);
+									break;
 								default:
 									Log.WriteLine(true, false, "Warning: Unknown server option {0} in {1}.", Option.Key, Option.Location);
 									break;

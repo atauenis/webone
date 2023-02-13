@@ -180,6 +180,11 @@ namespace WebOne
 		/// </summary>
 		public static Dictionary<string, string> WebVideoOptions = new();
 
+		/// <summary>
+		/// Allow gz/deflate/br compression of remote HTTP connections
+		/// </summary>
+		public static bool AllowHttpCompression = true;
+
 
 
 
