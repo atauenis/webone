@@ -365,6 +365,25 @@ namespace WebOne
 					}
 					Page.Content += "\n</table>";
 
+					//Add the footer toolbar
+					Page.Content += "<br>\n";
+					Page.Content += "<table border='0'>";
+					Page.Content += "<tr>";
+					Page.Content += "<td width='100%'>";
+					string FtpUri = "ftp://";
+					if(Backend.User != "anonymous") { FtpUri += Backend.User + ":" + Backend.Pass + "@"; }
+					FtpUri += Backend.Server;
+					if (Backend.Port != 21) FtpUri += ":" + Backend.Port;
+					FtpUri += Backend.WorkdirPath.Replace("//","/");
+					Page.Content += "<a href='/!ftp/?client=-1&uri=" + Uri.EscapeDataString(FtpUri) + "' title='Files from " + Backend.Server + "'>Permanent link</a> ";
+					Page.Content += "(<a href='" + FtpUri + "' title='" + FtpUri + "'>direct</a>).";
+					Page.Content += "</td>\n";
+					Page.Content += "<td>";
+					Page.Content += "<a href='/!ftp/?client=" + ClientID + "&task=close' title='End this FTP session'>Disconnect</a>.";
+					Page.Content += "</td>\n";
+					Page.Content += "</tr>";
+					Page.Content += "</table>";
+
 					return Page;
 				case "retr":
 					//Download a file
