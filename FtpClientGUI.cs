@@ -415,18 +415,23 @@ namespace WebOne
 					cmd = Backend.TransmitCommand("RETR " + filename);
 					Page.Attachment = datastream2;
 
-					if (filename.ToLower().EndsWith(".txt"))
+					//Prepare for return via HTTP
+					Page.AttachmentContentType = "application/octet-stream";
+					foreach (string ext in ConfigFile.MimeTypes.Keys)
 					{
-						Page.AttachmentContentType = "text/plain";
-						Page.HttpHeaders.Add("Content-Disposition", "inline; filename=\"" + filename + "\"");
-					}
-					else
-					{
-						Page.AttachmentContentType = "application/octet-stream";
-						Page.HttpHeaders.Add("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+						if (filename.ToLower().EndsWith("." + ext))
+						{
+							Page.AttachmentContentType = ConfigFile.MimeTypes[ext];
+							break;
+						}
 					}
 
-					// Close data connection and get "226  Transfer complete" when its time became
+					if (Page.AttachmentContentType == "application/octet-stream")
+					{ Page.HttpHeaders.Add("Content-Disposition", "attachment; filename=\"" + filename + "\""); }
+					else
+					{ Page.HttpHeaders.Add("Content-Disposition", "inline; filename=\"" + filename + "\""); }
+
+					//Close data connection and get "226  Transfer complete" when its time became
 					new Task(() =>
 					{
 						while (datastream2.CanWrite) {}

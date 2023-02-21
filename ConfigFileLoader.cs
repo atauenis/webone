@@ -347,6 +347,19 @@ namespace WebOne
 							}
 						}
 						break;
+					case "MimeTypes":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							if (Line.HaveKeyValue)
+							{
+								ConfigFile.MimeTypes.Add(Line.Key.ToLower(), Line.Value.ToLower());
+							}
+							else
+							{
+								Log.WriteLine(true, false, "Warning: Invalid content type definition at {0}.", Line.Location);
+							}
+						}
+						break;
 					case "PAC":
 						ConfigFile.PAC = "";
 						foreach (ConfigFileOption Line in Section.Options)

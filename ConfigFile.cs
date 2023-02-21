@@ -185,6 +185,11 @@ namespace WebOne
 		/// </summary>
 		public static bool AllowHttpCompression = true;
 
+		/// <summary>
+		/// MIME Content-Types for known file extensions
+		/// </summary>
+		public static Dictionary<string, string> MimeTypes = new();
+
 
 
 
