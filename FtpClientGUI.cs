@@ -226,13 +226,33 @@ namespace WebOne
 
 					//Working with current directory
 					cmd = Backend.TransmitCommand("PWD");
-					Page.Content += "<h2>" + cmd.Result + "</h2>\n";
 					if (cmd.Code != 257)
 					{
 						Page.Content += "<p><b>&quot;Print Working Directory&quot; command has returned an unexpected result:</b> " + cmd.ToString() + "</p>";
 						Page.Content += "<p>Return to <a href='/!ftp/'><b>start page</b></a> and try to connect again.</p>";
 						return Page;
 					}
+
+					Match PWDregex = Regex.Match(cmd.Result, @"""(.*)""");
+					if (PWDregex.Success)
+					{
+						Page.Content += "<h2>";
+						Page.Content += "<b><a href='/!ftp/?client=" + ClientID + "&task=listdir&cwd=" + Uri.EscapeDataString("/") + "'>Server root</a></b>";
+
+						Backend.WorkdirPath = "";
+						foreach (var dir in PWDregex.Groups[1].Value.Split("/"))
+						{
+							Backend.WorkdirPath += dir + "/";
+							if(dir != "")
+							Page.Content += " &raquo; <b><a href='/!ftp/?client=" + ClientID + "&task=listdir&cwd=" + Uri.EscapeDataString(Backend.WorkdirPath) + "'>" + dir + "</a></b>";
+						}
+						Page.Content += "</h2>\n";
+					}
+					else
+					{
+						Page.Content += "<h2>" + cmd.Result + "</h2>\n";
+						Backend.WorkdirPath = "./";
+					}					
 
 					cmd = Backend.TransmitCommand("OPTS UTF8 ON");
 					if (cmd.Code == 200) {/*we have UTF-8 support*/}
@@ -298,17 +318,20 @@ namespace WebOne
 
 					//Format the directory listing
 					Page.Content += "<table>\n";
-					Page.Content += "<tr>";
-					Page.Content += "<td>";
-					Page.Content += "[<a href='/!ftp/?client=" + ClientID + "&task=listdir&cwd=..'>..</a>]";
-					Page.Content += "</td>";
-					Page.Content += "<td>";
-					Page.Content += "</td>";
-					Page.Content += "<td>";
-					Page.Content += "</td>";
-					Page.Content += "<td>";
-					Page.Content += "</td>";
-					Page.Content += "</tr>\n";
+					if (Backend.WorkdirPath != "//")
+					{
+						Page.Content += "<tr>";
+						Page.Content += "<td>";
+						Page.Content += "[<a href='/!ftp/?client=" + ClientID + "&task=listdir&cwd=" + Uri.EscapeDataString(Backend.WorkdirPath + "..") + "'>..</a>]";
+						Page.Content += "</td>";
+						Page.Content += "<td>";
+						Page.Content += "</td>";
+						Page.Content += "<td>";
+						Page.Content += "</td>";
+						Page.Content += "<td>";
+						Page.Content += "</td>";
+						Page.Content += "</tr>\n";
+					}
 					foreach (var Item in FileListTable)
 					{
 						string FileName = Item.Name;
@@ -317,7 +340,7 @@ namespace WebOne
 						Page.Content += "<td>";
 						if (Item.Directory && !Item.SymLink)
 						{
-							Page.Content += "[<a href='/!ftp/?client=" + ClientID + "&task=listdir&cwd=" + Uri.EscapeDataString(FileName) + "'>" + FileName + "</a>]";
+							Page.Content += "[<a href='/!ftp/?client=" + ClientID + "&task=listdir&cwd=" + Uri.EscapeDataString(Backend.WorkdirPath + FileName) + "'>" + FileName + "</a>]";
 						}
 						else if (Item.Directory && Item.SymLink)
 						{
@@ -329,7 +352,7 @@ namespace WebOne
 						}
 						else
 						{
-							Page.Content += "<a href='/!ftp/?client=" + ClientID + "&task=retr&name=" + Uri.EscapeDataString(FileName) + "' target='_blank'>" + FileName + "</a>";
+							Page.Content += "<a href='/!ftp/?client=" + ClientID + "&task=retr&name=" + Uri.EscapeDataString(Backend.WorkdirPath + FileName) + "' target='_blank'>" + FileName + "</a>";
 						}
 						Page.Content += "</td>";
 						Page.Content += "<td>";

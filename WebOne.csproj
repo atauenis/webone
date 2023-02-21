@@ -5,7 +5,7 @@
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net6.0</TargetFramework>
 		<Authors>Alexander Tauenis</Authors>
-		<Version>0.15.1</Version>
+		<Version>0.15.2</Version>
 		<VersionSuffix></VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
 		<PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
 		<Company>World</Company>

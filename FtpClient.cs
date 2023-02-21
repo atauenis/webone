@@ -19,6 +19,7 @@ namespace WebOne
 
 		public string FtpLog, Server, User, Pass;
 		public int Port = 21;
+		public string WorkdirPath = "";
 
 		TcpClient Client = new();
 		TcpClient PasvClient;
