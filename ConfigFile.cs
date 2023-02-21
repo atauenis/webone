@@ -190,6 +190,10 @@ namespace WebOne
 		/// </summary>
 		public static Dictionary<string, string> MimeTypes = new();
 
+		/// <summary>
+		/// Enable built-in Web-FTP client
+		/// </summary>
+		public static bool EnableWebFtp = true;
 
 
 

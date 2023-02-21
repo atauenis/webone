@@ -247,6 +247,9 @@ namespace WebOne
 								case "AllowHttpCompression":
 									ConfigFile.AllowHttpCompression = ToBoolean(Option.Value);
 									break;
+								case "EnableWebFtp":
+									ConfigFile.EnableWebFtp = ToBoolean(Option.Value);
+									break;
 								default:
 									Log.WriteLine(true, false, "Warning: Unknown server option {0} in {1}.", Option.Key, Option.Location);
 									break;

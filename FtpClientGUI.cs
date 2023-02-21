@@ -41,6 +41,8 @@ namespace WebOne
 		{
 			try
 			{
+				if (!ConfigFile.EnableWebFtp) return GetDisabledPage();
+
 				int.TryParse(RequestArguments["client"], out ClientID);
 				if (ClientID == 0) //new client - welcome him/her
 				{
@@ -453,6 +455,18 @@ namespace WebOne
 					Page.Content += "<p><a href='/!ftp/?client=" + ClientID + "&task=listdir'>Click here</a> to see directory listing.</p>";
 					return Page;
 			}
+		}
+
+		/// <summary>
+		/// Get Web-FTP page, reporting about that the feature is disabled via webone.conf
+		/// </summary>
+		public FtpClientPage GetDisabledPage()
+		{
+			Log.WriteLine("<Web-FTP: disabled.");
+			FtpClientPage Page = new();
+			Page.Header = "Sorry";
+			Page.Content = "The server administrator has disabled FTP browsing via this proxy.";
+			return Page;
 		}
 	}
 
