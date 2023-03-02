@@ -222,7 +222,7 @@ namespace WebOne
 									"<tr><td>DOS &quot;OEM&quot;</td><td>" + GetCodePage("DOS").WebName + "</td></tr>\n" +
 									"<tr><td>MacOS classic</td><td>" + GetCodePage("Mac").WebName + "</td></tr>\n" +
 									"<tr><td>IBM EBCDIC</td><td>" + GetCodePage("EBCDIC").WebName + "</td></tr>\n" +
-									"</table>This list is correct only for language, set on proxy server machine.</p>\n";
+									"</table>Clients without UTF-8 support will got content in these code pages.</p>\n";
 
 									if (!IsOutputEncodingListed && ConfigFile.OutputEncoding != null)
 										codepages += "<br>Current output encoding: <b>" + ConfigFile.OutputEncoding.WebName + "</b> &quot;" + ConfigFile.OutputEncoding.EncodingName + "&quot; (# " + ConfigFile.OutputEncoding.CodePage + ").\n";
