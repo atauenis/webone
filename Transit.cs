@@ -42,6 +42,8 @@ namespace WebOne
 
 		string DumpFile = null;
 
+		bool BreakTransit = false;
+
 		/// <summary>
 		/// Convert a Web 2.0 page to Web 1.0-like page.
 		/// </summary>
@@ -656,8 +658,6 @@ namespace WebOne
 						Log.WriteLine(" URL out of white list.");
 						return;
 					}
-
-				bool BreakTransit = false; //use instead of return
 
 				try
 				{
@@ -1435,6 +1435,7 @@ namespace WebOne
 								SendStream(Cvt.Run(Log, null, ConvertArg1, ConvertArg2, ConvertDest, RequestURL.AbsoluteUri), ContentType, true);
 								//if(operation.Response != null) Log.WriteLine(" '{1}' will download the source again.", null, Converter); //for future
 							}
+							BreakTransit = true;
 							return;
 						}
 					}
