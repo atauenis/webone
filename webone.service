@@ -12,6 +12,9 @@ ExecStart=/usr/local/bin/webone --daemon
 ReadWriteDirectories=-/var/log/
 TimeoutStopSec=10
 Restart=on-failure
+RestartSec=5
+StartLimitInterval=5s
+StartLimitBurst=3
 
 [Install]
 WantedBy=default.target

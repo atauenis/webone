@@ -22,7 +22,7 @@ namespace WebOne
 		/// <param name="FileName">This configuration file name</param>
 		public static void LoadConfigFileContent(string[] Body, string FileName)
 		{
-			Console.WriteLine("Using configuration file {0}.", FileName);
+			// Console.WriteLine("Using configuration file {0}.", FileName);
 
 			for (int i = 0; i < Body.Length; i++)
 			{
@@ -70,7 +70,11 @@ namespace WebOne
 					if (Directory.Exists(@"C:\ProgramData\WebOne\")) DefaultConfigDir = @"C:\ProgramData\WebOne\";
 					break;
 				case PlatformID.Unix:
-					if (Directory.Exists(@"/etc/webone.conf.d/")) DefaultConfigDir = @"/etc/webone.conf.d/";
+					if (Directory.Exists(@"/etc/webone.conf.d/")) 
+                        DefaultConfigDir = @"/etc/webone.conf.d/";
+                    else if(Program.ArgsCustomConfigFile != "") {
+                        DefaultConfigDir = new FileInfo(Program.ArgsCustomConfigFile).DirectoryName + "/webone.conf.d/";
+                    }
 					break;
 					//may be rewritten to a separate function, see Program.GetConfigurationFileName() code
 			}
@@ -109,6 +113,7 @@ namespace WebOne
 		/// <param name="Path">Path of the configuration file.</param>
 		public static void LoadFile(string Path)
 		{
+            Console.WriteLine("Loading config: {0}", Path);
 			Path = ExpandMaskedVariables(Path);
 			if (!File.Exists(Path)) throw new FileNotFoundException();
 

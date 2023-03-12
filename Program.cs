@@ -20,6 +20,7 @@ namespace WebOne
 		private static HTTPServer HTTPS;
 
 		public const string ConfigFileAutoName = "**auto**webone.conf";
+        public static string ArgsCustomConfigFile = "";
 		public static string ConfigFileName = ConfigFileAutoName;
 		public static string OverrideLogFile = "";
 		public static int Port = -1;
@@ -59,7 +60,7 @@ namespace WebOne
 			//load configuration file and set port number
 			try
 			{
-				ConfigFileLoader.LoadFile(GetConfigurationFileName());
+				ConfigFileLoader.LoadFile(ConfigFileName);
 				ConfigFileLoader.ProcessConfiguration();
 				if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Port = Port;
 			}
@@ -220,7 +221,7 @@ namespace WebOne
 
 			foreach (string arg in args)
 			{
-				if (arg.StartsWith("-") || arg.StartsWith("/"))
+				if (arg.StartsWith("-") || (Environment.OSVersion.Platform == PlatformID.Win32NT && arg.StartsWith("/")))
 				{
 					LastWasValue = false;
 					LastArg = new KeyValuePair<string, string>(ArgName, ArgValue);
@@ -248,9 +249,17 @@ namespace WebOne
 			foreach (KeyValuePair<string, string> kvp in Args)
 			{
 				CmdLineOptions.Add(kvp);
-				//Console.WriteLine("Arg: '{0}' = '{1}'", kvp.Key, kvp.Value);
+				// Console.WriteLine("Arg: '{0}' = '{1}'", kvp.Key, kvp.Value);
 				switch (kvp.Key)
 				{
+                    case "/cfg":
+                    case "-cfg":
+                    case "-config":
+                        if (kvp.Value != "" && File.Exists(kvp.Value)) {
+                            ArgsCustomConfigFile = ExpandMaskedVariables(kvp.Value);
+                        } else
+                            Console.WriteLine("Error: Unable to load the specified config: {0}", kvp.Value);
+                        break;
 					case "/l":
 					case "-l":
 					case "--log":
@@ -705,9 +714,13 @@ namespace WebOne
 			{
 				default:
 				case PlatformID.Unix:
-					DefaultConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + "/webone.conf";
-					UserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.config/webone/webone.conf";
-					CommonConfigFile = "/etc/webone.conf";
+                    if(ArgsCustomConfigFile != "") {
+                        DefaultConfigFile = ArgsCustomConfigFile;
+                    } else {
+                        DefaultConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + "/webone.conf";
+                    }
+                    UserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.config/webone/webone.conf";
+                    CommonConfigFile = "/etc/webone.conf";
 					break;
 				case PlatformID.Win32NT:
 					DefaultConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + @"\webone.conf";
@@ -735,7 +748,7 @@ namespace WebOne
 			//try to load webone.conf from common configuration directory
 			if (File.Exists(CommonConfigFile)) return CommonConfigFile;
 
-			throw new Exception("Cannot guess configuration file name. Please run WebOne with full path to the webone.conf specifed.");
+			throw new Exception("Cannot guess configuration file name. Please run WebOne with: -cfg /full/path/to/webone.conf or create webone.conf in program directory.");
 		}
 
 		/// <summary>
