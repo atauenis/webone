@@ -16,13 +16,13 @@ namespace WebOne
 		public static List<ConfigFileSection> RawSections = new List<ConfigFileSection>();
 
 		/// <summary>
-		/// Add all lines from this file onto RawEntries
+		/// Add all lines from this configuration file onto RawEntries
 		/// </summary>
-		/// <param name="Body">This configuration file body</param>
-		/// <param name="FileName">This configuration file name</param>
+		/// <param name="Body">Array of configuration file lines</param>
+		/// <param name="FileName">User-friendly file name</param>
 		public static void LoadConfigFileContent(string[] Body, string FileName)
 		{
-			// Console.WriteLine("Using configuration file {0}.", FileName);
+			Console.WriteLine("Using configuration file {0}.", FileName);
 
 			for (int i = 0; i < Body.Length; i++)
 			{
@@ -68,15 +68,12 @@ namespace WebOne
 			{
 				case PlatformID.Win32NT:
 					if (Directory.Exists(@"C:\ProgramData\WebOne\")) DefaultConfigDir = @"C:\ProgramData\WebOne\";
+					if (!string.IsNullOrEmpty(CustomConfigFile)) DefaultConfigDir = new FileInfo(CustomConfigFile).DirectoryName;
 					break;
 				case PlatformID.Unix:
-					if (Directory.Exists(@"/etc/webone.conf.d/")) 
-                        DefaultConfigDir = @"/etc/webone.conf.d/";
-                    else if(Program.ArgsCustomConfigFile != "") {
-                        DefaultConfigDir = new FileInfo(Program.ArgsCustomConfigFile).DirectoryName + "/webone.conf.d/";
-                    }
+					if (Directory.Exists(@"/etc/webone.conf.d/")) DefaultConfigDir = @"/etc/webone.conf.d/";
+					if (!string.IsNullOrEmpty(CustomConfigFile)) DefaultConfigDir = new FileInfo(CustomConfigFile).DirectoryName;
 					break;
-					//may be rewritten to a separate function, see Program.GetConfigurationFileName() code
 			}
 			Includable = Includable.Replace("%WOConfigDir%", DefaultConfigDir);
 
@@ -113,7 +110,6 @@ namespace WebOne
 		/// <param name="Path">Path of the configuration file.</param>
 		public static void LoadFile(string Path)
 		{
-            Console.WriteLine("Loading config: {0}", Path);
 			Path = ExpandMaskedVariables(Path);
 			if (!File.Exists(Path)) throw new FileNotFoundException();
 
@@ -121,7 +117,9 @@ namespace WebOne
 			if (LoadedFiles.Contains(FullPath)) return; //prevent infinite loops
 			LoadedFiles.Add(FullPath);
 
-			string ShortFileName = new FileInfo(Path).Name;
+			string ShortFileName = Path;
+			if (Path.StartsWith(@"./")) ShortFileName = Path[2..];
+			if (Path.StartsWith(@".\")) ShortFileName = Path[2..];
 			LoadConfigFileContent(File.ReadAllLines(Path), ShortFileName);
 		}
 

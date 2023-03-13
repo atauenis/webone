@@ -65,11 +65,11 @@ namespace WebOne
 						Environment.Version,
 						CommandLineArgs);
 					LogStreamWriter.WriteLine(StartMsg);
-					Console.WriteLine("Using event log file {0}", LogFileName);
+					Console.WriteLine("Using event log file {0}.", LogFileName);
 				}
 				catch (Exception ex)
 				{
-					Console.WriteLine("Cannot use log file {0}: {1}", LogFileName, ex.Message);
+					Console.WriteLine("Cannot use log file {0}: {1}.", LogFileName, ex.Message);
 				}
 			}
 			else
