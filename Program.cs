@@ -742,7 +742,11 @@ namespace WebOne
 					DefaultConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + "/webone.conf";
                     UserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.config/webone/webone.conf";
                     CommonConfigFile = "/etc/webone.conf";
-					//todo: think about macOS
+
+					string MacUserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/Library/Application Support/WebOne/webone.conf";
+					string MacCommonConfigFile = "/Library/Application Support/WebOne/webone.conf";
+					if (File.Exists(MacUserConfigFile)) UserConfigFile = MacUserConfigFile;
+					if (File.Exists(MacCommonConfigFile)) CommonConfigFile = MacCommonConfigFile;
 					break;
 				case PlatformID.Win32NT:
 					CurrentDirConfigFile = @".\webone.conf";

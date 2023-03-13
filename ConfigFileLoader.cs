@@ -67,14 +67,24 @@ namespace WebOne
 			switch (Environment.OSVersion.Platform)
 			{
 				case PlatformID.Win32NT:
-					if (Directory.Exists(@"C:\ProgramData\WebOne\")) DefaultConfigDir = @"C:\ProgramData\WebOne\";
-					if (!string.IsNullOrEmpty(CustomConfigFile)) DefaultConfigDir = new FileInfo(CustomConfigFile).DirectoryName;
+					string WinDefaultConfigDir = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + @"\WebOne\";
+					string WinUserDefaultConfigDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\WebOne\";
+					if (Directory.Exists(WinDefaultConfigDir)) DefaultConfigDir = WinDefaultConfigDir;
+					if (Directory.Exists(WinUserDefaultConfigDir)) DefaultConfigDir = WinUserDefaultConfigDir;
 					break;
 				case PlatformID.Unix:
-					if (Directory.Exists(@"/etc/webone.conf.d/")) DefaultConfigDir = @"/etc/webone.conf.d/";
-					if (!string.IsNullOrEmpty(CustomConfigFile)) DefaultConfigDir = new FileInfo(CustomConfigFile).DirectoryName;
+					string LinuxDefaultConfigDir = "/etc/webone.conf.d/";
+					string LinuxUserDefaultConfigDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.config/webone/";
+					string MacOSDefaultConfigDir = "/Library/Application Support/WebOne/";
+					string MacOSUserDefaultConfigDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/Library/Application Support/WebOne/";
+					if (Directory.Exists(LinuxDefaultConfigDir)) DefaultConfigDir = LinuxDefaultConfigDir;
+					if (Directory.Exists(LinuxUserDefaultConfigDir)) DefaultConfigDir = LinuxUserDefaultConfigDir;
+					if (Directory.Exists(MacOSDefaultConfigDir)) DefaultConfigDir = MacOSDefaultConfigDir;
+					if (Directory.Exists(MacOSUserDefaultConfigDir)) DefaultConfigDir = MacOSUserDefaultConfigDir;
 					break;
 			}
+			if (ConfigFileName.StartsWith("./") || ConfigFileName.StartsWith(@".\")) DefaultConfigDir = ".";
+			if (!string.IsNullOrEmpty(CustomConfigFile)) DefaultConfigDir = new FileInfo(CustomConfigFile).DirectoryName;
 			Includable = Includable.Replace("%WOConfigDir%", DefaultConfigDir);
 
 			if (Includable.Contains('*') || Includable.Contains('?')) //it's a file mask
