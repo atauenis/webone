@@ -938,7 +938,7 @@ namespace WebOne
 				}
 
 				//look in Web Archive if 404
-				if (!BreakTransit && ResponseCode >= 403 && ConfigFile.SearchInArchive)
+				if (!BreakTransit && ResponseCode >= 403 && ConfigFile.SearchInArchive && ClientRequest.HttpMethod != "POST" && ClientRequest.HttpMethod != "PUT")
 				{
 					LookInWebArchive();
 				}
