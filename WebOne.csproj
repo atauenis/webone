@@ -5,7 +5,7 @@
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net6.0</TargetFramework>
 		<Authors>Alexander Tauenis</Authors>
-		<Version>0.15.2</Version>
+		<Version>0.15.3</Version>
 		<VersionSuffix></VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
 		<PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
 		<Company>World</Company>
@@ -125,8 +125,11 @@ fi
 	</PropertyGroup>
 
 	<ItemGroup>
+		<Compile Remove="EXE\**" />
+		<EmbeddedResource Remove="EXE\**" />
 		<None Remove="docs/**" />
 		<None Remove="EXE/**" />
+		<None Remove="EXE\**" />
 		<None Remove="ImageMagic/**" />
 		<None Remove="Netscape/**" />
 		<None Remove="Screenshots/**" />

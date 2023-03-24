@@ -67,11 +67,12 @@ namespace WebOne
 			catch (Exception ConfigLoadException)
 			{
 				Console.WriteLine("Error while loading configuration: {0}", ConfigLoadException.Message);
-				if (!DaemonMode)
+				if (!DaemonMode) try 
 				{
 					Console.WriteLine("\nPress any key to exit.");
 					Console.ReadKey();
 				}
+				catch (InvalidOperationException) { /* prevent crash on non-interactive terminals */ }
 				Log.WriteLine(false, false, "WebOne has been exited due to lack of configuration.");
 				return;
 			}
@@ -193,12 +194,12 @@ namespace WebOne
 
 			if (HTTPS.Working) HTTPS.Stop();
 
-			if (!DaemonMode && !Environment.HasShutdownStarted && !ShutdownInitiated)
+			if (!DaemonMode && !Environment.HasShutdownStarted && !ShutdownInitiated) try
 			{
-
 				Console.WriteLine("\nPress any key to exit.");
 				Console.ReadKey();
 			}
+			catch (InvalidOperationException) { /* prevent crash on non-interactive terminals */ }
 
 			Log.WriteLine(false, false, "WebOne has been exited.");
 			Environment.ExitCode = Code;
@@ -725,11 +726,12 @@ namespace WebOne
 				else
 				{
 					Console.WriteLine("ERROR: Custom configuration file is not found: {0}.", CustomConfigFile);
-					if (!DaemonMode)
+					if (!DaemonMode) try
 					{
 						Console.WriteLine("\nPress any key to exit.");
 						Console.ReadKey();
 					}
+					catch (InvalidOperationException) { /* prevent crash on non-interactive terminals (#87) */ }
 					Environment.Exit(0);
 				}
 			}
