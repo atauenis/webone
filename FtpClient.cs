@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 
 namespace WebOne
 {
@@ -136,14 +136,67 @@ namespace WebOne
 
 			try
 			{
-				StreamReader streamReader = new StreamReader(networkStream);
-				return new FtpResponse(streamReader.ReadLine());
+				string[] ResponseLines = ReadLines(networkStream);
+				if(ResponseLines.Length > 0) return new FtpResponse(ResponseLines[0]);
+				else return new FtpResponse("000 CLIENT ERROR: empty or no response has received");
 			}
 			catch(IOException ioex)
 			{
 				Log.WriteLine("!Errror on NetworkStream: " + ioex.Message);
 				return new FtpResponse("000 CLIENT ERROR: unexpected close of NetworkStream");
 			}
+		}
+
+		/// <summary>
+		/// Read all server messages from incoming network buffer
+		/// </summary>
+		/// <param name="NetStream">Network stream used to commuicate with server</param>
+		/// <returns>All lines from server response</returns>
+		public string[] ReadLines(NetworkStream NetStream)
+		{
+			StreamReader streamReader = new(NetStream);
+			List<string> Lines = new();
+
+			bool Reading = true;
+			int Ticks = 0;
+			int Timeout = 1000;
+
+			while (Reading)
+			{
+				while(true)
+				{
+					//waited for availability?
+					if (NetStream.DataAvailable)
+					{
+						Ticks = 0;
+						Timeout = 25;
+						break;
+					}
+
+					//wait until Timeout
+					Thread.Sleep(1);
+					Ticks++;
+
+					//after end of patience - break
+					if (Ticks > Timeout) 
+					{
+						Reading = false;
+						break;
+					}
+				}
+
+				if (NetStream.DataAvailable == false)
+				{
+					//wait was useless
+					break;
+				}
+				else
+				{
+					//there is data
+					Lines.Add(streamReader.ReadLine());
+				}
+			}
+			return Lines.ToArray();
 		}
 
 		/// <summary>
@@ -158,11 +211,9 @@ namespace WebOne
 				if (!networkStream.CanWrite || !networkStream.CanRead)
 					return new FtpResponse("000 CLIENT ERROR: cannot use NetworkStream");
 
-				byte[] receiveBytes = new byte[Client.ReceiveBufferSize];
-				networkStream.ReadTimeout = 10000;
-				networkStream.Read(receiveBytes, 0, Client.ReceiveBufferSize);
-
-				return new FtpResponse(Encoding.ASCII.GetString(receiveBytes));
+				string[] ResponseLines = ReadLines(networkStream);
+				if (ResponseLines.Length > 0) return new FtpResponse(ResponseLines[0]);
+				else return new FtpResponse("000 CLIENT ERROR: empty or no response has received");
 			}
 			catch
 			{
