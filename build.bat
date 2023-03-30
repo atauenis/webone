@@ -1,4 +1,4 @@
-@echo WebOne build script	23.06.2022
+@echo WebOne build script	30.03.2023
 @echo.
 
 @echo Clean up directories:
@@ -32,6 +32,8 @@ dotnet deb --no-restore -c ReleaseSC -r linux-arm64
 dotnet rpm --no-restore -c ReleaseSC -r linux-arm64
 dotnet publish -c Release -r osx-x64
 dotnet zip --no-restore -c Release -r osx-x64
+dotnet publish -c Release -r osx-arm64
+dotnet zip --no-restore -c Release -r osx-arm64
 dotnet publish -c Release -r win-x86
 dotnet zip --no-restore -c Release -r win-x86
 dotnet zip --no-restore -c ReleaseSC -r win-x86
