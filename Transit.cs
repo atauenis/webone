@@ -212,6 +212,7 @@ namespace WebOne
 										if (GetCodePage("Win").CodePage == cp.CodePage) codepages += "Windows &quot;ANSI&quot;";
 										if (GetCodePage("DOS").CodePage == cp.CodePage) codepages += "DOS &quot;OEM&quot;";
 										if (GetCodePage("Mac").CodePage == cp.CodePage) codepages += "MacOS classic";
+										if (GetCodePage("ISO").CodePage == cp.CodePage) codepages += "ISO";
 										if (GetCodePage("EBCDIC").CodePage == cp.CodePage) codepages += "IBM EBCDIC";
 										codepages += "</td>";*/
 										codepages += "</td></tr>\n";
@@ -223,7 +224,8 @@ namespace WebOne
 									"<tr><td>Windows &quot;ANSI&quot;</td><td>" + GetCodePage("Win").WebName + "</td></tr>\n" +
 									"<tr><td>DOS &quot;OEM&quot;</td><td>" + GetCodePage("DOS").WebName + "</td></tr>\n" +
 									"<tr><td>MacOS classic</td><td>" + GetCodePage("Mac").WebName + "</td></tr>\n" +
-									"<tr><td>IBM EBCDIC</td><td>" + GetCodePage("EBCDIC").WebName + "</td></tr>\n" +
+									"<tr><td>ISO</td><td>" + GetCodePage("ISO").WebName + "</td></tr>\n" +
+									"<tr><td>EBCDIC</td><td>" + GetCodePage("EBCDIC").WebName + "</td></tr>\n" +
 									"</table>Clients without UTF-8 support will got content in these code pages.</p>\n";
 
 									if (!IsOutputEncodingListed && ConfigFile.OutputEncoding != null)
