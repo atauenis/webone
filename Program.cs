@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -322,64 +323,217 @@ namespace WebOne
 		/// <param name="CP">Code page number.</param>
 		internal static Encoding GetCodePage(string CP)
 		{
-			if (CP == "Windows" || CP == "Win" || CP == "ANSI")
+			switch(CP.ToLower())
 			{
-				return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ANSICodePage);
-			}
-			else if (CP == "DOS" || CP == "OEM")
-			{
-				return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
-			}
-			else if (CP == "Mac" || CP == "Apple")
-			{
-				return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.MacCodePage);
-			}
-			else if (CP == "EBCDIC" || CP == "IBM")
-			{
-				return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.EBCDICCodePage);
-			}
-			else if (CP == "0" || CP == "AsIs")
-			{
-				return null;
-			}
-			else
-			{
-				try
-				{
-					Encoding enc = CodePagesEncodingProvider.Instance.GetEncoding(CP);
-					if (enc == null)
-						try { return CodePagesEncodingProvider.Instance.GetEncoding(int.Parse(CP)); } catch { }
-					else return enc;
-
-					if (enc == null && CP.ToLower().StartsWith("utf"))
+				case "windows":
+				case "win":
+				case "ansi":
+					return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ANSICodePage);
+					/* Microsoft Windows code pages:
+					 * windows-1250	Czech, Polish, Slovak, Hungarian, Slovene, Serbo-Croatian, Montenegrian, Romanian (<1993), Gagauz, Rotokas, Albanian, English, German, Luxembourgish
+					 * windows-1251	Russian, Ukrainian, Belarusian, Bulgarian, Serbian Cyrillic, Bosnian Cyrillic, Macedonian, Rusyn
+					 * windows-1252	(All of ISO-8859-1 plus full support for French and Finnish)
+					 * windows-1253 Greek
+					 * windows-1254	Turkish
+					 * windows-1255	Hebrew
+					 * windows-1256	Arabic
+					 * windows-1257	Estonian, Latvian, Lithuanian, Latgalian
+					 * windows-1258 Vietnamese
+					 * windows-874	Thai
+					 */
+				case "dos":
+				case "oem":
+				case "ascii":
+					return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
+					/* MS-DOS, IBM OS/2 code pages:
+					 * 437	Default: English, German, Swedish
+					 * 720	Arabic in Egypt, Iraq, Jordan, Saudi Arabia, and Syria
+					 * 737	Greek
+					 * 775	Estonian, Lithuanian and Latvian
+					 * 850	West European: at least Spanish, Italian, French
+					 * 852	Bosnian, Croatian, Czech, Hungarian, Polish, Romanian, Moldavian, Serbian, Slovak or Slovene
+					 * 855	Serbian, Macedonian and Bulgarian
+					 * 857	Turkish
+					 * 860	Portuguese (mostly - Brasilian)
+					 * 861	Icelandic
+					 * 862	Hebrew
+					 * 863	French in Canada (mainly in Quebec province)
+					 * 864	Arabic in Egypt, Iraq, Jordan, Saudi Arabia, and Syria (?)
+					 * 865	Danish and Norwegian
+					 * 866	Russian, Ukrainian, Byelarussian
+					 * 874	Thai
+					 * 932	Japan
+					 * 936	Chinese simplified (PRC)
+					 * 949	Korean
+					 * 950	Chinese traditional (Taiwan island)
+					 */
+				case "mac":
+				case "apple":
+					return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.MacCodePage);
+					/* Apple MacOS (Classic) code pages:
+					 * macintosh				(Latin default)
+					 * x-mac-arabic
+					 * x-mac-ce					(Czech, Slovak, Polish, Estonian, Latvian, Lithuanian)
+					 * x-mac-chinesetrad		(Taiwan island)
+					 * x-mac-croatian
+					 * x-mac-cyrillic			(Russian, Bulgarian, Belarusian, Macedonian, Serbian)
+					 * x-mac-greek
+					 * x-mac-hebrew
+					 * x-mac-icelandic
+					 * x-mac-japanese
+					 * x-mac-romanian			(Romanian & Moldavian)
+					 * x-mac-thai
+					 * x-mac-turkish
+					 * x-mac-ukrainian
+					 */
+				case "ebcdic":
+				case "ibm":
+					/* Old IBM mainframes (EBCDIC) code pages:
+					 * ---== To be written ==---
+					 */
+					return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.EBCDICCodePage);
+				case "iso":
+				case "iso-8859":
+				case "iso8859":
+					CultureInfo ci = CultureInfo.CurrentCulture;
+					switch(ci.TwoLetterISOLanguageName.ToLower())
 					{
-						switch (CP.ToLower())
-						{
-							case "utf-7":
-#pragma warning disable SYSLIB0001 // The UTF-7 encoding is insecure since .NET 5.0
-								return Encoding.UTF7;
-#pragma warning restore SYSLIB0001
-							case "utf-8":
-								return Encoding.UTF8;
-							case "utf-16":
-							case "utf-16le":
-								return Encoding.Unicode;
-							case "utf-16be":
-								return Encoding.BigEndianUnicode;
-							case "utf-32":
-							case "utf-32le":
-								return Encoding.UTF32;
-						}
+						default:
+							/*
+							 * ISO-8859-1 = Latin-1 (Western European)
+							 * English, Faeroese, German, Icelandic, Irish, Italian, Norwegian, Portuguese, Rhaeto-Romanic, Scottish Gaelic, Spanish, Catalan, and Swedish
+							 * Danish (partial), Dutch (partial), Finnish (partial), French (partial)
+							 */
+							return CodePagesEncodingProvider.Instance.GetEncoding("iso-8859-1");
+						case "bs":
+						case "pl":
+						case "cr":
+						case "cz":
+						case "sk":
+						case "sl":
+						//case "sr":
+						case "hu":
+							/*
+							 * ISO-8859-2 = Latin-2 (Central European)
+							 * Bosnian, Polish, Croatian, Czech, Slovak, Slovene, Serbian Latin, and Hungarian
+							 */
+							return CodePagesEncodingProvider.Instance.GetEncoding("iso-8859-2");
+						case "mt":
+						case "eo":
+							/*
+							 * ISO-8859-3 = Latin-3 (South European)
+							 * Maltese and Esperanto
+							 */
+							return CodePagesEncodingProvider.Instance.GetEncoding("iso-8859-3");
+						case "kl":
+						case "se":
+							/*
+							 * ISO-8859-4 = Latin-4 (North European)
+							 * Greenlandic, and Sami
+							 * Sometimes also Estonian, Latvian, Lithuanian
+							 */
+							return CodePagesEncodingProvider.Instance.GetEncoding("iso-8859-4");
+						case "be":
+						case "bu":
+						case "mk":
+						case "ru":
+						case "sr":
+						case "ua":
+							/*
+							 * ISO-8859-5 = Cyrillic
+							 * Belarusian, Bulgarian, Macedonian, Russian, Serbian Cyrillic, and Ukrainian (partial)
+							 */
+							return CodePagesEncodingProvider.Instance.GetEncoding("iso-8859-5");
+						case "ar":
+							/*
+							 * ISO-8859-6 = Arabic
+							 * Arabic language
+							 */
+							return CodePagesEncodingProvider.Instance.GetEncoding("iso-8859-6");
+						case "gr":
+							/*
+							 * ISO-8859-7 = Greek
+							 * Modern Greek, Ancient Greek
+							 */
+							return CodePagesEncodingProvider.Instance.GetEncoding("iso-8859-7");
+						case "hw":
+							/*
+							 * ISO-8859-8 = Hebrew
+							 * Hebrew
+							 */
+							return CodePagesEncodingProvider.Instance.GetEncoding("iso-8859-8");
+						case "tr":
+							/*
+							 * ISO-8859-9 = Latin-9 (Turkish)
+							 * Turkish
+							 */
+							return CodePagesEncodingProvider.Instance.GetEncoding("iso-8859-9");
+						//case "es":
+						case "lv":
+						case "lt":
+							/*
+							 * ISO-8859-13 - Latin-7 (Baltic Rim)
+							 * Estonian, Latvian and Lithuanian
+							 */
+							return CodePagesEncodingProvider.Instance.GetEncoding("iso-8859-13");
+						case "fr":
+						case "fi":
+						case "es":
+							/*
+							 * ISO-8859-15 - Latin-9 / Latin-0
+							 * French, Finnish and Estonian.
+							 */
+							return CodePagesEncodingProvider.Instance.GetEncoding("iso-8859-15");
+						/*
+						 * ISO-8859 parts # 10, 11, 12, 14, 16 are not supported by .NET 6.0:
+						 * 10 - Latin-6 (Nordic)
+						 * 11 - Thai
+						 * 12 - Devanagari
+						 * 14 - Latin-8 (Celtic)
+						 * 16 - Latin-10 (South-Eastern)
+						*/
 					}
+				case "0":
+				case "asis":
+					return null;
+				default:
+					//parse from specified number or name
+					try
+					{
+						Encoding enc = CodePagesEncodingProvider.Instance.GetEncoding(CP);
+						if (enc == null)
+							try { return CodePagesEncodingProvider.Instance.GetEncoding(int.Parse(CP)); } catch { }
+						else return enc;
 
-					Log.WriteLine(true, false, "Warning: Unknown codepage {0}, using AsIs. See MSDN 'Encoding.GetEncodings Method' article for list of valid encodings.", CP);
-					return null;
-				}
-				catch (ArgumentException)
-				{
-					Log.WriteLine(true, false, "Warning: Bad codepage {0}, using {1}. Get list of available encodings at http://{2}:{3}/!codepages/.", CP, ConfigFile.OutputEncoding.EncodingName, ConfigFile.DefaultHostName, ConfigFile.Port);
-					return null;
-				}
+						if (enc == null && CP.ToLower().StartsWith("utf"))
+						{
+							switch (CP.ToLower())
+							{
+								case "utf-7":
+#pragma warning disable SYSLIB0001 // The UTF-7 encoding is insecure since .NET 5.0
+									return Encoding.UTF7;
+#pragma warning restore SYSLIB0001
+								case "utf-8":
+									return Encoding.UTF8;
+								case "utf-16":
+								case "utf-16le":
+									return Encoding.Unicode;
+								case "utf-16be":
+									return Encoding.BigEndianUnicode;
+								case "utf-32":
+								case "utf-32le":
+									return Encoding.UTF32;
+							}
+						}
+
+						Log.WriteLine(true, false, "Warning: Unknown codepage {0}, using AsIs. See MSDN 'Encoding.GetEncodings Method' article for list of valid encodings.", CP);
+						return null;
+					}
+					catch (ArgumentException)
+					{
+						Log.WriteLine(true, false, "Warning: Bad codepage {0}, using {1}. Get list of available encodings at http://{2}:{3}/!codepages/.", CP, ConfigFile.OutputEncoding.EncodingName, ConfigFile.DefaultHostName, ConfigFile.Port);
+						return null;
+					}
 			}
 		}
 
