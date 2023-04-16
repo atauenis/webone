@@ -403,8 +403,9 @@ namespace WebOne
 							 * ISO-8859-1 = Latin-1 (Western European)
 							 * English, Faeroese, German, Icelandic, Irish, Italian, Norwegian, Portuguese, Rhaeto-Romanic, Scottish Gaelic, Spanish, Catalan, and Swedish
 							 * Danish (partial), Dutch (partial), Finnish (partial), French (partial)
+							 * Not supported on some macOS servers! To skip NULL return, use CP1252, which is 75% same as Latin-1.
 							 */
-							return CodePagesEncodingProvider.Instance.GetEncoding("iso-8859-1");
+							return CodePagesEncodingProvider.Instance.GetEncoding("iso-8859-1") ?? CodePagesEncodingProvider.Instance.GetEncoding("windows-1252");
 						case "bs":
 						case "pl":
 						case "cr":
