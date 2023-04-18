@@ -18,7 +18,7 @@ namespace WebOne
 	public static class Program
 	{
 		public static LogWriter Log = new LogWriter();
-		private static HTTPServer HTTPS;
+		private static HttpServer HTTPS;
 
 		public const string ConfigFileAutoName = "**auto**webone.conf";
         public static string CustomConfigFile = "";
@@ -47,7 +47,7 @@ namespace WebOne
 			Assembly.GetExecutingAssembly().GetName().Version.Major + "." +
 			Assembly.GetExecutingAssembly().GetName().Version.Minor + "." +
 			Assembly.GetExecutingAssembly().GetName().Version.Build
-			//+ "-pre"
+			+ "-pre"
 			);
 			Variables.Add("WOSystem", Environment.OSVersion.ToString());
 
@@ -118,7 +118,11 @@ namespace WebOne
 			if (!DaemonMode) Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + ConfigFile.Port;
 
 			Log.WriteLine(false, false, "Configured to http://{1}:{2}/, HTTP 1.0", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port);
-			HTTPS = new HTTPServer(ConfigFile.Port);
+
+			if(ConfigFile.EnableNewHttpServer)
+				HTTPS = new HttpServer2(ConfigFile.Port);
+			else
+				HTTPS = new HttpServer1(ConfigFile.Port);
 
 			//start the server from 1 or 2 attempts
 			for (int StartAttempts = 0; StartAttempts < 2; StartAttempts++)

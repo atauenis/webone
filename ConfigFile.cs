@@ -195,6 +195,11 @@ namespace WebOne
 		/// </summary>
 		public static bool EnableWebFtp = true;
 
+		/// <summary>
+		/// Enable new experimental implementation of HTTP server
+		/// </summary>
+		public static bool EnableNewHttpServer = false;
+
 
 
 		// Hint: All parser-related stuff known from v0.2.0 - 0.10.7 has been rewritten and moved to ConfigFileLoader class.
