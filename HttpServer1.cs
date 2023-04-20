@@ -90,19 +90,33 @@ namespace WebOne
 				_listener.BeginGetContext(ProcessRequest, null);
 				HttpListenerRequest req = ctx.Request;
 
-				RawUrl = req.RawUrl;
-				string ClientId = req.RemoteEndPoint.Address.ToString();
-				if (req.Headers["Proxy-Authorization"] != null && req.Headers["Proxy-Authorization"].StartsWith("Basic "))
+				HttpRequest Request = new()
+				{
+					HttpMethod = req.HttpMethod,
+					RawUrl = req.RawUrl,
+					Url = req.Url,
+					ProtocolVersion = req.ProtocolVersion,
+					Headers = req.Headers,
+					HasEntityBody = req.HasEntityBody,
+					InputStream = req.InputStream,
+					RemoteEndPoint = req.RemoteEndPoint,
+					LocalEndPoint = req.LocalEndPoint,
+					IsSecureConnection = false
+				};
+
+				RawUrl = Request.RawUrl;
+				string ClientId = Request.RemoteEndPoint.Address.ToString();
+				if (Request.Headers["Proxy-Authorization"] != null && Request.Headers["Proxy-Authorization"].StartsWith("Basic "))
 				{
 					string ClientUserName = null;
-					ClientUserName = Encoding.Default.GetString(Convert.FromBase64String(req.Headers["Proxy-Authorization"][6..])); //6 = "Basic "
+					ClientUserName = Encoding.Default.GetString(Convert.FromBase64String(Request.Headers["Proxy-Authorization"][6..])); //6 = "Basic "
 					ClientUserName = ClientUserName.Substring(0, ClientUserName.IndexOf(":"));
 					ClientId = ClientUserName + ", " + ClientId;
 				}
-				Logger.WriteLine(">{0} {1} ({2})", req.HttpMethod, req.RawUrl, ClientId);
+				Logger.WriteLine(">{0} {1} ({2})", Request.HttpMethod, Request.RawUrl, ClientId);
 
 				HttpListenerResponse resp = ctx.Response;
-				HttpTransit Tranzit = new HttpTransit(req, resp, Logger);
+				HttpTransit Tranzit = new HttpTransit(Request, resp, Logger);
 				Logger.WriteLine("<Done.");
 			}
 			catch (Exception ex)

@@ -119,10 +119,20 @@ namespace WebOne
 
 			Log.WriteLine(false, false, "Configured to http://{1}:{2}/, HTTP 1.0", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port);
 
-			if(ConfigFile.EnableNewHttpServer)
-				HTTPS = new HttpServer2(ConfigFile.Port);
-			else
-				HTTPS = new HttpServer1(ConfigFile.Port);
+			//initialize server
+			try
+			{
+				if (ConfigFile.EnableNewHttpServer)
+					HTTPS = new HttpServer2(ConfigFile.Port);
+				else
+					HTTPS = new HttpServer1(ConfigFile.Port);
+			}
+			catch (Exception ex)
+			{
+				Log.WriteLine(true, false, "Server initilize failed: {0}", ex.Message);
+				Shutdown(ex.HResult);
+				return;
+			}
 
 			//start the server from 1 or 2 attempts
 			for (int StartAttempts = 0; StartAttempts < 2; StartAttempts++)
@@ -197,7 +207,7 @@ namespace WebOne
 			if (ShutdownInitiated) return;
 			ShutdownInitiated = true;
 
-			if (HTTPS.Working) HTTPS.Stop();
+			if (HTTPS != null && HTTPS.Working) HTTPS.Stop();
 
 			if (!DaemonMode && !Environment.HasShutdownStarted && !ShutdownInitiated) try
 			{

@@ -17,7 +17,7 @@ namespace WebOne
 	internal class FtpClientGUI
 	{
 		LogWriter Log = new();
-		HttpListenerRequest ClientRequest;
+		HttpRequest ClientRequest;
 		NameValueCollection RequestArguments;
 		FtpClientPage Page = new();
 
@@ -26,8 +26,8 @@ namespace WebOne
 		/// <summary>
 		/// Create an instance of Web-FTP client GUI
 		/// </summary>
-		/// <param name="ClientRequest">Request from HttpListener</param>
-		public FtpClientGUI(HttpListenerRequest ClientRequest)
+		/// <param name="ClientRequest">Request from HTTP Listener</param>
+		public FtpClientGUI(HttpRequest ClientRequest)
 		{
 			this.ClientRequest = ClientRequest;
 			RequestArguments = System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query);

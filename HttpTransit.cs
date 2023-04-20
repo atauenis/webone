@@ -14,7 +14,7 @@ namespace WebOne
 	/// </summary>
 	class HttpTransit
 	{
-		HttpListenerRequest ClientRequest;
+		HttpRequest ClientRequest;
 		HttpListenerResponse ClientResponse;
 		LogWriter Log;
 
@@ -47,9 +47,9 @@ namespace WebOne
 		/// <summary>
 		/// Convert a Web 2.0 page to Web 1.0-like page.
 		/// </summary>
-		/// <param name="ClientRequest">Request from HttpListener</param>
+		/// <param name="ClientRequest">Request from HTTP Listener</param>
 		/// <param name="ClientResponse">Response for HttpListener</param>
-		public HttpTransit(HttpListenerRequest ClientRequest, HttpListenerResponse ClientResponse, LogWriter Log)
+		public HttpTransit(HttpRequest ClientRequest, HttpListenerResponse ClientResponse, LogWriter Log)
 		{
 			this.ClientRequest = ClientRequest;
 			this.ClientResponse = ClientResponse;
