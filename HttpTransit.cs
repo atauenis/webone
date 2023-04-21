@@ -20,13 +20,13 @@ namespace WebOne
 
 		byte[] UTF8BOM = Encoding.UTF8.GetPreamble();
 
-		Dictionary<string, string> Variables = new Dictionary<string, string>();
+		Dictionary<string, string> Variables = new();
 
-		Uri RequestURL = new Uri("about:blank");
+		Uri RequestURL = new("about:blank");
 		static string LastURL = "http://999.999.999.999/CON";
 		static HttpStatusCode LastCode = HttpStatusCode.OK;
 		static string LastContentType = "not-a-carousel";
-		List<EditSet> EditSets = new List<EditSet>();
+		List<EditSet> EditSets = new();
 		bool Stop = false;
 		bool LocalMode = false;
 		string LocalIP = "127.0.0.1";
@@ -42,10 +42,8 @@ namespace WebOne
 
 		string DumpFile = null;
 
-		bool BreakTransit = false;
-
 		/// <summary>
-		/// Convert a Web 2.0 page to Web 1.0-like page.
+		/// Initialize the Web 2.0 to Web 1.0 HTTP traffic transit operator.
 		/// </summary>
 		/// <param name="ClientRequest">Request from HTTP Listener</param>
 		/// <param name="ClientResponse">Response for HTTP Listener</param>
@@ -54,6 +52,13 @@ namespace WebOne
 			this.ClientRequest = ClientRequest;
 			this.ClientResponse = ClientResponse;
 			this.Log = Log;
+		}
+
+		/// <summary>
+		/// Convert a Web 2.0 content to Web 1.0-like.
+		/// </summary>
+		public void ProcessTransit()
+		{
 #if DEBUG
 			Log.WriteLine(" Begin process.");
 #endif
@@ -127,7 +132,7 @@ namespace WebOne
 				}
 
 				//get proxy's IP address
-				if(ClientRequest.LocalEndPoint.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+				if (ClientRequest.LocalEndPoint.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
 					LocalIP = ClientRequest.LocalEndPoint.Address.ToString(); // IPv4
 				else
 					LocalIP = "[" + ClientRequest.LocalEndPoint.Address.ToString() + "]"; //IPv6
@@ -234,11 +239,11 @@ namespace WebOne
 										codepages += "<br>Current output encoding: <b>same as source</b>.\n";
 
 									SendInfoPage("WebOne: List of supported code pages", "Content encodings", codepages);
-									break;
+									return;
 								case "/!img-test":
 								case "/!img-test/":
 									SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
-									break;
+									return;
 								case "/!convert":
 								case "/!convert/":
 									string SrcUrl = "", Src = "", Dest = "xbm", DestMime = "image/x-xbitmap", Converter = "convert", Args1 = "", Args2 = "";
@@ -284,7 +289,7 @@ namespace WebOne
 										"<p>Usage: /!convert/?url=https://example.com/filename.ext&dest=gif&type=image/gif<br>" +
 										"or: /!convert/?src=filename.ext&dest=gif&type=image/gif</p>" +
 										"<p>See <a href=\"http://github.com/atauenis/webone/wiki\">WebOne wiki</a> for help on this.</p>");
-										break;
+										return;
 									}
 
 									//find converter and use it
@@ -307,7 +312,7 @@ namespace WebOne
 #if DEBUG
 														Log.WriteLine(">Downloading source stream (connecting)...");
 #else
-													Log.WriteLine(">Downloading source stream...");
+														Log.WriteLine(">Downloading source stream...");
 #endif
 														HOper.SendRequest();
 #if DEBUG
@@ -372,25 +377,25 @@ namespace WebOne
 									SendError(503, "<big>Converter &quot;<b>" + Converter + "</b>&quot; is unknown</big>.<br>" +
 									"<p>This converter is not listed in configuration file.</p>" +
 									"<p>See <a href=\"http://github.com/atauenis/webone/wiki\">WebOne wiki</a> for help on this.</p>");
-									break;
+									return;
 								case "/!webvideo":
 								case "/!webvideo/":
 									Dictionary<string, string> VidArgs = new();
 
-									foreach(string UrlArg in System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query).AllKeys)
+									foreach (string UrlArg in System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query).AllKeys)
 									{
 										if (UrlArg != null)
-										VidArgs[UrlArg] = System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query)[UrlArg];
+											VidArgs[UrlArg] = System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query)[UrlArg];
 									}
 
-									if(!VidArgs.ContainsKey("url"))
+									if (!VidArgs.ContainsKey("url"))
 									{
 										string HelpMsg =
 										"<p>WebOne can help download videos from popular sites in preferred format.</p>" +
-										"<p>To download a video, go to <b><a href='/!player/'>Online Video Player</a></b>, enter URL of the video, "+
+										"<p>To download a video, go to <b><a href='/!player/'>Online Video Player</a></b>, enter URL of the video, " +
 										"choose container and codecs valid for your system, and then select <b>file</b> or <b>link</b> option.</p>" +
-										"<p>If you choose <b>file</b> option, the video file will start download automatically. "+
-										"If you choose <b>link</b> option, you will get a link, which can be copied to multimedia player program.</p>"+
+										"<p>If you choose <b>file</b> option, the video file will start download automatically. " +
+										"If you choose <b>link</b> option, you will get a link, which can be copied to multimedia player program.</p>" +
 										"<p>Manual use parameters:" +
 										"<ul>" +
 										"<li><b>url</b> - Address of the video (e.g. https://www.youtube.com/watch?v=fPnO26CwqYU or similar)</li>" +
@@ -398,8 +403,8 @@ namespace WebOne
 										"<li><b>vcodec</b> - Codec for video (e.g. mpeg4)</li>" +
 										"<li><b>acodec</b> - Codec for audio (e.g. mp3)</li>" +
 										"<li><b>content-type</b> - override MIME content type for the file (optional).</li>" +
-										"<li>Also you can use many <i>" + (ConfigFile.WebVideoOptions["YouTubeDlApp"] ?? "youtube-dl") + 
-										"</i> and <i>" + (ConfigFile.WebVideoOptions["FFmpegApp"] ?? "ffmpeg") + 
+										"<li>Also you can use many <i>" + (ConfigFile.WebVideoOptions["YouTubeDlApp"] ?? "youtube-dl") +
+										"</i> and <i>" + (ConfigFile.WebVideoOptions["FFmpegApp"] ?? "ffmpeg") +
 										"</i> options like <b>aspect</b>, <b>b</b>, <b>no-mark-watched</b> and other.</li>" +
 										"<li>Default parameter values are stored in configuration file.</li>" +
 										"</ul></p>";
@@ -408,7 +413,7 @@ namespace WebOne
 									}
 
 									WebVideo vid = new WebVideoConverter().ConvertVideo(VidArgs, Log);
-									if(vid.Available)
+									if (vid.Available)
 									{
 										ClientResponse.AddHeader("Content-Disposition", "attachment; filename=\"" + vid.FileName + "\"");
 										SendStream(vid.VideoStream, vid.ContentType);
@@ -465,7 +470,7 @@ namespace WebOne
 										ClientResponse.ContentLength64 = PacString.Length;
 										ClientResponse.SendHeaders();
 										ClientResponse.OutputStream.Write(PacBuffer, 0, PacBuffer.Length);
-										ClientResponse.OutputStream.Close();
+										ClientResponse.Close();
 									}
 									catch (Exception pacex)
 									{
@@ -486,7 +491,7 @@ namespace WebOne
 										ClientResponse.ContentLength64 = Robots.Length;
 										ClientResponse.SendHeaders();
 										ClientResponse.OutputStream.Write(RobotsBuffer, 0, RobotsBuffer.Length);
-										ClientResponse.OutputStream.Close();
+										ClientResponse.Close();
 									}
 									catch
 									{
@@ -496,9 +501,8 @@ namespace WebOne
 
 								default:
 									SendError(404, "Unknown internal URL: " + RequestURL.PathAndQuery);
-									break;
+									return;
 							}
-							return;
 						}
 						catch (Exception ex)
 						{
@@ -508,8 +512,10 @@ namespace WebOne
 #else
 							SendError(500, "WebOne cannot process the request because <b>" + ex.Message + "</b>.");
 #endif
+							return;
 						}
 					}
+
 					//local proxy mode: http://localhost/http://example.com/indexr.shtml, http://localhost/http:/example.com/indexr.shtml
 					if (RequestURL.LocalPath.StartsWith("/http:/") || RequestURL.LocalPath.StartsWith("/https:/"))
 					{
@@ -709,11 +715,11 @@ namespace WebOne
 									case "AddDumping":
 										//dump initializing must be first
 										DumpFile = ProcessUriMasks(Edit.Value)
-										.Replace(":","-")
-										.Replace("<","(")
+										.Replace(":", "-")
+										.Replace("<", "(")
 										.Replace(">", ")")
 										.Replace("?", "-")
-										.Replace("|","!");
+										.Replace("|", "!");
 										if (DumpFile.Length > 128) { DumpFile = DumpFile.Substring(0, 128) + "-CUT.log"; } //about half of Windows path limitation
 										Dump(ClientRequest.HttpMethod + " " + ClientRequest.RawUrl + " HTTP/" + ClientRequest.ProtocolVersion.ToString());
 										break;
@@ -781,12 +787,11 @@ namespace WebOne
 					//try to load the page from Archive.org, then return error message if need
 					if (!LookInWebArchive())
 					{
-						BreakTransit = true;
 #if DEBUG
 						//return full debug output
 						string err = GetFullExceptionMessage(httpex);
 						SendInfoPage("WebOne cannot load the page", "Can't load the page: " + httpex.Message, "<i>" + err.ToString().Replace("\n", "<br>") + "</i><br>URL: " + RequestURL.AbsoluteUri + "<br>Debug mode enabled.");
-						BreakTransit = true;
+						return;
 #else
 						//return nice error message
 						string ErrorTitle = "connection error", ErrorMessageHeader = "Cannot load this page", ErrorMessage = "";
@@ -890,14 +895,13 @@ namespace WebOne
 
 						ErrorMessage += "<br>URL: " + RequestURL.AbsoluteUri;
 						SendInfoPage("WebOne: " + ErrorTitle, ErrorMessageHeader, ErrorMessage);
-						BreakTransit = true;
+						return;
 #endif
 					}
 				}
 				catch (System.Threading.Tasks.TaskCanceledException)
 				{
 					Dump("!Connection timeout (100 sec)");
-					BreakTransit = true;
 
 					string ErrorMessageHeader = "The connection has timed out";
 					string ErrorMessage = "<p><big>The request was canceled due to Timeout of 100 seconds elapsing.</big></p>" +
@@ -910,11 +914,11 @@ namespace WebOne
 
 					ErrorMessage += "<br>URL: " + RequestURL.AbsoluteUri;
 					SendInfoPage("WebOne: Operation timeout", ErrorMessageHeader, ErrorMessage);
+					return;
 				}
-				catch (System.IO.InvalidDataException)
+				catch (InvalidDataException)
 				{
 					Dump("!Decompression failed");
-					BreakTransit = true;
 
 					string ErrorMessageHeader = "Invalid data has been recieved";
 					string ErrorMessage = "<p><big>Cannot decode HTTP data.</big></p>" +
@@ -926,30 +930,32 @@ namespace WebOne
 
 					ErrorMessage += "<br>URL: " + RequestURL.AbsoluteUri;
 					SendInfoPage("WebOne: Decompression failed", ErrorMessageHeader, ErrorMessage, 500);
+					return;
 				}
 				catch (UriFormatException)
 				{
 					Dump("!Invalid URL");
-					BreakTransit = true;
+
 					SendError(400, "The URL <b>" + RequestURL.AbsoluteUri + "</b> is not valid.");
+					return;
 				}
 				catch (Exception ex)
 				{
-					BreakTransit = true;
 					try { Dump("!Guru meditation: " + ex.Message); } catch { }
 					Log.WriteLine(" ============GURU MEDITATION:\n{1}\nOn URL '{2}', Method '{3}'. Returning 500.============", null, ex.ToString(), RequestURL.AbsoluteUri, ClientRequest.HttpMethod);
 					SendError(500, "Guru meditaion at URL " + RequestURL.AbsoluteUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace.Replace("\n", "\n<br>") + "</i>");
+					return;
 				}
 
 				//look in Web Archive if 404
-				if (!BreakTransit && ResponseCode >= 403 && ConfigFile.SearchInArchive && ClientRequest.HttpMethod != "POST" && ClientRequest.HttpMethod != "PUT")
+				if (ResponseCode >= 403 && ConfigFile.SearchInArchive && ClientRequest.HttpMethod != "POST" && ClientRequest.HttpMethod != "PUT")
 				{
 					LookInWebArchive();
 				}
 
 				//shorten Web Archive error page if need
-				if (!BreakTransit && ResponseCode >= 403 && RequestURL.AbsoluteUri.StartsWith("http://web.archive.org/web/") && ConfigFile.ShortenArchiveErrors)
-				{					
+				if (ResponseCode >= 403 && RequestURL.AbsoluteUri.StartsWith("http://web.archive.org/web/") && ConfigFile.ShortenArchiveErrors)
+				{
 					Log.WriteLine(" Wayback Machine error page shortened.");
 					switch (ResponseCode)
 					{
@@ -959,31 +965,28 @@ namespace WebOne
 							"<p>Try to slightly change the URL.</p>" +
 							"<small><i>You see this message because ShortenArchiveErrors option is enabled.</i></small>";
 							SendError(404, ErrMsg404);
-							BreakTransit = true;
-							break;
+							return;
 						case 403:
 							string ErrMsg403 =
 							"<p><b>This URL has been excluded from the Wayback Machine.</b></p>" +
 							"<p>This page is not present in Web Archive.</p>" +
 							"<small><i>You see this message because ShortenArchiveErrors option is enabled.</i></small>";
 							SendError(404, ErrMsg403);
-							BreakTransit = true;
-							break;
+							return;
 						default:
 							string ErrMsg000 =
 							"<p><b>The Wayback Machine cannot give this page.</b></p>" +
 							"<p>This is reason: " + ((HttpStatusCode)ResponseCode).ToString() + ".</p>" +
 							"<small><i>You see this message because ShortenArchiveErrors option is enabled.</i></small>";
 							SendError(404, ErrMsg000);
-							BreakTransit = true;
-							break;
+							return;
 					}
 				}
 
 				//try to return...
 				try
 				{
-					if (!BreakTransit)
+					if (true)
 					{
 						ClientResponse.ProtocolVersion = new Version(1, 0);
 						ClientResponse.StatusCode = ResponseCode;
@@ -1039,14 +1042,11 @@ namespace WebOne
 								Dump("\nBody is binary stream");
 							}
 						}
-						ClientResponse.OutputStream.Close();
+						ClientResponse.Close();
 #if DEBUG
 						Log.WriteLine(" Document sent.");
 #endif
 					}
-#if DEBUG
-					else Log.WriteLine(" Original document lost.");
-#endif
 				}
 				catch (Exception ex)
 				{
@@ -1068,6 +1068,23 @@ namespace WebOne
 #if DEBUG
 			Log.WriteLine(" End process.");
 #endif
+		}
+
+		/// <summary>
+		/// Get client identification string (for log).
+		/// </summary>
+		/// <returns>Client's IP address and (if any specified) name used to authorizate.</returns>
+		public string GetClientIdString()
+		{
+			string ClientId = ClientRequest.RemoteEndPoint.Address.ToString();
+			if (ClientRequest.Headers["Proxy-Authorization"] != null && ClientRequest.Headers["Proxy-Authorization"].StartsWith("Basic "))
+			{
+				string ClientUserName = null;
+				ClientUserName = Encoding.Default.GetString(Convert.FromBase64String(ClientRequest.Headers["Proxy-Authorization"][6..])); //6 = "Basic "
+				ClientUserName = ClientUserName.Substring(0, ClientUserName.IndexOf(":"));
+				ClientId = ClientUserName + ", " + ClientId;
+			}
+			return ClientId;
 		}
 
 		/// <summary>
@@ -1118,7 +1135,7 @@ namespace WebOne
 #endif
 						operation.URL = RequestURL;
 
-						if(DumpFile == null)
+						if (DumpFile == null)
 						{ //if normal operation
 							operation.RequestStream = ClientRequest.InputStream;
 						}
@@ -1442,7 +1459,6 @@ namespace WebOne
 								SendStream(Cvt.Run(Log, null, ConvertArg1, ConvertArg2, ConvertDest, RequestURL.AbsoluteUri), ContentType, true);
 								//if(operation.Response != null) Log.WriteLine(" '{1}' will download the source again.", null, Converter); //for future
 							}
-							BreakTransit = true;
 							return;
 						}
 					}
@@ -1683,7 +1699,7 @@ namespace WebOne
 						}
 						else
 						{ //regular redirect to archive
-							//add suffix if need
+						  //add suffix if need
 							if (ConfigFile.ArchiveUrlSuffix != "")
 							{
 								Match AUrlParts = Regex.Match(ArchiveURL, "^http://web.archive.org/web/([0-9]*)/(.*)");
@@ -1721,7 +1737,7 @@ namespace WebOne
 		{
 			if (DumpFile != null)
 			{
-				StreamWriter DumpWriter = new StreamWriter(new FileStream(DumpFile,FileMode.Append));
+				StreamWriter DumpWriter = new StreamWriter(new FileStream(DumpFile, FileMode.Append));
 				DumpWriter.WriteLine(str);
 				DumpWriter.Close();
 			}
@@ -1830,7 +1846,7 @@ namespace WebOne
 				ClientResponse.ContentLength64 = Buffer.Length;
 				ClientResponse.SendHeaders();
 				ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
-				ClientResponse.OutputStream.Close();
+				ClientResponse.Close();
 				Dump("End is internal page: code " + Code + ", " + Text);
 			}
 			catch (Exception ex)
@@ -1857,7 +1873,7 @@ namespace WebOne
 				ClientResponse.SendHeaders();
 				potok.CopyTo(ClientResponse.OutputStream);
 				potok.Close();
-				ClientResponse.OutputStream.Close();
+				ClientResponse.Close();
 			}
 			catch (Exception ex)
 			{
@@ -1892,7 +1908,7 @@ namespace WebOne
 				Potok.CopyTo(ClientResponse.OutputStream);
 				if (Close)
 				{
-					ClientResponse.OutputStream.Close();
+					ClientResponse.Close();
 					Potok.Close();
 				}
 			}
@@ -1924,8 +1940,8 @@ namespace WebOne
 		/// <param name="Page">The information page body</param>
 		private void SendInfoPage(InfoPage Page)
 		{
-			if(Page.HttpHeaders != null)
-			foreach (var hdr in Page.HttpHeaders.AllKeys) ClientResponse.AddHeader(hdr, Page.HttpHeaders[hdr]);
+			if (Page.HttpHeaders != null)
+				foreach (var hdr in Page.HttpHeaders.AllKeys) ClientResponse.AddHeader(hdr, Page.HttpHeaders[hdr]);
 			ClientResponse.StatusCode = Page.HttpStatusCode;
 
 			if (Page.Attachment == null)
@@ -1956,7 +1972,7 @@ namespace WebOne
 					ClientResponse.StatusCode = Page.HttpStatusCode;
 					ClientResponse.ProtocolVersion = new Version(1, 0);
 
-					if(Page.HttpHeaders["Content-Type"] != null)
+					if (Page.HttpHeaders["Content-Type"] != null)
 						ClientResponse.ContentType = Page.HttpHeaders["Content-Type"];
 					else
 						ClientResponse.ContentType = "text/html";
@@ -1965,7 +1981,7 @@ namespace WebOne
 
 					ClientResponse.SendHeaders();
 					ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
-					ClientResponse.OutputStream.Close();
+					ClientResponse.Close();
 					Dump("End is information page: " + Page.Header);
 				}
 				catch (Exception ex)
@@ -2005,7 +2021,7 @@ namespace WebOne
 		/// </summary>
 		public Stream Attachment { get; set; }
 
-		public string AttachmentContentType 
+		public string AttachmentContentType
 		{
 			get { return HttpHeaders["Content-Type"]; }
 			set { HttpHeaders["Content-Type"] = value; }

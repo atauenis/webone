@@ -166,8 +166,8 @@ namespace WebOne
 		public void Close()
 		{
 			if (!HeadersSent) SendHeaders();
-			if (MshttpapiBackend != null) MshttpapiBackend.Close();
-			if (TcpclientBackend != null) TcpclientBackend.Close(); //think about keep-alive!
+			if (MshttpapiBackend != null) { MshttpapiBackend.Close(); return; }
+			if (TcpclientBackend != null) { TcpclientBackend.Close(); return; } //think about keep-alive!
 			throw new Exception("Backend not set.");
 		}
 

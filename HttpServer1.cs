@@ -83,12 +83,13 @@ namespace WebOne
 			Logger.WriteLine("Got a request.");
 #endif
 
-			string RawUrl = "";
+			string RawUrl = null;
 			try
 			{
 				HttpListenerContext ctx = _listener.EndGetContext(ar);
 				_listener.BeginGetContext(ProcessRequest, null);
 				HttpListenerRequest req = ctx.Request;
+				RawUrl = req.RawUrl;
 
 				HttpRequest Request = new()
 				{
@@ -103,25 +104,16 @@ namespace WebOne
 					LocalEndPoint = req.LocalEndPoint,
 					IsSecureConnection = false
 				};
-
-				RawUrl = Request.RawUrl;
-				string ClientId = Request.RemoteEndPoint.Address.ToString();
-				if (Request.Headers["Proxy-Authorization"] != null && Request.Headers["Proxy-Authorization"].StartsWith("Basic "))
-				{
-					string ClientUserName = null;
-					ClientUserName = Encoding.Default.GetString(Convert.FromBase64String(Request.Headers["Proxy-Authorization"][6..])); //6 = "Basic "
-					ClientUserName = ClientUserName.Substring(0, ClientUserName.IndexOf(":"));
-					ClientId = ClientUserName + ", " + ClientId;
-				}
-				Logger.WriteLine(">{0} {1} ({2})", Request.HttpMethod, Request.RawUrl, ClientId);
-
 				HttpResponse Response = new(ctx.Response);
-				HttpTransit Tranzit = new HttpTransit(Request, Response, Logger);
+
+				HttpTransit Transit = new(Request, Response, Logger);
+				Logger.WriteLine(">{0} {1} ({2})", Request.HttpMethod, Request.RawUrl, Transit.GetClientIdString());
+				Transit.ProcessTransit();
 				Logger.WriteLine("<Done.");
 			}
 			catch (Exception ex)
 			{
-				Logger.WriteLine("Broken request ({0}): {1}. Aborted.", RawUrl, ex.Message);
+				Logger.WriteLine("Broken request ({0}): {1}. Aborted.", RawUrl ?? "unknown URL", ex.Message);
 			}
 
 			Load--;
