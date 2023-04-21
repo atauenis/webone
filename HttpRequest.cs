@@ -52,6 +52,21 @@ namespace WebOne
 		public Version ProtocolVersion { get; set; }
 
 		/// <summary>
+		/// Specifies the HTTP version used by the requesting client in text string format (e.g. "HTTP/1.1").
+		/// </summary>
+		/// <returns>A System.String that identifies the client's version of HTTP.</returns>
+		public string ProtocolVersionString
+		{
+			get { return "HTTP/" + ProtocolVersion.ToString(); }
+			set
+			{
+				if (string.IsNullOrWhiteSpace(value)) throw new ArgumentNullException(nameof(value));
+				if (value.Length != "HTTP/1.1".Length) throw new ArgumentException(value + "is not a HTTP protocol version", nameof(value));
+				ProtocolVersion = new Version(value.Substring(5));
+			}
+		}
+
+		/// <summary>
 		/// Specifies the collection of header name/value pairs sent in the request.
 		/// </summary>
 		/// <returns>A System.Net.WebHeaderCollection that contains the HTTP headers included in the request.</returns>

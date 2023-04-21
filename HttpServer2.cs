@@ -1,4 +1,8 @@
 ﻿using System;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using static WebOne.Program;
 
 namespace WebOne
 {
@@ -9,30 +13,160 @@ namespace WebOne
 	{
 		/* This will be new version of HTTP Listener/Server.
 		 * Pluses:   will support in addition to basic HTTP/1.1 also CONNECT method and all possible URIs in requests.
-		 * Minuses:  not written yet =)
+		 * Minuses:  ...time will show...
 		 * https://www.codeproject.com/Articles/93301/Implementing-a-Multithreaded-HTTP-HTTPS-Debugging
 		 */
-		public override bool Working { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
+		private int Port;
+		private static TcpListener Listener;
+		private LogWriter Log = new();
+		private int Load;
+
+		/// <summary>
+		/// Status of this HTTP Server
+		/// </summary>
+		public override bool Working { get; set; }
+
+		/// <summary>
+		/// Initizlize a HTTP Server
+		/// </summary>
+		/// <param name="port">TCP Port to listen on</param>
 		public HttpServer2(int port) : base(port)
 		{
-			throw new NotImplementedException();
+			Port = port;
+			Working = false;
+			Listener = new TcpListener(IPAddress.Loopback, Port);
 		}
 
+		/// <summary>
+		/// Start this HTTP Server
+		/// </summary>
 		public override void Start()
 		{
-			throw new NotImplementedException();
+			Log.WriteLine(true, false, "Starting server...\t\t\t\t     EnableNewHttpServer = yes.");
+			Listener.Start();
+			Listener.BeginAcceptTcpClient(ProcessRequest, null);
+			Working = true;
+			Log.WriteLine(true, false, "Listening for connections on port {0}.", Port);
+			UpdateStatistics();
 		}
 
+		/// <summary>
+		/// Gracefully stop this HTTP Server
+		/// </summary>
 		public override void Stop()
 		{
-			throw new NotImplementedException();
+			Working = false;
+			Log.BeginTime = DateTime.Now;
+			Log.WriteLine(true, true, "Shutdown server...");
+			if (Listener != null)
+			{
+				Listener.Stop();
+			}
+			Log.WriteLine(true, true, "Server stopped.");
 		}
 
-		//   UNDONE. See https://www.codeproject.com/Articles/93301/Implementing-a-Multithreaded-HTTP-HTTPS-Debugging for ideas.
-		//     DONE: unseal HttpListenerRequest
-		//     DONE: unseal HttpListenerResponse
-		//           (both come from HttpListenerContext)
-		//     DONE: edit HttpTransit to use unsealed universal editions of them
+		/// <summary>
+		/// Process a HTTP request (callback for TcpListener)
+		/// </summary>
+		/// <param name="ar">Something from TcpListener</param>
+		private void ProcessRequest(IAsyncResult ar)
+		{
+			if (!Working) return;
+			Load++;
+			UpdateStatistics();
+			LogWriter Logger = new();
+#if DEBUG
+			Logger.WriteLine("Got a request.");
+#endif
+			TcpClient Client = Listener.EndAcceptTcpClient(ar);
+			Listener.BeginAcceptTcpClient(ProcessRequest, null);
+
+			try
+			{
+				Stream clientStream = Client.GetStream();
+				StreamReader clientStreamReader = new(clientStream);
+
+				//read the first line HTTP command
+				string HttpCommand = clientStreamReader.ReadLine();
+				if (string.IsNullOrEmpty(HttpCommand))
+				{
+					clientStreamReader.Close();
+					clientStream.Close();
+					Client.Close();
+					Logger.WriteLine(">Dropped: Empty connection.");
+					return;
+				}
+
+				//break up the line into three components & process it
+				string[] HttpCommandParts = HttpCommand.Split(' ');
+				if (HttpCommandParts.Length != 3 || HttpCommandParts[2].Length != 8)
+				{
+					clientStreamReader.Close();
+					clientStream.Close();
+					Client.Close();
+					Logger.WriteLine(">Dropped: Non-HTTP connection: {0}", HttpCommand);
+					return;
+				}
+				HttpRequest Request = new()
+				{
+					HttpMethod = HttpCommandParts[0],
+					RawUrl = HttpCommandParts[1],
+					ProtocolVersionString = HttpCommandParts[2],
+					Headers = new System.Collections.Specialized.NameValueCollection(),
+					RemoteEndPoint = new IPEndPoint(0, 0), //find how to get it
+					LocalEndPoint = new IPEndPoint(0, 0),  //too
+					IsSecureConnection = false
+				};
+				if(Request.RawUrl.ToLower().StartsWith("http://")
+				|| Request.RawUrl.ToLower().StartsWith("https://")
+				|| Request.RawUrl.ToLower().StartsWith("ftp://")
+				|| Request.RawUrl.ToLower().StartsWith("gopher://")
+				|| Request.RawUrl.ToLower().StartsWith("wais://"))
+				{ Request.Url = new Uri(Request.RawUrl); }
+				else { Request.Url = new Uri("http://" + Variables["Proxy"] + Request.RawUrl); }
+
+				string HttpHeaderLine = null;
+				while (true)
+				{
+					HttpHeaderLine = clientStreamReader.ReadLine();
+					if (string.IsNullOrWhiteSpace(HttpHeaderLine)) break;
+					Request.Headers.Add(HttpHeaderLine.Substring(0, HttpHeaderLine.IndexOf(": ")), HttpHeaderLine.Substring(HttpHeaderLine.IndexOf(": ") + 2));
+				}
+
+
+				HttpResponse Response = new(Client);
+
+				HttpTransit Transit = new(Request, Response, Logger);
+				Logger.WriteLine(">{0} {1} ({2})", Request.HttpMethod, Request.RawUrl, Transit.GetClientIdString());
+				Transit.ProcessTransit();
+
+				Client.Close();
+				Logger.WriteLine("<Done.");
+			}
+			catch (Exception ex)
+			{
+				Logger.WriteLine("Broken request ({0}): {1}. Aborted.", "unknown URL", ex.Message);
+				try { Client.Close(); } catch { }
+			}
+
+			Load--;
+			UpdateStatistics();
+		}
+
+		/// <summary>
+		/// Display count of open requests in app's titlebar
+		/// </summary>
+		private void UpdateStatistics()
+		{
+			if (DaemonMode)
+				Console.Title = string.Format("WebOne (silent) @ {0}:{1} [{2}]", ConfigFile.DefaultHostName, Port, Load, Variables["WOVer"]);
+			else
+				Console.Title = string.Format("WebOne v{3} @ {0}:{1} [{2}]", ConfigFile.DefaultHostName, Port, Load, Variables["WOVer"]);
+		}
+
+
+		// UNDONE: Keep-Alive support!!!
+		// UNDONE: Big memory use (due to many connections?)
 	}
 }

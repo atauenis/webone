@@ -33,6 +33,21 @@ namespace WebOne
 		public Version ProtocolVersion { get; set; }
 
 		/// <summary>
+		/// Gets or sets the HTTP version used by the requesting client in text string format (e.g. "HTTP/1.1").
+		/// </summary>
+		/// <returns>A System.String that identifies the client's version of HTTP.</returns>
+		public string ProtocolVersionString
+		{
+			get { return "HTTP/" + ProtocolVersion.ToString(); }
+			set
+			{
+				if (string.IsNullOrWhiteSpace(value)) throw new ArgumentNullException(nameof(value));
+				if (value.Length != "HTTP/1.1".Length) throw new ArgumentException(value + "is not a HTTP protocol version", nameof(value));
+				ProtocolVersion = new Version(value.Substring(5));
+			}
+		}
+
+		/// <summary>
 		/// Gets or sets the collection of header name/value pairs returned by the server.
 		/// </summary>
 		/// <returns>A System.Net.WebHeaderCollection instance that contains all the explicitly set HTTP headers to be included in the response.</returns>
@@ -102,7 +117,7 @@ namespace WebOne
 		/// <summary>
 		/// TcpClient, used to send this HTTP Response (or null if another backend is used).
 		/// </summary>
-		public TcpClient TcpclientBackend { get { return null; } set { throw new NotImplementedException(); } }
+		public TcpClient TcpclientBackend { get; set; }
 
 
 		/// <summary>
@@ -154,6 +169,11 @@ namespace WebOne
 			if (TcpclientBackend != null)
 			{
 				//will be written
+				StreamWriter ClientStreamWriter = new StreamWriter(TcpclientBackend.GetStream());				
+				ClientStreamWriter.WriteLine(ProtocolVersionString + " " + StatusCode);
+				ClientStreamWriter.WriteLine(Headers.ToString());
+				ClientStreamWriter.WriteLine();
+				ClientStreamWriter.Flush();
 				HeadersSent = true;
 				return;
 			}

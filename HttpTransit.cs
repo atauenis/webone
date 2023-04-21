@@ -1012,7 +1012,7 @@ namespace WebOne
 							if (ClientResponse.ContentLength64 > 300 * 1024) Log.WriteLine(" Sending binary.");
 
 							ClientResponse.SendHeaders();
-							ClientResponse.OutputStream.Write(RespBuffer, 0, RespBuffer.Length);
+							ClientResponse.OutputStream.Write(RespBuffer, 0, RespBuffer.Length); //UNDONE: "Network Error: Connection reset by peer" in Netscape 3 goes here; FF 3.6 works ok
 
 							if (DumpFile != null)
 							{
@@ -1187,7 +1187,12 @@ namespace WebOne
 							TransitStream = null;
 
 							string RequestMethod = operation.Method;
-							WebHeaderCollection RequestHeaderCollection = (WebHeaderCollection)ClientRequest.Headers;
+							WebHeaderCollection RequestHeaderCollection = new WebHeaderCollection();
+							foreach(var hdr in ClientRequest.Headers.AllKeys)
+							{
+								RequestHeaderCollection.Add(hdr, ClientRequest.Headers[hdr]);
+							}
+							//WebHeaderCollection RequestHeaderCollection = (WebHeaderCollection)ClientRequest.Headers;
 							operation = new HttpOperation(Log);
 							operation.Method = RequestMethod;
 							operation.RequestHeaders = RequestHeaderCollection;
