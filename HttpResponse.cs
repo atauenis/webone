@@ -71,7 +71,11 @@ namespace WebOne
 			{
 				contentLength64 = value;
 				if (MshttpapiBackend != null) MshttpapiBackend.ContentLength64 = contentLength64;
-				AddHeader("Content-Length", contentLength64.ToString());
+
+				if (Headers["Content-Length"] == null)
+					AddHeader("Content-Length", contentLength64.ToString());
+				else
+					Headers["Content-Length"] = contentLength64.ToString();
 			}
 
 			//think about chunked transfers with unknown content length
@@ -88,7 +92,11 @@ namespace WebOne
 			{
 				contentType = value;
 				if (MshttpapiBackend != null) MshttpapiBackend.ContentType = contentType;
-				AddHeader("Content-Type", contentType);
+
+				if (Headers["Content-Type"] == null)
+					AddHeader("Content-Type", contentType);
+				else
+					Headers["Content-Type"] = contentType;
 			}
 		}
 
@@ -169,9 +177,10 @@ namespace WebOne
 			if (TcpclientBackend != null)
 			{
 				//will be written
-				StreamWriter ClientStreamWriter = new StreamWriter(TcpclientBackend.GetStream());				
+				StreamWriter ClientStreamWriter = new StreamWriter(TcpclientBackend.GetStream());
 				ClientStreamWriter.WriteLine(ProtocolVersionString + " " + StatusCode);
-				ClientStreamWriter.WriteLine(Headers.ToString());
+				string HeadersString = Headers.ToString().Replace("\r\n", "\n").Replace("\n\n", "");
+				ClientStreamWriter.WriteLine(HeadersString);
 				ClientStreamWriter.WriteLine();
 				ClientStreamWriter.Flush();
 				HeadersSent = true;

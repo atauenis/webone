@@ -64,6 +64,14 @@ namespace WebOne
 #endif
 			try
 			{
+				//check for HTTPS proxy mode
+				if (ClientRequest.HttpMethod.ToUpper() == "CONNECT")
+				{
+					Log.WriteLine(" HTTPS is not fully implemented now, use HTTP.");
+					SendError(403, "Please open the page using HTTP protocol in URL.");
+					return;
+				}
+
 				//check IP black list
 				if (CheckString(ClientRequest.RemoteEndPoint.ToString(), ConfigFile.IpBanList))
 				{
@@ -1188,7 +1196,7 @@ namespace WebOne
 
 							string RequestMethod = operation.Method;
 							WebHeaderCollection RequestHeaderCollection = new WebHeaderCollection();
-							foreach(var hdr in ClientRequest.Headers.AllKeys)
+							foreach (var hdr in ClientRequest.Headers.AllKeys)
 							{
 								RequestHeaderCollection.Add(hdr, ClientRequest.Headers[hdr]);
 							}

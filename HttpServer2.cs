@@ -95,6 +95,8 @@ namespace WebOne
 					clientStream.Close();
 					Client.Close();
 					Logger.WriteLine(">Dropped: Empty connection.");
+					Load--;
+					UpdateStatistics();
 					return;
 				}
 
@@ -106,6 +108,8 @@ namespace WebOne
 					clientStream.Close();
 					Client.Close();
 					Logger.WriteLine(">Dropped: Non-HTTP connection: {0}", HttpCommand);
+					Load--;
+					UpdateStatistics();
 					return;
 				}
 				HttpRequest Request = new()
@@ -118,13 +122,16 @@ namespace WebOne
 					LocalEndPoint = new IPEndPoint(0, 0),  //too
 					IsSecureConnection = false
 				};
-				if(Request.RawUrl.ToLower().StartsWith("http://")
+				if (Request.RawUrl.ToLower().StartsWith("http://")
 				|| Request.RawUrl.ToLower().StartsWith("https://")
 				|| Request.RawUrl.ToLower().StartsWith("ftp://")
 				|| Request.RawUrl.ToLower().StartsWith("gopher://")
 				|| Request.RawUrl.ToLower().StartsWith("wais://"))
 				{ Request.Url = new Uri(Request.RawUrl); }
-				else { Request.Url = new Uri("http://" + Variables["Proxy"] + Request.RawUrl); }
+				else if (Request.RawUrl.StartsWith('/'))
+				{ Request.Url = new Uri("http://" + Variables["Proxy"] + Request.RawUrl); }
+				else
+				{ Request.Url = new Uri("http://" + Variables["Proxy"] + "/" + Request.RawUrl); }
 
 				string HttpHeaderLine = null;
 				while (true)
@@ -133,7 +140,6 @@ namespace WebOne
 					if (string.IsNullOrWhiteSpace(HttpHeaderLine)) break;
 					Request.Headers.Add(HttpHeaderLine.Substring(0, HttpHeaderLine.IndexOf(": ")), HttpHeaderLine.Substring(HttpHeaderLine.IndexOf(": ") + 2));
 				}
-
 
 				HttpResponse Response = new(Client);
 
@@ -168,5 +174,6 @@ namespace WebOne
 
 		// UNDONE: Keep-Alive support!!!
 		// UNDONE: Big memory use (due to many connections?)
+		// UNDONE: Netscape 3 freezes!!!
 	}
 }
