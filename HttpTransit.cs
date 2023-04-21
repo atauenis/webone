@@ -15,7 +15,7 @@ namespace WebOne
 	class HttpTransit
 	{
 		HttpRequest ClientRequest;
-		HttpListenerResponse ClientResponse;
+		HttpResponse ClientResponse;
 		LogWriter Log;
 
 		byte[] UTF8BOM = Encoding.UTF8.GetPreamble();
@@ -48,8 +48,8 @@ namespace WebOne
 		/// Convert a Web 2.0 page to Web 1.0-like page.
 		/// </summary>
 		/// <param name="ClientRequest">Request from HTTP Listener</param>
-		/// <param name="ClientResponse">Response for HttpListener</param>
-		public HttpTransit(HttpRequest ClientRequest, HttpListenerResponse ClientResponse, LogWriter Log)
+		/// <param name="ClientResponse">Response for HTTP Listener</param>
+		public HttpTransit(HttpRequest ClientRequest, HttpResponse ClientResponse, LogWriter Log)
 		{
 			this.ClientRequest = ClientRequest;
 			this.ClientResponse = ClientResponse;
@@ -463,12 +463,13 @@ namespace WebOne
 
 										ClientResponse.ContentType = "application/x-ns-proxy-autoconfig";
 										ClientResponse.ContentLength64 = PacString.Length;
+										ClientResponse.SendHeaders();
 										ClientResponse.OutputStream.Write(PacBuffer, 0, PacBuffer.Length);
 										ClientResponse.OutputStream.Close();
 									}
-									catch
+									catch (Exception pacex)
 									{
-										Log.WriteLine("Cannot return PAC!");
+										Log.WriteLine("Cannot return PAC! " + pacex.Message);
 									}
 									return;
 								case "/robots.txt":
@@ -483,6 +484,7 @@ namespace WebOne
 
 										ClientResponse.ContentType = "text/plain";
 										ClientResponse.ContentLength64 = Robots.Length;
+										ClientResponse.SendHeaders();
 										ClientResponse.OutputStream.Write(RobotsBuffer, 0, RobotsBuffer.Length);
 										ClientResponse.OutputStream.Close();
 									}
@@ -1005,6 +1007,8 @@ namespace WebOne
 							ClientResponse.ContentLength64 = RespBuffer.Length;
 
 							if (ClientResponse.ContentLength64 > 300 * 1024) Log.WriteLine(" Sending binary.");
+
+							ClientResponse.SendHeaders();
 							ClientResponse.OutputStream.Write(RespBuffer, 0, RespBuffer.Length);
 
 							if (DumpFile != null)
@@ -1023,6 +1027,7 @@ namespace WebOne
 						else
 						{
 							if (TransitStream.CanSeek) ClientResponse.ContentLength64 = TransitStream.Length;
+							ClientResponse.SendHeaders();
 							TransitStream.CopyTo(ClientResponse.OutputStream);
 
 							if (DumpFile != null)
@@ -1823,6 +1828,7 @@ namespace WebOne
 
 				ClientResponse.ContentType = "text/html";
 				ClientResponse.ContentLength64 = Buffer.Length;
+				ClientResponse.SendHeaders();
 				ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
 				ClientResponse.OutputStream.Close();
 				Dump("End is internal page: code " + Code + ", " + Text);
@@ -1848,6 +1854,7 @@ namespace WebOne
 				ClientResponse.ProtocolVersion = new Version(1, 0);
 				ClientResponse.ContentType = ContentType;
 				FileStream potok = File.OpenRead(FileName);
+				ClientResponse.SendHeaders();
 				potok.CopyTo(ClientResponse.OutputStream);
 				potok.Close();
 				ClientResponse.OutputStream.Close();
@@ -1881,6 +1888,7 @@ namespace WebOne
 				ClientResponse.ContentType = ContentType;
 				if (Potok.CanSeek) ClientResponse.ContentLength64 = Potok.Length;
 				if (Potok.CanSeek) Potok.Position = 0;
+				ClientResponse.SendHeaders();
 				Potok.CopyTo(ClientResponse.OutputStream);
 				if (Close)
 				{
@@ -1955,6 +1963,7 @@ namespace WebOne
 
 					ClientResponse.ContentLength64 = Buffer.Length;
 
+					ClientResponse.SendHeaders();
 					ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
 					ClientResponse.OutputStream.Close();
 					Dump("End is information page: " + Page.Header);

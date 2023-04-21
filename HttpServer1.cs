@@ -115,8 +115,8 @@ namespace WebOne
 				}
 				Logger.WriteLine(">{0} {1} ({2})", Request.HttpMethod, Request.RawUrl, ClientId);
 
-				HttpListenerResponse resp = ctx.Response;
-				HttpTransit Tranzit = new HttpTransit(Request, resp, Logger);
+				HttpResponse Response = new(ctx.Response);
+				HttpTransit Tranzit = new HttpTransit(Request, Response, Logger);
 				Logger.WriteLine("<Done.");
 			}
 			catch (Exception ex)

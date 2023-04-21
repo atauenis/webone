@@ -31,8 +31,8 @@ namespace WebOne
 
 		//   UNDONE. See https://www.codeproject.com/Articles/93301/Implementing-a-Multithreaded-HTTP-HTTPS-Debugging for ideas.
 		//     DONE: unseal HttpListenerRequest
-		//   UNDONE: unseal HttpListenerResponse
+		//     DONE: unseal HttpListenerResponse
 		//           (both come from HttpListenerContext)
-		// 1/2 DONE: edit HttpTransit to use unsealed universal editions of them
+		//     DONE: edit HttpTransit to use unsealed universal editions of them
 	}
 }
