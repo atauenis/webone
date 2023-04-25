@@ -127,6 +127,12 @@ namespace WebOne
 		/// </summary>
 		public TcpClient TcpclientBackend { get; set; }
 
+		/// <summary>
+		/// Specifies value that indicates whether the client connection can be persistent after this response.
+		/// </summary>
+		/// <returns>true if the connection should be kept open; otherwise, false.</returns>
+		public bool KeepAlive { get; set; }
+		// note: this means that all request bytes are read by Proxy, and next bytes will be next request start ("GET /index.htm HTTP/1.1")
 
 		/// <summary>
 		/// Initialize an instance of an response to a HTTP request, used with a HttpListenerContext instance.
@@ -196,7 +202,12 @@ namespace WebOne
 		{
 			if (!HeadersSent) SendHeaders();
 			if (MshttpapiBackend != null) { MshttpapiBackend.Close(); return; }
-			if (TcpclientBackend != null) { TcpclientBackend.Close(); return; } //think about keep-alive!
+			if (TcpclientBackend != null)
+			{
+				TcpclientBackend.GetStream().Flush();
+				if (!KeepAlive) TcpclientBackend.Close();
+				return;
+			}
 			throw new Exception("Backend not set.");
 		}
 

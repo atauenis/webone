@@ -102,7 +102,8 @@ namespace WebOne
 					InputStream = req.InputStream,
 					RemoteEndPoint = req.RemoteEndPoint,
 					LocalEndPoint = req.LocalEndPoint,
-					IsSecureConnection = false
+					IsSecureConnection = false,
+					KeepAlive = req.KeepAlive
 				};
 				HttpResponse Response = new(ctx.Response);
 

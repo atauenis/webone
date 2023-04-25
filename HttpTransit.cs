@@ -1019,6 +1019,7 @@ namespace WebOne
 
 							if (ClientResponse.ContentLength64 > 300 * 1024) Log.WriteLine(" Sending binary.");
 
+							if (ClientRequest.KeepAlive) ClientResponse.AddHeader("Proxy-Connection", "keep-alive");
 							ClientResponse.SendHeaders();
 							ClientResponse.OutputStream.Write(RespBuffer, 0, RespBuffer.Length); //UNDONE: "Network Error: Connection reset by peer" in Netscape 3 goes here; FF 3.6 works ok
 
@@ -1038,6 +1039,7 @@ namespace WebOne
 						else
 						{
 							if (TransitStream.CanSeek) ClientResponse.ContentLength64 = TransitStream.Length;
+							if (ClientRequest.KeepAlive) ClientResponse.AddHeader("Proxy-Connection", "keep-alive");
 							ClientResponse.SendHeaders();
 							TransitStream.CopyTo(ClientResponse.OutputStream);
 
@@ -1050,6 +1052,7 @@ namespace WebOne
 								Dump("\nBody is binary stream");
 							}
 						}
+						ClientResponse.KeepAlive = true;
 						ClientResponse.Close();
 #if DEBUG
 						Log.WriteLine(" Document sent.");

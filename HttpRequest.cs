@@ -105,6 +105,12 @@ namespace WebOne
 		/// <returns>An System.Net.IPEndPoint that represents the IP address that the request is sent to.</returns>
 		public IPEndPoint LocalEndPoint { get; set; }
 
+		/// <summary>
+		/// Specifies value that indicates whether the client requests a persistent connection.
+		/// </summary>
+		/// <returns>true if the connection should be kept open; otherwise, false.</returns>
+		public bool KeepAlive { get; set; }
+
 		//SSL stuff skipped as difficult to implement now
 	}
 }

@@ -7,7 +7,7 @@ using static WebOne.Program;
 namespace WebOne
 {
 	/// <summary>
-	/// HTTP/1.1 Listener and Server (TcpClient-based)
+	/// HTTP/1.1 Listener and Server (TcpClient-based).
 	/// </summary>
 	class HttpServer2 : HttpServer
 	{
@@ -23,14 +23,14 @@ namespace WebOne
 		private int Load;
 
 		/// <summary>
-		/// Status of this HTTP Server
+		/// Status of this HTTP Server.
 		/// </summary>
 		public override bool Working { get; set; }
 
 		/// <summary>
-		/// Initizlize a HTTP Server
+		/// Initizlize a HTTP Server.
 		/// </summary>
-		/// <param name="port">TCP Port to listen on</param>
+		/// <param name="port">TCP Port to listen on.</param>
 		public HttpServer2(int port) : base(port)
 		{
 			Port = port;
@@ -39,20 +39,20 @@ namespace WebOne
 		}
 
 		/// <summary>
-		/// Start this HTTP Server
+		/// Start this HTTP Server.
 		/// </summary>
 		public override void Start()
 		{
 			Log.WriteLine(true, false, "Starting server...\t\t\t\t     EnableNewHttpServer = yes.");
 			Listener.Start();
-			Listener.BeginAcceptTcpClient(ProcessRequest, null);
+			Listener.BeginAcceptTcpClient(ProcessConnection, null);
 			Working = true;
 			Log.WriteLine(true, false, "Listening for connections on port {0}.", Port);
 			UpdateStatistics();
 		}
 
 		/// <summary>
-		/// Gracefully stop this HTTP Server
+		/// Gracefully stop this HTTP Server.
 		/// </summary>
 		public override void Stop()
 		{
@@ -67,88 +67,24 @@ namespace WebOne
 		}
 
 		/// <summary>
-		/// Process a HTTP request (callback for TcpListener)
+		/// Process a HTTP request (callback for TcpListener).
 		/// </summary>
-		/// <param name="ar">Something from TcpListener</param>
-		private void ProcessRequest(IAsyncResult ar)
+		/// <param name="ar">Something from TcpListener.</param>
+		private void ProcessConnection(IAsyncResult ar)
 		{
 			if (!Working) return;
 			Load++;
 			UpdateStatistics();
 			LogWriter Logger = new();
 #if DEBUG
-			Logger.WriteLine("Got a request.");
+			Logger.WriteLine("Got a connection.");
 #endif
 			TcpClient Client = Listener.EndAcceptTcpClient(ar);
-			Listener.BeginAcceptTcpClient(ProcessRequest, null);
+			Listener.BeginAcceptTcpClient(ProcessConnection, null);
 
 			try
 			{
-				Stream clientStream = Client.GetStream();
-				StreamReader clientStreamReader = new(clientStream);
-
-				//read the first line HTTP command
-				string HttpCommand = clientStreamReader.ReadLine();
-				if (string.IsNullOrEmpty(HttpCommand))
-				{
-					clientStreamReader.Close();
-					clientStream.Close();
-					Client.Close();
-					Logger.WriteLine(">Dropped: Empty connection.");
-					Load--;
-					UpdateStatistics();
-					return;
-				}
-
-				//break up the line into three components & process it
-				string[] HttpCommandParts = HttpCommand.Split(' ');
-				if (HttpCommandParts.Length != 3 || HttpCommandParts[2].Length != 8)
-				{
-					clientStreamReader.Close();
-					clientStream.Close();
-					Client.Close();
-					Logger.WriteLine(">Dropped: Non-HTTP connection: {0}", HttpCommand);
-					Load--;
-					UpdateStatistics();
-					return;
-				}
-				HttpRequest Request = new()
-				{
-					HttpMethod = HttpCommandParts[0],
-					RawUrl = HttpCommandParts[1],
-					ProtocolVersionString = HttpCommandParts[2],
-					Headers = new System.Collections.Specialized.NameValueCollection(),
-					RemoteEndPoint = new IPEndPoint(0, 0), //find how to get it
-					LocalEndPoint = new IPEndPoint(0, 0),  //too
-					IsSecureConnection = false
-				};
-				if (Request.RawUrl.ToLower().StartsWith("http://")
-				|| Request.RawUrl.ToLower().StartsWith("https://")
-				|| Request.RawUrl.ToLower().StartsWith("ftp://")
-				|| Request.RawUrl.ToLower().StartsWith("gopher://")
-				|| Request.RawUrl.ToLower().StartsWith("wais://"))
-				{ Request.Url = new Uri(Request.RawUrl); }
-				else if (Request.RawUrl.StartsWith('/'))
-				{ Request.Url = new Uri("http://" + Variables["Proxy"] + Request.RawUrl); }
-				else
-				{ Request.Url = new Uri("http://" + Variables["Proxy"] + "/" + Request.RawUrl); }
-
-				string HttpHeaderLine = null;
-				while (true)
-				{
-					HttpHeaderLine = clientStreamReader.ReadLine();
-					if (string.IsNullOrWhiteSpace(HttpHeaderLine)) break;
-					Request.Headers.Add(HttpHeaderLine.Substring(0, HttpHeaderLine.IndexOf(": ")), HttpHeaderLine.Substring(HttpHeaderLine.IndexOf(": ") + 2));
-				}
-
-				HttpResponse Response = new(Client);
-
-				HttpTransit Transit = new(Request, Response, Logger);
-				Logger.WriteLine(">{0} {1} ({2})", Request.HttpMethod, Request.RawUrl, Transit.GetClientIdString());
-				Transit.ProcessTransit();
-
-				Client.Close();
-				Logger.WriteLine("<Done.");
+				ProcessClientRequest(Client, Logger);
 			}
 			catch (Exception ex)
 			{
@@ -161,7 +97,94 @@ namespace WebOne
 		}
 
 		/// <summary>
-		/// Display count of open requests in app's titlebar
+		/// Process incoming TCP/IP traffic from client.
+		/// </summary>
+		/// <param name="Client">TcpClient used to communicate with client.</param>
+		/// <param name="Logger">Log writer.</param>
+		private void ProcessClientRequest(TcpClient Client, LogWriter Logger)
+		{
+#if DEBUG
+			Logger.WriteLine("Got a request.");
+#endif
+
+			Stream clientStream = Client.GetStream();
+			StreamReader clientStreamReader = new(clientStream);
+
+			//read the first line HTTP command
+			string HttpCommand = clientStreamReader.ReadLine();
+			if (string.IsNullOrEmpty(HttpCommand))
+			{
+				clientStreamReader.Close();
+				clientStream.Close();
+				Client.Close();
+				Logger.WriteLine("<Close empty connection.");
+				return;
+			}
+
+			//break up the line into three components & process it
+			string[] HttpCommandParts = HttpCommand.Split(' ');
+			if (HttpCommandParts.Length != 3 || HttpCommandParts[2].Length != 8)
+			{
+				clientStreamReader.Close();
+				clientStream.Close();
+				Client.Close();
+				Logger.WriteLine("<Dropped: Non-HTTP connection: {0}", HttpCommand);
+				return;
+			}
+			HttpRequest Request = new()
+			{
+				HttpMethod = HttpCommandParts[0],
+				RawUrl = HttpCommandParts[1],
+				ProtocolVersionString = HttpCommandParts[2],
+				Headers = new(),
+				RemoteEndPoint = new IPEndPoint(0, 0), //find how to get it
+				LocalEndPoint = new IPEndPoint(0, 0),  //too
+				IsSecureConnection = false
+			};
+			if (Request.RawUrl.ToLower().StartsWith("http://")
+			|| Request.RawUrl.ToLower().StartsWith("https://")
+			|| Request.RawUrl.ToLower().StartsWith("ftp://")
+			|| Request.RawUrl.ToLower().StartsWith("gopher://")
+			|| Request.RawUrl.ToLower().StartsWith("wais://"))
+			{ Request.Url = new Uri(Request.RawUrl); }
+			else if (Request.RawUrl.StartsWith('/'))
+			{ Request.Url = new Uri("http://" + Variables["Proxy"] + Request.RawUrl); }
+			else
+			{ Request.Url = new Uri("http://" + Variables["Proxy"] + "/" + Request.RawUrl); }
+
+			//load all request headers
+			string HttpHeaderLine = null;
+			while (true)
+			{
+				HttpHeaderLine = clientStreamReader.ReadLine();
+
+				if (string.IsNullOrWhiteSpace(HttpHeaderLine)) break;
+				Request.Headers.Add(HttpHeaderLine.Substring(0, HttpHeaderLine.IndexOf(": ")), HttpHeaderLine.Substring(HttpHeaderLine.IndexOf(": ") + 2));
+
+				if (HttpHeaderLine == "Connection: keep-alive" || HttpHeaderLine == "Proxy-Connection: keep-alive")
+					Request.KeepAlive = true;
+			}
+
+			HttpResponse Response = new(Client);
+
+			HttpTransit Transit = new(Request, Response, Logger);
+			Logger.WriteLine(">{0} {1} ({2})", Request.HttpMethod, Request.RawUrl, Transit.GetClientIdString());
+			Transit.ProcessTransit();
+
+			if (Request.KeepAlive && Response.KeepAlive)
+			{
+				Logger.WriteLine("<Done.");
+				ProcessClientRequest(Client, new());
+			}
+			else
+			{
+				Client.Close();
+				Logger.WriteLine("<Done (connection close).");
+			}
+		}
+
+		/// <summary>
+		/// Display count of open requests in app's titlebar.
 		/// </summary>
 		private void UpdateStatistics()
 		{
@@ -170,10 +193,5 @@ namespace WebOne
 			else
 				Console.Title = string.Format("WebOne v{3} @ {0}:{1} [{2}]", ConfigFile.DefaultHostName, Port, Load, Variables["WOVer"]);
 		}
-
-
-		// UNDONE: Keep-Alive support!!!
-		// UNDONE: Big memory use (due to many connections?)
-		// UNDONE: Netscape 3 freezes!!!
 	}
 }
