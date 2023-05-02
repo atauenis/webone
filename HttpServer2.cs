@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using static WebOne.Program;
 
 namespace WebOne
@@ -119,7 +118,7 @@ namespace WebOne
 			Stream clientStream = Client.GetStream();
 
 			// Read text part of HTTP request (until double line feed).
-			BinaryReader br = new(clientStream, Encoding.ASCII, true);
+			BinaryReader br = new(clientStream);
 			List<char> rqChars = new();
 			while (true)
 			{
@@ -208,20 +207,19 @@ namespace WebOne
 
 			if (Request.Headers["Content-Length"] != null)
 			{
-				// If there's a payload, read it.
-				//UNDONE: works in Netscape 3, but not works in Firefox 3.6. Find why & fix!
-				byte[] UploadBuffer = br.ReadBytes(int.Parse(Request.Headers["Content-Length"]));
-				//Console.WriteLine("Debug: " + Encoding.ASCII.GetString(UploadBuffer));
-				Request.InputStream = new MemoryStream(UploadBuffer);
-
-				//TODO: rewrite to something that will not eat all RAM on attempt to upload a 2TB file!
+				// If there's a payload, convert it to a HttpRequestContentStream.
+				Request.InputStream = new HttpRequestContentStream(clientStream, int.Parse(Request.Headers["Content-Length"]));
 
 				/*
 				 * NetworkStream is not suitable for HTTP request bodies. It have no length, and read operation is endless.
 				 * What is suitable - .NET's internal HttpRequestStream and ChunkedInputStream:HttpRequestStream.
 				 * See .NET source: https://source.dot.net/System.Net.HttpListener/R/d562e26091bc9f8d.html
 				 * They are reading traffic only until HTTP Content-Length or last HTTP Chunk into a correct .NET Stream format.
+				 * 
+				 * WebOne.HttpRequestContentStream is a very lightweight alternative to System.Net.HttpRequestStream.
 				 */
+
+				//UNDONE: works in Netscape 3, but half-works in Firefox 3.6. Find why & fix!
 			}
 			else
 			{
