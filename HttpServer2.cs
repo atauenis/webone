@@ -117,199 +117,122 @@ namespace WebOne
 #endif
 
 			Stream clientStream = Client.GetStream();
-			//StreamReader is not a good thing here due to its non-disableable buffer!
-			/*			StreamReader clientStreamReader = new(clientStream);
-						clientStreamReader.BaseStream.ReadTimeout = 5000; //keep-alive timeout = 5 sec
 
-						//read the first line HTTP command
-						string HttpCommand = clientStreamReader.ReadLine();
-						if (string.IsNullOrEmpty(HttpCommand))
-						{
-							clientStreamReader.Close();
-							clientStream.Close();
-							Client.Close();
-							Logger.WriteLine("<Close empty connection.");
-							return;
-						}
-
-						//break up the line into three components & process it
-						string[] HttpCommandParts = HttpCommand.Split(' ');
-						if (HttpCommandParts.Length != 3 || HttpCommandParts[2].Length != 8)
-						{
-							clientStreamReader.Close();
-							clientStream.Close();
-							Client.Close();
-							Logger.WriteLine("<Dropped: Non-HTTP connection: {0}", HttpCommand);
-							return;
-						}
-						HttpRequest Request = new()
-						{
-							HttpMethod = HttpCommandParts[0],
-							RawUrl = HttpCommandParts[1],
-							ProtocolVersionString = HttpCommandParts[2],
-							Headers = new(),
-							InputStream = clientStream,
-							RemoteEndPoint = new IPEndPoint(0, 0), //find how to get it
-							LocalEndPoint = new IPEndPoint(0, 0),  //too
-							IsSecureConnection = false
-						};
-						if (Request.RawUrl.ToLower().StartsWith("http://")
-						|| Request.RawUrl.ToLower().StartsWith("https://")
-						|| Request.RawUrl.ToLower().StartsWith("ftp://")
-						|| Request.RawUrl.ToLower().StartsWith("gopher://")
-						|| Request.RawUrl.ToLower().StartsWith("wais://"))
-						{ Request.Url = new Uri(Request.RawUrl); }
-						else if (Request.RawUrl.StartsWith('/'))
-						{ Request.Url = new Uri("http://" + Variables["Proxy"] + Request.RawUrl); }
-						else
-						{ Request.Url = new Uri("http://" + Variables["Proxy"] + "/" + Request.RawUrl); }
-
-						//load all request headers
-						string HttpHeaderLine = null;
-						while (true)
-						{
-							HttpHeaderLine = clientStreamReader.ReadLine();
-
-							if (string.IsNullOrWhiteSpace(HttpHeaderLine)) break;
-							Request.Headers.Add(HttpHeaderLine.Substring(0, HttpHeaderLine.IndexOf(": ")), HttpHeaderLine.Substring(HttpHeaderLine.IndexOf(": ") + 2));
-
-							if (HttpHeaderLine == "Connection: keep-alive" || HttpHeaderLine == "Proxy-Connection: keep-alive")
-								Request.KeepAlive = true;
-						}
-
-						HttpResponse Response = new(Client);
-
-						HttpTransit Transit = new(Request, Response, Logger);
-						Logger.WriteLine(">{0} {1} ({2})", Request.HttpMethod, Request.RawUrl, Transit.GetClientIdString());
-						Transit.ProcessTransit();
-
-						if (Request.KeepAlive && Response.KeepAlive)
-						{
-							Logger.WriteLine("<Done.");
-							ProcessClientRequest(Client, new());
-						}
-						else
-						{
-							Client.Close();
-							Logger.WriteLine("<Done (connection close).");
-						}*/
-
-
-			//Get request command and headers
-			//thx to https://stackoverflow.com/a/31073677
-			var AsciiDecoder = Encoding.ASCII.GetDecoder();
-			var HeaderLines = new List<string>();
-
-			var sb = new StringBuilder();
-			byte[] bytes = new byte[1];
-			char[] chars = new char[2];
-
-			bool KeepAlive = false;
-
+			// Read text part of HTTP request (until double line feed).
+			BinaryReader br = new(clientStream, Encoding.ASCII, true);
+			List<char> rqChars = new();
 			while (true)
 			{
-				int curr = clientStream.ReadByte();
-				char ch = '\0';
+				rqChars.Add(br.ReadChar());
 
-				bool newLine = false;
+				if (rqChars.Count < 2) continue;
+				if (rqChars[rqChars.Count - 1] == '\r')
+				{
+					if (rqChars[rqChars.Count - 3] == '\r' && rqChars[rqChars.Count - 2] == '\n')
+					{
+						rqChars.Add(br.ReadChar());
+						break;
+					}
+				}
+			}
 
-				if (curr == -1)
-				{ newLine = true; }
+			// Process HTTP command and headers.
+			HttpRequest Request = null;
+			bool IsCommand = true;
+			foreach (string HttpRequestLine in new string(rqChars.ToArray()).Split("\r\n"))
+			{
+				if (string.IsNullOrWhiteSpace(HttpRequestLine)) continue;
+				if (IsCommand)
+				{
+					// First line - HTTP command.
+					if (string.IsNullOrEmpty(HttpRequestLine))
+					{
+						clientStream.Close();
+						Client.Close();
+						Logger.WriteLine("<Close empty connection.");
+						return;
+					}
+					string[] HttpCommandParts = HttpRequestLine.Split(' ');
+					if (HttpCommandParts.Length != 3 || HttpCommandParts[2].Length != 8)
+					{
+						clientStream.Close();
+						Client.Close();
+						Logger.WriteLine("<Dropped: Non-HTTP connection: {0}", HttpRequestLine);
+						return;
+					}
+
+					// First line is valid, start work with the Request.
+					Request = new()
+					{
+						HttpMethod = HttpCommandParts[0],
+						RawUrl = HttpCommandParts[1],
+						ProtocolVersionString = HttpCommandParts[2],
+						Headers = new(),
+						RemoteEndPoint = new IPEndPoint(0, 0), //find how to get it
+						LocalEndPoint = new IPEndPoint(0, 0),  //too
+						IsSecureConnection = false
+					};
+
+					if (Request.RawUrl.ToLower().StartsWith("http://")
+					|| Request.RawUrl.ToLower().StartsWith("https://")
+					|| Request.RawUrl.ToLower().StartsWith("ftp://")
+					|| Request.RawUrl.ToLower().StartsWith("gopher://")
+					|| Request.RawUrl.ToLower().StartsWith("wais://"))
+					{ Request.Url = new Uri(Request.RawUrl); }
+					else if (Request.RawUrl.StartsWith('/'))
+					{ Request.Url = new Uri("http://" + Variables["Proxy"] + Request.RawUrl); }
+					else
+					{ Request.Url = new Uri("http://" + Variables["Proxy"] + "/" + Request.RawUrl); }
+
+					IsCommand = false;
+					continue;
+				}
 				else
 				{
-					bytes[0] = (byte)curr;
+					// Other lines - request headers, load all of them.
+					if (string.IsNullOrWhiteSpace(HttpRequestLine)) continue;
+					Request.Headers.Add(HttpRequestLine.Substring(0, HttpRequestLine.IndexOf(": ")), HttpRequestLine.Substring(HttpRequestLine.IndexOf(": ") + 2));
 
-					// There is the possibility of a partial invalid 
-					// character (first byte of UTF8) plus a new valid 
-					// character. In this case decoder.GetChars will
-					// return 2 chars
-					int count = AsciiDecoder.GetChars(bytes, 0, 1, chars, 0);
-
-					for (int i = 0; i < count; i++)
-					{
-						ch = chars[i];
-
-						if (ch == '\n')
-						{ newLine = true; }
-						else
-						{ sb.Append(ch); }
-					}
+					if (HttpRequestLine == "Connection: keep-alive" || HttpRequestLine == "Proxy-Connection: keep-alive")
+						Request.KeepAlive = true;
 				}
-
-				if (newLine)
-				{
-					string str = sb.ToString();
-
-					// Handling of \r\n
-					if (ch == '\n' && str[str.Length - 1] == '\r')
-					{ str = str.Remove(str.Length - 1); }
-
-					str = str.Trim();
-
-					if (str.Length != 0)
-					{
-						HeaderLines.Add(str);
-						sb.Clear();
-
-						if (str == "Connection: keep-alive" || str == "Proxy-Connection: keep-alive")
-							KeepAlive = true;
-					}
-					else
-					{ break; }
-				}
-
-				if (curr == -1)
-				{ break; }
 			}
 
-			if (HeaderLines.Count == 0)
+			if (Request == null)
 			{
 				clientStream.Close();
 				Client.Close();
-				Logger.WriteLine("<Close empty connection.");
+				Logger.WriteLine("<Dropped (unknown why).");
 				return;
 			}
 
-			//break up the line into three components & process it
-			string[] HttpCommandParts = HeaderLines[0].Split(' ');
-			if (HttpCommandParts.Length != 3 || HttpCommandParts[2].Length != 8)
+			if (Request.Headers["Content-Length"] != null)
 			{
-				clientStream.Close();
-				Client.Close();
-				Logger.WriteLine("<Dropped: Non-HTTP connection: {0}", HeaderLines[0]);
-				return;
-			}
+				// If there's a payload, read it.
+				//UNDONE: works in Netscape 3, but not works in Firefox 3.6. Find why & fix!
+				byte[] UploadBuffer = br.ReadBytes(int.Parse(Request.Headers["Content-Length"]));
+				//Console.WriteLine("Debug: " + Encoding.ASCII.GetString(UploadBuffer));
+				Request.InputStream = new MemoryStream(UploadBuffer);
 
-			HttpRequest Request = new()
-			{
-				HttpMethod = HttpCommandParts[0],
-				RawUrl = HttpCommandParts[1],
-				ProtocolVersionString = HttpCommandParts[2],
-				Headers = new(),
-				InputStream = clientStream,
-				RemoteEndPoint = new IPEndPoint(0, 0), //find how to get it
-				LocalEndPoint = new IPEndPoint(0, 0),  //too
-				IsSecureConnection = false,
-				KeepAlive = KeepAlive
-			};
-			if (Request.RawUrl.ToLower().StartsWith("http://")
-			|| Request.RawUrl.ToLower().StartsWith("https://")
-			|| Request.RawUrl.ToLower().StartsWith("ftp://")
-			|| Request.RawUrl.ToLower().StartsWith("gopher://")
-			|| Request.RawUrl.ToLower().StartsWith("wais://"))
-			{ Request.Url = new Uri(Request.RawUrl); }
-			else if (Request.RawUrl.StartsWith('/'))
-			{ Request.Url = new Uri("http://" + Variables["Proxy"] + Request.RawUrl); }
+				//TODO: rewrite to something that will not eat all RAM on attempt to upload a 2TB file!
+
+				/*
+				 * NetworkStream is not suitable for HTTP request bodies. It have no length, and read operation is endless.
+				 * What is suitable - .NET's internal HttpRequestStream and ChunkedInputStream:HttpRequestStream.
+				 * See .NET source: https://source.dot.net/System.Net.HttpListener/R/d562e26091bc9f8d.html
+				 * They are reading traffic only until HTTP Content-Length or last HTTP Chunk into a correct .NET Stream format.
+				 */
+			}
 			else
-			{ Request.Url = new Uri("http://" + Variables["Proxy"] + "/" + Request.RawUrl); }
+			{
+				// No payload in request - original NetworkStream is suitable.
+				Request.InputStream = clientStream;
+			}
 
 			HttpResponse Response = new(Client);
-
 			HttpTransit Transit = new(Request, Response, Logger);
 			Logger.WriteLine(">{0} {1} ({2})", Request.HttpMethod, Request.RawUrl, Transit.GetClientIdString());
 			Transit.ProcessTransit();
-
-			//UNDONE: somewhy URLs are invalid sometimes (however whith StreamReader all correct) - some logic error due to my tiredness?
 
 			if (Request.KeepAlive && Response.KeepAlive)
 			{

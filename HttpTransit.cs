@@ -67,6 +67,7 @@ namespace WebOne
 				//check for HTTPS proxy mode
 				if (ClientRequest.HttpMethod.ToUpper() == "CONNECT")
 				{
+					//TODO: here will be call of future SSL transit class
 					Log.WriteLine(" HTTPS is not fully implemented now, use HTTP.");
 					SendError(403, "Please open the page using HTTP protocol in URL.");
 					return;
@@ -1139,25 +1140,6 @@ namespace WebOne
 						Log.WriteLine(">Uploading {0}K of {1}...", Convert.ToInt32((operation.RequestHeaders["Content-Length"])) / 1024, operation.RequestHeaders["Content-Type"]);
 #endif
 						operation.URL = RequestURL;
-
-						if (ClientRequest.InputStream is System.Net.Sockets.NetworkStream)
-						{
-							/*
-							   NetworkStream is not suitable for HTTP request bodies. It have no length, and read operation is endless.
-							   What is suitable - .NET's internal HttpRequestStream and ChunkedInputStream:HttpRequestStream.
-							   See .NET source: https://source.dot.net/System.Net.HttpListener/R/d562e26091bc9f8d.html
-							   They are reading traffic only until HTTP Content-Length or last HTTP Chunk into a correct .NET Stream format.
-							 */
-
-							byte[] UploadBuffer = new byte[Content_Length];
-							ClientRequest.InputStream.Read(UploadBuffer);
-							//Console.WriteLine("Read " + ClientRequest.InputStream.Read(UploadBuffer) + " of " + Content_Length);
-							//Console.WriteLine(Encoding.Default.GetString(UploadBuffer));
-							ClientRequest.InputStream = new MemoryStream(UploadBuffer);
-
-							//TODO: rewrite to something that will not eat all RAM on attempt to upload a 2GB file!
-						}
-						//else it will be System.Net.HttpRequestStream or System.Net.ChunkedInputStream (private classes), which have no troubles
 
 						if (DumpFile == null)
 						{ //if normal operation
