@@ -152,7 +152,13 @@ namespace WebOne
 						return;
 					}
 					string[] HttpCommandParts = HttpRequestLine.Split(' ');
-					if (HttpCommandParts.Length != 3 || HttpCommandParts[2].Length != 8)
+					if (HttpRequestLine.StartsWith("CONNECT") && HttpRequestLine.Contains('\n'))
+					{
+						//fix "Dropped: Non-HTTP connection: CONNECT www.sannata.org:443 HTTP/1.0User-Agent: Mozilla/3.04Gold (WinNT; U)"
+						string HttpRequestLineNetscapeBug = HttpRequestLine.Substring(0, HttpRequestLine.IndexOf('\n'));
+						HttpCommandParts = HttpRequestLineNetscapeBug.Split(' ');
+					}
+					else if (HttpCommandParts.Length != 3 || HttpCommandParts[2].Length != 8)
 					{
 						clientStream.Close();
 						Client.Close();
@@ -213,8 +219,6 @@ namespace WebOne
 				 * 
 				 * WebOne.HttpRequestContentStream is a very lightweight alternative to System.Net.HttpRequestStream.
 				 */
-
-				//UNDONE: works in Netscape 3, but half-works in Firefox 3.6. Find why & fix!
 			}
 			else
 			{
