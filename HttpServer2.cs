@@ -36,7 +36,7 @@ namespace WebOne
 		{
 			Port = port;
 			Working = false;
-			Listener = new TcpListener(IPAddress.Loopback, Port);
+			Listener = new(Port);// new TcpListener(IPAddress.Loopback, Port);
 		}
 
 		/// <summary>
@@ -167,16 +167,11 @@ namespace WebOne
 						RawUrl = HttpCommandParts[1],
 						ProtocolVersionString = HttpCommandParts[2],
 						Headers = new(),
-						RemoteEndPoint = new IPEndPoint(0, 0), //find how to get it
-						LocalEndPoint = new IPEndPoint(0, 0),  //too
+						RemoteEndPoint = Client.Client.RemoteEndPoint as IPEndPoint,
+						LocalEndPoint = Client.Client.LocalEndPoint as IPEndPoint,
 						IsSecureConnection = false
 					};
-
-					if (Request.RawUrl.ToLower().StartsWith("http://")
-					|| Request.RawUrl.ToLower().StartsWith("https://")
-					|| Request.RawUrl.ToLower().StartsWith("ftp://")
-					|| Request.RawUrl.ToLower().StartsWith("gopher://")
-					|| Request.RawUrl.ToLower().StartsWith("wais://"))
+					if (Request.RawUrl.Contains("://"))
 					{ Request.Url = new Uri(Request.RawUrl); }
 					else if (Request.RawUrl.StartsWith('/'))
 					{ Request.Url = new Uri("http://" + Variables["Proxy"] + Request.RawUrl); }

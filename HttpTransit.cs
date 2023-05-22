@@ -69,7 +69,7 @@ namespace WebOne
 				{
 					//TODO: here will be call of future SSL transit class
 					Log.WriteLine(" HTTPS is not fully implemented now, use HTTP.");
-					SendError(403, "Please open the page using HTTP protocol in URL.");
+					SendError(501, "Please open the page using HTTP protocol in URL.");
 					return;
 				}
 
@@ -554,12 +554,30 @@ namespace WebOne
 					return;
 				}
 
-				//check for HTTP-to-FTP (and similar) requests
+				//check for FTP/GOPHER/WAIS-over-HTTP requests (a.k.a. CERN Proxy Mode)
 				//https://support.microsoft.com/en-us/help/166961/how-to-ftp-with-cern-based-proxy-using-wininet-api
+				if(ClientRequest.RawUrl.Contains("://"))
+				{
+					if(!RequestURL.Scheme.StartsWith("http")) Log.WriteLine(" CERN Proxy request to {0} detected.", RequestURL.Scheme.ToUpper());
+
+					string[] KnownProtocols = { "http", "https", "ftp" };
+					if (!CheckString(RequestURL.Scheme, KnownProtocols))
+					{
+						string BadProtocolMessage =
+						"<p>You're attempted to request content from <i>" + ClientRequest.RawUrl + "</i>. "+
+						"The protocol specified in the URL is not supported by this proxy server.</p>" +
+						"<p>Consider connect directly to the server, bypassing the proxy. This error message may also appear if your Web browser settings have enabled " +
+						"<b>&quot;Use proxy for all protocols&quot;</b> option. Uncheck it and set only for protocols supported by WebOne. List of them can be found in project's Wiki.</p>";
+						SendInfoPage(RequestURL.Scheme.ToUpper() + " Is Not Supported", "Unsupported protocol", BadProtocolMessage, 501);
+						return;
+					}
+					//all CERN-style requests are processed only with HttpServer2 used to listen traffic
+					//old HttpServer1 does not accept them as HttpListener (used since WebOne 0.8.5) ignores non-HTTP addresses
+				}
+
 				if (ClientRequest.RawUrl.ToLower().StartsWith("ftp://"))
 				{
-					//FTP mode (CERN)
-					//does not works as HttpListener (used since WebOne 0.8.5) ignores non-HTTP addresses
+					//HTTP->FTP mode (CERN-compatible)
 					InfoPage WebFtpRedirect = new();
 					WebFtpRedirect.Title = "CERN Proxy Emulation Redirect";
 					WebFtpRedirect.HttpStatusCode = 302;
@@ -571,7 +589,7 @@ namespace WebOne
 				{
 					//HTTP->FTP mode (Netscape)
 					InfoPage WebFtpRedirect = new();
-					WebFtpRedirect.Title = "CERN Proxy Emulation Redirect";
+					WebFtpRedirect.Title = "CERN Proxy Emulation Redirect (NS)";
 					WebFtpRedirect.HttpStatusCode = 302;
 					WebFtpRedirect.HttpHeaders.Add("Location", "http://" + GetServerName() + "/!ftp/?client=-1&uri=" + Uri.EscapeDataString(ClientRequest.RawUrl.Substring(7)));
 					SendInfoPage(WebFtpRedirect);
@@ -581,20 +599,10 @@ namespace WebOne
 				{
 					//HTTP->FTP mode (MS IE)
 					InfoPage WebFtpRedirect = new();
-					WebFtpRedirect.Title = "CERN Proxy Emulation Redirect";
+					WebFtpRedirect.Title = "CERN Proxy Emulation Redirect (IE)";
 					WebFtpRedirect.HttpStatusCode = 302;
 					WebFtpRedirect.HttpHeaders.Add("Location", "http://" + GetServerName() + "/!ftp/?client=-1&uri=" + Uri.EscapeDataString("ftp://" + ClientRequest.RawUrl.Substring(12)));
 					SendInfoPage(WebFtpRedirect);
-					return;
-				}
-				string[] BadProtocols = { "gopher", "wais" };
-				if (CheckString(RequestURL.Scheme, BadProtocols))
-				{
-					//does not works as HttpListener (used since WebOne 0.8.5) ignores non-HTTP addresses
-					//before v0.14 there was FTP ban too, now it's unbanned
-					Log.WriteLine(" CERN Proxy request to {0} detected.", RequestURL.Scheme.ToUpper());
-					ClientResponse.AddHeader("Upgrade", RequestURL.Scheme.ToUpper());
-					SendError(101, "Cannot work with " + RequestURL.Scheme.ToUpper() + " protocol. Please connect directly bypassing the proxy.");
 					return;
 				}
 
