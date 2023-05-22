@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net;
-using System.Text;
 using static WebOne.Program;
 
 namespace WebOne
@@ -40,7 +39,7 @@ namespace WebOne
 		/// </summary>
 		public override void Start()
 		{
-			Log.WriteLine(true, false, "Starting server...");
+			//Log.WriteLine(true, false, "Starting server...");
 			//if (_listener == null) _listener = new HttpListener();
 			try { int test = _listener.Prefixes.Count; }
 			catch { _listener = new HttpListener(); /*initialize HttpListener if it is not ready*/ }
@@ -48,7 +47,7 @@ namespace WebOne
 			_listener.Start();
 			_listener.BeginGetContext(ProcessRequest, null);
 			Working = true;
-			Log.WriteLine(true, false, "Listening for HTTP 1.x on port {0}.", Port);
+			Log.WriteLine(true, false, " =1= Internet (HTTP): \t {0}:{1}", ConfigFile.DefaultHostName, Port);
 			UpdateStatistics();
 		}
 
@@ -59,13 +58,13 @@ namespace WebOne
 		{
 			Working = false;
 			Log.BeginTime = DateTime.Now;
-			Log.WriteLine(true, true, "Shutdown server...");
+			//Log.WriteLine(true, true, "Shutdown server...");
 			if (_listener != null)
 			{
 				if (_listener.IsListening) _listener.Stop();
 				_listener.Prefixes.Clear();
 			}
-			Log.WriteLine(true, true, "Server stopped.");
+			Log.WriteLine(true, true, "HTTP Server stopped.");
 		}
 
 

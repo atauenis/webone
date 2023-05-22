@@ -11,9 +11,14 @@ namespace WebOne
 	static class ConfigFile
 	{
 		/// <summary>
-		/// TCP port that should be used by the Proxy Server
+		/// TCP port that should be used by the Proxy Server (primary for HTTP)
 		/// </summary>
 		public static int Port = 80;
+
+		/// <summary>
+		/// TCP port that should be used by the Proxy Server (secondary for HTTPS, FTP, other)
+		/// </summary>
+		public static int Port2 = 81;
 
 		/// <summary>
 		/// List of domains that should be open only using HTTPS
@@ -194,11 +199,6 @@ namespace WebOne
 		/// Enable built-in Web-FTP client
 		/// </summary>
 		public static bool EnableWebFtp = true;
-
-		/// <summary>
-		/// Enable new experimental implementation of HTTP server
-		/// </summary>
-		public static bool EnableNewHttpServer = false;
 
 
 

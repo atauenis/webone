@@ -166,7 +166,13 @@ namespace WebOne
 							switch (Option.Key)
 							{
 								case "Port":
+								case "HttpPort":
 									ConfigFile.Port = Convert.ToInt32(Option.Value);
+									break;
+								case "Port2":
+								case "HttpsPort":
+								case "FtpPort":
+									ConfigFile.Port2 = Convert.ToInt32(Option.Value);
 									break;
 								case "OutputEncoding":
 									ConfigFile.OutputEncoding = GetCodePage(Option.Value);
@@ -262,9 +268,6 @@ namespace WebOne
 									break;
 								case "EnableWebFtp":
 									ConfigFile.EnableWebFtp = ToBoolean(Option.Value);
-									break;
-								case "EnableNewHttpServer":
-									ConfigFile.EnableNewHttpServer = ToBoolean(Option.Value);
 									break;
 								default:
 									Log.WriteLine(true, false, "Warning: Unknown server option {0} in {1}.", Option.Key, Option.Location);
@@ -417,6 +420,7 @@ namespace WebOne
 			Variables.Add("Proxy", ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString());
 			Variables.Add("ProxyHost", ConfigFile.DefaultHostName);
 			Variables.Add("ProxyPort", ConfigFile.Port.ToString());
+			Variables.Add("ProxySecondPort", ConfigFile.Port2.ToString());
 
 			Console.WriteLine("Configuration load complete.");
 			foreach (string f in LoadedFiles) { Log.WriteLine(false, false, "Configuration file {0} load complete.", f); }

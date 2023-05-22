@@ -44,11 +44,11 @@ namespace WebOne
 		/// </summary>
 		public override void Start()
 		{
-			Log.WriteLine(true, false, "Starting server...\t\t\t\t     EnableNewHttpServer = yes.");
+			//Log.WriteLine(true, false, "Starting server...\t\t\t\t     EnableNewHttpServer = yes.");
 			Listener.Start();
 			Listener.BeginAcceptTcpClient(ProcessConnection, null);
 			Working = true;
-			Log.WriteLine(true, false, "Listening for connections on port {0}.", Port);
+			Log.WriteLine(true, false, " =2= Secure and FTP: \t {0}:{1}", ConfigFile.DefaultHostName, Port);
 			UpdateStatistics();
 		}
 
@@ -59,12 +59,12 @@ namespace WebOne
 		{
 			Working = false;
 			Log.BeginTime = DateTime.Now;
-			Log.WriteLine(true, true, "Shutdown server...");
+			//Log.WriteLine(true, true, "Shutdown server...");
 			if (Listener != null)
 			{
 				Listener.Stop();
 			}
-			Log.WriteLine(true, true, "Server stopped.");
+			Log.WriteLine(true, true, "Secure & FTP Server stopped.");
 		}
 
 		/// <summary>

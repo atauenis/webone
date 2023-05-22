@@ -466,8 +466,10 @@ namespace WebOne
 									Log.WriteLine("<Return PAC/WPAD script.");
 									string LocalHostAdress = GetServerName();
 									if (LocalHostAdress.StartsWith("[")) LocalHostAdress = ConfigFile.DefaultHostName + ":" + ConfigFile.Port; //on IPv6, fallback to DefaultHostName:Port
+									string LocalHostAdress2 = GetServerName().Replace(ConfigFile.Port.ToString(), ConfigFile.Port2.ToString()); //for HTTPS, FTP
+									if (LocalHostAdress2.StartsWith("[")) LocalHostAdress2 = ConfigFile.DefaultHostName + ":" + ConfigFile.Port2;
 
-									string PacString = Program.ProcessUriMasks(ConfigFile.PAC, LocalHostAdress, false, new Dictionary<string, string>() { { "PACProxy", LocalHostAdress } });
+									string PacString = Program.ProcessUriMasks(ConfigFile.PAC, LocalHostAdress, false, new Dictionary<string, string>() { { "PACProxy", LocalHostAdress }, { "PACProxy2", LocalHostAdress2 } });
 
 									byte[] PacBuffer = Encoding.Default.GetBytes(PacString);
 									try

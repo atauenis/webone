@@ -18,13 +18,17 @@ namespace WebOne
 	public static class Program
 	{
 		public static LogWriter Log = new LogWriter();
-		private static HttpServer HTTPS;
+
+		//private static HttpServer HTTPS;
+		private static HttpServer1 PrimaryServer;
+		private static HttpServer2 SecondaryServer;
 
 		public const string ConfigFileAutoName = "**auto**webone.conf";
-        public static string CustomConfigFile = "";
+		public static string CustomConfigFile = "";
 		public static string ConfigFileName = ConfigFileAutoName;
 		public static string OverrideLogFile = "";
 		public static int Port = -1;
+		public static int Port2 = -1;
 		public static int Load = 0;
 		public static bool DaemonMode = false;
 		static bool ShutdownInitiated = false;
@@ -39,6 +43,10 @@ namespace WebOne
 			"function FindProxyForURL(url, host){\n" +
 			"if (url.substring(0, 5) == 'http:')\n" +
 			"{ return 'PROXY %PACProxy%'; }\n" +
+			"if (url.substring(0, 6) == 'https:')\n" +
+			"{ return 'PROXY %PACProxy2%'; }\n" +
+			"if (url.substring(0, 4) == 'ftp:')\n" +
+			"{ return 'PROXY %PACProxy2%'; }\n" +
 			"} /*WebOne PAC*/ ";
 
 		static void Main(string[] args)
@@ -47,7 +55,7 @@ namespace WebOne
 			Assembly.GetExecutingAssembly().GetName().Version.Major + "." +
 			Assembly.GetExecutingAssembly().GetName().Version.Minor + "." +
 			Assembly.GetExecutingAssembly().GetName().Version.Build
-			+ "-pre"
+			+ "-alpha1"
 			);
 			Variables.Add("WOSystem", Environment.OSVersion.ToString());
 
@@ -64,16 +72,17 @@ namespace WebOne
 				ConfigFileLoader.LoadFile(ConfigFileName);
 				ConfigFileLoader.ProcessConfiguration();
 				if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Port = Port;
+				if (Port2 < 1) Port2 = ConfigFile.Port2; else ConfigFile.Port2 = Port2;
 			}
 			catch (Exception ConfigLoadException)
 			{
 				Console.WriteLine("Error while loading configuration: {0}", ConfigLoadException.Message);
-				if (!DaemonMode) try 
-				{
-					Console.WriteLine("\nPress any key to exit.");
-					Console.ReadKey();
-				}
-				catch (InvalidOperationException) { /* prevent crash on non-interactive terminals */ }
+				if (!DaemonMode) try
+					{
+						Console.WriteLine("\nPress any key to exit.");
+						Console.ReadKey();
+					}
+					catch (InvalidOperationException) { /* prevent crash on non-interactive terminals */ }
 				Log.WriteLine(false, false, "WebOne has been exited due to lack of configuration.");
 				return;
 			}
@@ -101,7 +110,8 @@ namespace WebOne
 			HTTPHandler.AllowAutoRedirect = false;
 			HTTPHandler.AutomaticDecompression = ConfigFile.AllowHttpCompression ? DecompressionMethods.All : DecompressionMethods.None;
 			HTTPHandler.UseCookies = false;
-			if(ConfigFile.UpperProxy != ""){
+			if (ConfigFile.UpperProxy != "")
+			{
 				if (ConfigFile.UpperProxy == "no" || ConfigFile.UpperProxy == "off" || ConfigFile.UpperProxy == "disable" || ConfigFile.UpperProxy == "false" || ConfigFile.UpperProxy == "direct")
 				{
 					HTTPHandler.UseProxy = false;
@@ -122,10 +132,8 @@ namespace WebOne
 			//initialize server
 			try
 			{
-				if (ConfigFile.EnableNewHttpServer)
-					HTTPS = new HttpServer2(ConfigFile.Port);
-				else
-					HTTPS = new HttpServer1(ConfigFile.Port);
+				PrimaryServer = new(ConfigFile.Port);
+				SecondaryServer = new(ConfigFile.Port2);
 			}
 			catch (Exception ex)
 			{
@@ -139,7 +147,11 @@ namespace WebOne
 			{
 				try
 				{
-					HTTPS.Start();
+					Log.WriteLine(true, false, "Starting servers...");
+					PrimaryServer.Start();
+					SecondaryServer.Start();
+					Console.WriteLine(" =3= Auto-configuration: http://{0}:{1}/auto.pac", ConfigFile.DefaultHostName, Port);
+					Log.WriteLine(true, false, "Ready for incoming connections.");
 					break;
 				}
 				catch (HttpListenerException ex)
@@ -165,7 +177,7 @@ namespace WebOne
 							Console.Write("Do you want to add a Windows Network Shell rule to run WebOne with user rights? (Y/N)");
 							if (Console.ReadKey().Key == ConsoleKey.Y)
 							{
-								ConfigureWindowsNetShell(Port);
+								ConfigureWindowsNetShell(Port, Port2);
 								continue;
 							}
 							else
@@ -192,7 +204,8 @@ namespace WebOne
 			Console.CancelKeyPress += (s, e) => { Shutdown(); };
 
 			//wait while server is in work
-			while (HTTPS.Working) { Thread.Sleep(250); }
+			//while (HTTPS.Working) { Thread.Sleep(250); }
+			while (PrimaryServer.Working) { Thread.Sleep(250); }
 
 			//the end
 			Shutdown();
@@ -207,14 +220,16 @@ namespace WebOne
 			if (ShutdownInitiated) return;
 			ShutdownInitiated = true;
 
-			if (HTTPS != null && HTTPS.Working) HTTPS.Stop();
+			//if (HTTPS != null && HTTPS.Working) HTTPS.Stop();
+			if (PrimaryServer != null && PrimaryServer.Working) PrimaryServer.Stop();
+			if (SecondaryServer != null && SecondaryServer.Working) SecondaryServer.Stop();
 
 			if (!DaemonMode && !Environment.HasShutdownStarted && !ShutdownInitiated) try
-			{
-				Console.WriteLine("\nPress any key to exit.");
-				Console.ReadKey();
-			}
-			catch (InvalidOperationException) { /* prevent crash on non-interactive terminals */ }
+				{
+					Console.WriteLine("\nPress any key to exit.");
+					Console.ReadKey();
+				}
+				catch (InvalidOperationException) { /* prevent crash on non-interactive terminals */ }
 
 			Log.WriteLine(false, false, "WebOne has been exited.");
 			Environment.ExitCode = Code;
@@ -268,11 +283,11 @@ namespace WebOne
 				// Console.WriteLine("Arg: '{0}' = '{1}'", kvp.Key, kvp.Value);
 				switch (kvp.Key)
 				{
-                    case "/cfg":
-                    case "-cfg":
-                    case "-config":
+					case "/cfg":
+					case "-cfg":
+					case "-config":
 						CustomConfigFile = ExpandMaskedVariables(kvp.Value);
-                        break;
+						break;
 					case "/l":
 					case "-l":
 					case "--log":
@@ -318,7 +333,8 @@ namespace WebOne
 						if (int.TryParse(kvp.Value, out int CustomPort))
 						{
 							Port = CustomPort;
-							Console.WriteLine("Using custom port {0}.", Port); 
+							Port2 = CustomPort + 1;
+							Console.WriteLine("Using custom ports {0}, {1}.", Port, Port2);
 							break;
 						}
 
@@ -337,69 +353,69 @@ namespace WebOne
 		/// <param name="CP">Code page number.</param>
 		internal static Encoding GetCodePage(string CP)
 		{
-			switch(CP.ToLower())
+			switch (CP.ToLower())
 			{
 				case "windows":
 				case "win":
 				case "ansi":
 					return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ANSICodePage);
-					/* Microsoft Windows code pages:
-					 * windows-1250	Czech, Polish, Slovak, Hungarian, Slovene, Serbo-Croatian, Montenegrian, Romanian (<1993), Gagauz, Rotokas, Albanian, English, German, Luxembourgish
-					 * windows-1251	Russian, Ukrainian, Belarusian, Bulgarian, Serbian Cyrillic, Bosnian Cyrillic, Macedonian, Rusyn
-					 * windows-1252	(All of ISO-8859-1 plus full support for French and Finnish)
-					 * windows-1253 Greek
-					 * windows-1254	Turkish
-					 * windows-1255	Hebrew
-					 * windows-1256	Arabic
-					 * windows-1257	Estonian, Latvian, Lithuanian, Latgalian
-					 * windows-1258 Vietnamese
-					 * windows-874	Thai
-					 */
+				/* Microsoft Windows code pages:
+				 * windows-1250	Czech, Polish, Slovak, Hungarian, Slovene, Serbo-Croatian, Montenegrian, Romanian (<1993), Gagauz, Rotokas, Albanian, English, German, Luxembourgish
+				 * windows-1251	Russian, Ukrainian, Belarusian, Bulgarian, Serbian Cyrillic, Bosnian Cyrillic, Macedonian, Rusyn
+				 * windows-1252	(All of ISO-8859-1 plus full support for French and Finnish)
+				 * windows-1253 Greek
+				 * windows-1254	Turkish
+				 * windows-1255	Hebrew
+				 * windows-1256	Arabic
+				 * windows-1257	Estonian, Latvian, Lithuanian, Latgalian
+				 * windows-1258 Vietnamese
+				 * windows-874	Thai
+				 */
 				case "dos":
 				case "oem":
 				case "ascii":
 					return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
-					/* MS-DOS, IBM OS/2 code pages:
-					 * 437	Default: English, German, Swedish
-					 * 720	Arabic in Egypt, Iraq, Jordan, Saudi Arabia, and Syria
-					 * 737	Greek
-					 * 775	Estonian, Lithuanian and Latvian
-					 * 850	West European: at least Spanish, Italian, French
-					 * 852	Bosnian, Croatian, Czech, Hungarian, Polish, Romanian, Moldavian, Serbian, Slovak or Slovene
-					 * 855	Serbian, Macedonian and Bulgarian
-					 * 857	Turkish
-					 * 860	Portuguese (mostly - Brasilian)
-					 * 861	Icelandic
-					 * 862	Hebrew
-					 * 863	French in Canada (mainly in Quebec province)
-					 * 864	Arabic in Egypt, Iraq, Jordan, Saudi Arabia, and Syria (?)
-					 * 865	Danish and Norwegian
-					 * 866	Russian, Ukrainian, Byelarussian
-					 * 874	Thai
-					 * 932	Japan
-					 * 936	Chinese simplified (PRC)
-					 * 949	Korean
-					 * 950	Chinese traditional (Taiwan island)
-					 */
+				/* MS-DOS, IBM OS/2 code pages:
+				 * 437	Default: English, German, Swedish
+				 * 720	Arabic in Egypt, Iraq, Jordan, Saudi Arabia, and Syria
+				 * 737	Greek
+				 * 775	Estonian, Lithuanian and Latvian
+				 * 850	West European: at least Spanish, Italian, French
+				 * 852	Bosnian, Croatian, Czech, Hungarian, Polish, Romanian, Moldavian, Serbian, Slovak or Slovene
+				 * 855	Serbian, Macedonian and Bulgarian
+				 * 857	Turkish
+				 * 860	Portuguese (mostly - Brasilian)
+				 * 861	Icelandic
+				 * 862	Hebrew
+				 * 863	French in Canada (mainly in Quebec province)
+				 * 864	Arabic in Egypt, Iraq, Jordan, Saudi Arabia, and Syria (?)
+				 * 865	Danish and Norwegian
+				 * 866	Russian, Ukrainian, Byelarussian
+				 * 874	Thai
+				 * 932	Japan
+				 * 936	Chinese simplified (PRC)
+				 * 949	Korean
+				 * 950	Chinese traditional (Taiwan island)
+				 */
 				case "mac":
 				case "apple":
 					return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.MacCodePage);
-					/* Apple MacOS (Classic) code pages:
-					 * macintosh				(Latin default)
-					 * x-mac-arabic
-					 * x-mac-ce					(Czech, Slovak, Polish, Estonian, Latvian, Lithuanian)
-					 * x-mac-chinesetrad		(Taiwan island)
-					 * x-mac-croatian
-					 * x-mac-cyrillic			(Russian, Bulgarian, Belarusian, Macedonian, Serbian)
-					 * x-mac-greek
-					 * x-mac-hebrew
-					 * x-mac-icelandic
-					 * x-mac-japanese
-					 * x-mac-romanian			(Romanian & Moldavian)
-					 * x-mac-thai
-					 * x-mac-turkish
-					 * x-mac-ukrainian
-					 */
+				/* Apple MacOS (Classic) code pages:
+				 * macintosh				(Latin default)
+				 * x-mac-arabic
+				 * x-mac-ce					(Czech, Slovak, Polish, Estonian, Latvian, Lithuanian)
+				 * x-mac-chinesetrad		(Taiwan island)
+				 * x-mac-croatian
+				 * x-mac-cyrillic			(Russian, Bulgarian, Belarusian, Macedonian, Serbian)
+				 * x-mac-greek
+				 * x-mac-hebrew
+				 * x-mac-icelandic
+				 * x-mac-japanese
+				 * x-mac-romanian			(Romanian & Moldavian)
+				 * x-mac-thai
+				 * x-mac-turkish
+				 * x-mac-ukrainian
+				 */
 				case "ebcdic":
 				case "ibm":
 					/* Old IBM mainframes (EBCDIC) code pages:
@@ -410,7 +426,7 @@ namespace WebOne
 				case "iso-8859":
 				case "iso8859":
 					CultureInfo ci = CultureInfo.CurrentCulture;
-					switch(ci.TwoLetterISOLanguageName.ToLower())
+					switch (ci.TwoLetterISOLanguageName.ToLower())
 					{
 						default:
 							/*
@@ -499,14 +515,14 @@ namespace WebOne
 							 * French, Finnish and Estonian.
 							 */
 							return CodePagesEncodingProvider.Instance.GetEncoding("iso-8859-15");
-						/*
-						 * ISO-8859 parts # 10, 11, 12, 14, 16 are not supported by .NET 6.0:
-						 * 10 - Latin-6 (Nordic)
-						 * 11 - Thai
-						 * 12 - Devanagari
-						 * 14 - Latin-8 (Celtic)
-						 * 16 - Latin-10 (South-Eastern)
-						*/
+							/*
+							 * ISO-8859 parts # 10, 11, 12, 14, 16 are not supported by .NET 6.0:
+							 * 10 - Latin-6 (Nordic)
+							 * 11 - Thai
+							 * 12 - Devanagari
+							 * 14 - Latin-8 (Celtic)
+							 * 16 - Latin-10 (South-Eastern)
+							*/
 					}
 				case "0":
 				case "asis":
@@ -576,6 +592,13 @@ namespace WebOne
 						case "--http-port":
 							Port = Convert.ToInt32(kvp.Value);
 							ConfigFile.Port = Convert.ToInt32(kvp.Value);
+							break;
+						case "/s":
+						case "-s":
+						case "--ftp-port":
+						case "--https-port":
+							Port2 = Convert.ToInt32(kvp.Value);
+							ConfigFile.Port2 = Convert.ToInt32(kvp.Value);
 							break;
 						case "/h":
 						case "-h":
@@ -748,14 +771,14 @@ namespace WebOne
 		{
 			AverageLoad = (float)(AverageLoad + GetUsage(Proc)) / 2;
 
-			if(!Proc.HasExited)
-			if (Math.Round(AverageLoad, 6) <= 0 && !Proc.HasExited)
-			{
-				//the process is counting crows. Fire!
-				Proc.Kill();
-				if (Console.GetCursorPosition().Left > 0) Console.WriteLine();
-				Log.WriteLine(" Idle process {0} killed.", Proc.ProcessName);
-			}
+			if (!Proc.HasExited)
+				if (Math.Round(AverageLoad, 6) <= 0 && !Proc.HasExited)
+				{
+					//the process is counting crows. Fire!
+					Proc.Kill();
+					if (Console.GetCursorPosition().Left > 0) Console.WriteLine();
+					Log.WriteLine(" Idle process {0} killed.", Proc.ProcessName);
+				}
 		}
 
 
@@ -886,7 +909,7 @@ namespace WebOne
 
 			if (CustomConfigFile != "")
 			{
-				if(File.Exists(CustomConfigFile))
+				if (File.Exists(CustomConfigFile))
 				{
 					CustomConfigFile = new FileInfo(CustomConfigFile).FullName;
 					Console.WriteLine("Using custom configuration from {0}.", CustomConfigFile);
@@ -896,11 +919,11 @@ namespace WebOne
 				{
 					Console.WriteLine("ERROR: Custom configuration file is not found: {0}.", CustomConfigFile);
 					if (!DaemonMode) try
-					{
-						Console.WriteLine("\nPress any key to exit.");
-						Console.ReadKey();
-					}
-					catch (InvalidOperationException) { /* prevent crash on non-interactive terminals (#87) */ }
+						{
+							Console.WriteLine("\nPress any key to exit.");
+							Console.ReadKey();
+						}
+						catch (InvalidOperationException) { /* prevent crash on non-interactive terminals (#87) */ }
 					Environment.Exit(0);
 				}
 			}
@@ -911,8 +934,8 @@ namespace WebOne
 				case PlatformID.Unix:
 					CurrentDirConfigFile = "./webone.conf";
 					DefaultConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + "/webone.conf";
-                    UserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.config/webone/webone.conf";
-                    CommonConfigFile = "/etc/webone.conf";
+					UserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.config/webone/webone.conf";
+					CommonConfigFile = "/etc/webone.conf";
 
 					string MacUserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/Library/Application Support/WebOne/webone.conf";
 					string MacCommonConfigFile = "/Library/Application Support/WebOne/webone.conf";
@@ -980,15 +1003,16 @@ namespace WebOne
 		/// <summary>
 		/// Configure Windows Network Shell (netsh) to allow use TCP/IP <paramref name="Port"/> without admin rights and then open Windows Firewall
 		/// </summary>
-		/// <param name="Port">WebOne HTTP port number</param>
-		public static void ConfigureWindowsNetShell(int Port)
+		/// <param name="Port1">WebOne HTTP port number</param>
+		/// <param name="Port2">WebOne HTTPS/FTP port number</param>
+		public static void ConfigureWindowsNetShell(int Port1, int Port2)
 		{
 			//fix for https://github.com/atauenis/webone/issues/14
 			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
 				throw new InvalidOperationException("Only for MS Windows");
 
 			string address, NTdomain, NTuser;
-			address = string.Format("http://*:{0}/", Port);
+			address = string.Format("http://*:{0}/", Port1);
 			NTdomain = Environment.UserDomainName;
 			NTuser = Environment.UserName;
 
@@ -996,7 +1020,7 @@ namespace WebOne
 			Console.WriteLine();
 			Log.WriteLine(false, false, "Started NETSH configurtion \"wizard\". Logging is not implemented here.");
 
-			Console.Write(" Do you want to add system rule allowing user {0} to run WebOne on port {1}? (Y/N)", "\"" + NTdomain + "\\" + NTuser + "\"", Port);
+			Console.Write(" Do you want to add system rule allowing user {0} to run WebOne on port {1}? (Y/N)", "\"" + NTdomain + "\\" + NTuser + "\"", Port1);
 			if (Console.ReadKey().Key == ConsoleKey.Y)
 			{
 				string args = string.Format(@"http add urlacl url={0}", address) + " user=\"" + NTdomain + "\\" + NTuser + "\"";
@@ -1013,10 +1037,27 @@ namespace WebOne
 			}
 			Console.WriteLine();
 
-			Console.Write(" Do you want to open port {0} in Windows Firewall for inbound connections? (Y/N)", Port);
+			Console.Write(" Do you want to open port {0} in Windows Firewall for inbound connections? (Y/N)", Port1);
 			if (Console.ReadKey().Key == ConsoleKey.Y)
 			{
-				string args = string.Format(@"advfirewall firewall add rule name=HTTP dir=in action=allow protocol=TCP localport={0}", Port);
+				string args = string.Format(@"advfirewall firewall add rule name=WebOneHTTP dir=in action=allow protocol=TCP localport={0}", Port1);
+				ProcessStartInfo psi;
+				psi = new ProcessStartInfo("netsh", args);
+				psi.Verb = "runas";
+				psi.CreateNoWindow = true;
+				psi.WindowStyle = ProcessWindowStyle.Hidden;
+				psi.UseShellExecute = true;
+
+				Console.WriteLine("\n Running as administrator: netsh " + args);
+				try { Process.Start(psi).WaitForExit(); Console.WriteLine(" OK."); }
+				catch (Exception ex) { Console.WriteLine(" Error: {0}", ex.Message); }
+			}
+			Console.WriteLine();
+
+			Console.Write(" Do you want to open port {0} in Windows Firewall for inbound connections? (Y/N)", Port2);
+			if (Console.ReadKey().Key == ConsoleKey.Y)
+			{
+				string args = string.Format(@"advfirewall firewall add rule name=WebOneHTTPS dir=in action=allow protocol=TCP localport={0}", Port2);
 				ProcessStartInfo psi;
 				psi = new ProcessStartInfo("netsh", args);
 				psi.Verb = "runas";
