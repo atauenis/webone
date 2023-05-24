@@ -64,13 +64,22 @@ namespace WebOne
 #endif
 			try
 			{
-				//check for HTTPS proxy mode
+				//check for Secure (HTTPS) Proxy mode
 				if (ClientRequest.HttpMethod.ToUpper() == "CONNECT")
 				{
-					//TODO: here will be call of future SSL transit class
-					Log.WriteLine(" HTTPS is not fully implemented now, use HTTP.");
-					SendError(501, "Please open the page using HTTP protocol in URL.");
-					return;
+					try
+					{
+						//work as HTTPS proxy
+						HttpSecureServer FakeSrv = new(ClientRequest, ClientResponse, Log);
+						FakeSrv.Accept();
+						return;
+					}
+					catch (Exception ex)
+					{
+						Log.WriteLine(" Cannot made SSL connection: {0}", ex);
+						SendError(501, "Sorry, an error occured on creating client SSL tunnel: " + ex.Message + "<br>Error " + ex.StackTrace.Replace("\n", "<br>")); ;
+						return;
+					}
 				}
 
 				//check IP black list
@@ -558,15 +567,15 @@ namespace WebOne
 
 				//check for FTP/GOPHER/WAIS-over-HTTP requests (a.k.a. CERN Proxy Mode)
 				//https://support.microsoft.com/en-us/help/166961/how-to-ftp-with-cern-based-proxy-using-wininet-api
-				if(ClientRequest.RawUrl.Contains("://"))
+				if (ClientRequest.RawUrl.Contains("://"))
 				{
-					if(!RequestURL.Scheme.StartsWith("http")) Log.WriteLine(" CERN Proxy request to {0} detected.", RequestURL.Scheme.ToUpper());
+					if (!RequestURL.Scheme.StartsWith("http")) Log.WriteLine(" CERN Proxy request to {0} detected.", RequestURL.Scheme.ToUpper());
 
 					string[] KnownProtocols = { "http", "https", "ftp" };
 					if (!CheckString(RequestURL.Scheme, KnownProtocols))
 					{
 						string BadProtocolMessage =
-						"<p>You're attempted to request content from <i>" + ClientRequest.RawUrl + "</i>. "+
+						"<p>You're attempted to request content from <i>" + ClientRequest.RawUrl + "</i>. " +
 						"The protocol specified in the URL is not supported by this proxy server.</p>" +
 						"<p>Consider connect directly to the server, bypassing the proxy. This error message may also appear if your Web browser settings have enabled " +
 						"<b>&quot;Use proxy for all protocols&quot;</b> option. Uncheck it and set only for protocols supported by WebOne. List of them can be found in project's Wiki.</p>";

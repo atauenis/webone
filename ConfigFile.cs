@@ -200,6 +200,16 @@ namespace WebOne
 		/// </summary>
 		public static bool EnableWebFtp = true;
 
+		/// <summary>
+		/// Path to SSL/TLS Certificate (used as CA for fake certificates)
+		/// </summary>
+		public static string SslCertificate = "ssl.crt";
+		
+		/// <summary>
+		/// Path to SSL/TLS Certificate private key (used as CA for fake certificates)
+		/// </summary>
+		public static string SslPrivateKey = "ssl.key";
+
 
 
 		// Hint: All parser-related stuff known from v0.2.0 - 0.10.7 has been rewritten and moved to ConfigFileLoader class.

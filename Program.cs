@@ -49,13 +49,15 @@ namespace WebOne
 			"{ return 'PROXY %PACProxy2%'; }\n" +
 			"} /*WebOne PAC*/ ";
 
+		public static X509Certificate2 RootCertificate;
+
 		static void Main(string[] args)
 		{
 			Variables.Add("WOVer",
 			Assembly.GetExecutingAssembly().GetName().Version.Major + "." +
 			Assembly.GetExecutingAssembly().GetName().Version.Minor + "." +
 			Assembly.GetExecutingAssembly().GetName().Version.Build
-			+ "-alpha1"
+			+ "-alpha2"
 			);
 			Variables.Add("WOSystem", Environment.OSVersion.ToString());
 
@@ -128,6 +130,19 @@ namespace WebOne
 			if (!DaemonMode) Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + ConfigFile.Port;
 
 			Log.WriteLine(false, false, "Configured to http://{1}:{2}/, HTTP 1.0", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port);
+
+			//create SSL PEM (.crt & .key files) for CA (aka root certificate)
+			if (File.Exists(ConfigFile.SslCertificate))
+			{
+				Log.WriteLine(true, false, "Using as Certificate Authority: {0}, Key: {1}", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
+			}
+			else
+			{
+				Log.WriteLine(true, false, "Creating SSL Certificate & Private Key for Root CA...");
+				CertificateUtil.MakeCert(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
+				Log.WriteLine(true, false, "CA Certificate: {0}; Key: {1}", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
+			}
+			RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));
 
 			//initialize server
 			try

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 
 namespace WebOne
@@ -128,11 +129,17 @@ namespace WebOne
 		public TcpClient TcpclientBackend { get; set; }
 
 		/// <summary>
+		/// SslSltream, used to send this HTTP Response (or null if another backend is used).
+		/// </summary>
+		public SslStream SslBackend { get; set; }
+
+		/// <summary>
 		/// Specifies value that indicates whether the client connection can be persistent after this response.
 		/// </summary>
 		/// <returns>true if the connection should be kept open; otherwise, false.</returns>
 		public bool KeepAlive { get; set; }
 		// note: this means that all request bytes are read by Proxy, and next bytes will be next request start ("GET /index.htm HTTP/1.1")
+
 
 		/// <summary>
 		/// Initialize an instance of an response to a HTTP request, used with a HttpListenerContext instance.
@@ -154,6 +161,18 @@ namespace WebOne
 		{
 			TcpclientBackend = Backend;
 			OutputStream = Backend.GetStream();
+
+			Headers = new WebHeaderCollection();
+		}
+
+		/// <summary>
+		/// Initialize an instance of an response to a HTTPS request, used with a SslStream instance.
+		/// </summary>
+		/// <param name="Backend">SslStream which will be used to communicate with client.</param>
+		public HttpResponse(SslStream Backend)
+		{
+			SslBackend = Backend;
+			outputStream = Backend;
 
 			Headers = new WebHeaderCollection();
 		}
@@ -182,8 +201,7 @@ namespace WebOne
 			}
 			if (TcpclientBackend != null)
 			{
-				//will be written
-				StreamWriter ClientStreamWriter = new StreamWriter(TcpclientBackend.GetStream());
+				StreamWriter ClientStreamWriter = new(TcpclientBackend.GetStream());
 				ClientStreamWriter.WriteLine(ProtocolVersionString + " " + StatusCode);
 				string HeadersString = Headers.ToString().Replace("\r\n", "\n").Replace("\n\n", "");
 				ClientStreamWriter.WriteLine(HeadersString);
@@ -192,7 +210,18 @@ namespace WebOne
 				HeadersSent = true;
 				return;
 			}
-			throw new Exception("Backend not set.");
+			if(SslBackend != null)
+			{
+				StreamWriter ClientStreamWriter = new(SslBackend);
+				ClientStreamWriter.WriteLine(ProtocolVersionString + " " + StatusCode);
+				string HeadersString = Headers.ToString().Replace("\r\n", "\n").Replace("\n\n", "");
+				ClientStreamWriter.WriteLine(HeadersString);
+				ClientStreamWriter.WriteLine();
+				ClientStreamWriter.Flush();
+				HeadersSent = true;
+				return;
+			}
+			throw new Exception("Backend is unsupported or not set.");
 		}
 
 		/// <summary>
@@ -208,7 +237,13 @@ namespace WebOne
 				if (!KeepAlive) TcpclientBackend.Close();
 				return;
 			}
-			throw new Exception("Backend not set.");
+			if (SslBackend != null)
+			{
+				SslBackend.Flush();
+				if (!KeepAlive) SslBackend.Close();
+				return;
+			}
+			throw new Exception("Backend is unsupported or not set.");
 		}
 
 		/// <summary>

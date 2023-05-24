@@ -403,6 +403,20 @@ namespace WebOne
 							else Log.WriteLine(true, false, "Warning: Incorrect online video convert option at {0}.", Line.Location);
 						}
 						break;
+					case "SecureProxy":
+						foreach (ConfigFileOption Option in Section.Options)
+						{
+							switch (Option.Key)
+							{
+								case "SslCertificate":
+									ConfigFile.SslCertificate = Option.Value;
+									break;
+								case "SslPrivateKey":
+									ConfigFile.SslPrivateKey = Option.Value;
+									break;
+							}
+						}
+						break;
 					case "FixableURL":
 					case "FixableType":
 					case "ContentPatch":
