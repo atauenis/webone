@@ -195,6 +195,9 @@ namespace WebOne
 					if (RequestURL.Port == ConfigFile.Port)
 						IsLocalhost = true;
 
+				// The code below will replace code above in near future
+				if (ClientRequest.Kind == HttpUtil.RequestKind.StandardLocal || ClientRequest.Kind == HttpUtil.RequestKind.DirtyProxy) IsLocalhost = true;
+
 				if (IsLocalhost)
 				{
 					bool PAC = false;
@@ -1316,7 +1319,10 @@ namespace WebOne
 		/// <returns>The fixed body, compatible with old browsers</returns>
 		private string ProcessBody(string Body)
 		{
-			Body = Body.Replace("https", "http");
+			if (!ClientRequest.IsSecureConnection)
+			{
+				Body = Body.Replace("https", "http");
+			}
 
 			if (OutputContentEncoding != null)
 			{

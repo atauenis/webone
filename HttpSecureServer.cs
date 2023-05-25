@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.Security;
 using System.Security.Authentication;
@@ -31,15 +30,17 @@ namespace WebOne
 			ClientStreamReal = Request.InputStream;
 			this.Logger = Logger;
 
+#if DEBUG
 			Logger.WriteLine(">SSL: {0}", Request.RawUrl);
+#endif
 
 			// Get WebOne CA certificate
 			//Certificate = new X509Certificate2(ConfigFile.SslCertificate); //if DER format
 			//Certificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12)); //if PEM format
 			Certificate = RootCertificate; //temporary
 
-			// Make a fake certificate for current domain
-			// (in future)
+			// Make a fake certificate for current domain, signed by CA certificate
+			// UNDONE
 			// see https://github.com/wheever/ProxHTTPSProxyMII/blob/master/CertTool.py#L58 for ideas
 			/*
 			//Certificate = new X509Certificate2(ConfigFile.SslCertificate, "");
@@ -74,161 +75,58 @@ namespace WebOne
 			ResponseReal.AddHeader("Via", "HTTPS/1.0 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
 			ResponseReal.SendHeaders();
 
-			// Perform SSL handshake and establish a inner tunnel
-			ClientStreamTunnel = new SslStream(ClientStreamReal, false);
-			//ClientStream.AuthenticateAsServer(Certificate, false, SslProtocols.Tls | SslProtocols.Ssl3 | SslProtocols.Ssl2, true);
-			ClientStreamTunnel.AuthenticateAsServer(Certificate, false, SslProtocols.Default, false);
+			try
+			{
+				// Perform SSL handshake and establish a inner tunnel
+				ClientStreamTunnel = new SslStream(ClientStreamReal, false);
+				//ClientStream.AuthenticateAsServer(Certificate, false, SslProtocols.Tls | SslProtocols.Ssl3 | SslProtocols.Ssl2, true);
+				//ClientStreamTunnel.AuthenticateAsServer(Certificate, false, SslProtocols.Default, false);
+				ClientStreamTunnel.AuthenticateAsServer(Certificate, false, SslProtocols.Ssl2 | SslProtocols.Ssl3 | SslProtocols.Tls | SslProtocols.Tls12, false);
+				//ClientStreamTunnel.AuthenticateAsServer(Certificate, false, SslProtocols.Ssl3, false);
+
+				/* Result:
+				 * Ssl2 with Rc4 128-bit, Md5 128-bit
+				 * Ssl3 with TripleDes 168-bit, Sha1 160-bit
+				 * Tls with Aes256 256-bit, Sha1 160-bit
+				 * Tls12 with Aes256 256-bit, Sha1 160-bit
+				 */
+			}
+			catch (Exception HandshakeEx)
+			{
+				string err = HandshakeEx.Message;
+				if (HandshakeEx.InnerException != null) err = HandshakeEx.InnerException.Message;
+				Logger.WriteLine("!SSL Handshake failed: {0} ({1})", err, HandshakeEx.HResult);
+				ClientStreamReal.Close();
+				return;
+			}
 
 			// Work with unencrypted HTTP inside tunnel
 			try
 			{
-				// UNDONE: rewrite and move to separate .cs file, common used with HttpServer2
-				/* Requirements:
-				 * Must support both HttpServer2 and HttpSecureServer.
-				 * Must check for correct HTTP look.
-				 * If called from SSL, invalid (not looking as HTTP) traffic should be redirected true transparently to remote server.
-				 *    - assuming use with something like IRCS, POP3-SSL, SMTP-SSL, IMAP-SSL, etc.
-				 * If called already from SSL, ban CONNECT method.
-				 *    - security reasons (don't provocate police).
-				 */
-
 				LogWriter Logger = new();
-#if DEBUG
-				Logger.WriteLine(" Got a Secure request.");
-#endif
-				// Read text part of HTTP request (until double line feed).
-				BinaryReader br = new(ClientStreamTunnel);
-				List<char> rqChars = new();
-				while (true)
-				{
-					rqChars.Add(br.ReadChar());
-
-					if (rqChars.Count < 2) continue;
-					if (rqChars[rqChars.Count - 1] == '\r')
-					{
-						if (rqChars[rqChars.Count - 3] == '\r' && rqChars[rqChars.Count - 2] == '\n')
-						{
-							rqChars.Add(br.ReadChar());
-							break;
-						}
-					}
-				}
-
-				// Process HTTP command and headers.
-				HttpRequest Request = null;
-				bool IsCommand = true;
-				foreach (string HttpRequestLine in new string(rqChars.ToArray()).Split("\r\n"))
-				{
-					if (string.IsNullOrWhiteSpace(HttpRequestLine)) continue;
-					if (IsCommand)
-					{
-						// First line - HTTP command.
-						if (string.IsNullOrEmpty(HttpRequestLine))
-						{
-							ClientStreamTunnel.Close();
-							ClientStreamReal.Close();
-							Logger.WriteLine("<Close empty Secure connection.");
-							return;
-						}
-						string[] HttpCommandParts = HttpRequestLine.Split(' ');
-						if (HttpRequestLine.StartsWith("CONNECT"))
-						{
-							ClientStreamTunnel.Close();
-							ClientStreamReal.Close();
-							Logger.WriteLine("<Dropped: Attempt to use other HTTPS-Proxy: {0}", HttpRequestLine);
-							return;
-						}
-						else if (HttpCommandParts.Length != 3 || HttpCommandParts[2].Length != 8)
-						{
-							ClientStreamTunnel.Close();
-							ClientStreamReal.Close();
-							Logger.WriteLine("<Dropped: Non-HTTP(S) connection: {0}", HttpRequestLine);
-							return;
-						}
-
-						// First line is valid, start work with the Request.
-						Request = new()
-						{
-							HttpMethod = HttpCommandParts[0],
-							RawUrl = HttpCommandParts[1],
-							ProtocolVersionString = HttpCommandParts[2],
-							Headers = new(),
-							RemoteEndPoint = new(0, 0), // Client.Client.RemoteEndPoint as IPEndPoint,
-							LocalEndPoint = new(0, 0), // Client.Client.LocalEndPoint as IPEndPoint,
-							IsSecureConnection = true
-						};
-						if (Request.RawUrl.Contains("://"))
-						{ Request.Url = new Uri(Request.RawUrl); }
-						else if (Request.RawUrl.StartsWith('/'))
-						{ Request.Url = new Uri("http://" + Variables["Proxy"] + Request.RawUrl); }
-						else
-						{ Request.Url = new Uri("http://" + Variables["Proxy"] + "/" + Request.RawUrl); }
-
-						IsCommand = false;
-						continue;
-					}
-					else
-					{
-						// Other lines - request headers, load all of them.
-						if (string.IsNullOrWhiteSpace(HttpRequestLine)) continue;
-						Request.Headers.Add(HttpRequestLine.Substring(0, HttpRequestLine.IndexOf(": ")), HttpRequestLine.Substring(HttpRequestLine.IndexOf(": ") + 2));
-
-						if (HttpRequestLine == "Connection: keep-alive" || HttpRequestLine == "Proxy-Connection: keep-alive")
-							Request.KeepAlive = true;
-					}
-				}
-
-				if (Request == null)
-				{
-					ClientStreamTunnel.Close();
-					ClientStreamReal.Close();
-					Logger.WriteLine("<Dropped (unknown why).");
-					return;
-				}
-
-				if (Request.Headers["Content-Length"] != null)
-				{
-					// If there's a payload, convert it to a HttpRequestContentStream.
-					Request.InputStream = new HttpRequestContentStream(ClientStreamTunnel, int.Parse(Request.Headers["Content-Length"]));
-
-					/*
-					 * SslStream is not suitable for HTTP(S) request bodies. It have no length, and read operation is endless.
-					 * What is suitable - .NET's internal HttpRequestStream and ChunkedInputStream:HttpRequestStream.
-					 * See .NET source: https://source.dot.net/System.Net.HttpListener/R/d562e26091bc9f8d.html
-					 * They are reading traffic only until HTTP Content-Length or last HTTP Chunk into a correct .NET Stream format.
-					 * 
-					 * WebOne.HttpRequestContentStream is a very lightweight alternative to System.Net.HttpRequestStream.
-					 */
-				}
-				else
-				{
-					// No payload in request - original NetworkStream is suitable.
-					Request.InputStream = ClientStreamTunnel;
-				}
-
-				HttpResponse Response = new(ClientStreamTunnel);
-				HttpTransit Transit = new(Request, Response, Logger);
-				Logger.WriteLine(">(SSL) {0} {1} ({2})", Request.HttpMethod, Request.RawUrl, Transit.GetClientIdString());
-				Transit.ProcessTransit();
-
-				if (false && Request.KeepAlive && Response.KeepAlive)
-				{
-					Logger.WriteLine("<Done.");
-					//ProcessClientRequest(Client, new());
-				}
-				else
-				{
-					//Client.Close();
-					Logger.WriteLine("<Done (connection close).");
-				}
-
-				ClientStreamTunnel.Close();
+				HttpUtil.SslClient sslc = new();
+				sslc.Stream = ClientStreamTunnel;
+				sslc.LocalEndPoint = RequestReal.LocalEndPoint;
+				sslc.RemoteEndPoint = RequestReal.RemoteEndPoint;
+				sslc.TargetServer = RequestReal.RawUrl;
+				sslc.Encrypting = string.Format("{0} with {1} {2}-bit, {3} {4}-bit",
+				ClientStreamTunnel.SslProtocol,
+				ClientStreamTunnel.CipherAlgorithm.ToString(),
+				ClientStreamTunnel.CipherStrength,
+				ClientStreamTunnel.HashAlgorithm.ToString(),
+				ClientStreamTunnel.HashStrength);
+				HttpUtil.ProcessClientRequest(sslc, Logger);
 			}
 			catch (IOException)
 			{
 				// Unexpected close (hello, Kaspersky AV traffic scan)
-				Logger.WriteLine(" SSL Client disconnected");
+				if (!ConfigFile.HideClientErrors) Logger.WriteLine(" SSL Client disconnected.");
 				ClientStreamTunnel.Close();
+			}
+			catch (Exception ex)
+			{
+				Logger.WriteLine("SslOops: {0}.", ex.Message);
+				try { ClientStreamTunnel.Close(); } catch { }
 			}
 			Logger.WriteLine("<Close SSL.");
 		}

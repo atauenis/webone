@@ -33,6 +33,11 @@ namespace WebOne
 		//Url & RawUrl - possible chicken and egg problem
 
 		/// <summary>
+		/// Kind of content targeted by this request.
+		/// </summary>
+		public HttpUtil.RequestKind Kind { get; set; }
+
+		/// <summary>
 		/// Gets the query string included in the request.
 		/// </summary>
 		/// <returns>A System.Collections.Specialized.NameValueCollection object that contains the query data included in the request System.Net.HttpListenerRequest.Url.</returns>
@@ -91,7 +96,6 @@ namespace WebOne
 		/// </summary>
 		/// <returns>true if the request is sent using SSL; otherwise, false.</returns>
 		public bool IsSecureConnection { get; set; }
-		//does this really need?
 
 		/// <summary>
 		/// Specifies the client IP address and port number from which the request originated.

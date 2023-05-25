@@ -102,8 +102,9 @@ namespace WebOne
 					RemoteEndPoint = req.RemoteEndPoint,
 					LocalEndPoint = req.LocalEndPoint,
 					IsSecureConnection = false,
-					KeepAlive = req.KeepAlive
-				};
+					KeepAlive = req.KeepAlive,
+					Kind = HttpUtil.GetKindOfRequest(req.RawUrl, req.Headers["Host"])
+			};
 				HttpResponse Response = new(ctx.Response);
 
 				HttpTransit Transit = new(Request, Response, Logger);

@@ -660,10 +660,19 @@ namespace WebOne
 		/// </summary>
 		/// <param name="What">What string should be checked</param>
 		/// <param name="For">Pattern to find</param>
-		public static bool CheckString(string What, string[] For)
+		/// <param name="CaseInsensitive">Ignore character case when checking</param>
+		public static bool CheckString(string What, string[] For, bool CaseInsensitive = false)
 		{
-			foreach (string str in For) { if (What.Contains(str)) return true; }
-			return false;
+			if (CaseInsensitive)
+			{
+				foreach (string str in For) { if (What.Contains(str, StringComparison.InvariantCultureIgnoreCase)) return true; }
+				return false;
+			}
+			else
+			{
+				foreach (string str in For) { if (What.Contains(str)) return true; }
+				return false;
+			}
 		}
 
 		/// <summary>
@@ -671,9 +680,10 @@ namespace WebOne
 		/// </summary>
 		/// <param name="What">What string should be checked</param>
 		/// <param name="For">Pattern to find</param>
-		public static bool CheckString(string What, List<string> For)
+		/// <param name="CaseInsensitive">Ignore character case when checking</param>
+		public static bool CheckString(string What, List<string> For, bool CaseInsensitive = false)
 		{
-			return CheckString(What, For.ToArray());
+			return CheckString(What, For.ToArray(), CaseInsensitive);
 		}
 
 		/// <summary>
@@ -681,10 +691,19 @@ namespace WebOne
 		/// </summary>
 		/// <param name="Where">Where the search should be do</param>
 		/// <param name="For">Pattern to find</param>
-		public static bool CheckString(string[] Where, string For)
+		/// <param name="CaseInsensitive">Ignore character case when checking</param>
+		public static bool CheckString(string[] Where, string For, bool CaseInsensitive = false)
 		{
-			foreach (string str in Where) { if (str.Contains(For)) return true; }
-			return false;
+			if (CaseInsensitive)
+			{
+				foreach (string str in Where) { if (str.Contains(For, StringComparison.InvariantCultureIgnoreCase)) return true; }
+				return false;
+			}
+			else
+			{
+				foreach (string str in Where) { if (str.Contains(For)) return true; }
+				return false;
+			}
 		}
 
 		/// <summary>
