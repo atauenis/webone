@@ -29,39 +29,15 @@ namespace WebOne
 			ResponseReal = Response;
 			ClientStreamReal = Request.InputStream;
 			this.Logger = Logger;
-
 #if DEBUG
 			Logger.WriteLine(">SSL: {0}", Request.RawUrl);
 #endif
 
-			// Get WebOne CA certificate
-			//Certificate = new X509Certificate2(ConfigFile.SslCertificate); //if DER format
-			//Certificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12)); //if PEM format
-			Certificate = RootCertificate; //temporary
+			//Certificate = RootCertificate; //temporary - WebOne CA certificate
 
 			// Make a fake certificate for current domain, signed by CA certificate
-			// UNDONE
-			// see https://github.com/wheever/ProxHTTPSProxyMII/blob/master/CertTool.py#L58 for ideas
-			/*
-			//Certificate = new X509Certificate2(ConfigFile.SslCertificate, "");
-			using RSA rsa = RSA.Create();
-			CertificateRequest certRequest = new CertificateRequest("cn=test", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-
-			// We're just going to create a temporary certificate, that won't be valid for long
-			X509Certificate2 certificate = certRequest.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(1));
-
-			// export the private key
-			string privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey(), Base64FormattingOptions.InsertLineBreaks);
-
-			//File.WriteAllText(keyFilename, KEY_HEADER + privateKey + KEY_FOOTER);
-
-			// Export the certificate
-			byte[] exportData = certificate.Export(X509ContentType.Cert);
-
-			string crt = Convert.ToBase64String(exportData, Base64FormattingOptions.InsertLineBreaks);
-			//File.WriteAllText(certFilename, CRT_HEADER + crt + CRT_FOOTER);
-
-			Certificate = certificate;//.CopyWithPrivateKey(rsa);*/
+			string HostName = RequestReal.RawUrl.Substring(0, RequestReal.RawUrl.IndexOf(":"));
+			Certificate = CertificateUtil.MakeChainSignedCert("CN=" + HostName, RootCertificate);
 		}
 
 		/// <summary>

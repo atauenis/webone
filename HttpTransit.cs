@@ -467,6 +467,11 @@ namespace WebOne
 									//FTP client
 									SendInfoPage(new FtpClientGUI(ClientRequest).GetPage());
 									return;
+								case "/!ca":
+								case "/!ca/":
+									Log.WriteLine("<Return WebOne CA (root) certificate.");
+									SendFile(ConfigFile.SslCertificate, "text/plain");
+									return;
 								case "/!pac":
 								case "/!pac/":
 								case "/auto":
@@ -1801,6 +1806,7 @@ namespace WebOne
 
 				HelpString += "<h2>May be useful:</h2><ul>";
 				HelpString += "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>";
+				HelpString += "<li><a href='/!ca'>WebOne CA root certificate</a>.</li>";
 				HelpString += "<li><a href='/!ftp/'>Web-based FTP client</a>.</li>";
 				HelpString += "<li><a href='/!player/'>Online video player</a>.</li>";
 				HelpString += "</ul>";
@@ -1832,6 +1838,7 @@ namespace WebOne
 							  "<li><a href='/!convert/'>/!convert/</a> - run a file format converter (<a href='/!convert/?src=logo.webp&dest=gif&type=image/gif'>demo</a>)</li>" +
 							  "<li><a href='/!clear/'>/!clear/</a> - remove temporary files in WebOne working directory</li>" +
 							  "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>" +
+							  "<li><a href='/!ca'>/!ca/</a> - WebOne CA root certificate.</li>" +
 							  "<li><a href='/!ftp/'>/!ftp/</a> - Web-based FTP client.</li>" +
 							  "<li><a href='/!player/'>/!player/</a> - online video player.</li>" +
 							  "<li><a href='/!webvideo/'>/!webvideo/</a> - online video downloader.</li>" +

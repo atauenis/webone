@@ -50,6 +50,7 @@ namespace WebOne
 			"} /*WebOne PAC*/ ";
 
 		public static X509Certificate2 RootCertificate;
+		public static Dictionary<string, X509Certificate2> FakeCertificates = new();
 
 		static void Main(string[] args)
 		{
@@ -139,7 +140,7 @@ namespace WebOne
 			else
 			{
 				Log.WriteLine(true, false, "Creating SSL Certificate & Private Key for Root CA...");
-				CertificateUtil.MakeCert(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
+				CertificateUtil.MakeSelfSignedCert(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
 				Log.WriteLine(true, false, "CA Certificate: {0}; Key: {1}", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
 			}
 			RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));
