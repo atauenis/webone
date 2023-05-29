@@ -45,20 +45,51 @@ namespace WebOne
 		/// </summary>
 		public void Accept()
 		{
+			// Check if HTTPS is not disabled in webone.conf
+			if (!ConfigFile.SslEnable)
+			{
+				Log.WriteLine("<Secure CONNECT is disabled.");
+				string Html =
+				"<HTML><HEAD>" +
+				"<TITLE>WebOne: SSL is not supported</TITLE></HEAD>" +
+				"<BODY><P><BIG>Sorry, Secure traffic transfer is disabled on proxy server.</BIG></P>" +
+				"<P>Set <B>SslEnable</B> to <B>yes</B> in configuration file to allow work with HTTPS &amp; SSL.</P>"+
+				"<P>Or set the proxy usage only for HTTP protocol in your Web-browser settings.</P>" + GetInfoString() + "</BODY></HTML>";
+
+				byte[] Buffer = (System.Text.Encoding.Default).GetBytes(Html);
+				try
+				{
+					ResponseReal.StatusCode = 501;
+					ResponseReal.ProtocolVersion = new Version(1, 0);
+
+					ResponseReal.ContentType = "text/html";
+					ResponseReal.ContentLength64 = Buffer.Length;
+					ResponseReal.SendHeaders();
+					ResponseReal.OutputStream.Write(Buffer, 0, Buffer.Length);
+					ResponseReal.Close();
+				}
+				catch (Exception ex)
+				{
+					if (!ConfigFile.HideClientErrors)
+						Log.WriteLine("<!Cannot return 501. {2}: {3}", null, 302, ex.GetType(), ex.Message);
+				}
+				return;
+			}
+
 			// Answer that this proxy supports HTTPS
 			ResponseReal.ProtocolVersionString = "HTTP/1.1";
 			ResponseReal.StatusCode = 200; //better be "HTTP/1.0 200 Connection established", but "HTTP/1.1 200 OK" is OK too
-			ResponseReal.AddHeader("Via", "HTTPS/1.0 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
+			ResponseReal.AddHeader("Via", "1.1 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
 			ResponseReal.SendHeaders();
 
 			try
 			{
 				// Perform SSL handshake and establish a inner tunnel
 				ClientStreamTunnel = new SslStream(ClientStreamReal, false);
-				//ClientStream.AuthenticateAsServer(Certificate, false, SslProtocols.Tls | SslProtocols.Ssl3 | SslProtocols.Ssl2, true);
+				//ClientStreamTunnel.AuthenticateAsServer(Certificate, false, SslProtocols.Tls | SslProtocols.Ssl3 | SslProtocols.Ssl2, true);
 				//ClientStreamTunnel.AuthenticateAsServer(Certificate, false, SslProtocols.Default, false);
-				ClientStreamTunnel.AuthenticateAsServer(Certificate, false, SslProtocols.Ssl2 | SslProtocols.Ssl3 | SslProtocols.Tls | SslProtocols.Tls12, false);
 				//ClientStreamTunnel.AuthenticateAsServer(Certificate, false, SslProtocols.Ssl3, false);
+				ClientStreamTunnel.AuthenticateAsServer(Certificate, false, ConfigFile.SslProtocols, false);
 
 				/* Result:
 				 * Ssl2 with Rc4 128-bit, Md5 128-bit

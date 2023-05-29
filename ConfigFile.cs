@@ -201,14 +201,24 @@ namespace WebOne
 		public static bool EnableWebFtp = true;
 
 		/// <summary>
+		/// Enable work with CONNECT method (enable HTTPS Proxy)
+		/// </summary>
+		public static bool SslEnable = true;
+
+		/// <summary>
 		/// Path to SSL/TLS Certificate (used as CA for fake certificates)
 		/// </summary>
 		public static string SslCertificate = "ssl.crt";
-		
+
 		/// <summary>
 		/// Path to SSL/TLS Certificate private key (used as CA for fake certificates)
 		/// </summary>
 		public static string SslPrivateKey = "ssl.key";
+
+		/// <summary>
+		/// Protocols used in SSL/TLS tunnels through this Secure proxy
+		/// </summary>
+		public static System.Security.Authentication.SslProtocols SslProtocols = System.Security.Authentication.SslProtocols.None;
 
 
 

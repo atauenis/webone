@@ -408,11 +408,17 @@ namespace WebOne
 						{
 							switch (Option.Key)
 							{
+								case "SslEnable":
+									ConfigFile.SslEnable = ToBoolean(Option.Value);
+									break;
 								case "SslCertificate":
 									ConfigFile.SslCertificate = Option.Value;
 									break;
 								case "SslPrivateKey":
 									ConfigFile.SslPrivateKey = Option.Value;
+									break;
+								case "SslProtocols":
+									ConfigFile.SslProtocols = (System.Security.Authentication.SslProtocols)(int.Parse(Option.Value));
 									break;
 							}
 						}

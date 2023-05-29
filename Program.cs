@@ -30,11 +30,13 @@ namespace WebOne
 		public static int Port = -1;
 		public static int Port2 = -1;
 		public static int Load = 0;
+
+		public static string Protocols = "HTTP 1.1";
 		public static bool DaemonMode = false;
 		static bool ShutdownInitiated = false;
 
-		public const string CmdLineArgUnnamed = "--wo-short";
-		public static List<KeyValuePair<string, string>> CmdLineOptions = new List<KeyValuePair<string, string>>();
+		const string CmdLineArgUnnamed = "--wo-short";
+		static List<KeyValuePair<string, string>> CmdLineOptions = new List<KeyValuePair<string, string>>();
 
 		public static System.Net.Http.SocketsHttpHandler HTTPHandler = new();
 		public static System.Net.Http.HttpClient HTTPClient = new(HTTPHandler);
@@ -52,6 +54,10 @@ namespace WebOne
 		public static X509Certificate2 RootCertificate;
 		public static Dictionary<string, X509Certificate2> FakeCertificates = new();
 
+		/// <summary>
+		/// The entry point of webone.dll (WebOne.exe, /usr/local/bin/webone, ./webone)
+		/// </summary>
+		/// <param name="args">Command line arguments of WebOne.exe</param>
 		static void Main(string[] args)
 		{
 			Variables.Add("WOVer",
@@ -130,29 +136,35 @@ namespace WebOne
 			//set console window title
 			if (!DaemonMode) Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + ConfigFile.Port;
 
-			Log.WriteLine(false, false, "Configured to http://{1}:{2}/, HTTP 1.0", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port);
+			if (ConfigFile.SslEnable)
+			{
+				//create SSL PEM (.crt & .key files) for CA (aka root certificate)
+				try
+				{
+					if (File.Exists(ConfigFile.SslCertificate) && File.Exists(ConfigFile.SslPrivateKey))
+					{
+						Log.WriteLine(true, false, "Using as SSL Certificate Authority: {0}, {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
+					}
+					else
+					{
+						Log.WriteLine(true, false, "Creating SSL Certificate & Private Key for Root CA...");
+						CertificateUtil.MakeSelfSignedCert(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
+						Log.WriteLine(true, false, "CA Certificate: {0};   Key: {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
+					}
+					RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));
+					Protocols += ", HTTPS 1.1";
+				}
+				catch (Exception CertCreateEx)
+				{
+					Log.WriteLine("Unable to create CA Certificate: {0}.", CertCreateEx.Message);
+					Log.WriteLine(CertCreateEx.StackTrace.Replace("\n", " ; ")); //only for debug purposes at this moment
+					Log.WriteLine("End of CA build error information. HTTPS won't be available!");
+					ConfigFile.SslEnable = false;
+				}
+			}
+			Protocols += ", CERN-compatible";
 
-			//create SSL PEM (.crt & .key files) for CA (aka root certificate)
-			try
-			{
-				if (File.Exists(ConfigFile.SslCertificate) && File.Exists(ConfigFile.SslPrivateKey))
-				{
-					Log.WriteLine(true, false, "Using as SSL Certificate Authority: {0}, {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
-				}
-				else
-				{
-					Log.WriteLine(true, false, "Creating SSL Certificate & Private Key for Root CA...");
-					CertificateUtil.MakeSelfSignedCert(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
-					Log.WriteLine(true, false, "CA Certificate: {0};   Key: {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
-				}
-				RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));
-			}
-			catch (Exception CertCreateEx)
-			{
-				Log.WriteLine("Unable to create CA Certificate: {0}.", CertCreateEx.Message);
-				Log.WriteLine(CertCreateEx.StackTrace.Replace("\n", " ; ")); //only for debug purposes at this moment
-				Log.WriteLine("End of CA build error information. HTTPS won't be available!");
-			}
+			Log.WriteLine(false, false, "Configured to http://{1}:{2}/, {3}", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port, Protocols);
 
 			//initialize server
 			try
@@ -172,7 +184,7 @@ namespace WebOne
 			{
 				try
 				{
-					Log.WriteLine(true, false, "Starting servers...");
+					//Log.WriteLine(true, false, "Starting servers...");
 					PrimaryServer.Start();
 					SecondaryServer.Start();
 					Console.WriteLine(" =3= Auto-configuration: http://{0}:{1}/auto.pac", ConfigFile.DefaultHostName, Port);
