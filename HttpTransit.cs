@@ -28,7 +28,6 @@ namespace WebOne
 		static string LastContentType = "not-a-carousel";
 		List<EditSet> EditSets = new();
 		bool Stop = false;
-		bool LocalMode = false;
 		string LocalIP = "127.0.0.1";
 
 		HttpOperation operation;
@@ -136,6 +135,7 @@ namespace WebOne
 				}
 
 				//get request URL and referer URL
+				//UNDONE: may be need only RequestURL = ClientRequest.Url ?
 				try { RequestURL = new UriBuilder(ClientRequest.RawUrl).Uri; }
 				catch { RequestURL = ClientRequest.Url; };
 
@@ -175,399 +175,36 @@ namespace WebOne
 				foreach (var entry in Program.Variables) { DefaultVars.TryAdd(entry.Key, entry.Value); }
 
 				//check for local or internal URL
-				bool IsLocalhost = false;
-
-				foreach (IPAddress address in GetLocalIPAddresses())
-					if (RequestURL.Host.ToLower() == address.ToString().ToLower() || RequestURL.Host.ToLower() == "[" + address.ToString().ToLower() + "]")
-						if (RequestURL.Port == ConfigFile.Port)
-							IsLocalhost = true;
-
-				if (
-				RequestURL.Host.ToLower() == "localhost" ||
-				RequestURL.Host.ToLower() == Environment.MachineName.ToLower() ||
-				RequestURL.Host == "127.0.0.1" ||
-				RequestURL.Host == LocalIP ||
-				RequestURL.Host.ToLower() == "wpad" ||
-				RequestURL.Host.ToLower() == ConfigFile.DefaultHostName.ToLower() ||
-				RequestURL.Host == "" ||
-				CheckString(RequestURL.Host.ToLower(), ConfigFile.HostNames)
-				)
-					if (RequestURL.Port == ConfigFile.Port)
-						IsLocalhost = true;
-
-				// The code below will replace code above in near future
-				if (ClientRequest.Kind == HttpUtil.RequestKind.StandardLocal || ClientRequest.Kind == HttpUtil.RequestKind.DirtyProxy) IsLocalhost = true;
-
-				if (IsLocalhost)
+				if (ClientRequest.Kind == HttpUtil.RequestKind.StandardLocal)
 				{
-					bool PAC = false;
-					string[] PacUrls = { "/auto/", "/auto", "/auto.pac", "/wpad.dat", "/wpad.da" }; //Netscape PAC/Microsoft WPAD
-					foreach (string PacUrl in PacUrls) { if (RequestURL.LocalPath == PacUrl) { PAC = true; break; } }
+					// Internal URIs
+					string InternalPage = "/";
+					if (RequestURL.Segments.Length > 1) InternalPage = RequestURL.Segments[1].ToLower();
+					InternalPage = "/" + InternalPage.TrimEnd('/');
 
-					if (RequestURL.PathAndQuery.StartsWith("/!") || PAC || RequestURL.AbsolutePath == "/")
-					{
-						//request to internal URL
-						try
-						{
-							Log.WriteLine(" Internal: {0} ", RequestURL.PathAndQuery);
-							switch (RequestURL.AbsolutePath.ToLower())
-							{
-								case "/":
-								case "/!":
-								case "/!/":
-									SendInternalStatusPage();
-									return;
-								case "/!codepages":
-								case "/!codepages/":
-									string codepages = "<p>The following code pages are available: <br>\n" +
-													   "<table><tr><td><b>Name</b></td><td><b>#</b></td><td><b>Description</b></td></tr>\n";
-									codepages += "<tr><td><b>AsIs</b></td><td>0</td><td>Keep original encoding (code page)</td></tr>\n";
-									Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-									bool IsOutputEncodingListed = false;
-									foreach (EncodingInfo cp in Encoding.GetEncodings())
-									{
-										codepages += "<tr><td>";
-										codepages += "<b>" + cp.Name + "</b></td><td>" + cp.CodePage + "</td><td>" + cp.DisplayName;
-
-										if (ConfigFile.OutputEncoding != null && cp.CodePage == ConfigFile.OutputEncoding.CodePage)
-										{
-											codepages += " <b>(Current)</b>";
-											IsOutputEncodingListed = true;
-										}
-										/*codepages += "<td>";
-										if (GetCodePage("Win").CodePage == cp.CodePage) codepages += "Windows &quot;ANSI&quot;";
-										if (GetCodePage("DOS").CodePage == cp.CodePage) codepages += "DOS &quot;OEM&quot;";
-										if (GetCodePage("Mac").CodePage == cp.CodePage) codepages += "MacOS classic";
-										if (GetCodePage("ISO").CodePage == cp.CodePage) codepages += "ISO";
-										if (GetCodePage("EBCDIC").CodePage == cp.CodePage) codepages += "IBM EBCDIC";
-										codepages += "</td>";*/
-										codepages += "</td></tr>\n";
-									}
-									codepages += "</table><br>Use any of these or from <a href=http://docs.microsoft.com/en-us/dotnet/api/system.text.encoding.getencodings?view=net-6.0>.NET documentation</a>.</p>\n";
-
-									codepages += "<p>Code pages for current server's locale:\n" +
-									"<table>" +
-									"<tr><td>Windows &quot;ANSI&quot;</td><td>" + GetCodePage("Win").WebName + "</td></tr>\n" +
-									"<tr><td>DOS &quot;OEM&quot;</td><td>" + GetCodePage("DOS").WebName + "</td></tr>\n" +
-									"<tr><td>MacOS classic</td><td>" + GetCodePage("Mac").WebName + "</td></tr>\n" +
-									"<tr><td>ISO</td><td>" + GetCodePage("ISO").WebName + "</td></tr>\n" +
-									"<tr><td>EBCDIC</td><td>" + GetCodePage("EBCDIC").WebName + "</td></tr>\n" +
-									"</table>Clients without UTF-8 support will got content in these code pages.</p>\n";
-
-									if (!IsOutputEncodingListed && ConfigFile.OutputEncoding != null)
-										codepages += "<br>Current output encoding: <b>" + ConfigFile.OutputEncoding.WebName + "</b> &quot;" + ConfigFile.OutputEncoding.EncodingName + "&quot; (# " + ConfigFile.OutputEncoding.CodePage + ").\n";
-									if (ConfigFile.OutputEncoding == null)
-										codepages += "<br>Current output encoding: <b>same as source</b>.\n";
-
-									SendInfoPage("WebOne: List of supported code pages", "Content encodings", codepages);
-									return;
-								case "/!img-test":
-								case "/!img-test/":
-									SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
-									return;
-								case "/!convert":
-								case "/!convert/":
-									string SrcUrl = "", Src = "", Dest = "xbm", DestMime = "image/x-xbitmap", Converter = "convert", Args1 = "", Args2 = "";
-
-									//parse URL
-									Match FindSrc = Regex.Match(RequestURL.Query, @"(src)=([^&]+)");
-									Match FindSrcUrl = Regex.Match(RequestURL.Query, @"(url)=([^&]+)");
-									Match FindDest = Regex.Match(RequestURL.Query, @"(dest)=([^&]+)");
-									Match FindDestMime = Regex.Match(RequestURL.Query, @"(type)=([^&]+)");
-									Match FindConverter = Regex.Match(RequestURL.Query, @"(util)=([^&]+)");
-									Match FindArg1 = Regex.Match(RequestURL.Query, @"(arg)=([^&]+)");
-									Match FindArg2 = Regex.Match(RequestURL.Query, @"(arg2)=([^&]+)");
-
-									if (FindSrc.Success)
-										Src = Uri.UnescapeDataString(FindSrc.Groups[2].Value);
-
-									if (FindSrcUrl.Success)
-										SrcUrl = Uri.UnescapeDataString(FindSrcUrl.Groups[2].Value);
-									//BUG: sometimes URL gets unescaped when opening via WMP
-									//     (mostly via UI, and all load retries via FF plugin, strange but 1st plugin's attempt is valid)
-
-									if (FindDest.Success)
-										Dest = Uri.UnescapeDataString(FindDest.Groups[2].Value);
-
-									if (FindDestMime.Success)
-										DestMime = Uri.UnescapeDataString(FindDestMime.Groups[2].Value);
-
-									if (FindConverter.Success)
-										Converter = Uri.UnescapeDataString(FindConverter.Groups[2].Value);
-
-									if (FindArg1.Success)
-										Args1 = Uri.UnescapeDataString(FindArg1.Groups[2].Value);
-
-									if (FindArg2.Success)
-										Args2 = Uri.UnescapeDataString(FindArg2.Groups[2].Value);
-
-									if (Src == "CON:") throw new ArgumentException("Bad source file name");
-
-									//detect info page requestion
-									if (!FindSrcUrl.Success && !FindSrc.Success)
-									{
-										SendError(200, "<big>Here you can summon ImageMagick to convert a picture file</big>.<br>" +
-										"<p>Usage: /!convert/?url=https://example.com/filename.ext&dest=gif&type=image/gif<br>" +
-										"or: /!convert/?src=filename.ext&dest=gif&type=image/gif</p>" +
-										"<p>See <a href=\"http://github.com/atauenis/webone/wiki\">WebOne wiki</a> for help on this.</p>");
-										return;
-									}
-
-									//find converter and use it
-									foreach (Converter Cvt in ConfigFile.Converters)
-									{
-										if (Cvt.Executable == Converter)
-										{
-											HttpOperation HOper = new HttpOperation(Log);
-											Stream SrcStream = null;
-
-											//find source file placement
-											if (FindSrcUrl.Success)
-											{
-												//download source file
-												if (!Cvt.SelfDownload) try
-													{
-														HOper.URL = new Uri(SrcUrl);
-														HOper.Method = "GET";
-														HOper.RequestHeaders = new WebHeaderCollection();
-#if DEBUG
-														Log.WriteLine(">Downloading source stream (connecting)...");
-#else
-														Log.WriteLine(">Downloading source stream...");
-#endif
-														HOper.SendRequest();
-#if DEBUG
-														Log.WriteLine(">Downloading source stream (receiving)...");
-#endif
-														HOper.GetResponse();
-														SrcStream = HOper.ResponseStream;
-													}
-													catch (Exception DlEx)
-													{
-														Log.WriteLine(" Converter cannot download source: {0}", DlEx.Message);
-														SendError(503,
-															"<p><big><b>Converter cannot download the source</b>: " + DlEx.Message + "</big></p>" +
-															"Source URL: " + SrcUrl);
-														return;
-													}
-											}
-											else
-											{
-												//open local source file
-												SrcUrl = "http://0.0.0.0/localfile";
-												if (!Cvt.SelfDownload) try
-													{
-														if (!File.Exists(Src))
-														{
-															if (File.Exists(new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + Src))
-																Src = new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + Src;
-															else
-																throw new FileNotFoundException("No such file: " + Src);
-														}
-														SrcStream = File.OpenRead(Src);
-													}
-													catch (Exception OpenEx)
-													{
-														Log.WriteLine(" Converter cannot open source: {0}", OpenEx.Message);
-														SendError(503,
-															"<p><big><b>Converter cannot open the source</b>: " + OpenEx.Message + "</big></p>" +
-															"Source URL: " + SrcUrl);
-														return;
-													}
-											}
-
-											//go to converter
-											try
-											{
-												//run converter & return result
-												SendStream(Cvt.Run(Log, SrcStream, Args1, Args2, Dest, SrcUrl), DestMime, true);
-												return;
-											}
-											catch (Exception CvtEx)
-											{
-												Log.WriteLine(" Converter error: {0}", CvtEx.Message);
-												SendError(502,
-													"<p><big><b>Converter error</b>: " + CvtEx.Message + "</big></p>" +
-													"Source URL: " + SrcUrl + "<br>" +
-													"Utility: " + Cvt.Executable);
-												return;
-											}
-										}
-									}
-
-									SendError(503, "<big>Converter &quot;<b>" + Converter + "</b>&quot; is unknown</big>.<br>" +
-									"<p>This converter is not listed in configuration file.</p>" +
-									"<p>See <a href=\"http://github.com/atauenis/webone/wiki\">WebOne wiki</a> for help on this.</p>");
-									return;
-								case "/!webvideo":
-								case "/!webvideo/":
-									Dictionary<string, string> VidArgs = new();
-
-									foreach (string UrlArg in System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query).AllKeys)
-									{
-										if (UrlArg != null)
-											VidArgs[UrlArg] = System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query)[UrlArg];
-									}
-
-									if (!VidArgs.ContainsKey("url"))
-									{
-										string HelpMsg =
-										"<p>WebOne can help download videos from popular sites in preferred format.</p>" +
-										"<p>To download a video, go to <b><a href='/!player/'>Online Video Player</a></b>, enter URL of the video, " +
-										"choose container and codecs valid for your system, and then select <b>file</b> or <b>link</b> option.</p>" +
-										"<p>If you choose <b>file</b> option, the video file will start download automatically. " +
-										"If you choose <b>link</b> option, you will get a link, which can be copied to multimedia player program.</p>" +
-										"<p>Manual use parameters:" +
-										"<ul>" +
-										"<li><b>url</b> - Address of the video (e.g. https://www.youtube.com/watch?v=fPnO26CwqYU or similar)</li>" +
-										"<li><b>f</b> - Target format of the file (e.g. avi)</li>" +
-										"<li><b>vcodec</b> - Codec for video (e.g. mpeg4)</li>" +
-										"<li><b>acodec</b> - Codec for audio (e.g. mp3)</li>" +
-										"<li><b>content-type</b> - override MIME content type for the file (optional).</li>" +
-										"<li>Also you can use many <i>" + (ConfigFile.WebVideoOptions["YouTubeDlApp"] ?? "youtube-dl") +
-										"</i> and <i>" + (ConfigFile.WebVideoOptions["FFmpegApp"] ?? "ffmpeg") +
-										"</i> options like <b>aspect</b>, <b>b</b>, <b>no-mark-watched</b> and other.</li>" +
-										"<li>Default parameter values are stored in configuration file.</li>" +
-										"</ul></p>";
-										SendInfoPage("Online video converter", "Web video converting", HelpMsg);
-										return;
-									}
-
-									WebVideo vid = new WebVideoConverter().ConvertVideo(VidArgs, Log);
-									if (vid.Available)
-									{
-										ClientResponse.AddHeader("Content-Disposition", "attachment; filename=\"" + vid.FileName + "\"");
-										SendStream(vid.VideoStream, vid.ContentType);
-										return;
-									}
-									else
-									{
-										string ErrMsg =
-										"<p>" + vid.ErrorMessage + "</p>" +
-										"<p>Make sure that parameters are correct, and both <i>youtube-dl</i> and <i>ffmpeg</i> are properly installed on the server.</p>";
-										SendInfoPage("Online video converter", "Web video converting", ErrMsg);
-										return;
-									}
-								case "/!player":
-								case "/!player/":
-									SendInfoPage(new WebVideoPlayer(System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query)).Page);
-									return;
-								case "/!clear":
-								case "/!clear/":
-									int FilesDeleted = 0;
-									foreach (FileInfo file in (new DirectoryInfo(ConfigFile.TemporaryDirectory)).EnumerateFiles("convert-*.*"))
-									{
-										try { file.Delete(); FilesDeleted++; }
-										catch { }
-									}
-									SendError(200, "<b>" + FilesDeleted + "</b> temporary files have been deleted in <i>" + ConfigFile.TemporaryDirectory + "</i>.");
-									return;
-								case "/!ftp":
-								case "/!ftp/":
-									//FTP client
-									SendInfoPage(new FtpClientGUI(ClientRequest).GetPage());
-									return;
-								case "/!ca":
-								case "/!ca/":
-									Log.WriteLine("<Return WebOne CA (root) certificate.");
-									SendFile(ConfigFile.SslCertificate, "text/plain");
-									return;
-								case "/!pac":
-								case "/!pac/":
-								case "/auto":
-								case "/auto/":
-								case "/auto.pac":
-								case "/wpad.dat":
-								case "/wpad.da":
-									//Proxy Auto-Config
-									Log.WriteLine("<Return PAC/WPAD script.");
-									string LocalHostAdress = GetServerName();
-									if (LocalHostAdress.StartsWith("[")) LocalHostAdress = ConfigFile.DefaultHostName + ":" + ConfigFile.Port; //on IPv6, fallback to DefaultHostName:Port
-									string LocalHostAdress2 = GetServerName().Replace(ConfigFile.Port.ToString(), ConfigFile.Port2.ToString()); //for HTTPS, FTP
-									if (LocalHostAdress2.StartsWith("[")) LocalHostAdress2 = ConfigFile.DefaultHostName + ":" + ConfigFile.Port2;
-
-									string PacString = Program.ProcessUriMasks(ConfigFile.PAC, LocalHostAdress, false, new Dictionary<string, string>() { { "PACProxy", LocalHostAdress }, { "PACProxy2", LocalHostAdress2 } });
-
-									byte[] PacBuffer = Encoding.Default.GetBytes(PacString);
-									try
-									{
-										ClientResponse.StatusCode = 200;
-										ClientResponse.ProtocolVersion = new Version(1, 0);
-
-										ClientResponse.ContentType = "application/x-ns-proxy-autoconfig";
-										ClientResponse.ContentLength64 = PacString.Length;
-										ClientResponse.SendHeaders();
-										ClientResponse.OutputStream.Write(PacBuffer, 0, PacBuffer.Length);
-										ClientResponse.Close();
-									}
-									catch (Exception pacex)
-									{
-										Log.WriteLine("Cannot return PAC! " + pacex.Message);
-									}
-									return;
-								case "/robots.txt":
-									//attempt to include in google index; kick the bot off
-									Log.WriteLine("<Return robot kicker.");
-									string Robots = "User-agent: *\nDisallow: / ";
-									byte[] RobotsBuffer = Encoding.Default.GetBytes(Robots);
-									try
-									{
-										ClientResponse.StatusCode = 200;
-										ClientResponse.ProtocolVersion = new Version(1, 0);
-
-										ClientResponse.ContentType = "text/plain";
-										ClientResponse.ContentLength64 = Robots.Length;
-										ClientResponse.SendHeaders();
-										ClientResponse.OutputStream.Write(RobotsBuffer, 0, RobotsBuffer.Length);
-										ClientResponse.Close();
-									}
-									catch
-									{
-										Log.WriteLine("Cannot return robot kicker!");
-									}
-									return;
-
-								default:
-									SendError(404, "Unknown internal URL: " + RequestURL.PathAndQuery);
-									return;
-							}
-						}
-						catch (Exception ex)
-						{
-							Log.WriteLine("!Internal server error: {0}", ex.ToString());
-#if DEBUG
-							SendError(500, "Internal server error: <b>" + ex.Message + "</b><br>" + ex.GetType().ToString() + " " + ex.StackTrace.Replace("\n", "<br>"));
-#else
-							SendError(500, "WebOne cannot process the request because <b>" + ex.Message + "</b>.");
-#endif
-							return;
-						}
-					}
-
-					//local proxy mode: http://localhost/http://example.com/indexr.shtml, http://localhost/http:/example.com/indexr.shtml
-					if (RequestURL.LocalPath.StartsWith("/http:/") || RequestURL.LocalPath.StartsWith("/https:/"))
-					{
-						if (!(RequestURL.LocalPath.StartsWith("/http://") || RequestURL.LocalPath.StartsWith("/https://")))
-							RequestURL = new Uri(RequestURL.AbsoluteUri.Replace("/http:/", "/http://").Replace("/https:/", "/https://"));
-					}
-
-					if (RequestURL.LocalPath.StartsWith("/http://") || RequestURL.LocalPath.StartsWith("/https://"))
-					{
-						RequestURL = new Uri(RequestURL.LocalPath.Substring(1) + RequestURL.Query);
-						Log.WriteLine(" Local: {0}", RequestURL);
-						LocalMode = true;
-					}
-					else
-					{
-						//dirty local mode, try to use last used host: http://localhost/favicon.ico
-						RequestURL = new Uri("http://" + new Uri(LastURL).Host + RequestURL.LocalPath);
-						if (RequestURL.Host == "999.999.999.999") { SendError(404, "The proxy server cannot guess domain name."); return; }
-						Log.WriteLine(" Dirty local: {0}", RequestURL);
-						LocalMode = true;
-					}
+					SendInternalPage(InternalPage);
+					return;
 				}
 
-				if (LocalMode && ClientRequest.Headers["User-Agent"] != null && ClientRequest.Headers["User-Agent"].Contains("WebOne"))
+				if (ClientRequest.Kind == HttpUtil.RequestKind.AlternateProxy)
+				{
+					// "Local proxy mode"
+					string FixedUrl = ClientRequest.RawUrl[1..];
+					RequestURL = new Uri(FixedUrl);
+					Log.WriteLine(" Alternate: {0}", RequestURL);
+				}
+
+				if (ClientRequest.Kind == HttpUtil.RequestKind.DirtyAlternateProxy)
+				{
+					// "Dirty local proxy mode", try to use last used host: http://localhost/favicon.ico = http://example.com/favicon.ico
+					string FixedUrl = "http://" + new Uri(LastURL).Host + RequestURL.LocalPath;
+					RequestURL = new Uri(FixedUrl);
+					if (RequestURL.Host == "999.999.999.999") { SendError(404, "The proxy server cannot guess domain name."); return; }
+					Log.WriteLine(" Dirty alternate: {0}", RequestURL);
+				}
+
+				//if (LocalMode && ClientRequest.Headers["User-Agent"] != null && ClientRequest.Headers["User-Agent"].Contains("WebOne"))
+				if (ClientRequest.Headers["User-Agent"] != null && ClientRequest.Headers["User-Agent"].Contains("WebOne"))
 				{
 					SendError(403, "Loop requests are probhited.");
 					return;
@@ -575,7 +212,7 @@ namespace WebOne
 
 				//check for FTP/GOPHER/WAIS-over-HTTP requests (a.k.a. CERN Proxy Mode)
 				//https://support.microsoft.com/en-us/help/166961/how-to-ftp-with-cern-based-proxy-using-wininet-api
-				if (ClientRequest.RawUrl.Contains("://"))
+				if (RequestURL.ToString().Contains("://"))
 				{
 					if (!RequestURL.Scheme.StartsWith("http")) Log.WriteLine(" CERN Proxy request to {0} detected.", RequestURL.Scheme.ToUpper());
 
@@ -1110,6 +747,356 @@ namespace WebOne
 		}
 
 		/// <summary>
+		/// Send an internal page.
+		/// </summary>
+		/// <param name="InternalPageId">Name of internal page (lowercase, never ends with &quot;/&quot;).</param>
+		private void SendInternalPage(string InternalPageId)
+		{
+			try
+			{
+				Log.WriteLine(" Internal page: {0} ", InternalPageId);
+				switch (InternalPageId)
+				{
+					case "/":
+					case "/!":
+					case "/!/":
+						SendInternalStatusPage();
+						return;
+					case "/!codepages":
+					case "/!codepages/":
+						string codepages = "<p>The following code pages are available: <br>\n" +
+										   "<table><tr><td><b>Name</b></td><td><b>#</b></td><td><b>Description</b></td></tr>\n";
+						codepages += "<tr><td><b>AsIs</b></td><td>0</td><td>Keep original encoding (code page)</td></tr>\n";
+						Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+						bool IsOutputEncodingListed = false;
+						foreach (EncodingInfo cp in Encoding.GetEncodings())
+						{
+							codepages += "<tr><td>";
+							codepages += "<b>" + cp.Name + "</b></td><td>" + cp.CodePage + "</td><td>" + cp.DisplayName;
+
+							if (ConfigFile.OutputEncoding != null && cp.CodePage == ConfigFile.OutputEncoding.CodePage)
+							{
+								codepages += " <b>(Current)</b>";
+								IsOutputEncodingListed = true;
+							}
+							/*codepages += "<td>";
+							if (GetCodePage("Win").CodePage == cp.CodePage) codepages += "Windows &quot;ANSI&quot;";
+							if (GetCodePage("DOS").CodePage == cp.CodePage) codepages += "DOS &quot;OEM&quot;";
+							if (GetCodePage("Mac").CodePage == cp.CodePage) codepages += "MacOS classic";
+							if (GetCodePage("ISO").CodePage == cp.CodePage) codepages += "ISO";
+							if (GetCodePage("EBCDIC").CodePage == cp.CodePage) codepages += "IBM EBCDIC";
+							codepages += "</td>";*/
+							codepages += "</td></tr>\n";
+						}
+						codepages += "</table><br>Use any of these or from <a href=http://docs.microsoft.com/en-us/dotnet/api/system.text.encoding.getencodings?view=net-6.0>.NET documentation</a>.</p>\n";
+
+						codepages += "<p>Code pages for current server's locale:\n" +
+						"<table>" +
+						"<tr><td>Windows &quot;ANSI&quot;</td><td>" + GetCodePage("Win").WebName + "</td></tr>\n" +
+						"<tr><td>DOS &quot;OEM&quot;</td><td>" + GetCodePage("DOS").WebName + "</td></tr>\n" +
+						"<tr><td>MacOS classic</td><td>" + GetCodePage("Mac").WebName + "</td></tr>\n" +
+						"<tr><td>ISO</td><td>" + GetCodePage("ISO").WebName + "</td></tr>\n" +
+						"<tr><td>EBCDIC</td><td>" + GetCodePage("EBCDIC").WebName + "</td></tr>\n" +
+						"</table>Clients without UTF-8 support will got content in these code pages.</p>\n";
+
+						if (!IsOutputEncodingListed && ConfigFile.OutputEncoding != null)
+							codepages += "<br>Current output encoding: <b>" + ConfigFile.OutputEncoding.WebName + "</b> &quot;" + ConfigFile.OutputEncoding.EncodingName + "&quot; (# " + ConfigFile.OutputEncoding.CodePage + ").\n";
+						if (ConfigFile.OutputEncoding == null)
+							codepages += "<br>Current output encoding: <b>same as source</b>.\n";
+
+						SendInfoPage("WebOne: List of supported code pages", "Content encodings", codepages);
+						return;
+					case "/!img-test":
+					case "/!img-test/":
+						SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
+						return;
+					case "/!convert":
+					case "/!convert/":
+						string SrcUrl = "", Src = "", Dest = "xbm", DestMime = "image/x-xbitmap", Converter = "convert", Args1 = "", Args2 = "";
+
+						//parse URL
+						Match FindSrc = Regex.Match(RequestURL.Query, @"(src)=([^&]+)");
+						Match FindSrcUrl = Regex.Match(RequestURL.Query, @"(url)=([^&]+)");
+						Match FindDest = Regex.Match(RequestURL.Query, @"(dest)=([^&]+)");
+						Match FindDestMime = Regex.Match(RequestURL.Query, @"(type)=([^&]+)");
+						Match FindConverter = Regex.Match(RequestURL.Query, @"(util)=([^&]+)");
+						Match FindArg1 = Regex.Match(RequestURL.Query, @"(arg)=([^&]+)");
+						Match FindArg2 = Regex.Match(RequestURL.Query, @"(arg2)=([^&]+)");
+
+						if (FindSrc.Success)
+							Src = Uri.UnescapeDataString(FindSrc.Groups[2].Value);
+
+						if (FindSrcUrl.Success)
+							SrcUrl = Uri.UnescapeDataString(FindSrcUrl.Groups[2].Value);
+						//BUG: sometimes URL gets unescaped when opening via WMP
+						//     (mostly via UI, and all load retries via FF plugin, strange but 1st plugin's attempt is valid)
+
+						if (FindDest.Success)
+							Dest = Uri.UnescapeDataString(FindDest.Groups[2].Value);
+
+						if (FindDestMime.Success)
+							DestMime = Uri.UnescapeDataString(FindDestMime.Groups[2].Value);
+
+						if (FindConverter.Success)
+							Converter = Uri.UnescapeDataString(FindConverter.Groups[2].Value);
+
+						if (FindArg1.Success)
+							Args1 = Uri.UnescapeDataString(FindArg1.Groups[2].Value);
+
+						if (FindArg2.Success)
+							Args2 = Uri.UnescapeDataString(FindArg2.Groups[2].Value);
+
+						if (Src == "CON:") throw new ArgumentException("Bad source file name");
+
+						//detect info page requestion
+						if (!FindSrcUrl.Success && !FindSrc.Success)
+						{
+							SendError(200, "<big>Here you can summon ImageMagick to convert a picture file</big>.<br>" +
+							"<p>Usage: /!convert/?url=https://example.com/filename.ext&dest=gif&type=image/gif<br>" +
+							"or: /!convert/?src=filename.ext&dest=gif&type=image/gif</p>" +
+							"<p>See <a href=\"http://github.com/atauenis/webone/wiki\">WebOne wiki</a> for help on this.</p>");
+							return;
+						}
+
+						//find converter and use it
+						foreach (Converter Cvt in ConfigFile.Converters)
+						{
+							if (Cvt.Executable == Converter)
+							{
+								HttpOperation HOper = new HttpOperation(Log);
+								Stream SrcStream = null;
+
+								//find source file placement
+								if (FindSrcUrl.Success)
+								{
+									//download source file
+									if (!Cvt.SelfDownload) try
+										{
+											HOper.URL = new Uri(SrcUrl);
+											HOper.Method = "GET";
+											HOper.RequestHeaders = new WebHeaderCollection();
+#if DEBUG
+											Log.WriteLine(">Downloading source stream (connecting)...");
+#else
+														Log.WriteLine(">Downloading source stream...");
+#endif
+											HOper.SendRequest();
+#if DEBUG
+											Log.WriteLine(">Downloading source stream (receiving)...");
+#endif
+											HOper.GetResponse();
+											SrcStream = HOper.ResponseStream;
+										}
+										catch (Exception DlEx)
+										{
+											Log.WriteLine(" Converter cannot download source: {0}", DlEx.Message);
+											SendError(503,
+												"<p><big><b>Converter cannot download the source</b>: " + DlEx.Message + "</big></p>" +
+												"Source URL: " + SrcUrl);
+											return;
+										}
+								}
+								else
+								{
+									//open local source file
+									SrcUrl = "http://0.0.0.0/localfile";
+									if (!Cvt.SelfDownload) try
+										{
+											if (!File.Exists(Src))
+											{
+												if (File.Exists(new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + Src))
+													Src = new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + Src;
+												else
+													throw new FileNotFoundException("No such file: " + Src);
+											}
+											SrcStream = File.OpenRead(Src);
+										}
+										catch (Exception OpenEx)
+										{
+											Log.WriteLine(" Converter cannot open source: {0}", OpenEx.Message);
+											SendError(503,
+												"<p><big><b>Converter cannot open the source</b>: " + OpenEx.Message + "</big></p>" +
+												"Source URL: " + SrcUrl);
+											return;
+										}
+								}
+
+								//go to converter
+								try
+								{
+									//run converter & return result
+									SendStream(Cvt.Run(Log, SrcStream, Args1, Args2, Dest, SrcUrl), DestMime, true);
+									return;
+								}
+								catch (Exception CvtEx)
+								{
+									Log.WriteLine(" Converter error: {0}", CvtEx.Message);
+									SendError(502,
+										"<p><big><b>Converter error</b>: " + CvtEx.Message + "</big></p>" +
+										"Source URL: " + SrcUrl + "<br>" +
+										"Utility: " + Cvt.Executable);
+									return;
+								}
+							}
+						}
+
+						SendError(503, "<big>Converter &quot;<b>" + Converter + "</b>&quot; is unknown</big>.<br>" +
+						"<p>This converter is not listed in configuration file.</p>" +
+						"<p>See <a href=\"http://github.com/atauenis/webone/wiki\">WebOne wiki</a> for help on this.</p>");
+						return;
+					case "/!webvideo":
+					case "/!webvideo/":
+						Dictionary<string, string> VidArgs = new();
+
+						foreach (string UrlArg in System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query).AllKeys)
+						{
+							if (UrlArg != null)
+								VidArgs[UrlArg] = System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query)[UrlArg];
+						}
+
+						if (!VidArgs.ContainsKey("url"))
+						{
+							string HelpMsg =
+							"<p>WebOne can help download videos from popular sites in preferred format.</p>" +
+							"<p>To download a video, go to <b><a href='/!player/'>Online Video Player</a></b>, enter URL of the video, " +
+							"choose container and codecs valid for your system, and then select <b>file</b> or <b>link</b> option.</p>" +
+							"<p>If you choose <b>file</b> option, the video file will start download automatically. " +
+							"If you choose <b>link</b> option, you will get a link, which can be copied to multimedia player program.</p>" +
+							"<p>Manual use parameters:" +
+							"<ul>" +
+							"<li><b>url</b> - Address of the video (e.g. https://www.youtube.com/watch?v=fPnO26CwqYU or similar)</li>" +
+							"<li><b>f</b> - Target format of the file (e.g. avi)</li>" +
+							"<li><b>vcodec</b> - Codec for video (e.g. mpeg4)</li>" +
+							"<li><b>acodec</b> - Codec for audio (e.g. mp3)</li>" +
+							"<li><b>content-type</b> - override MIME content type for the file (optional).</li>" +
+							"<li>Also you can use many <i>" + (ConfigFile.WebVideoOptions["YouTubeDlApp"] ?? "youtube-dl") +
+							"</i> and <i>" + (ConfigFile.WebVideoOptions["FFmpegApp"] ?? "ffmpeg") +
+							"</i> options like <b>aspect</b>, <b>b</b>, <b>no-mark-watched</b> and other.</li>" +
+							"<li>Default parameter values are stored in configuration file.</li>" +
+							"</ul></p>";
+							SendInfoPage("Online video converter", "Web video converting", HelpMsg);
+							return;
+						}
+
+						WebVideo vid = new WebVideoConverter().ConvertVideo(VidArgs, Log);
+						if (vid.Available)
+						{
+							ClientResponse.AddHeader("Content-Disposition", "attachment; filename=\"" + vid.FileName + "\"");
+							SendStream(vid.VideoStream, vid.ContentType);
+							return;
+						}
+						else
+						{
+							string ErrMsg =
+							"<p>" + vid.ErrorMessage + "</p>" +
+							"<p>Make sure that parameters are correct, and both <i>youtube-dl</i> and <i>ffmpeg</i> are properly installed on the server.</p>";
+							SendInfoPage("Online video converter", "Web video converting", ErrMsg);
+							return;
+						}
+					case "/!player":
+					case "/!player/":
+						SendInfoPage(new WebVideoPlayer(System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query)).Page);
+						return;
+					case "/!clear":
+					case "/!clear/":
+						int FilesDeleted = 0;
+						foreach (FileInfo file in (new DirectoryInfo(ConfigFile.TemporaryDirectory)).EnumerateFiles("convert-*.*"))
+						{
+							try { file.Delete(); FilesDeleted++; }
+							catch { }
+						}
+						SendError(200, "<b>" + FilesDeleted + "</b> temporary files have been deleted in <i>" + ConfigFile.TemporaryDirectory + "</i>.");
+						return;
+					case "/!ftp":
+					case "/!ftp/":
+						//FTP client
+						SendInfoPage(new FtpClientGUI(ClientRequest).GetPage());
+						return;
+					case "/!ca":
+					case "/!ca/":
+						Log.WriteLine("<Return WebOne CA (root) certificate.");
+						SendFile(ConfigFile.SslCertificate, "text/plain");
+						return;
+					case "/!pac":
+					case "/!pac/":
+					case "/auto":
+					case "/auto/":
+					case "/auto.pac":
+					case "/wpad.dat":
+					case "/wpad.da":
+						//Proxy Auto-Config
+						Log.WriteLine("<Return PAC/WPAD script.");
+						string LocalHostAdress = GetServerName();
+						if (LocalHostAdress.StartsWith("[")) LocalHostAdress = ConfigFile.DefaultHostName + ":" + ConfigFile.Port; //on IPv6, fallback to DefaultHostName:Port
+						string LocalHostAdress2 = GetServerName().Replace(ConfigFile.Port.ToString(), ConfigFile.Port2.ToString()); //for HTTPS, FTP
+						if (LocalHostAdress2.StartsWith("[")) LocalHostAdress2 = ConfigFile.DefaultHostName + ":" + ConfigFile.Port2;
+
+						string PacString = Program.ProcessUriMasks(ConfigFile.PAC, LocalHostAdress, false, new Dictionary<string, string>() { { "PACProxy", LocalHostAdress }, { "PACProxy2", LocalHostAdress2 } });
+
+						byte[] PacBuffer = Encoding.Default.GetBytes(PacString);
+						try
+						{
+							ClientResponse.StatusCode = 200;
+							ClientResponse.ProtocolVersion = new Version(1, 0);
+
+							ClientResponse.ContentType = "application/x-ns-proxy-autoconfig";
+							ClientResponse.ContentLength64 = PacString.Length;
+							ClientResponse.SendHeaders();
+							ClientResponse.OutputStream.Write(PacBuffer, 0, PacBuffer.Length);
+							ClientResponse.Close();
+						}
+						catch (Exception pacex)
+						{
+							Log.WriteLine("Cannot return PAC! " + pacex.Message);
+						}
+						return;
+					case "/robots.txt":
+						//attempt to include in google index; kick the bot off
+						Log.WriteLine("<Return robot kicker.");
+						string Robots = "User-agent: *\nDisallow: / ";
+						byte[] RobotsBuffer = Encoding.Default.GetBytes(Robots);
+						try
+						{
+							ClientResponse.StatusCode = 200;
+							ClientResponse.ProtocolVersion = new Version(1, 0);
+
+							ClientResponse.ContentType = "text/plain";
+							ClientResponse.ContentLength64 = Robots.Length;
+							ClientResponse.SendHeaders();
+							ClientResponse.OutputStream.Write(RobotsBuffer, 0, RobotsBuffer.Length);
+							ClientResponse.Close();
+						}
+						catch
+						{
+							Log.WriteLine("Cannot return robot kicker!");
+						}
+						return;
+					default:
+						//thanks for idea: https://www.artlebedev.ru/yandex/404/
+						string msg404 =
+						"<p>The page you are viewing does not exist.</p>" +
+						"<p>If you think we brought you here on purpose by posting a wrong link, send us that link via GitHub.</p>" +
+						"<p>And if you really want to find something on the Internet, specify IP of the WebOne server in your browser's proxy server settings.</p>" +
+						"<pre>" + InternalPageId + "</pre>";
+						SendInfoPage("WebOne: 404", "404 - there's no page.", msg404, 404);
+						return;
+
+				}
+			}
+			catch (Exception ex)
+			{
+				Log.WriteLine("!Internal server error: {0} @ {1}", ex.ToString(), InternalPageId);
+#if DEBUG
+				SendError(500, "Internal server error: <b>" + ex.Message + "</b><br>" + ex.GetType().ToString() + " " + ex.StackTrace.Replace("\n", "<br>"));
+#else
+				SendError(500, "WebOne cannot process the request to &quot;" + InternalPageId + "&quot; because <b>" + ex.Message + "</b>.");
+#endif
+				return;
+			}
+
+		}
+
+		/// <summary>
 		/// Get client identification string (for log).
 		/// </summary>
 		/// <returns>Client's IP address and (if any specified) name used to authorizate.</returns>
@@ -1266,7 +1253,7 @@ namespace WebOne
 						string corrvalue = value.Replace("https://", "http://");
 						corrvalue = Regex.Replace(corrvalue, "; secure", ";", RegexOptions.IgnoreCase);
 
-						if (LocalMode)
+						if (ClientRequest.Kind == HttpUtil.RequestKind.AlternateProxy || ClientRequest.Kind == HttpUtil.RequestKind.DirtyAlternateProxy)
 						{
 							if (corrvalue.StartsWith("http://") && !corrvalue.StartsWith("http://" + GetServerName()))
 								corrvalue = corrvalue.Replace("http://", "http://" + GetServerName() + "/http://");
@@ -1376,8 +1363,8 @@ namespace WebOne
 				}
 			}
 
-			//fix the body if it will be deliveried through Local mode
-			if (LocalMode)
+			//fix the body if it will be deliveried through Alternate mode
+			if (ClientRequest.Kind == HttpUtil.RequestKind.AlternateProxy || ClientRequest.Kind == HttpUtil.RequestKind.DirtyAlternateProxy)
 			{
 				Body = Body.Replace("http://", "http://" + GetServerName() + "/http://");
 				Body = Body.Replace("href=\"./", "href=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
