@@ -133,17 +133,26 @@ namespace WebOne
 			Log.WriteLine(false, false, "Configured to http://{1}:{2}/, HTTP 1.0", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port);
 
 			//create SSL PEM (.crt & .key files) for CA (aka root certificate)
-			if (File.Exists(ConfigFile.SslCertificate))
+			try
 			{
-				Log.WriteLine(true, false, "Using as Certificate Authority: {0}, Key: {1}", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
+				if (File.Exists(ConfigFile.SslCertificate) && File.Exists(ConfigFile.SslPrivateKey))
+				{
+					Log.WriteLine(true, false, "Using as SSL Certificate Authority: {0}, {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
+				}
+				else
+				{
+					Log.WriteLine(true, false, "Creating SSL Certificate & Private Key for Root CA...");
+					CertificateUtil.MakeSelfSignedCert(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
+					Log.WriteLine(true, false, "CA Certificate: {0};   Key: {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
+				}
+				RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));
 			}
-			else
+			catch (Exception CertCreateEx)
 			{
-				Log.WriteLine(true, false, "Creating SSL Certificate & Private Key for Root CA...");
-				CertificateUtil.MakeSelfSignedCert(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
-				Log.WriteLine(true, false, "CA Certificate: {0}; Key: {1}", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
+				Log.WriteLine("Unable to create CA Certificate: {0}.", CertCreateEx.Message);
+				Log.WriteLine(CertCreateEx.StackTrace.Replace("\n", " ; ")); //only for debug purposes at this moment
+				Log.WriteLine("End of CA build error information. HTTPS won't be available!");
 			}
-			RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));
 
 			//initialize server
 			try
