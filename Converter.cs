@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -67,7 +66,7 @@ namespace WebOne
 		/// <param name="SrcUrl">Source content URL for converters which can download itself (or <see cref="null"/> for others)</param>
 		/// <returns>Stream with converted content</returns>
 		public Stream Run(LogWriter Log, Stream InputStream = null, string Args1 = "", string Args2 = "", string DestinationType = "tmp", string SrcUrl = null)
-        {
+		{
 			if (SelfDownload && (InputStream != null || SrcUrl == null))
 				throw new InvalidOperationException("The converter " + Executable + " can only download the content self");
 
@@ -140,10 +139,10 @@ namespace WebOne
 
 				new Task(() =>
 				{
-					if(InputStream != null) new Task(() =>
-					{
-						while (InputStream.CanRead && !ConvProc.HasExited) { }; if (!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine();
-					}).Start();
+					if (InputStream != null) new Task(() =>
+					 {
+						 while (InputStream.CanRead && !ConvProc.HasExited) { }; if (!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine();
+					 }).Start();
 
 					new Task(() =>
 					{
@@ -157,7 +156,7 @@ namespace WebOne
 					Log.WriteLine(" Waiting for finish of converting...");
 #endif
 					ConvProc.WaitForExit();
-					if(InputStream != null) InputStream.Close();
+					if (InputStream != null) InputStream.Close();
 #if DEBUG
 					Log.WriteLine(" Converting end.");
 #endif
@@ -188,12 +187,12 @@ namespace WebOne
 			}
 		}
 
-	/// <summary>
-	/// Get CPU load for process
-	/// </summary>
-	/// <param name="process">The process object</param>
-	/// <returns>CPU usage in percents</returns>
-	private double GetUsage(Process process)
+		/// <summary>
+		/// Get CPU load for process
+		/// </summary>
+		/// <param name="process">The process object</param>
+		/// <returns>CPU usage in percents</returns>
+		private double GetUsage(Process process)
 		{
 			//thx to: https://stackoverflow.com/a/49064915/7600726
 			//see also https://www.mono-project.com/archived/mono_performance_counters/
@@ -210,10 +209,18 @@ namespace WebOne
 				{
 					using (PerformanceCounter processId = new PerformanceCounter("Process", "ID Process", instance, true))
 					{
-						if (process.Id == (int)processId.RawValue)
+						try
 						{
-							name = instance;
-							break;
+							if (process.Id == (int)processId.RawValue)
+							{
+								name = instance;
+								break;
+							}
+						}
+						catch (InvalidOperationException)
+						{
+							//System.InvalidOperationException: "Instance 'convert#2' does not exist in the specified Category."
+							return 0;
 						}
 					}
 				}
@@ -227,8 +234,16 @@ namespace WebOne
 			// Creating delay to get correct values of CPU usage during next query
 			Thread.Sleep(500);
 
-			if (process.HasExited) return double.MinValue;
-			return Math.Round(cpu.NextValue() / Environment.ProcessorCount, 2);
+			try
+			{
+				if (process.HasExited) return double.MinValue;
+				return Math.Round(cpu.NextValue() / Environment.ProcessorCount, 2);
+			}
+			catch (InvalidOperationException)
+			{
+				//System.InvalidOperationException: "Instance 'convert#1' does not exist in the specified Category."
+				return 0;
+			}
 		}
 
 		/// <summary>
