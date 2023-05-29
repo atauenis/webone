@@ -1014,7 +1014,7 @@ namespace WebOne
 					case "/!ca":
 					case "/!ca/":
 						Log.WriteLine("<Return WebOne CA (root) certificate.");
-						SendFile(ConfigFile.SslCertificate, "text/plain");
+						SendFile(ConfigFile.SslCertificate, "application/x-x509-ca-cert", "WebOneCA.crt");
 						return;
 					case "/!pac":
 					case "/!pac/":
@@ -1948,11 +1948,12 @@ namespace WebOne
 		}
 
 		/// <summary>
-		/// Send a file to client
+		/// Send a file to client.
 		/// </summary>
-		/// <param name="FileName">Full path to the file</param>
+		/// <param name="FileName">Full path to the file.</param>
 		/// <param name="ContentType">File's content-type.</param>
-		private void SendFile(string FileName, string ContentType)
+		/// <param name="DestinationFileName">Name of file which will be saved to client's disk.</param>
+		private void SendFile(string FileName, string ContentType, string DestinationFileName = null)
 		{
 			Log.WriteLine("<Send file {0}.", FileName);
 			try
@@ -1960,6 +1961,7 @@ namespace WebOne
 				ClientResponse.StatusCode = 200;
 				ClientResponse.ProtocolVersion = new Version(1, 0);
 				ClientResponse.ContentType = ContentType;
+				if(DestinationFileName != null) ClientResponse.AddHeader("Content-Disposition", "attachment; filename=\"" + DestinationFileName + "\"");
 				FileStream potok = File.OpenRead(FileName);
 				ClientResponse.SendHeaders();
 				potok.CopyTo(ClientResponse.OutputStream);
