@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net.Security;
 using System.Net.Sockets;
 
 namespace WebOne
@@ -24,12 +25,13 @@ namespace WebOne
 		/// <summary>
 		/// Initialize a new instance of <see cref="HttpRequestContentStream"/>.
 		/// </summary>
-		/// <param name="NetStream"><see cref="NetworkStream"/> containing HTTP request payload.</param>
+		/// <param name="NetStream"><see cref="NetworkStream"/> or <see cref="SslStream"/> containing HTTP request payload.</param>
 		/// <param name="ContentLength">Length of HTTP request payload (value of "Content-Length" header).</param>
-		/// <exception cref="ArgumentException">If the <paramref name="NetStream"/> is not a <see cref="System.Net.Sockets.NetworkStream"/>.</exception>
+		/// <exception cref="ArgumentException">If the <paramref name="NetStream"/> is not a <see cref="System.Net.Sockets.NetworkStream"/> or <see cref="System.Net.Security.SslStream"/>.</exception>
 		public HttpRequestContentStream(Stream NetStream, int ContentLength)
 		{
-			if (NetStream is not NetworkStream) throw new ArgumentException("Only streams of type NetworkStream are acceptable!", nameof(NetStream));
+			if (NetStream is not NetworkStream && NetStream is not SslStream)
+			throw new ArgumentException("Only streams of type NetworkStream/SslStream are acceptable!", nameof(NetStream));
 			if (ContentLength < 1) throw new ArgumentOutOfRangeException(nameof(ContentLength), "Content-Length must be adequate!");
 			this.NetStream = NetStream;
 			this.ContentLength = ContentLength;

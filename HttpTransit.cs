@@ -408,8 +408,7 @@ namespace WebOne
 																	: ProcessUriMasks(Edit.Value);
 										Log.WriteLine(" Fix to {0}", NewUrl302);
 										Dump("~Redirect using 302 to: " + NewUrl302);
-										ClientResponse.AddHeader("Location", NewUrl302);
-										SendError(302, "Брось каку!");
+										SendRedirect(NewUrl302, "Брось каку!");
 										return;
 									case "AddRequestHeader":
 									case "AddHeader":
@@ -1250,8 +1249,12 @@ namespace WebOne
 					string header = operation.ResponseHeaders.GetKey(i);
 					foreach (string value in operation.ResponseHeaders.GetValues(i))
 					{
-						string corrvalue = value.Replace("https://", "http://");
-						corrvalue = Regex.Replace(corrvalue, "; secure", ";", RegexOptions.IgnoreCase);
+						string corrvalue = value;
+						if (!ClientRequest.IsSecureConnection)
+						{
+							corrvalue = value.Replace("https://", "http://");
+							corrvalue = Regex.Replace(corrvalue, "; secure", ";", RegexOptions.IgnoreCase);
+						}
 
 						if (ClientRequest.Kind == HttpUtil.RequestKind.AlternateProxy || ClientRequest.Kind == HttpUtil.RequestKind.DirtyAlternateProxy)
 						{
@@ -1464,8 +1467,7 @@ namespace WebOne
 			if (Redirect != null)
 			{
 				Log.WriteLine(" {1} {2}. Body {3}K of {4} [Need to redirect].", null, (int)StatusCode, StatusCode, ContentLength / 1024, SrcContentType);
-				ClientResponse.AddHeader("Location", Redirect);
-				SendError(302, "Redirect requested.");
+				SendRedirect(Redirect, "Traffic has been edited.");
 				return;
 			}
 
@@ -1732,12 +1734,14 @@ namespace WebOne
 							{
 								Match AUrlParts = Regex.Match(ArchiveURL, "^http://web.archive.org/web/([0-9]*)/(.*)");
 								//http://web.archive.org/web/$1fw_/$2
-								ArchiveURL = "http://web.archive.org/web/" + AUrlParts.Groups[1].Value + ConfigFile.ArchiveUrlSuffix + "/" + AUrlParts.Groups[2].Value;
+
+								if (ClientRequest.IsSecureConnection)
+									ArchiveURL = "https://web.archive.org/web/" + AUrlParts.Groups[1].Value + ConfigFile.ArchiveUrlSuffix + "/" + AUrlParts.Groups[2].Value;
+								else
+									ArchiveURL = "http://web.archive.org/web/" + AUrlParts.Groups[1].Value + ConfigFile.ArchiveUrlSuffix + "/" + AUrlParts.Groups[2].Value;
 							}
 
-							ResponseBody = "<html><body><h1>Server not found</h2>But an <a href=" + ArchiveURL + ">archived copy</a> is available! Redirecting to it...</body></html>";
-							ClientResponse.AddHeader("Location", ArchiveURL);
-							SendError(302, ResponseBody); //302 redirect is ready
+							SendRedirect(ArchiveURL, "<b>Good news:</b> an archived copy of now-removed content is available.");
 							return true;
 						}
 					}
@@ -1884,6 +1888,63 @@ namespace WebOne
 				if (!ConfigFile.HideClientErrors)
 					Log.WriteLine("<!Cannot return code {1}. {2}: {3}", null, Code, ex.GetType(), ex.Message);
 			}
+		}
+
+		/// <summary>
+		/// Send a 302-Redirect to client.
+		/// </summary>
+		/// <param name="Url">URL to which client should go.</param>
+		/// <param name="Message">Additional message that may be shown if 302 is too long to process.</param>
+		private void SendRedirect(string Url, string Message = null)
+		{
+			string Url302 = Url;
+
+			if (true && ClientRequest.IsSecureConnection)
+			{
+				if (Url302.StartsWith("http://"))
+					Url302 = "https://" + Url302.Substring("http://".Length);
+			}
+
+			if (Url302.StartsWith("//"))
+			{
+				// Uni-protocol URL
+				if (ClientRequest.IsSecureConnection)
+					Url302 = "https://" + Url302.Substring(2);
+				else
+					Url302 = "http://" + Url302.Substring(2);
+			}
+
+			Log.WriteLine("<Return redirect.");
+			string Html =
+			"<HTML><HEAD>" +
+			"<META HTTP-EQUIV=\"REFRESH\" CONTENT=\"" + Url302 + "\">" +
+			"<TITLE>WebOne: redirect by proxy</TITLE></HEAD>" +
+			"<BODY>";
+
+			if (Message != null) Html += "<P>" + Message + "</P>";
+
+			Html += "<P>Please navigate your browser to <A HREF=" + Url302 + ">" + Url302 + "</A>.</P>" + GetInfoString() + "</BODY></HTML>";
+
+			byte[] Buffer = (OutputContentEncoding ?? Encoding.Default).GetBytes(Html);
+			try
+			{
+				ClientResponse.StatusCode = 302;
+				ClientResponse.ProtocolVersion = new Version(1, 0);
+
+				ClientResponse.AddHeader("Location", Url302);
+				ClientResponse.ContentType = "text/html";
+				ClientResponse.ContentLength64 = Buffer.Length;
+				ClientResponse.SendHeaders();
+				ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
+				ClientResponse.Close();
+				Dump("End is 302 to " + Url302);
+			}
+			catch (Exception ex)
+			{
+				if (!ConfigFile.HideClientErrors)
+					Log.WriteLine("<!Cannot return 302. {2}: {3}", null, 302, ex.GetType(), ex.Message);
+			}
+
 		}
 
 		/// <summary>
