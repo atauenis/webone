@@ -42,7 +42,7 @@ To use HTTPS through WebOne 0.16, you need to install Proxy's Root Certificate (
 - Apple Safari and Google Chrome are using the system certificate store.
   - On Windows all is identical to MSIE.
 
-Known issues: due to unknown reasons, Windows Certificate Store don't accept WebOne certificate unless the OS is earlier than Windows XP SP3 (2003/XP64 SP2) with full set of Windows Updates. **Help wanted.**
+Known issue: due to unknown reasons, Windows Certificate Store doesn't accepting WebOne CA certificate unless the OS is Windows XP SP3 (2003/XP64 SP2) with full set of Windows Updates or later. Also Opera 7 doesn't installing it. Firefox 3.6, Mozilla 1.8b - OK. **Help wanted.**
 
 Note that deleting ssl.crt/ssl.key in WebOne installation directory will recreate them, and made imported CA certificates invalid.
 
