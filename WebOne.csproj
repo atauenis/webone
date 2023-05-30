@@ -95,8 +95,21 @@ then
 	echo "Consider remove /etc/WebOne/ directory. It is no longer used by WebOne."
 fi
 
-touch /var/log/webone.log
-chmod 666 /var/log/webone.log
+WOLog=/var/log/webone.log
+touch $WOLog
+chmod 666 $WOLog
+
+WOCACert=/etc/webone.conf.d/ssl.crt
+WOCAKey=/etc/webone.conf.d/ssl.key
+
+if [ ! -f "$WOCACert" ]
+then
+	echo "$WOCACert will be populated on first run."
+	touch $WOCACert
+	touch $WOCAKey
+	chmod 666 $WOCACert
+	chmod 666 $WOCAKey
+fi
 
 if [ -f /bin/systemctl ]; then
 	systemctl daemon-reload

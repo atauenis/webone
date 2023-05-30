@@ -33,6 +33,8 @@ namespace WebOne
 			Logger.WriteLine(">SSL: {0}", Request.RawUrl);
 #endif
 
+			if (!ConfigFile.SslEnable) return;
+
 			//Certificate = RootCertificate; //temporary - WebOne CA certificate
 
 			// Make a fake certificate for current domain, signed by CA certificate
@@ -53,7 +55,7 @@ namespace WebOne
 				"<HTML><HEAD>" +
 				"<TITLE>WebOne: SSL is not supported</TITLE></HEAD>" +
 				"<BODY><P><BIG>Sorry, Secure traffic transfer is disabled on proxy server.</BIG></P>" +
-				"<P>Set <B>SslEnable</B> to <B>yes</B> in configuration file to allow work with HTTPS &amp; SSL.</P>"+
+				"<P>Set <B>SslEnable</B> to <B>yes</B> in configuration file to allow work with HTTPS &amp; SSL. Also make sure that CA files are accessible.</P>"+
 				"<P>Or set the proxy usage only for HTTP protocol in your Web-browser settings.</P>" + GetInfoString() + "</BODY></HTML>";
 
 				byte[] Buffer = (System.Text.Encoding.Default).GetBytes(Html);

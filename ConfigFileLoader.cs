@@ -86,6 +86,7 @@ namespace WebOne
 			if (ConfigFileName.StartsWith("./") || ConfigFileName.StartsWith(@".\")) DefaultConfigDir = ".";
 			if (!string.IsNullOrEmpty(CustomConfigFile)) DefaultConfigDir = new FileInfo(CustomConfigFile).DirectoryName;
 			Includable = Includable.Replace("%WOConfigDir%", DefaultConfigDir);
+			Variables["WOConfigDir"] = DefaultConfigDir;
 
 			if (Includable.Contains('*') || Includable.Contains('?')) //it's a file mask
 			{
@@ -412,10 +413,10 @@ namespace WebOne
 									ConfigFile.SslEnable = ToBoolean(Option.Value);
 									break;
 								case "SslCertificate":
-									ConfigFile.SslCertificate = Option.Value;
+									ConfigFile.SslCertificate = ExpandMaskedVariables(Option.Value);
 									break;
 								case "SslPrivateKey":
-									ConfigFile.SslPrivateKey = Option.Value;
+									ConfigFile.SslPrivateKey = ExpandMaskedVariables(Option.Value);
 									break;
 								case "SslProtocols":
 									ConfigFile.SslProtocols = (System.Security.Authentication.SslProtocols)(int.Parse(Option.Value));

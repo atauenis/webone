@@ -138,16 +138,17 @@ namespace WebOne
 
 			if (ConfigFile.SslEnable)
 			{
-				//create SSL PEM (.crt & .key files) for CA (aka root certificate)
+				//load or create & load SSL PEM (.crt & .key files) for CA (aka root certificate)
 				try
 				{
-					if (File.Exists(ConfigFile.SslCertificate) && File.Exists(ConfigFile.SslPrivateKey))
-					{
-						Log.WriteLine(true, false, "Using as SSL Certificate Authority: {0}, {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
-					}
+					const int MinPemLentgh = 52; //minimum size of PEM files - header&footer only
+					bool HaveCrtKey = File.Exists(ConfigFile.SslCertificate) && File.Exists(ConfigFile.SslPrivateKey);
+					if (HaveCrtKey) HaveCrtKey = (new FileInfo(ConfigFile.SslCertificate).Length > MinPemLentgh) && (new FileInfo(ConfigFile.SslPrivateKey).Length > MinPemLentgh);
+					if (HaveCrtKey)
+					{ Log.WriteLine(true, false, "Using as SSL Certificate Authority: {0}, {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey); }
 					else
 					{
-						Log.WriteLine(true, false, "Creating SSL Certificate & Private Key for Root CA...");
+						Log.WriteLine(true, false, "Creating root SSL Certificate & Private Key for CA...");
 						CertificateUtil.MakeSelfSignedCert(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
 						Log.WriteLine(true, false, "CA Certificate: {0};   Key: {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
 					}
@@ -156,9 +157,9 @@ namespace WebOne
 				}
 				catch (Exception CertCreateEx)
 				{
-					Log.WriteLine("Unable to create CA Certificate: {0}.", CertCreateEx.Message);
-					Log.WriteLine(CertCreateEx.StackTrace.Replace("\n", " ; ")); //only for debug purposes at this moment
-					Log.WriteLine("End of CA build error information. HTTPS won't be available!");
+					Log.WriteLine(true, false, "Unable to create CA Certificate: {0}.", CertCreateEx.Message);
+					Log.WriteLine(true, false, CertCreateEx.StackTrace.Replace("\n", " ; ")); //only for debug purposes at this moment
+					Log.WriteLine(true, false, "End of CA build error information. HTTPS won't be available!");
 					ConfigFile.SslEnable = false;
 				}
 			}
