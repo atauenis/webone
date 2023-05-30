@@ -6,7 +6,7 @@
 		<TargetFramework>net6.0</TargetFramework>
 		<Authors>Alexander Tauenis</Authors>
 		<Version>0.16.0</Version>
-		<VersionSuffix>-alpha2</VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
+		<VersionSuffix>-beta1</VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
 		<PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
 		<Company>World</Company>
 		<Product>WebOne HTTP Proxy Server</Product>
@@ -71,9 +71,9 @@
 
 	<ItemGroup Condition="$(SelfContained)==true">
 		<!--
-    Fix for self-contained debs on Ubuntu 20.xx
-    https://github.com/quamotion/dotnet-packaging/issues/222
-    -->
+		Fix for self-contained debs on Ubuntu 20.xx
+		https://github.com/quamotion/dotnet-packaging/issues/222
+		-->
 		<DebDotNetDependencies Remove=" libc6, libgcc1, libgssapi-krb5-2, libstdc++6, zlib1g, libssl1.1 | libssl1.0.2 | libssl1.0.1 | libssl1.0.0 | libssl0.9.8, libicu70 | libicu69 | libicu68 | libicu67 | libicu66 | libicu65 | libicu64 | libicu63 | libicu62 | libicu61 | libicu60 | libicu59 | libicu58 | libicu57 | libicu56 | libicu55 | libicu54 | libicu53 | libicu52" />
 		<DebDotNetDependencies Include="libc6, libgcc1, libgssapi-krb5-2, libstdc++6, zlib1g, libssl3 | libssl1.1 | libssl1.0.2 | libssl1.0.1 | libssl1.0.0 | libssl0.9.8, libicu70 | libicu69 | libicu68 | libicu67 | libicu66 | libicu65 | libicu64 | libicu63 | libicu62 | libicu61 | libicu60 | libicu59 | libicu58 | libicu57 | libicu56 | libicu55 | libicu54 | libicu53 | libicu52" />
 	</ItemGroup>
@@ -86,41 +86,41 @@ WOOldConfFile=/etc/WebOne/webone.conf
 WONewConfFile=/etc/webone.conf.d/migrated.conf
 if [ -f "$WOOldConfFile" ]
 then
-  echo "$WOOldConfFile -> $WONewConfFile"
-  mv $WOOldConfFile $WONewConfFile
+	echo "$WOOldConfFile -> $WONewConfFile"
+	mv $WOOldConfFile $WONewConfFile
 fi
 
 if [ -d "$WOOldConfDir" ]
 then
-  echo "Consider remove /etc/WebOne/ directory. It is no longer used by WebOne."
+	echo "Consider remove /etc/WebOne/ directory. It is no longer used by WebOne."
 fi
 
 touch /var/log/webone.log
 chmod 666 /var/log/webone.log
 
 if [ -f /bin/systemctl ]; then
-  systemctl daemon-reload
-  systemctl enable --now webone
+	systemctl daemon-reload
+	systemctl enable --now webone
 fi
-      ]]>
+			]]>
 		</PostInstallScript>
 		<PreRemoveScript>
 			<![CDATA[
 if [ -f /bin/systemctl ]; then
-  systemctl stop webone
-  systemctl disable webone
+	systemctl stop webone
+	systemctl disable webone
 fi
 if [ -f /usr/bin/killall ]; then
-  killall webone || true
+	killall webone || true
 fi
-      ]]>
+			]]>
 		</PreRemoveScript>
 		<PostRemoveScript>
 			<![CDATA[
 if [ -f /bin/systemctl ]; then
-  systemctl daemon-reload
+	systemctl daemon-reload
 fi
-      ]]>
+			]]>
 		</PostRemoveScript>
 	</PropertyGroup>
 
@@ -151,6 +151,9 @@ fi
 
 	<ItemGroup>
 		<None Update="LICENSE.txt">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="README-0.16-BETA.md">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="README.md">

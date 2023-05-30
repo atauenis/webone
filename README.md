@@ -11,6 +11,11 @@ The program's settings are in the __webone.conf__ file (but any other file name 
 
 See **[WebOne wiki](https://github.com/atauenis/webone/wiki)** for complete list of features and full documentation.
 
+## Beta Version Notes
+See **[README-0.16-BETA.md](https://github.com/atauenis/webone/blob/master/README-0.16-BETA.md)** file for changes in the version, built from latest Git source code. That file contains more recent information about WebOne 0.16.0.
+
+The **README.md** and **Wiki** is currently containing information, related to WebOne latest stable version, 0.15.3.
+
 ## Server prerequisites
 Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET 6.0 Runtime are required on server PC. See [.NET 6.0 System Requirements](https://github.com/dotnet/core/blob/main/release-notes/6.0/supported-os.md).
 
