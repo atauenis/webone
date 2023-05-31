@@ -10,6 +10,7 @@ DynamicUser=yes
 Environment="HOME=/tmp/"
 ExecStart=/usr/local/bin/webone --daemon
 ReadWriteDirectories=-/var/log/
+ReadWriteDirectories=-/etc/webone.conf.d/
 TimeoutStopSec=10
 Restart=on-failure
 RestartSec=5
