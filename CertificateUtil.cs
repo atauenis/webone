@@ -45,12 +45,11 @@ namespace WebOne
 					X509KeyUsageFlags.KeyCertSign,
 					true));
 
-			// Issue & sign the certificate.
-			// We're just going to create a temporary certificate, that won't be valid for long.
+			// Issue & self-sign the certificate.
 			X509Certificate2 certificate = certRequest.CreateSelfSigned(
-				new DateTimeOffset(1970, 01, 01, 00, 00, 00, new TimeSpan(0)),
-				new DateTimeOffset(2070, 12, 31, 23, 59, 59, new TimeSpan(0))
-			);// (DateTimeOffset.Now, DateTimeOffset.Now.AddDays(7));
+				ConfigFile.SslRootValidAfter,
+				ConfigFile.SslRootValidBefore
+			);
 
 			// Export the private key.
 			string privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey(), Base64FormattingOptions.InsertLineBreaks);
@@ -71,8 +70,16 @@ namespace WebOne
 		public static X509Certificate2 MakeChainSignedCert(string certSubject, X509Certificate2 issuerCertificate)
 		{
 			// Look if it is already issued.
-			if (FakeCertificates.ContainsKey(certSubject)) return FakeCertificates[certSubject];
 			// Why: https://support.mozilla.org/en-US/kb/Certificate-contains-the-same-serial-number-as-another-certificate
+			if (FakeCertificates.ContainsKey(certSubject))
+			{
+				X509Certificate2 CachedCertificate = FakeCertificates[certSubject];
+				//check that it hasn't expired
+				if (CachedCertificate.NotAfter > DateTime.Now && CachedCertificate.NotBefore < DateTime.Now)
+				{ return CachedCertificate; }
+				else
+				{ FakeCertificates.Remove(certSubject); }
+			}
 
 			// If not, initialize private key generator & set up a certificate creation request.
 			using RSA rsa = RSA.Create();
@@ -86,8 +93,8 @@ namespace WebOne
 			// Issue & sign the certificate.
 			X509Certificate2 certificate = certRequest.Create(
 				issuerCertificate,
-				DateTimeOffset.Now.AddDays(-7),
-				DateTimeOffset.Now.AddDays(7),
+				DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildBeforeNow),
+				DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildAfterNow),
 				certSerialNumber
 			);
 

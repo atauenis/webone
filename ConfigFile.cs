@@ -200,6 +200,8 @@ namespace WebOne
 		/// </summary>
 		public static bool EnableWebFtp = true;
 
+
+
 		/// <summary>
 		/// Enable work with CONNECT method (enable HTTPS Proxy)
 		/// </summary>
@@ -219,6 +221,26 @@ namespace WebOne
 		/// Protocols used in SSL/TLS tunnels through this Secure proxy
 		/// </summary>
 		public static System.Security.Authentication.SslProtocols SslProtocols = System.Security.Authentication.SslProtocols.None;
+
+		/// <summary>
+		/// Date after which the CA certificate should be considered valid. Used only when generating it.
+		/// </summary>
+		public static DateTimeOffset SslRootValidAfter;
+
+		/// <summary>
+		/// Date before which the CA certificate should be considered valid. Used only when generating it.
+		/// </summary>
+		public static DateTimeOffset SslRootValidBefore;
+
+		/// <summary>
+		/// Days before current day when site certificates are considered valid.
+		/// </summary>
+		public static int SslCertVaildBeforeNow = -7;
+
+		/// <summary>
+		/// Days after current day when site certificates are considered valid.
+		/// </summary>
+		public static int SslCertVaildAfterNow = 7;
 
 
 

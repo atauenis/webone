@@ -421,6 +421,26 @@ namespace WebOne
 								case "SslProtocols":
 									ConfigFile.SslProtocols = (System.Security.Authentication.SslProtocols)(int.Parse(Option.Value));
 									break;
+								case "SslRootValidAfter":
+									ConfigFile.SslRootValidAfter = ToDateTimeOffset(Option.Value);
+									break;
+								case "SslRootValidBefore":
+									ConfigFile.SslRootValidBefore = ToDateTimeOffset(Option.Value);
+									break;
+								case "SslCertVaildBeforeNow":
+									int SslCertVaildBeforeNow = int.Parse(Option.Value);
+									if (SslCertVaildBeforeNow <= 0)
+										ConfigFile.SslCertVaildBeforeNow = SslCertVaildBeforeNow;
+									else
+										Log.WriteLine(true, false, "Warning: SslCertVaildBeforeNow must be a negative whole number of days, at {0}.", Option.Location);
+									break;
+								case "SslCertVaildAfterNow":
+									int SslCertVaildAfterNow = int.Parse(Option.Value);
+									if (SslCertVaildAfterNow >= 1)
+										ConfigFile.SslCertVaildAfterNow = SslCertVaildAfterNow;
+									else
+										Log.WriteLine(true, false, "Warning: SslCertVaildAfterNow must be a positive whole number of days, at {0}.", Option.Location);
+									break;
 							}
 						}
 						break;
@@ -437,6 +457,12 @@ namespace WebOne
 			}
 
 			if (ConfigFile.PAC == "") ConfigFile.PAC = DefaultPAC;
+
+			if (ConfigFile.SslRootValidAfter <= new DateTimeOffset())
+			{ ConfigFile.SslRootValidAfter = new DateTimeOffset(1970, 01, 01, 00, 00, 00, new TimeSpan(0)); }
+
+			if (ConfigFile.SslRootValidBefore <= new DateTimeOffset())
+			{ ConfigFile.SslRootValidBefore = new DateTimeOffset(2070, 12, 31, 23, 59, 59, new TimeSpan(0)); }
 
 			Variables.Add("Proxy", ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString());
 			Variables.Add("ProxyHost", ConfigFile.DefaultHostName);

@@ -148,12 +148,26 @@ namespace WebOne
 					{ Log.WriteLine(true, false, "Using as SSL Certificate Authority: {0}, {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey); }
 					else
 					{
+						//UNDONE: made cert CN configurable or unique
 						Log.WriteLine(true, false, "Creating root SSL Certificate & Private Key for CA...");
 						CertificateUtil.MakeSelfSignedCert(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
 						Log.WriteLine(true, false, "CA Certificate: {0};   Key: {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
 					}
 					RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));
 					Protocols += ", HTTPS 1.1";
+
+					//check validness period
+					if (RootCertificate.NotAfter < DateTime.Now || RootCertificate.NotBefore > DateTime.Now)
+					{
+						Log.WriteLine(true, false, "Warning! CA Certificate is out of date: {0}-{1}, now {2}.", RootCertificate.NotBefore, RootCertificate.NotAfter, DateTime.Now);
+					}
+
+					if (RootCertificate.NotAfter < DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildAfterNow) ||
+					RootCertificate.NotBefore > DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildBeforeNow))
+					{
+						Log.WriteLine(true, false, "Warning! CA Certificate is too fresh or expires too soon. Check configuration.");
+
+					}
 				}
 				catch (Exception CertCreateEx)
 				{
@@ -1190,6 +1204,18 @@ namespace WebOne
 				+ " and "
 				+ string.Join(",", falseStrings)
 				.Replace(",,", "")); //hide empty & null
+		}
+
+		/// <summary>
+		/// Convert string to DateTimeOffset
+		/// </summary>
+		/// <param name="input">Input string</param>
+		/// <returns>DateTimeOffset</returns>
+		/// <exception cref="InvalidCastException">Throws if the <paramref name="input"/> is not understood by .NET Runtime.</exception>
+		public static DateTimeOffset ToDateTimeOffset(string input)
+		{
+			//see for docs: https://learn.microsoft.com/en-us/dotnet/api/system.datetimeoffset.parse?view=net-6.0
+			return (input.ToLower() == "now" ? DateTimeOffset.Now : DateTimeOffset.Parse(input));
 		}
 
 	}
