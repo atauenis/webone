@@ -39,7 +39,7 @@ namespace WebOne
 
 			// Make a fake certificate for current domain, signed by CA certificate
 			string HostName = RequestReal.RawUrl.Substring(0, RequestReal.RawUrl.IndexOf(":"));
-			Certificate = CertificateUtil.MakeChainSignedCert("CN=" + HostName, RootCertificate);
+			Certificate = CertificateUtil.MakeChainSignedCert("CN=" + HostName, RootCertificate, ConfigFile.SslHashAlgorithm);
 		}
 
 		/// <summary>

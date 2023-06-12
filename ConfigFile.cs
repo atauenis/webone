@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace WebOne
@@ -220,7 +222,12 @@ namespace WebOne
 		/// <summary>
 		/// Protocols used in SSL/TLS tunnels through this Secure proxy
 		/// </summary>
-		public static System.Security.Authentication.SslProtocols SslProtocols = System.Security.Authentication.SslProtocols.None;
+		public static SslProtocols SslProtocols = SslProtocols.None;
+
+		/// <summary>
+		/// Certificate hashing algorithm used in CA and sites certificates.
+		/// </summary>
+		public static HashAlgorithmName SslHashAlgorithm = HashAlgorithmName.SHA1;
 
 		/// <summary>
 		/// Certificate subject to used in CA certificate at time of its generating.

@@ -421,6 +421,32 @@ namespace WebOne
 								case "SslProtocols":
 									ConfigFile.SslProtocols = (System.Security.Authentication.SslProtocols)(int.Parse(Option.Value));
 									break;
+								case "SslHashAlgorithm":
+									switch (Option.Value.ToUpper())
+									{
+										case "MD5":
+											ConfigFile.SslHashAlgorithm = System.Security.Cryptography.HashAlgorithmName.MD5;
+											break;
+										case "SHA1":
+											ConfigFile.SslHashAlgorithm = System.Security.Cryptography.HashAlgorithmName.SHA1;
+											break;
+										case "SHA2":
+										case "SHA256":
+											ConfigFile.SslHashAlgorithm = System.Security.Cryptography.HashAlgorithmName.SHA256;
+											break;
+										case "SHA3":
+										case "SHA384":
+											ConfigFile.SslHashAlgorithm = System.Security.Cryptography.HashAlgorithmName.SHA384;
+											break;
+										case "SHA5":
+										case "SHA512":
+											ConfigFile.SslHashAlgorithm = System.Security.Cryptography.HashAlgorithmName.SHA512;
+											break;
+										default:
+											Log.WriteLine(true, false, "Warning: '{0}' is not a valid hash algorithm name, at {1}.", Option.Value, Option.Location);
+											break;
+									}
+									break;
 								case "SslRootSubject":
 									if (!Option.Value.Contains("CN="))
 										Log.WriteLine(true, false, "Warning: '{0}' is not a valid X.500 distinguished subject name, at {1}.", Option.Value, Option.Location);
