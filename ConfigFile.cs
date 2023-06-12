@@ -223,6 +223,11 @@ namespace WebOne
 		public static System.Security.Authentication.SslProtocols SslProtocols = System.Security.Authentication.SslProtocols.None;
 
 		/// <summary>
+		/// Certificate subject to used in CA certificate at time of its generating.
+		/// </summary>
+		public static string SslRootSubject = CertificateUtil.DefaultCASubject;
+
+		/// <summary>
 		/// Date after which the CA certificate should be considered valid. Used only when generating it.
 		/// </summary>
 		public static DateTimeOffset SslRootValidAfter;

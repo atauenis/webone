@@ -421,6 +421,12 @@ namespace WebOne
 								case "SslProtocols":
 									ConfigFile.SslProtocols = (System.Security.Authentication.SslProtocols)(int.Parse(Option.Value));
 									break;
+								case "SslRootSubject":
+									if (!Option.Value.Contains("CN="))
+										Log.WriteLine(true, false, "Warning: '{0}' is not a valid X.500 distinguished subject name, at {1}.", Option.Value, Option.Location);
+									else
+										ConfigFile.SslRootSubject = Option.Value;
+									break;
 								case "SslRootValidAfter":
 									ConfigFile.SslRootValidAfter = ToDateTimeOffset(Option.Value);
 									break;

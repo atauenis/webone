@@ -148,9 +148,8 @@ namespace WebOne
 					{ Log.WriteLine(true, false, "Using as SSL Certificate Authority: {0}, {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey); }
 					else
 					{
-						//UNDONE: made cert CN configurable or unique
 						Log.WriteLine(true, false, "Creating root SSL Certificate & Private Key for CA...");
-						CertificateUtil.MakeSelfSignedCert(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
+						CertificateUtil.MakeSelfSignedCert(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey, ConfigFile.SslRootSubject);
 						Log.WriteLine(true, false, "CA Certificate: {0};   Key: {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
 					}
 					RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));

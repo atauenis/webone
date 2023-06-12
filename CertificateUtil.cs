@@ -15,7 +15,7 @@ namespace WebOne
 		// https://github.com/wheever/ProxHTTPSProxyMII/blob/master/CertTool.py#L58
 		// https://github.com/rwatjen/AzureIoTDPSCertificates/blob/master/src/DPSCertificateTool/CertificateUtil.cs#L46
 
-		const string DefaultCASubject = "C=SU, O=MITM Proxy, OU=This is not really secure connection, CN=WebOne Certificate Authority";
+		public const string DefaultCASubject = "C=SU, O=MITM Proxy, OU=This is not really secure connection, CN=WebOne Certificate Authority";
 
 		/// <summary>
 		/// Create a self-signed SSL certificate and private key, and save them to PEM files.
@@ -25,11 +25,16 @@ namespace WebOne
 		/// <param name="certSubject">Certificate subject.</param>
 		public static void MakeSelfSignedCert(string certFilename, string keyFilename, string certSubject = DefaultCASubject)
 		{
+			// PEM file headers.
 			const string CRT_HEADER = "-----BEGIN CERTIFICATE-----\n";
 			const string CRT_FOOTER = "\n-----END CERTIFICATE-----";
 
 			const string KEY_HEADER = "-----BEGIN RSA PRIVATE KEY-----\n";
 			const string KEY_FOOTER = "\n-----END RSA PRIVATE KEY-----";
+
+			// Append unique ID of certificate in its CN if it's default.
+			// This prevents "sec_error_bad_signature" error in Firefox.
+			if (certSubject == DefaultCASubject) certSubject += " [" + new Random().NextInt64(100, 999) + "]";
 
 			// Set up a certificate creation request.
 			using RSA rsa = RSA.Create();
