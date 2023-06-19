@@ -1,6 +1,8 @@
 # v0.16 Beta Release Notes
 
-This is a pre-release of WebOne Proxy Server, version 0.16 Beta 1. It is half-completed work, containing preview of new features and may be not enough stable.
+While the latest stable version of WebOne Proxy Server is 0.15.3, the development is still going forward. There are also newer developers builds of next version, 0.16. They are available for testing and debugging. Compiled builds can be found in [Release archive](https://github.com/atauenis/webone/releases). But sometimes a newer build can be obtained from sources from Git repository.
+
+This is a pre-release of WebOne Proxy Server, version 0.16 pre-Beta 2. It is half-completed work, containing preview of new features and may be not enough stable.
 
 WebOne 0.16's major new feature is support for HTTPS requests through proxy. Implementing the HTTPS support required also to rewrite from scratch most of code, related to regular HTTP/1.1. Previous WebOne versions (including 0.15.3) used Microsoft's library for decoding (and coding back) HTTP traffic. It have many limitations, which appear as "400 Bad Request" error pages without any prints in WebOne log.
 
@@ -28,6 +30,7 @@ Later WebOne will return to single-port mode.
 |WAIS    |x   |x   |x        |
 |NEWS    |x   |x   |x        |
 |POP,SMTP|x   |x   |x        |
+|SOCKS   |x   |x   |x        |
 
 The automatic configuration settings are most stable and most fast at this moment. But if you want to test WebOne 0.16 Beta fully, try to set Port 8081 for HTTP too.
 
@@ -38,11 +41,12 @@ To use HTTPS through WebOne 0.16, you need to install Proxy's Root Certificate (
 - Mozilla-based browsers use own storage of Authority (root) certificates. 
   - Firefox: Options -> Network -> Encryption -> View certificates.
   - Mozilla SeaMonkey: Preferences -> Privacy & Security -> Manage certificates.
+- Netscape Navigator 3, 4 is similar to Mozilla.
 - Microsoft Internet Explorer use Windows certificates storage. Double click on downloaded `WebOneCA.crt` file, and install to *Trusted Root Certificate Authorities* store. To remove, use `C:\Windows\system32\certmgr.msc` console.
 - Apple Safari and Google Chrome are using the system certificate store.
   - On Windows all is identical to MSIE.
 
-Known issue: due to unknown reasons, Windows Certificate Store doesn't accepting WebOne CA certificate unless the OS is Windows XP SP3 (2003/XP64 SP2) with full set of Windows Updates or later. Also Opera 7 doesn't installing it. Firefox 3.6, Mozilla 1.8b - OK. **Help wanted.**
+**Known issue**: "export" versions of pre-2000 browsers are not supported. It is need to install "U.S. only" versions or a "128-bit update" for browser.
 
 Note that deleting ssl.crt/ssl.key in WebOne installation directory will recreate them, and made imported CA certificates invalid.
 
