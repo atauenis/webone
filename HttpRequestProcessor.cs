@@ -13,10 +13,10 @@ namespace WebOne
 	/// </summary>
 	class HttpRequestProcessor
 	{
-	/// <summary>
-	/// Initialize instance of raw HTTP traffic parser (processor).
-	/// </summary>
-		public HttpRequestProcessor() { }	
+		/// <summary>
+		/// Initialize instance of raw HTTP traffic parser (processor).
+		/// </summary>
+		public HttpRequestProcessor() { }
 
 		/// <summary>
 		/// Process incoming TCP/IP traffic from client.
@@ -158,16 +158,12 @@ namespace WebOne
 					// Other lines - request headers, load all of them.
 					if (string.IsNullOrWhiteSpace(HttpRequestLine)) continue;
 					Request.Headers.Add(HttpRequestLine.Substring(0, HttpRequestLine.IndexOf(": ")), HttpRequestLine.Substring(HttpRequestLine.IndexOf(": ") + 2));
-
-					//undone: put below and made case insensitive, check Opera 7 support
-					if (HttpRequestLine == "Connection: keep-alive" || HttpRequestLine == "Proxy-Connection: keep-alive")
-						Request.KeepAlive = true;
 				}
 			}
 
 			if (Request == null)
 			{
-				Logger.WriteLine("<Dropped (unknown why).");
+				Logger.WriteLine("<Dropped (unknown HTTP derivative).");
 				return;
 			}
 
@@ -219,7 +215,9 @@ namespace WebOne
 			}
 
 			// Configure persistent connection mode (a.k.a. Keep-Alive)
-			// undone: copy & adapt code above
+			if ((Request.Headers["Connection"] ?? "").ToLower().Contains("keep-alive") ||
+			(Request.Headers["Proxy-Connection"] ?? "").ToLower().Contains("keep-alive"))
+			{ Request.KeepAlive = true; }
 
 			// Ready to start HTTP transit process.
 			HttpResponse Response;
