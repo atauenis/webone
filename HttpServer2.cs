@@ -94,7 +94,7 @@ namespace WebOne
 
 			try
 			{
-				HttpUtil.ProcessClientRequest(Client, Logger);
+				new HttpRequestProcessor().ProcessClientRequest(Client, Logger);
 			}
 			catch (IOException)
 			{
