@@ -54,30 +54,25 @@ namespace WebOne
 
 			// Issue & self-sign the certificate.
 			X509Certificate2 certificate;
-			switch (certHashAlgorithm.ToString())
+			if (true) //for testing purposes, use custom Signature Generator 
 			{
-				case "SHA1":
-				case "MD5":
-					byte[] certSerialNumber = new byte[16];
-					new Random().NextBytes(certSerialNumber);
+				byte[] certSerialNumber = new byte[16];
+				new Random().NextBytes(certSerialNumber);
 
-					X500DistinguishedName certName = new(certSubject);
-					RSASha1AndMd5Pkcs1SignatureGenerator customSignatureGenerator = new(rsa);
-					certificate = certRequest.Create(
-						certName,
-						customSignatureGenerator,
-						ConfigFile.SslRootValidAfter,
-						ConfigFile.SslRootValidBefore,
-						certSerialNumber);
-					break;
-				case "SHA256":
-				case "SHA384":
-				case "SHA512":
-				default:
-					certificate = certRequest.CreateSelfSigned(
-						ConfigFile.SslRootValidAfter,
-						ConfigFile.SslRootValidBefore);
-					break;
+				X500DistinguishedName certName = new(certSubject);
+				RsaPkcs1SignatureGenerator customSignatureGenerator = new(rsa);
+				certificate = certRequest.Create(
+					certName,
+					customSignatureGenerator,
+					ConfigFile.SslRootValidAfter,
+					ConfigFile.SslRootValidBefore,
+					certSerialNumber);
+			}
+			else //if problems, try .NET Signature Generator without MD5/SHA1 support
+			{
+				certificate = certRequest.CreateSelfSigned(
+					ConfigFile.SslRootValidAfter,
+					ConfigFile.SslRootValidBefore);
 			}
 
 			// Export the private key.
@@ -113,7 +108,7 @@ namespace WebOne
 
 			// If not, initialize private key generator & set up a certificate creation request.
 			using RSA rsa = RSA.Create();
-			CertificateRequest certRequest = new(certSubject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+			//CertificateRequest certRequest = new(certSubject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 			//CertificateRequest certRequest = new(certSubject, rsa, certHashAlgorithm, RSASignaturePadding.Pkcs1);
 
 			// Generate an unique serial number.
@@ -122,41 +117,45 @@ namespace WebOne
 
 			// Issue & sign the certificate.
 			X509Certificate2 certificate;
-			/*switch (certHashAlgorithm.ToString())
+			if (false) //an config file option will be added in future
 			{
-				case "SHA1":
-				case "MD5":
-					X500DistinguishedName certName = new(certSubject);
-					RSASha1AndMd5Pkcs1SignatureGenerator customSignatureGenerator = new(rsa);
-					certificate = certRequest.Create(
-						issuerCertificate.SubjectName,
-						customSignatureGenerator,
-						DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildBeforeNow),
-						DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildAfterNow),
-						certSerialNumber);
-					break;
-				case "SHA256":
-				case "SHA384":
-				case "SHA512":
-				default:
-					certificate = certRequest.Create(
-						issuerCertificate,
-						DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildBeforeNow),
-						DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildAfterNow),
-						certSerialNumber
-					);
-					break;
-			}*/
-			//strange, but on SHA1/MD5 we're got "sec_error_bad_signature", so use SHA256 temporary.
-			certificate = certRequest.Create(
-				issuerCertificate,
-				DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildBeforeNow),
-				DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildAfterNow),
-				certSerialNumber
-			);
+				// set up a certificate creation request.
+				CertificateRequest certRequestAny = new(certSubject, rsa, certHashAlgorithm, RSASignaturePadding.Pkcs1);
+				X500DistinguishedName certName = new(certSubject);
+				RsaPkcs1SignatureGenerator customSignatureGenerator = new(rsa);
+				certificate = certRequestAny.Create(
+					issuerCertificate.SubjectName,
+					customSignatureGenerator,
+					DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildBeforeNow),
+					DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildAfterNow),
+					certSerialNumber);
+			}
+			else
+			{
+				// strange, RsaPkcs1SignatureGenerator gives a "sec_error_bad_signature", so use .NET signature generator & SHA256 in some cases.
+				// set up a certificate creation request.
+				CertificateRequest certRequestSha256 = new(certSubject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+				certificate = certRequestSha256.Create(
+					issuerCertificate,
+					DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildBeforeNow),
+					DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildAfterNow),
+					certSerialNumber
+				);
+			}
 
 			// Export the issued certificate with private key.
 			X509Certificate2 certificateWithKey = new(certificate.CopyWithPrivateKey(rsa).Export(X509ContentType.Pkcs12));
+			if (false)
+			{
+				//save to file for debug purposes
+				const string CRT_HEADER = "-----BEGIN CERTIFICATE-----\n";
+				const string CRT_FOOTER = "\n-----END CERTIFICATE-----";
+
+				// Export the certificate.
+				byte[] exportData = certificate.Export(X509ContentType.Cert);
+				string crt = Convert.ToBase64String(exportData, Base64FormattingOptions.InsertLineBreaks);
+				File.WriteAllText(certSubject + ".crt", CRT_HEADER + crt + CRT_FOOTER);
+			}
 
 			// Save the certificate and return it.
 			FakeCertificates.Add(certSubject, certificateWithKey);
@@ -165,12 +164,11 @@ namespace WebOne
 	}
 
 	/// <summary>
-	/// SHA1 and MD5 signature generator for X509 certificates.
+	/// RSA-MD5, RSA-SHA1, RSA-SHA256, RSA-SHA512 signature generator for X509 certificates.
 	/// </summary>
-	sealed class RSASha1AndMd5Pkcs1SignatureGenerator : X509SignatureGenerator
+	sealed class RsaPkcs1SignatureGenerator : X509SignatureGenerator
 	{
 		// Workaround for SHA1 and MD5 ban in .NET 4.7.2 and .NET Core.
-		// Should not be called if use SHA256 or other modern ciphers.
 		// Ideas used from:
 		// https://stackoverflow.com/a/59989889/7600726
 		// https://github.com/dotnet/corefx/pull/18344/files/c74f630f38b6f29142c8dc73623fdcb4f7905f87#r112066147
@@ -179,7 +177,7 @@ namespace WebOne
 
 		private readonly X509SignatureGenerator _realRsaGenerator;
 
-		internal RSASha1AndMd5Pkcs1SignatureGenerator(RSA rsa)
+		internal RsaPkcs1SignatureGenerator(RSA rsa)
 		{
 			_realRsaGenerator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
 		}
@@ -193,16 +191,35 @@ namespace WebOne
 		/// <returns>Hashing algorithm ID in some correct format.</returns>
 		public override byte[] GetSignatureAlgorithmIdentifier(HashAlgorithmName hashAlgorithm)
 		{
-			const string SHA1id = "300D06092A864886F70D0101050500";
+			/*
+			 * https://bugzilla.mozilla.org/show_bug.cgi?id=1064636#c28
+				300d06092a864886f70d0101020500  :md2WithRSAEncryption           1
+				300b06092a864886f70d01010b      :sha256WithRSAEncryption        2
+				300b06092a864886f70d010105      :sha1WithRSAEncryption          1
+				300d06092a864886f70d01010c0500  :sha384WithRSAEncryption        20
+				300a06082a8648ce3d040303        :ecdsa-with-SHA384              20
+				300a06082a8648ce3d040302        :ecdsa-with-SHA256              97
+				300d06092a864886f70d0101040500  :md5WithRSAEncryption           6512
+				300d06092a864886f70d01010d0500  :sha512WithRSAEncryption        7715
+				300d06092a864886f70d01010b0500  :sha256WithRSAEncryption        483338
+				300d06092a864886f70d0101050500  :sha1WithRSAEncryption          4498605
+			 */
 			const string MD5id = "300D06092A864886F70D0101040500";
-			//
+			const string SHA1id = "300D06092A864886F70D0101050500";
+			const string SHA256id = "300D06092A864886F70D01010B0500";
+			const string SHA384id = "300D06092A864886F70D01010C0500"; //?
+			const string SHA512id = "300D06092A864886F70D01010D0500";
 
-			if (hashAlgorithm == HashAlgorithmName.SHA1)
-				//return "300D06092A864886F70D0101050500".HexToByteArray();
-				return HexToByteArray(SHA1id);
 			if (hashAlgorithm == HashAlgorithmName.MD5)
-				//The equivalent for RSA-PKCS1-MD5 is 300D06092A864886F70D0101040500.
 				return HexToByteArray(MD5id);
+			if (hashAlgorithm == HashAlgorithmName.SHA1)
+				return HexToByteArray(SHA1id);
+			if (hashAlgorithm == HashAlgorithmName.SHA256)
+				return HexToByteArray(SHA256id);
+			if (hashAlgorithm == HashAlgorithmName.SHA384)
+				return HexToByteArray(SHA384id);
+			if (hashAlgorithm == HashAlgorithmName.SHA512)
+				return HexToByteArray(SHA512id);
 
 			throw new ArgumentOutOfRangeException(nameof(hashAlgorithm), "'" + hashAlgorithm + "' is not a supported algorithm at this moment.");
 		}
@@ -210,7 +227,7 @@ namespace WebOne
 		/// <summary>
 		/// Convert a hex-formatted string to byte array.
 		/// </summary>
-		/// <param name="hex">A string loogking like "300D06092A864886F70D0101050500".</param>
+		/// <param name="hex">A string looking like "300D06092A864886F70D0101050500".</param>
 		/// <returns>A byte array.</returns>
 		public static byte[] HexToByteArray(string hex)
 		{
