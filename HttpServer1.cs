@@ -12,7 +12,7 @@ namespace WebOne
 		/* This is the old version of HTTP Server, used from WebOne 0.8.5 to 0.15.3.
 		 * Pluses:   very stable, very fast, very compatible, professional-made, easy to maintain.
 		 * Minuses:  doesn't accept CONNECT method, doesn't accept non-HTTP URIs (CERN-style requests), wants 'Host:' header, rely on Microsoft-HTTPAPI.
-		 * In v0.16.0 and up, kept for compatibility purposes.
+		 * In v0.16.0 and up, kept for troubleshooting purposes.
 		 */
 
 		private int Port;
@@ -25,7 +25,7 @@ namespace WebOne
 		public override bool Working { get; set; }
 
 		/// <summary>
-		/// Initizlize a HTTP Listener &amp; Server
+		/// Initizlize a HTTP Listener &amp; Server (HttpListener-based).
 		/// </summary>
 		/// <param name="port">TCP Port to listen on</param>
 		public HttpServer1(int port) : base(port)
@@ -47,7 +47,7 @@ namespace WebOne
 			_listener.Start();
 			_listener.BeginGetContext(ProcessRequest, null);
 			Working = true;
-			Log.WriteLine(true, false, " =1= Internet (HTTP): \t {0}:{1}", ConfigFile.DefaultHostName, Port);
+			Log.WriteLine(true, false, "The proxy is running in HTTP-only mode.");
 			UpdateStatistics();
 		}
 
@@ -104,7 +104,7 @@ namespace WebOne
 					IsSecureConnection = false,
 					KeepAlive = req.KeepAlive,
 					Kind = HttpUtil.GetKindOfRequest(req.RawUrl, req.Headers["Host"])
-			};
+				};
 				HttpResponse Response = new(ctx.Response);
 
 				HttpTransit Transit = new(Request, Response, Logger);

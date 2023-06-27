@@ -183,7 +183,7 @@ namespace WebOne
 		{
 			if (Host.Contains(':') && !Host.EndsWith("]")) //"ipv4:port" or "[i::p::v::6]:port" but not "[i::p::v::6]"
 			throw new ArgumentException("Forget to split 'host:port' pair.", nameof(Host));
-			return CheckString(Host, GetLocalHostNames(), true) && (Port == ConfigFile.Port || Port == ConfigFile.Port2);
+			return CheckString(Host, GetLocalHostNames(), true) && Port == ConfigFile.Port;
 		}
 
 		/// <summary>

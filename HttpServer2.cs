@@ -27,7 +27,7 @@ namespace WebOne
 		public override bool Working { get; set; }
 
 		/// <summary>
-		/// Initizlize a HTTP Server.
+		/// Initizlize a HTTP Listener &amp; Server (TcpClient-based).
 		/// </summary>
 		/// <param name="port">TCP Port to listen on.</param>
 		public HttpServer2(int port) : base(port)
@@ -46,7 +46,7 @@ namespace WebOne
 			Listener.Start();
 			Listener.BeginAcceptTcpClient(ProcessConnection, null);
 			Working = true;
-			Log.WriteLine(true, false, " =2= Secure and FTP: \t {0}:{1}", ConfigFile.DefaultHostName, Port);
+			Log.WriteLine(true, false, "Supported protocols: HTTP{0}, FTP via Web browser.", (ConfigFile.SslEnable ? ", HTTPS" : " (plain)"));
 			UpdateStatistics();
 		}
 

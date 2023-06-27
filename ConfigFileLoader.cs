@@ -167,13 +167,13 @@ namespace WebOne
 							switch (Option.Key)
 							{
 								case "Port":
-								case "HttpPort":
 									ConfigFile.Port = Convert.ToInt32(Option.Value);
 									break;
 								case "Port2":
+								case "HttpPort":
 								case "HttpsPort":
 								case "FtpPort":
-									ConfigFile.Port2 = Convert.ToInt32(Option.Value);
+									Log.WriteLine(true, false, "Warning: Use of '{0}' is deprecated, use 'Port' at {1}.", Option.Key, Option.Location);
 									break;
 								case "OutputEncoding":
 									ConfigFile.OutputEncoding = GetCodePage(Option.Value);
@@ -269,6 +269,9 @@ namespace WebOne
 									break;
 								case "EnableWebFtp":
 									ConfigFile.EnableWebFtp = ToBoolean(Option.Value);
+									break;
+								case "UseMsHttpApi":
+									ConfigFile.UseMsHttpApi = ToBoolean(Option.Value);
 									break;
 								default:
 									Log.WriteLine(true, false, "Warning: Unknown server option {0} in {1}.", Option.Key, Option.Location);
@@ -405,6 +408,11 @@ namespace WebOne
 						}
 						break;
 					case "SecureProxy":
+						if(ConfigFile.UseMsHttpApi)
+						{
+							Log.WriteLine(true, false, "Info: [SecureProxy] options are ignored when UseMsHttpApi=1.");
+							break;
+						}
 						foreach (ConfigFileOption Option in Section.Options)
 						{
 							switch (Option.Key)
@@ -499,7 +507,6 @@ namespace WebOne
 			Variables.Add("Proxy", ConfigFile.DefaultHostName + ":" + ConfigFile.Port.ToString());
 			Variables.Add("ProxyHost", ConfigFile.DefaultHostName);
 			Variables.Add("ProxyPort", ConfigFile.Port.ToString());
-			Variables.Add("ProxySecondPort", ConfigFile.Port2.ToString());
 
 			Console.WriteLine("Configuration load complete.");
 			foreach (string f in LoadedFiles) { Log.WriteLine(false, false, "Configuration file {0} load complete.", f); }

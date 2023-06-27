@@ -19,16 +19,13 @@ namespace WebOne
 	{
 		public static LogWriter Log = new LogWriter();
 
-		//private static HttpServer HTTPS;
-		private static HttpServer1 PrimaryServer;
-		private static HttpServer2 SecondaryServer;
+		private static HttpServer Server;
 
 		public const string ConfigFileAutoName = "**auto**webone.conf";
 		public static string CustomConfigFile = "";
 		public static string ConfigFileName = ConfigFileAutoName;
 		public static string OverrideLogFile = "";
 		public static int Port = -1;
-		public static int Port2 = -1;
 		public static int Load = 0;
 
 		public static string Protocols = "HTTP 1.1";
@@ -46,10 +43,11 @@ namespace WebOne
 			"if (url.substring(0, 5) == 'http:')\n" +
 			"{ return 'PROXY %PACProxy%'; }\n" +
 			"if (url.substring(0, 6) == 'https:')\n" +
-			"{ return 'PROXY %PACProxy2%'; }\n" +
+			"{ return 'PROXY %PACProxy%'; }\n" +
 			"if (url.substring(0, 4) == 'ftp:')\n" +
-			"{ return 'PROXY %PACProxy2%'; }\n" +
+			"{ return 'PROXY %PACProxy%'; }\n" +
 			"} /*WebOne PAC*/ ";
+		//UNDONE: made PAC customizable (enable/disable SSL, FTP)
 
 		public static X509Certificate2 RootCertificate;
 		public static Dictionary<string, X509Certificate2> FakeCertificates = new();
@@ -81,7 +79,6 @@ namespace WebOne
 				ConfigFileLoader.LoadFile(ConfigFileName);
 				ConfigFileLoader.ProcessConfiguration();
 				if (Port < 1) Port = ConfigFile.Port; else ConfigFile.Port = Port;
-				if (Port2 < 1) Port2 = ConfigFile.Port2; else ConfigFile.Port2 = Port2;
 			}
 			catch (Exception ConfigLoadException)
 			{
@@ -145,7 +142,7 @@ namespace WebOne
 					bool HaveCrtKey = File.Exists(ConfigFile.SslCertificate) && File.Exists(ConfigFile.SslPrivateKey);
 					if (HaveCrtKey) HaveCrtKey = (new FileInfo(ConfigFile.SslCertificate).Length > MinPemLentgh) && (new FileInfo(ConfigFile.SslPrivateKey).Length > MinPemLentgh);
 					if (HaveCrtKey)
-					{ Log.WriteLine(true, false, "Using as SSL Certificate Authority: {0}, {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey); }
+					{ Log.WriteLine(false, false, "Using as SSL Certificate Authority: {0}, {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey); }
 					else
 					{
 						Log.WriteLine(true, false, "Creating root SSL Certificate & Private Key for CA...");
@@ -183,8 +180,10 @@ namespace WebOne
 			//initialize server
 			try
 			{
-				PrimaryServer = new(ConfigFile.Port);
-				SecondaryServer = new(ConfigFile.Port2);
+				if (ConfigFile.UseMsHttpApi)
+					Server = new HttpServer1(ConfigFile.Port);
+				else
+					Server = new HttpServer2(ConfigFile.Port);
 			}
 			catch (Exception ex)
 			{
@@ -199,10 +198,9 @@ namespace WebOne
 				try
 				{
 					//Log.WriteLine(true, false, "Starting servers...");
-					PrimaryServer.Start();
-					SecondaryServer.Start();
-					Console.WriteLine(" =3= Auto-configuration: http://{0}:{1}/auto.pac", ConfigFile.DefaultHostName, Port);
-					Log.WriteLine(true, false, "Ready for incoming connections.");
+					Server.Start();
+					//Log.WriteLine(true, false, "Ready for incoming connections.");
+					Log.WriteLine(true, false, "Listening for HTTP 1.x on port {0}.", Port);
 					break;
 				}
 				catch (HttpListenerException ex)
@@ -228,7 +226,7 @@ namespace WebOne
 							Console.Write("Do you want to add a Windows Network Shell rule to run WebOne with user rights? (Y/N)");
 							if (Console.ReadKey().Key == ConsoleKey.Y)
 							{
-								ConfigureWindowsNetShell(Port, Port2);
+								ConfigureWindowsNetShell(Port);
 								continue;
 							}
 							else
@@ -255,8 +253,7 @@ namespace WebOne
 			Console.CancelKeyPress += (s, e) => { Shutdown(); };
 
 			//wait while server is in work
-			//while (HTTPS.Working) { Thread.Sleep(250); }
-			while (PrimaryServer.Working) { Thread.Sleep(250); }
+			while (Server.Working) { Thread.Sleep(250); }
 
 			//the end
 			Shutdown();
@@ -271,9 +268,7 @@ namespace WebOne
 			if (ShutdownInitiated) return;
 			ShutdownInitiated = true;
 
-			//if (HTTPS != null && HTTPS.Working) HTTPS.Stop();
-			if (PrimaryServer != null && PrimaryServer.Working) PrimaryServer.Stop();
-			if (SecondaryServer != null && SecondaryServer.Working) SecondaryServer.Stop();
+			if (Server != null && Server.Working) Server.Stop();
 
 			if (!DaemonMode && !Environment.HasShutdownStarted && !ShutdownInitiated) try
 				{
@@ -384,8 +379,7 @@ namespace WebOne
 						if (int.TryParse(kvp.Value, out int CustomPort))
 						{
 							Port = CustomPort;
-							Port2 = CustomPort + 1;
-							Console.WriteLine("Using custom ports {0}, {1}.", Port, Port2);
+							Console.WriteLine("Using custom port {0}.", Port);
 							break;
 						}
 
@@ -641,15 +635,10 @@ namespace WebOne
 						case "-p":
 						case "--port":
 						case "--http-port":
+						case "--https-port":
+						case "--ftp-port":
 							Port = Convert.ToInt32(kvp.Value);
 							ConfigFile.Port = Convert.ToInt32(kvp.Value);
-							break;
-						case "/s":
-						case "-s":
-						case "--ftp-port":
-						case "--https-port":
-							Port2 = Convert.ToInt32(kvp.Value);
-							ConfigFile.Port2 = Convert.ToInt32(kvp.Value);
 							break;
 						case "/h":
 						case "-h":
@@ -1073,16 +1062,15 @@ namespace WebOne
 		/// <summary>
 		/// Configure Windows Network Shell (netsh) to allow use TCP/IP <paramref name="Port"/> without admin rights and then open Windows Firewall
 		/// </summary>
-		/// <param name="Port1">WebOne HTTP port number</param>
-		/// <param name="Port2">WebOne HTTPS/FTP port number</param>
-		public static void ConfigureWindowsNetShell(int Port1, int Port2)
+		/// <param name="TcpPort">WebOne working port number</param>
+		public static void ConfigureWindowsNetShell(int TcpPort)
 		{
 			//fix for https://github.com/atauenis/webone/issues/14
 			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
 				throw new InvalidOperationException("Only for MS Windows");
 
 			string address, NTdomain, NTuser;
-			address = string.Format("http://*:{0}/", Port1);
+			address = string.Format("http://*:{0}/", TcpPort);
 			NTdomain = Environment.UserDomainName;
 			NTuser = Environment.UserName;
 
@@ -1090,44 +1078,30 @@ namespace WebOne
 			Console.WriteLine();
 			Log.WriteLine(false, false, "Started NETSH configurtion \"wizard\". Logging is not implemented here.");
 
-			Console.Write(" Do you want to add system rule allowing user {0} to run WebOne on port {1}? (Y/N)", "\"" + NTdomain + "\\" + NTuser + "\"", Port1);
-			if (Console.ReadKey().Key == ConsoleKey.Y)
+			if (ConfigFile.UseMsHttpApi)
 			{
-				string args = string.Format(@"http add urlacl url={0}", address) + " user=\"" + NTdomain + "\\" + NTuser + "\"";
-				ProcessStartInfo psi;
-				psi = new ProcessStartInfo("netsh", args);
-				psi.Verb = "runas";
-				psi.CreateNoWindow = true;
-				psi.WindowStyle = ProcessWindowStyle.Hidden;
-				psi.UseShellExecute = true;
+				Console.Write(" Do you want to add system rule allowing user {0} to run WebOne on port {1}? (Y/N)", "\"" + NTdomain + "\\" + NTuser + "\"", TcpPort);
+				if (Console.ReadKey().Key == ConsoleKey.Y)
+				{
+					string args = string.Format(@"http add urlacl url={0}", address) + " user=\"" + NTdomain + "\\" + NTuser + "\"";
+					ProcessStartInfo psi;
+					psi = new ProcessStartInfo("netsh", args);
+					psi.Verb = "runas";
+					psi.CreateNoWindow = true;
+					psi.WindowStyle = ProcessWindowStyle.Hidden;
+					psi.UseShellExecute = true;
 
-				Console.WriteLine("\n Running as administrator: netsh " + args);
-				try { Process.Start(psi).WaitForExit(); Console.WriteLine(" OK."); }
-				catch (Exception ex) { Console.WriteLine(" Error: {0}", ex.Message); }
+					Console.WriteLine("\n Running as administrator: netsh " + args);
+					try { Process.Start(psi).WaitForExit(); Console.WriteLine(" OK."); }
+					catch (Exception ex) { Console.WriteLine(" Error: {0}", ex.Message); }
+				}
+				Console.WriteLine();
 			}
-			Console.WriteLine();
 
-			Console.Write(" Do you want to open port {0} in Windows Firewall for inbound connections? (Y/N)", Port1);
+			Console.Write(" Do you want to open port {0} in Windows Firewall for inbound connections? (Y/N)", TcpPort);
 			if (Console.ReadKey().Key == ConsoleKey.Y)
 			{
-				string args = string.Format(@"advfirewall firewall add rule name=WebOneHTTP dir=in action=allow protocol=TCP localport={0}", Port1);
-				ProcessStartInfo psi;
-				psi = new ProcessStartInfo("netsh", args);
-				psi.Verb = "runas";
-				psi.CreateNoWindow = true;
-				psi.WindowStyle = ProcessWindowStyle.Hidden;
-				psi.UseShellExecute = true;
-
-				Console.WriteLine("\n Running as administrator: netsh " + args);
-				try { Process.Start(psi).WaitForExit(); Console.WriteLine(" OK."); }
-				catch (Exception ex) { Console.WriteLine(" Error: {0}", ex.Message); }
-			}
-			Console.WriteLine();
-
-			Console.Write(" Do you want to open port {0} in Windows Firewall for inbound connections? (Y/N)", Port2);
-			if (Console.ReadKey().Key == ConsoleKey.Y)
-			{
-				string args = string.Format(@"advfirewall firewall add rule name=WebOneHTTPS dir=in action=allow protocol=TCP localport={0}", Port2);
+				string args = string.Format(@"advfirewall firewall add rule name=WebOneHTTP dir=in action=allow protocol=TCP localport={0}", TcpPort);
 				ProcessStartInfo psi;
 				psi = new ProcessStartInfo("netsh", args);
 				psi.Verb = "runas";
