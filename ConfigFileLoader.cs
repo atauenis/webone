@@ -22,7 +22,7 @@ namespace WebOne
 		/// <param name="FileName">User-friendly file name</param>
 		public static void LoadConfigFileContent(string[] Body, string FileName)
 		{
-			Console.WriteLine("Using configuration file {0}.", FileName);
+			Console.WriteLine("Using configuration file {0}.", FileName.Replace(@"\\", @"\").Replace("//", "/"));
 
 			for (int i = 0; i < Body.Length; i++)
 			{
@@ -227,11 +227,11 @@ namespace WebOne
 									break;
 								case "LogFile":
 									if (Program.OverrideLogFile != null && Program.OverrideLogFile == "")
-										LogAgent.OpenLogFile(Program.GetLogFilePath(Option.Value), false);
+										LogAgent.OpenLogFile(Program.GetLogFilePath(Option.Value.Replace(@"\\", @"\").Replace("//", "/")), false);
 									break;
 								case "AppendLogFile":
 									if (Program.OverrideLogFile != null && Program.OverrideLogFile == "")
-										LogAgent.OpenLogFile(Program.GetLogFilePath(Option.Value), true);
+										LogAgent.OpenLogFile(Program.GetLogFilePath(Option.Value.Replace(@"\\", @"\").Replace("//", "/")), true);
 									break;
 								case "DisplayStatusPage":
 									ConfigFile.DisplayStatusPage = Option.Value;
@@ -421,10 +421,10 @@ namespace WebOne
 									ConfigFile.SslEnable = ToBoolean(Option.Value);
 									break;
 								case "SslCertificate":
-									ConfigFile.SslCertificate = ExpandMaskedVariables(Option.Value);
+									ConfigFile.SslCertificate = ExpandMaskedVariables(Option.Value).Replace(@"\\", @"\").Replace("//", "/");
 									break;
 								case "SslPrivateKey":
-									ConfigFile.SslPrivateKey = ExpandMaskedVariables(Option.Value);
+									ConfigFile.SslPrivateKey = ExpandMaskedVariables(Option.Value).Replace(@"\\", @"\").Replace("//", "/");
 									break;
 								case "SslProtocols":
 									ConfigFile.SslProtocols = (System.Security.Authentication.SslProtocols)(int.Parse(Option.Value));
