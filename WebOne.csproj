@@ -181,10 +181,10 @@ fi
 	</ItemGroup>
 
 	<ItemGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
-		<Content Include="webone.service" CopyToPublishDirectory="Always" LinuxFileMode="1755">
+		<Content Include="webone.service" CopyToPublishDirectory="Always" LinuxFileMode="644">
 			<LinuxPath>/etc/systemd/system/webone.service</LinuxPath>
 		</Content>
-		<Content Include="webone.logrotate" CopyToPublishDirectory="Always" LinuxFileMode="1755">
+		<Content Include="webone.logrotate" CopyToPublishDirectory="Always" LinuxFileMode="644">
 			<LinuxPath>/etc/logrotate.d/webone</LinuxPath>
 		</Content>
 	</ItemGroup>
