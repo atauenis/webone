@@ -287,9 +287,9 @@ namespace WebOne
 					}
 				}
 
-				// Configure Youtube-DL and FFmpeg processes and prepare data stream
+				// Configure YT-DLP and FFmpeg processes and prepare data stream
 				ProcessStartInfo YoutubeDlStart = new();
-				YoutubeDlStart.FileName = ConfigFile.WebVideoOptions["YouTubeDlApp"] ?? "youtube-dl";
+				YoutubeDlStart.FileName = ConfigFile.WebVideoOptions["YouTubeDlApp"] ?? "yt-dlp";
 				YoutubeDlStart.Arguments = string.Format("\"{0}\"{1} -o -", Arguments["url"], YoutubeDlArgs);
 				YoutubeDlStart.RedirectStandardOutput = true;
 				YoutubeDlStart.RedirectStandardError = true;
@@ -324,7 +324,7 @@ namespace WebOne
 				// Calculate approximately end time
 				DateTime EndTime = DateTime.Now.AddSeconds(30);
 
-				// Enable Youtube-DL error handling
+				// Enable YT-DLP error handling
 				if (!GetYoutubeJson)
 				{
 					YoutubeDl.ErrorDataReceived += (o, e) =>
@@ -334,11 +334,11 @@ namespace WebOne
 						{
 							video.Available = false;
 							video.ErrorMessage = "Online video failed to download: " + e.Data[7..];
-							Log.WriteLine(false, false, " youtube-dl: {0}", e.Data);
+							Log.WriteLine(false, false, " yt-dlp: {0}", e.Data);
 						}
 						if (e.Data != null && e.Data.StartsWith("WARNING:"))
 						{
-							Log.WriteLine(false, false, " youtube-dl: {0}", e.Data);
+							Log.WriteLine(false, false, " yt-dlp: {0}", e.Data);
 						}
 						if (e.Data != null && Regex.IsMatch(e.Data, @"\[download\].*ETA (\d\d:\d\d:\d\d|\d\d:\d\d)"))
 						{
@@ -359,7 +359,7 @@ namespace WebOne
 				{
 					if (UseFFmpeg)
 					{
-						// - Redirect Youtube-DL STDOUT to FFmpeg STDIN stream, and FFmpeg STDOUT to return stream
+						// - Redirect yt-dlp STDOUT to FFmpeg STDIN stream, and FFmpeg STDOUT to return stream
 						new Task(() =>
 						{
 							YoutubeDl.StandardOutput.BaseStream.CopyTo(FFmpeg.StandardInput.BaseStream);
@@ -368,13 +368,13 @@ namespace WebOne
 					}
 					else
 					{
-						// - Redirect Youtube-DL STDOUT to return stream
+						// - Redirect yt-dlp STDOUT to return stream
 						video.VideoStream = YoutubeDl.StandardOutput.BaseStream;
 					}
 				}
 				if(GetYoutubeJson)
 				{
-					// - Redirect Youtube-DL STDERR to return stream (video metadata JSON)
+					// - Redirect yt-dlp STDERR to return stream (video metadata JSON)
 					video.VideoStream = YoutubeDl.StandardError.BaseStream;
 				}
 
@@ -400,7 +400,7 @@ namespace WebOne
 					}
 				}).Start();
 
-				// Wait for Youtube-DL & FFmpeg to start working or end with error
+				// Wait for YT-DLP & FFmpeg to start working or end with error
 				Thread.Sleep(5000);
 			}
 			catch (Exception VidCvtError)

@@ -62,7 +62,7 @@ namespace WebOne
 			Assembly.GetExecutingAssembly().GetName().Version.Major + "." +
 			Assembly.GetExecutingAssembly().GetName().Version.Minor + "." +
 			Assembly.GetExecutingAssembly().GetName().Version.Build
-			+ "-beta2"
+			+ "-beta3pre"
 			);
 			Variables.Add("WOSystem", Environment.OSVersion.ToString());
 

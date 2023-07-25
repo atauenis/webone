@@ -968,7 +968,7 @@ namespace WebOne
 							"<li><b>vcodec</b> - Codec for video (e.g. mpeg4)</li>" +
 							"<li><b>acodec</b> - Codec for audio (e.g. mp3)</li>" +
 							"<li><b>content-type</b> - override MIME content type for the file (optional).</li>" +
-							"<li>Also you can use many <i>" + (ConfigFile.WebVideoOptions["YouTubeDlApp"] ?? "youtube-dl") +
+							"<li>Also you can use many <i>" + (ConfigFile.WebVideoOptions["YouTubeDlApp"] ?? "yt-dlp") +
 							"</i> and <i>" + (ConfigFile.WebVideoOptions["FFmpegApp"] ?? "ffmpeg") +
 							"</i> options like <b>aspect</b>, <b>b</b>, <b>no-mark-watched</b> and other.</li>" +
 							"<li>Default parameter values are stored in configuration file.</li>" +
@@ -988,7 +988,7 @@ namespace WebOne
 						{
 							string ErrMsg =
 							"<p>" + vid.ErrorMessage + "</p>" +
-							"<p>Make sure that parameters are correct, and both <i>youtube-dl</i> and <i>ffmpeg</i> are properly installed on the server.</p>";
+							"<p>Make sure that parameters are correct, and both <i>yt-dlp</i> and <i>ffmpeg</i> are properly installed on the server.</p>";
 							SendInfoPage("Online video converter", "Web video converting", ErrMsg);
 							return;
 						}

@@ -6,7 +6,7 @@
 		<TargetFramework>net6.0</TargetFramework>
 		<Authors>Alexander Tauenis</Authors>
 		<Version>0.16.0</Version>
-		<VersionSuffix>-beta2</VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
+		<VersionSuffix>-beta3pre</VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
 		<PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
 		<Company>World</Company>
 		<Product>WebOne HTTP Proxy Server</Product>
@@ -58,7 +58,7 @@
 	<ItemGroup>
 		<DebDependency Include="imagemagick-6.q16" />
 		<DebRecommends Include="ffmpeg" />
-		<DebRecommends Include="youtube-dl" />
+		<DebRecommends Include="yt-dlp" />
 	</ItemGroup>
 
 	<ItemGroup>
