@@ -19,6 +19,7 @@ namespace WebOne
 		LogWriter Log;
 
 		byte[] UTF8BOM = Encoding.UTF8.GetPreamble();
+		const string NoContentType = "webone/unknown-content-type";
 
 		Dictionary<string, string> Variables = new();
 
@@ -34,7 +35,7 @@ namespace WebOne
 		int ResponseCode = 502;
 		string ResponseBody = ":(";
 		Stream TransitStream = null;
-		string ContentType = "text/plain";
+		string ContentType = NoContentType;
 		Encoding SourceContentEncoding = Encoding.Default;
 		Encoding OutputContentEncoding = ConfigFile.OutputEncoding;
 		bool EnableTransliteration = false;
@@ -663,16 +664,6 @@ namespace WebOne
 						ClientResponse.ProtocolVersion = new Version(1, 0);
 						ClientResponse.StatusCode = ResponseCode;
 						ClientResponse.AddHeader("Via", "HTTP/1.0 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
-
-
-						if (CheckString(ContentType, ConfigFile.TextTypes) || ContentType == "")
-						{
-							ClientResponse.AddHeader("Content-Type", ContentType);
-						}
-						else
-						{
-							ClientResponse.AddHeader("Content-Type", ContentType);
-						}
 
 						if (TransitStream == null)
 						{
@@ -1395,7 +1386,7 @@ namespace WebOne
 		{
 			HttpStatusCode StatusCode = operation.Response.StatusCode;
 			Stream ResponseStream = operation.ResponseStream;
-			string ContentType = operation.ResponseHeaders["Content-Type"] ?? "unknown/unknown";
+			string ContentType = operation.ResponseHeaders["Content-Type"] ?? NoContentType;
 			long ContentLength = operation.Response.Content.Headers.ContentLength ?? 0;
 			this.ContentType = ContentType;
 			string SrcContentType = ContentType;
@@ -1513,7 +1504,7 @@ namespace WebOne
 			if (Program.CheckString(ContentType, ConfigFile.TextTypes))
 			{
 				//if server returns text, make edits
-				Log.WriteLine(" {1} {2}. Body {3}K of {4} [Text].", null, (int)StatusCode, StatusCode, ContentLength / 1024, ContentType);
+				Log.WriteLine(" {1} {2}. Body {3}K of {4} [Text].", null, (int)StatusCode, StatusCode, ContentLength / 1024, ContentType == NoContentType ? "something" : ContentType);
 #if DEBUG
 				if (Operation.ResponseHeaders["Location"] != null)
 				{
@@ -1554,9 +1545,9 @@ namespace WebOne
 			else
 			{
 				if (operation != null)
-					Log.WriteLine(" {1} {2}. Body {3}K of {4} [Binary].", null, (int)StatusCode, StatusCode, ContentLength / 1024, ContentType);
+					Log.WriteLine(" {1} {2}. Body {3}K of {4} [Binary].", null, (int)StatusCode, StatusCode, ContentLength / 1024, ContentType == NoContentType ? "something" : ContentType);
 				else
-					Log.WriteLine(" {1} {2}. Body is {3} [Binary], incomplete.", null, (int)StatusCode, StatusCode, ContentType);
+					Log.WriteLine(" {1} {2}. Body is {3} [Binary], incomplete.", null, (int)StatusCode, StatusCode, ContentType == NoContentType ? "something" : ContentType);
 
 #if DEBUG
 				if (Operation.ResponseHeaders["Location"] != null)
