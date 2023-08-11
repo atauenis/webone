@@ -1376,10 +1376,6 @@ namespace WebOne
 		/// <summary>
 		/// Prepare response body for tranfer to client
 		/// </summary>
-		/// <param name="StatusCode">HTTP Status code</param>
-		/// <param name="ResponseStream">Stream of response body</param>
-		/// <param name="ContentType">HTTP Content-Type</param>
-		/// <param name="ContentLength">HTTP Content-Lenght</param>
 		/// <param name="Operation">The HTTP Request/Response pair (will replace all other arguments in future)</param>
 		/// <returns>ResponseBuffer+ResponseBody for texts or TransitStream for binaries</returns>
 		private void MakeOutput(HttpOperation Operation)
@@ -1387,7 +1383,8 @@ namespace WebOne
 			HttpStatusCode StatusCode = operation.Response.StatusCode;
 			Stream ResponseStream = operation.ResponseStream;
 			string ContentType = operation.ResponseHeaders["Content-Type"] ?? NoContentType;
-			long ContentLength = operation.Response.Content.Headers.ContentLength ?? 0;
+			long? ContentLengthB = operation.Response.Content.Headers.ContentLength;
+			string ContentLengthKB = (ContentLengthB == null ? "?" : (ContentLengthB / 1024).ToString());
 			this.ContentType = ContentType;
 			string SrcContentType = ContentType;
 			Dump("\n\n" + (int)StatusCode + " HTTP/1.0");
@@ -1455,7 +1452,7 @@ namespace WebOne
 			//check for edit: AddRedirect
 			if (Redirect != null)
 			{
-				Log.WriteLine(" {1} {2}. Body {3}K of {4} [Need to redirect].", null, (int)StatusCode, StatusCode, ContentLength / 1024, SrcContentType);
+				Log.WriteLine(" {1} {2}. Body {3}K of {4} [Need to redirect].", null, (int)StatusCode, StatusCode, ContentLengthKB, SrcContentType);
 				SendRedirect(Redirect, "Traffic has been edited.");
 				return;
 			}
@@ -1463,7 +1460,7 @@ namespace WebOne
 			//check for edit: AddConvert
 			if (Converter != null)
 			{
-				Log.WriteLine(" {1} {2}. Body {3}K of {4} [Wants {5}].", null, (int)StatusCode, StatusCode, ContentLength / 1024, SrcContentType, Converter);
+				Log.WriteLine(" {1} {2}. Body {3}K of {4} [Wants {5}].", null, (int)StatusCode, StatusCode, ContentLengthKB, SrcContentType, Converter);
 
 				try
 				{
@@ -1504,7 +1501,7 @@ namespace WebOne
 			if (Program.CheckString(ContentType, ConfigFile.TextTypes))
 			{
 				//if server returns text, make edits
-				Log.WriteLine(" {1} {2}. Body {3}K of {4} [Text].", null, (int)StatusCode, StatusCode, ContentLength / 1024, ContentType == NoContentType ? "something" : ContentType);
+				Log.WriteLine(" {1} {2}. Body {3}K of {4} [Text].", null, (int)StatusCode, StatusCode, ContentLengthKB, ContentType == NoContentType ? "something" : ContentType);
 #if DEBUG
 				if (Operation.ResponseHeaders["Location"] != null)
 				{
@@ -1545,7 +1542,7 @@ namespace WebOne
 			else
 			{
 				if (operation != null)
-					Log.WriteLine(" {1} {2}. Body {3}K of {4} [Binary].", null, (int)StatusCode, StatusCode, ContentLength / 1024, ContentType == NoContentType ? "something" : ContentType);
+					Log.WriteLine(" {1} {2}. Body {3}K of {4} [Binary].", null, (int)StatusCode, StatusCode, ContentLengthKB, ContentType == NoContentType ? "something" : ContentType);
 				else
 					Log.WriteLine(" {1} {2}. Body is {3} [Binary], incomplete.", null, (int)StatusCode, StatusCode, ContentType == NoContentType ? "something" : ContentType);
 
