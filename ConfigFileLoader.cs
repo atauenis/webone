@@ -408,7 +408,7 @@ namespace WebOne
 						}
 						break;
 					case "SecureProxy":
-						if(ConfigFile.UseMsHttpApi)
+						if (ConfigFile.UseMsHttpApi)
 						{
 							Log.WriteLine(true, false, "Info: [SecureProxy] options are ignored when UseMsHttpApi=1.");
 							break;
@@ -482,6 +482,12 @@ namespace WebOne
 										Log.WriteLine(true, false, "Warning: SslCertVaildAfterNow must be a positive whole number of days, at {0}.", Option.Location);
 									break;
 							}
+						}
+						break;
+					case "NonHttpSslServers":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							ConfigFile.NonHttpSslServers.Add(Line.RawString.ToLowerInvariant());
 						}
 						break;
 					case "FixableURL":

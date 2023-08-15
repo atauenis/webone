@@ -70,8 +70,20 @@ namespace WebOne
 					try
 					{
 						//work as HTTPS proxy
-						HttpSecureServer FakeSrv = new(ClientRequest, ClientResponse, Log);
-						FakeSrv.Accept();
+						if (ClientRequest.RawUrl.EndsWith("443"))
+						{
+							HttpSecureServer FakeSrv = new(ClientRequest, ClientResponse, Log);
+							FakeSrv.Accept();
+						}
+						else
+						{
+							new HttpSecureNonHttpServer(
+							ClientRequest,
+							ClientResponse,
+							CheckString(ClientRequest.RawUrl.ToLowerInvariant(), ConfigFile.NonHttpSslServers),
+							Log)
+							.Accept();
+						}
 						return;
 					}
 					catch (Exception ex)
@@ -1949,7 +1961,7 @@ namespace WebOne
 				ClientResponse.StatusCode = 200;
 				ClientResponse.ProtocolVersion = new Version(1, 0);
 				ClientResponse.ContentType = ContentType;
-				if(DestinationFileName != null) ClientResponse.AddHeader("Content-Disposition", "attachment; filename=\"" + DestinationFileName + "\"");
+				if (DestinationFileName != null) ClientResponse.AddHeader("Content-Disposition", "attachment; filename=\"" + DestinationFileName + "\"");
 				FileStream potok = File.OpenRead(FileName);
 				ClientResponse.SendHeaders();
 				potok.CopyTo(ClientResponse.OutputStream);
