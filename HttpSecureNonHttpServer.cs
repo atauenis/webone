@@ -2,7 +2,9 @@
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using static WebOne.Program;
 namespace WebOne
 {
 	/// <summary>
@@ -10,11 +12,9 @@ namespace WebOne
 	/// </summary>
 	class HttpSecureNonHttpServer
 	{
-		Stream ClientStreamReal;
-		SslStream ClientStreamTunnel;
 		Stream ClientStream;
 		Stream RemoteStream;
-		//X509Certificate2 Certificate;
+		X509Certificate2 Certificate = null;
 		HttpRequest RequestReal;
 		HttpResponse ResponseReal;
 		LogWriter Logger;
@@ -26,17 +26,15 @@ namespace WebOne
 		{
 			RequestReal = Request;
 			ResponseReal = Response;
-			ClientStreamReal = Request.InputStream;
-			if (UseSsl) ClientStream = ClientStreamTunnel;
-			else ClientStream = ClientStreamReal;
+			ClientStream = Request.InputStream;
 			this.Logger = Logger;
 
 			if (UseSsl)
 			{
-				//todo: see HttpSecureServer.cs for code example
-				throw new NotImplementedException("Sorry, TLS support for non-HTTPS is coming soon.");
+				if (!ConfigFile.SslEnable) return;
+				string HostName = RequestReal.RawUrl.Substring(0, RequestReal.RawUrl.IndexOf(":"));
+				Certificate = CertificateUtil.MakeChainSignedCert("CN=" + HostName, RootCertificate, ConfigFile.SslHashAlgorithm);
 			}
-
 		}
 
 		/// <summary>
@@ -47,7 +45,6 @@ namespace WebOne
 			// Answer that this proxy supports CONNECT method
 			ResponseReal.ProtocolVersionString = "HTTP/1.1";
 			ResponseReal.StatusCode = 200; //better be "HTTP/1.0 200 Connection established", but "HTTP/1.1 200 OK" is OK too
-			//ResponseReal.AddHeader("Via", "1.1 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
 			ResponseReal.SendHeaders();
 
 			Logger.WriteLine(">Non-HTTP: {0}", RequestReal.RawUrl);
@@ -55,8 +52,31 @@ namespace WebOne
 			if (Parts.Length != 2) throw new Exception("Invalid `domain:port` pair supplied for CONNECT method.");
 			if (!int.TryParse(Parts[1], out int PortNumber)) throw new Exception("Invalid port number supplied for CONNECT method.");
 
-			// Establish SSL handshake if need
-			if (ClientStream is SslStream) throw new NotImplementedException("Saying again: TLS support for non-HTTPS is coming soon.");
+			// Establish an SSL/TLS tunnel if need
+			if (Certificate != null)
+			{
+				if (!ConfigFile.SslEnable)
+				{
+					Logger.WriteLine("<SSL is disabled, goodbye.");
+					return;
+				}
+
+				SslStream ClientStreamTunnel = new(RequestReal.InputStream, true);
+				try
+				{
+					ClientStreamTunnel.AuthenticateAsServer(Certificate, false, ConfigFile.SslProtocols, false);
+					ClientStream = ClientStreamTunnel;
+					Logger.WriteLine(" SSL ready.");
+				}
+				catch (Exception HandshakeEx)
+				{
+					string err = HandshakeEx.Message;
+					if (HandshakeEx.InnerException != null) err = HandshakeEx.InnerException.Message;
+					Logger.WriteLine("!SSL Handshake failed: {0} ({1})", err, HandshakeEx.HResult);
+					ClientStream.Close();
+					return;
+				}
+			}
 
 			// Establish tunnel
 			TcpClient TunnelToRemote = new();
@@ -123,9 +143,9 @@ namespace WebOne
 				{
 					TunnelAlive = (ClientStream as NetworkStream).Socket.Connected;
 				}
-				else
+				else if (ClientStream is SslStream)
 				{
-					TunnelAlive = ClientStream.CanWrite;
+					TunnelAlive = (RequestReal.InputStream as NetworkStream).Socket.Connected;
 				}
 			};
 
