@@ -38,16 +38,13 @@ namespace WebOne
 		public static System.Net.Http.SocketsHttpHandler HTTPHandler = new();
 		public static System.Net.Http.HttpClient HTTPClient = new(HTTPHandler);
 
-		public const string DefaultPAC =
-			"function FindProxyForURL(url, host){\n" +
-			"if (url.substring(0, 5) == 'http:')\n" +
-			"{ return 'PROXY %PACProxy%'; }\n" +
-			"if (url.substring(0, 6) == 'https:')\n" +
-			"{ return 'PROXY %PACProxy%'; }\n" +
-			"if (url.substring(0, 4) == 'ftp:')\n" +
-			"{ return 'PROXY %PACProxy%'; }\n" +
-			"} /*WebOne PAC*/ ";
-		//UNDONE: made PAC customizable (enable/disable SSL, FTP)
+		private const string DefaultPACheader = "function FindProxyForURL(url, host){\n";
+		private const string DefaultPAChttp = "if (url.substring(0, 5) == 'http:')\n{ return 'PROXY %PACProxy%'; }\n";
+		private const string DefaultPAChttps = "if (url.substring(0, 6) == 'https:')\n{ return 'PROXY %PACProxy%'; }\n";
+		private const string DefaultPACftp = "if (url.substring(0, 4) == 'ftp:')\n{ return 'PROXY %PACProxy%'; }\n";
+		private const string DefaultPACfooter = "} /*WebOne PAC*/ ";
+		public static string DefaultPAC = DefaultPACheader + DefaultPAChttp + DefaultPACfooter;
+		private static bool DefaultPACoverriden = false;
 
 		public static X509Certificate2 RootCertificate;
 		public static Dictionary<string, X509Certificate2> FakeCertificates = new();
@@ -133,6 +130,10 @@ namespace WebOne
 			//set console window title
 			if (!DaemonMode) Console.Title = "WebOne @ " + ConfigFile.DefaultHostName + ":" + ConfigFile.Port;
 
+			//prepare PAC script if it's not set via configuration files
+			DefaultPACoverriden = ConfigFile.PAC != DefaultPAC;
+			if (!DefaultPACoverriden) { DefaultPAC = DefaultPACheader + DefaultPAChttp; }
+
 			if (ConfigFile.SslEnable)
 			{
 				//load or create & load SSL PEM (.crt & .key files) for CA (aka root certificate)
@@ -151,6 +152,7 @@ namespace WebOne
 					}
 					RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));
 					Protocols += ", HTTPS 1.1";
+					if (!DefaultPACoverriden) DefaultPAC += DefaultPAChttps;
 
 					//check validness period
 					if (RootCertificate.NotAfter < DateTime.Now || RootCertificate.NotBefore > DateTime.Now)
@@ -173,7 +175,14 @@ namespace WebOne
 					ConfigFile.SslEnable = false;
 				}
 			}
-			Protocols += ", CERN-compatible";
+
+			if (!ConfigFile.UseMsHttpApi)
+			{
+				Protocols += ", CERN-compatible";
+				if (!DefaultPACoverriden) DefaultPAC += DefaultPACftp;
+			}
+
+			if (!DefaultPACoverriden) DefaultPAC += DefaultPACfooter;
 
 			Log.WriteLine(false, false, "Configured to http://{1}:{2}/, {3}", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port, Protocols);
 
