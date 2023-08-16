@@ -52,7 +52,7 @@ namespace WebOne
 			if (Parts.Length != 2) throw new Exception("Invalid `domain:port` pair supplied for CONNECT method.");
 			if (!int.TryParse(Parts[1], out int PortNumber)) throw new Exception("Invalid port number supplied for CONNECT method.");
 
-			// Establish an SSL/TLS tunnel if need
+			// Perform an SSL/TLS handshake if need
 			if (Certificate != null)
 			{
 				if (!ConfigFile.SslEnable)
@@ -66,13 +66,12 @@ namespace WebOne
 				{
 					ClientStreamTunnel.AuthenticateAsServer(Certificate, false, ConfigFile.SslProtocols, false);
 					ClientStream = ClientStreamTunnel;
-					Logger.WriteLine(" SSL ready.");
 				}
 				catch (Exception HandshakeEx)
 				{
 					string err = HandshakeEx.Message;
 					if (HandshakeEx.InnerException != null) err = HandshakeEx.InnerException.Message;
-					Logger.WriteLine("!SSL Handshake failed: {0} ({1})", err, HandshakeEx.HResult);
+					Logger.WriteLine("!SSL client handshake failed: {0} ({1})", err, HandshakeEx.HResult);
 					ClientStream.Close();
 					return;
 				}
@@ -83,8 +82,18 @@ namespace WebOne
 			try
 			{
 				TunnelToRemote.Connect(Parts[0], PortNumber);
-				RemoteStream = TunnelToRemote.GetStream();
-				Logger.WriteLine(" Tunnel established.", RequestReal.RawUrl);
+
+				if (Certificate != null)
+				{
+					RemoteStream = new SslStream(TunnelToRemote.GetStream(), true);
+					(RemoteStream as SslStream).AuthenticateAsClient(RequestReal.RawUrl.Substring(0, RequestReal.RawUrl.IndexOf(":")));
+					Logger.WriteLine(" Secure tunnel established.", RequestReal.RawUrl);
+				}
+				else
+				{
+					RemoteStream = TunnelToRemote.GetStream();
+					Logger.WriteLine(" Tunnel established.", RequestReal.RawUrl);
+				}
 			}
 			catch (Exception ex)
 			{

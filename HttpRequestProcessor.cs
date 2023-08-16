@@ -110,10 +110,8 @@ namespace WebOne
 						{
 							// Non-HTTP protocol inside SSL tunnel.
 							// This is used by MSN Messenger, IRCS, POP3-SSL, SMTP-SSL, IMAP-SSL and other apps supporting HTTPS-proxies.
-							// UNDONE: establish tunnel to remote server with only SSL decoding.
-							//         meaning: (Backend.Stream) <-> (new SslStream over NetworkStream to remote server & port)
 							Logger.WriteLine("<Dropped: Non-HTTPS connection: {0}", HttpRequestLine);
-							throw new NotImplementedException("Currently cannot work with non-HTTP protocols inside SSL stream.");
+							throw new Exception("Write your domain:port to webone.conf/[NonHttpSslServers], please.");
 						}
 						else
 						{
