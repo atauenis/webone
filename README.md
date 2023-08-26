@@ -12,9 +12,7 @@ The program's settings are in the __webone.conf__ file (but any other file name 
 See **[WebOne wiki](https://github.com/atauenis/webone/wiki)** for complete list of features and full documentation.
 
 ## Beta Version Notes
-See **[README-0.16-BETA.md](https://github.com/atauenis/webone/blob/master/README-0.16-BETA.md)** file for changes in the version, built from latest Git source code. That file contains more recent information about WebOne 0.16.0.
-
-The **README.md** and **Wiki** is currently containing information, related to WebOne latest stable version, 0.15.3.
+However the latest stable release is 0.15.3, there's a newer beta version is available. See **[README-0.16-BETA.md](https://github.com/atauenis/webone/blob/master/README-0.16-BETA.md)** for details.
 
 ## Server prerequisites
 Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET 6.0 Runtime are required on server PC. See [.NET 6.0 System Requirements](https://github.com/dotnet/core/blob/main/release-notes/6.0/supported-os.md).
@@ -76,10 +74,11 @@ WebOne project welcomes any help in the development. Forks, Pull Requests, and B
 Even if you don't know C#, but have skills on HTML/CSS/JS development, it's possible to help with [creating web page edits](https://github.com/atauenis/webone/wiki/Sets-of-edits).
 
 # Описание по-русски
-__WebOne__ - прокси-сервер HTTP, позволяющий открывать современные сайты на старых браузерах. Своеобразный переходник между реальным Web 2.0 и историческим Web 1.0. Работает по принципу MITM.
+__WebOne__ - прокси-сервер HTTP (HTTPS), позволяющий открывать современные сайты на старых браузерах. Своеобразный переходник между реальным Web 2.0 и историческим Web 1.0. Работает по принципу MITM.
 
 Он имеет следующие функции:
 * Снятие шифрования HTTPS и двухстороннее преобразование HTTPS 1.1 <-> HTTP 1.0.
+* Перекодировка шифров HTTPS в более старые (при необходимости).
 * Замена кодировки в ответах серверов на любую, включая транслит.
 * Подмена отдельных файлов (например, новых тяжёлых JS-фреймворков на более старые и лёгкие).
 * Корректирование частей текстового трафика (например, патчинг JS или XML/CDF/RSS).

@@ -1,52 +1,48 @@
 # v0.16 Beta Release Notes
 
-While the latest stable version of WebOne Proxy Server is 0.15.3, the development is still going forward. There are also newer developers builds of next version, 0.16. They are available for testing and debugging. Compiled builds can be found in [Release archive](https://github.com/atauenis/webone/releases). But sometimes a newer build can be obtained from sources from Git repository.
+The latest testing release of WebOne, version 0.16 Beta 3, is containing a few new useful features not available in stable release 0.15.3.
 
-This is a pre-release of WebOne Proxy Server, version 0.16 Beta 2. It is half-completed work, containing preview of new features and may be not enough stable.
+WebOne 0.16's major new feature is support for native HTTPS requests through proxy. Also it features "CERN-compatible" FTP support, meaning ability to open ftp:// URLs via Web browser as well as https:// and http://. Other new feature is that WebOne supports connections to non-HTTP(S) servers by software, compatible with HTTPS proxies: mIRC, Total Commander, etc.
 
-WebOne 0.16's major new feature is support for HTTPS requests through proxy. Also it supports "CERN-compatible" FTP support, meaning ability to open ftp:// URLs via Web browser as well as https:// and http://.
+## Frequently Asked Questions
+### How to use HTTPS over WebOne?
+Set **http://proxy:8080/auto.pac** as automatic configuration URL in Web browser's settings. Or set proxy server's IP and **Port `8080`** for **HTTP**, **HTTPS** and **FTP** protocols.
 
- Implementing these features support required also to rewrite from scratch most of code. New low-level & high-level HTTP/HTTPS processing code is written from zero, so currently may work not as expected. Original HTTP/1.1 protocol (RFC 2616) is 176 page long, and not all aspects of it are currently implemented correctly.
+### Which browsers can use HTTPS, and which are limited to HTTP only?
+You can access any web server via WebOne using old HTTP protocol. It is still providing access to new sites via HTTP, independing to server settings. But if your browser supports at least SSL 2.0 with 128-bit encryption, you can open `https://` links without removing the `s` in URL. Supported browsers including:
+ - Mozilla Firefox, Opera, Netscape 6+, Mozilla Suite, Safari, Google Chrome, MS Internet Explorer 5.5+, MS Edge.
+ - Microsoft Internet Explorer 4 and 5.0 are requiring a patch, adding 128-bit "strong" encrypting support.
+ - Netscape Navigator 2.x/3.x/4.x must be in "US Only" version with 128-bit SSL support. "Export" versions with 40-bit or 56-bit encryption will not work with WebOne.
+   - 128-bit versions have installers called like `n32d408.exe`.
+   - 40-bit versions have installers called like `n32e408.exe`.
+ - Internet Explorer 2.0, 3.0 at this moment are unsupported.
+ - Other software would work. Example is last versions of mIRC client which can connect to IRCS servers over WebOne.
 
-**If you have problems, first try to set `UseMsHttpApi=enable` in webone.conf file.** This will temporarily disable new HTTP server code and enable old. And please report to author.
+### My browser is displaying a trust failure. What's happen?
+It's need to install Proxy's Root Certificate (aka Certificate Authority). Go to **http://proxy:8080/!ca**, download the file to disk, and import the root (CA) certificate to your certificate store. Netscape, Firefox and Mozilla are using own certificate store (available via Preferences dialog box). Other browsers are using system certificate store.
 
-## Browser configurations
+Note that deleting `ssl.crt`/`ssl.key` in WebOne directory will cause program to recreate them, and made previously imported CA certificates invalid.
 
-|Protocol|Old |New |
-|--------|----|----|
-|HTTP    |8080|8080|
-|HTTPS   |x   |8080|
-|FTP     |x   |8080|
-|GOPHER  |x   |x   |
-|WAIS    |x   |x   |
-|NEWS    |x   |x   |
-|POP,SMTP|x   |x   |
-|SOCKS   |x   |x   |
+### What about Gopher, WAIS, SOCKS?
+There are no support for GOPHER, WAIS or any versions of SOCKS at this moment.
 
+### How to specify own SSL/TLS certificate?
+If you want to use own custom certificate as root for HTTPS traffic encryption, you may specify path to the certificate and its private key in WebOne configuration file. Use `[SecureProxy]` section, keys `SslCertificate` and `SslPrivateKey`. With their default values, WebOne is generating both certificate and private key on first start using options from `SslRootValidAfter` and `SslRootValidBefore` keys. However any custom PEM certificates are accepted.
 
-## Work with HTTPS
+The current beta version does not allow to specify custom certificates for sites. They are always generating dynamic by WebOne for each site.
 
-To use HTTPS through WebOne 0.16, you need to install Proxy's Root Certificate (aka Certificate Authority). Go to http://proxy:8080/!ca, download the file to disk, and import the root (CA) certificate to your certificate store.
+### Known limitations
+#### Chunks
+Currently there is no full support for `Transfer-Encoding: chunked` mode. Implementing chunked transfer support will require a lot of time and hard work. WebOne 0.16 Beta 3 is simply returing content which have unknown length by sending all content and then closing the connection. Some clients (mostly video players) may dislike such traffic. But what present - is what present.
 
-- Mozilla-based browsers use own storage of Authority (root) certificates. 
-  - Firefox: Options -> Network -> Encryption -> View certificates.
-  - Mozilla SeaMonkey: Preferences -> Privacy & Security -> Manage certificates.
-  - Sometimes just a click to `WebOne CA root certificate` link at status page starts certificate import.
-- Netscape Navigator 3, 4 is a bit similar to Mozilla.
-- Microsoft Internet Explorer use Windows certificates storage. Double click on downloaded `WebOneCA.crt` file, and install to *Trusted Root Certificate Authorities* store. To remove, use `C:\Windows\system32\certmgr.msc` console.
-- Apple Safari and Google Chrome are using the system certificate store.
-  - On Windows all is identical to MSIE.
+If someone can implement an C#.NET Stream class which will produce HTTP-chunked output - it will be good.
 
-**Known issue**: "export" versions of pre-2000 browsers are not supported. It is need to install "U.S. only" versions or a "128-bit update" for browser.
+#### MD5 certificates
+`SslHashAlgorithm` option of webone.conf is currently working only for CA certificate building. The site certificates are always using SHA256 method. The project needs help to solve this, as main developer is currently unable to produce certificate builder with MD5/SHA1 output.
 
-Note that deleting ssl.crt/ssl.key in WebOne installation directory will recreate them, and made imported CA certificates invalid.
+### Seems, found a bug?
+**If you have problems, first try to set `UseMsHttpApi=enable` in webone.conf file.** This will temporary enable some old backend code, which may be better in some cases, and is useful for debugging. And please fill a [bug report](https://github.com/atauenis/webone/issues).
 
-You may also specify own PEM Certificate and PEM Private Key instead of automatically created, and they will work as CA for fake SSL certificates used to encrypt HTTPS traffic. Huh, if .NET Runtime accept them.
-
-Work of other protocols over HTTPS proxy (specified by RFC 2616) is not implemented in this Beta version. Probably their support will added later.
-
-## Bug reporting
-
-**Please report any problems experienced with this version.** It's possible via GitHub, VOGONS, Polygon of Ghosts or other possible communication ways.
+**Please report any problems experienced with this version.** It's possible via [GitHub Issues](https://github.com/atauenis/webone/issues), [VOGONS](https://www.vogons.org/viewtopic.php?f=24&t=67165), [Polygon of Ghosts](https://phantom.sannata.org/viewtopic.php?f=16&t=33291) or other possible communication ways.
 
 The most what unknown - memory leaks, perfomance issues, SSL & CA errors. All of this needs a deep test, including comparing with [WebOne 0.15.3](https://github.com/atauenis/webone/releases/tag/v0.15.3).
