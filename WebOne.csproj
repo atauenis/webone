@@ -28,8 +28,14 @@
 		<PackageName>webone.$(PackageVersion).linux-$(PackageArchitecture)</PackageName>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="$(RuntimeIdentifier.Contains('win')) OR $(RuntimeIdentifier.Contains('osx'))">
+	<PropertyGroup Condition="$(RuntimeIdentifier.Contains('win'))">
 		<PackageName>WebOne.$(PackageVersion).$(RuntimeIdentifier)</PackageName>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="$(RuntimeIdentifier.Contains('osx'))">
+		<PackageArchitecture Condition="$(RuntimeIdentifier)=='osx-x64'">intel</PackageArchitecture>
+		<PackageArchitecture Condition="$(RuntimeIdentifier)=='osx-arm64'">m</PackageArchitecture>
+		<PackageName>WebOne.$(PackageVersion).mac-$(PackageArchitecture)</PackageName>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="$(Configuration)!='Debug'">
