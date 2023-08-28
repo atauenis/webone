@@ -676,6 +676,10 @@ namespace WebOne
 						ClientResponse.ProtocolVersion = new Version(1, 0);
 						ClientResponse.StatusCode = ResponseCode;
 						ClientResponse.AddHeader("Via", "HTTP/1.0 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
+						if (string.IsNullOrEmpty(ClientResponse.Headers["Content-Type"]) && !string.IsNullOrEmpty(ContentType))
+						{
+							ClientResponse.AddHeader("Content-Type", ContentType);
+						}
 
 						if (TransitStream == null)
 						{
