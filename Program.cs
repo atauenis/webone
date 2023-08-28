@@ -174,6 +174,12 @@ namespace WebOne
 					Log.WriteLine(true, false, "End of CA build error information. HTTPS won't be available!");
 					ConfigFile.SslEnable = false;
 				}
+
+				if(!string.IsNullOrWhiteSpace(ConfigFile.SslSiteCertGenerator) && string.IsNullOrWhiteSpace(ConfigFile.SslSiteCerts))
+				{
+					Log.WriteLine(true, false, "Warning: `SslSiteCertGenerator` is set but `SslSiteCerts` is not. Will use internal certificate generator.");
+					ConfigFile.SslSiteCertGenerator = "";
+				}
 			}
 
 			if (!ConfigFile.UseMsHttpApi)

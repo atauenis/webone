@@ -481,6 +481,12 @@ namespace WebOne
 									else
 										Log.WriteLine(true, false, "Warning: SslCertVaildAfterNow must be a positive whole number of days, at {0}.", Option.Location);
 									break;
+								case "SslSiteCerts":
+									ConfigFile.SslSiteCerts = ExpandMaskedVariables(Option.Value).Replace(@"\\", @"\").Replace("//", "/");
+									break;
+								case "SslSiteCertGenerator":
+									ConfigFile.SslSiteCertGenerator = ExpandMaskedVariables(Option.Value).Replace(@"\\", @"\").Replace("//", "/");
+									break;
 							}
 						}
 						break;

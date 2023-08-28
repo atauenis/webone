@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -70,9 +72,10 @@ namespace WebOne
 			}
 			else //if problems, try .NET Signature Generator without MD5/SHA1 support
 			{
-				certificate = certRequest.CreateSelfSigned(
+				/*certificate = certRequest.CreateSelfSigned(
 					ConfigFile.SslRootValidAfter,
 					ConfigFile.SslRootValidBefore);
+					*/
 			}
 
 			// Export the private key.
@@ -106,7 +109,73 @@ namespace WebOne
 				{ FakeCertificates.Remove(certSubject); }
 			}
 
-			// If not, initialize private key generator & set up a certificate creation request.
+			// Look certificate in disk cache or create using external utility
+			if (!string.IsNullOrWhiteSpace(ConfigFile.SslSiteCerts) || !string.IsNullOrWhiteSpace(ConfigFile.SslSiteCertGenerator))
+			{
+				Dictionary<string, string> CertAndKeyFileNameDic = new();
+				CertAndKeyFileNameDic.Add("Subject", certSubject);
+				string CertAndKeyName = ExpandMaskedVariables(ConfigFile.SslSiteCerts, CertAndKeyFileNameDic);
+				string CertCRTFile = CertAndKeyName + ".crt";
+				string CertKEYFile = CertAndKeyName + ".key";
+
+				// Look in disk certificate cache
+				if (!string.IsNullOrWhiteSpace(ConfigFile.SslSiteCerts))
+				{
+					if (File.Exists(CertCRTFile) && File.Exists(CertKEYFile))
+					{
+#if DEBUG
+						Log.WriteLine(" Cached certificate: {0} & .key", CertCRTFile);
+#endif
+						return X509Certificate2.CreateFromPemFile(CertCRTFile, CertKEYFile);
+					}
+				}
+
+				// Run external generator if available
+				if (!string.IsNullOrWhiteSpace(ConfigFile.SslSiteCertGenerator))
+				{
+					string SslUtilApp = ConfigFile.SslSiteCertGenerator.Substring(0, ConfigFile.SslSiteCertGenerator.IndexOf(" "));
+					string SslUtilArgs = ConfigFile.SslSiteCertGenerator.Substring(ConfigFile.SslSiteCertGenerator.IndexOf(" "));
+					SslUtilArgs = ExpandMaskedVariables(SslUtilArgs, CertAndKeyFileNameDic);
+
+#if DEBUG
+					Log.WriteLine(" External certificate utility: {0} {1}", SslUtilApp, SslUtilArgs);
+#endif
+					if (!string.IsNullOrWhiteSpace(SslUtilApp) && !string.IsNullOrWhiteSpace(SslUtilArgs))
+					{
+						ProcessStartInfo SslUtilStartInfo = new();
+						SslUtilStartInfo.FileName = SslUtilApp;
+						SslUtilStartInfo.Arguments = SslUtilArgs;
+						Process SslUtilProc = Process.Start(SslUtilStartInfo);
+						SslUtilProc.WaitForExit();
+
+						if (File.Exists(CertCRTFile) && File.Exists(CertKEYFile))
+						{
+#if DEBUG
+							Log.WriteLine(" External certificate: {0} & .key", CertCRTFile);
+#endif
+							return X509Certificate2.CreateFromPemFile(CertCRTFile, CertKEYFile);
+						}
+						else
+						{
+							Log.WriteLine(" No certificate and/or private key file were produced: {0} (.key)!", CertCRTFile);
+						}
+					}
+
+					// Look in disk certificate cache (again)
+					if (string.IsNullOrWhiteSpace(ConfigFile.SslSiteCerts))
+					{
+						if (File.Exists(CertCRTFile) && File.Exists(CertKEYFile))
+						{
+#if DEBUG
+							Log.WriteLine("External certificate: {0} & .key", CertCRTFile);
+#endif
+							return X509Certificate2.CreateFromPemFile(CertCRTFile, CertKEYFile);
+						}
+					}
+				}
+			}
+
+			// If not found, initialize private key generator & set up a certificate creation request.
 			using RSA rsa = RSA.Create();
 			//CertificateRequest certRequest = new(certSubject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 			//CertificateRequest certRequest = new(certSubject, rsa, certHashAlgorithm, RSASignaturePadding.Pkcs1);
@@ -117,7 +186,7 @@ namespace WebOne
 
 			// Issue & sign the certificate.
 			X509Certificate2 certificate;
-			if (false) //an config file option will be added in future
+			/*if (false) //an config file option will be added in future
 			{
 				// set up a certificate creation request.
 				CertificateRequest certRequestAny = new(certSubject, rsa, certHashAlgorithm, RSASignaturePadding.Pkcs1);
@@ -131,21 +200,21 @@ namespace WebOne
 					certSerialNumber);
 			}
 			else
-			{
-				// strange, RsaPkcs1SignatureGenerator gives a "sec_error_bad_signature", so use .NET signature generator & SHA256 in some cases.
-				// set up a certificate creation request.
-				CertificateRequest certRequestSha256 = new(certSubject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-				certificate = certRequestSha256.Create(
-					issuerCertificate,
-					DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildBeforeNow),
-					DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildAfterNow),
-					certSerialNumber
-				);
-			}
+			{*/
+			// strange, RsaPkcs1SignatureGenerator gives a "sec_error_bad_signature", so use .NET signature generator & SHA256 in some cases.
+			// set up a certificate creation request.
+			CertificateRequest certRequestSha256 = new(certSubject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+			certificate = certRequestSha256.Create(
+				issuerCertificate,
+				DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildBeforeNow),
+				DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildAfterNow),
+				certSerialNumber
+			);
+			/*}*/
 
 			// Export the issued certificate with private key.
 			X509Certificate2 certificateWithKey = new(certificate.CopyWithPrivateKey(rsa).Export(X509ContentType.Pkcs12));
-			if (false)
+			/*if (false)
 			{
 				//save to file for debug purposes
 				const string CRT_HEADER = "-----BEGIN CERTIFICATE-----\n";
@@ -155,7 +224,7 @@ namespace WebOne
 				byte[] exportData = certificate.Export(X509ContentType.Cert);
 				string crt = Convert.ToBase64String(exportData, Base64FormattingOptions.InsertLineBreaks);
 				File.WriteAllText(certSubject + ".crt", CRT_HEADER + crt + CRT_FOOTER);
-			}
+			}*/
 
 			// Save the certificate and return it.
 			FakeCertificates.Add(certSubject, certificateWithKey);

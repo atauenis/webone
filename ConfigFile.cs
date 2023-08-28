@@ -254,6 +254,16 @@ namespace WebOne
 		/// </summary>
 		public static int SslCertVaildAfterNow = 7;
 
+		/// <summary>
+		/// Path to directory with fake certificates for sites
+		/// </summary>
+		public static string SslSiteCerts = "";
+
+		/// <summary>
+		/// Command which creates fake site certificares
+		/// </summary>
+		public static string SslSiteCertGenerator = "";
+
 
 		/// <summary>
 		/// List of non-HTTPS servers with TLS, which can be accessed via CONNECT method
