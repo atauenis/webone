@@ -178,7 +178,7 @@ namespace WebOne
 		}
 
 
-		private bool HeadersSent = false;
+		public bool HeadersSent = false;
 		private string contentType;
 		private long contentLength64;
 		private Stream outputStream;
@@ -210,7 +210,7 @@ namespace WebOne
 				HeadersSent = true;
 				return;
 			}
-			if(SslBackend != null)
+			if (SslBackend != null)
 			{
 				StreamWriter ClientStreamWriter = new(SslBackend);
 				ClientStreamWriter.WriteLine(ProtocolVersionString + " " + StatusCode);
@@ -244,6 +244,20 @@ namespace WebOne
 				return;
 			}
 			throw new Exception("Backend is unsupported or not set.");
+		}
+
+		/// <summary>
+		/// Check is the client browser still connected to the proxy.
+		/// </summary>
+		public bool IsConnected
+		{
+			get
+			{
+				if (MshttpapiBackend != null) return MshttpapiBackend.OutputStream.CanWrite;
+				if (TcpclientBackend != null) return TcpclientBackend.Connected;
+				if (SslBackend != null) return SslBackend.CanWrite;
+				throw new Exception("Backend is unsupported or not set.");
+			}
 		}
 
 		/// <summary>

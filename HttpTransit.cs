@@ -1864,6 +1864,11 @@ namespace WebOne
 		/// <param name="Text">Text of message</param>
 		private void SendError(int Code, string Text = "")
 		{
+			if (!ClientResponse.IsConnected)
+			{
+				Log.WriteLine("<Client has disconnected [{0}].", Code);
+				return;
+			}
 			Log.WriteLine("<Return code {0}.", Code);
 			Text += GetInfoString();
 			string CodeStr = Code.ToString() + " " + ((HttpStatusCode)Code).ToString();
@@ -1877,15 +1882,23 @@ namespace WebOne
 			byte[] Buffer = (OutputContentEncoding ?? Encoding.Default).GetBytes(Html);
 			try
 			{
-				ClientResponse.StatusCode = Code;
-				ClientResponse.ProtocolVersion = new Version(1, 0);
+				if (!ClientResponse.HeadersSent)
+				{
+					ClientResponse.StatusCode = Code;
+					ClientResponse.ProtocolVersion = new Version(1, 0);
 
-				ClientResponse.ContentType = "text/html";
-				ClientResponse.ContentLength64 = Buffer.Length;
-				ClientResponse.SendHeaders();
-				ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
-				ClientResponse.Close();
-				Dump("End is internal page: code " + Code + ", " + Text);
+					ClientResponse.ContentType = "text/html";
+					ClientResponse.ContentLength64 = Buffer.Length;
+					ClientResponse.SendHeaders();
+					ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
+					ClientResponse.Close();
+					Dump("End is internal page: code " + Code + ", " + Text);
+				}
+				else
+				{
+					Log.WriteLine("<!Not returned code {0}. Response is in process of sending.", Code);
+					ClientResponse.Close();
+				}
 			}
 			catch (Exception ex)
 			{
@@ -2011,9 +2024,13 @@ namespace WebOne
 			}
 			catch (Exception ex)
 			{
-				int ErrNo = 500;
-				if (ex is FileNotFoundException) ErrNo = 404;
-				SendError(ErrNo, "Cannot retreive stream.<br>" + ex.ToString().Replace("\n", "<br>"));
+				if (ClientResponse.IsConnected)
+				{
+					int ErrNo = 500;
+					if (ex is FileNotFoundException) ErrNo = 404;
+					SendError(ErrNo, "Cannot retreive stream.<br>" + ex.ToString().Replace("\n", "<br>"));
+				}
+				else { Log.WriteLine("<Stream not sent: {0}", ex.Message); }
 			}
 			Dump("End is stream of " + ContentType);
 		}
