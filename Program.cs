@@ -37,6 +37,7 @@ namespace WebOne
 
 		public static System.Net.Http.SocketsHttpHandler HTTPHandler = new();
 		public static System.Net.Http.HttpClient HTTPClient = new(HTTPHandler);
+		public static string LocalIP = "127.0.0.1"; //localhost IP or detected external IP
 
 		private const string DefaultPACheader = "function FindProxyForURL(url, host){\n";
 		private const string DefaultPAChttp = "if (url.substring(0, 5) == 'http:')\n{ return 'PROXY %PACProxy%'; }\n";
@@ -968,6 +969,17 @@ namespace WebOne
 							 select (Netif, ipa))
 				IPs.Add(ipa.Address);
 			return IPs.ToArray();
+		}
+
+
+		/// <summary>
+		/// Get this proxy server name and port
+		/// </summary>
+		public static string GetServerName()
+		{
+			string LocalHostName = ConfigFile.DefaultHostName == Environment.MachineName ? LocalIP : ConfigFile.DefaultHostName;
+			if (ConfigFile.Port == 80) return LocalHostName;
+			return LocalHostName + ":" + ConfigFile.Port.ToString();
 		}
 
 		/// <summary>

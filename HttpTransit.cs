@@ -29,7 +29,6 @@ namespace WebOne
 		static string LastContentType = "not-a-carousel";
 		List<EditSet> EditSets = new();
 		bool Stop = false;
-		string LocalIP = "127.0.0.1";
 
 		HttpOperation operation;
 		int ResponseCode = 502;
@@ -493,7 +492,7 @@ namespace WebOne
 											ErrorMessageHeader = "Cannot find the server";
 											ErrorMessage = "<p><big>" + sockerr.Message + "</big></p>" +
 											"<ul><li>Check the address for typing errors such as <strong>ww</strong>.example.com instead of <strong>www</strong>.example.com.</li>" +
-											"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+											"<li>Try to use an <a href=\"http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "\">" + "archived copy</a> of the web site.</li>" +
 											"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
 											"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
 											"</ul>";
@@ -503,7 +502,7 @@ namespace WebOne
 											ErrorMessageHeader = "The connection has timed out";
 											ErrorMessage = "<p><big>" + sockerr.Message + "</big></p>" +
 											"<ul><li>The site could be temporarily unavailable or too busy. Try again in a few moments.</li>" +
-											"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+											"<li>Try to use an <a href=\"http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "\">" + "archived copy</a> of the web site.</li>" +
 											"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
 											"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
 											"</ul>";
@@ -513,7 +512,7 @@ namespace WebOne
 											ErrorMessageHeader = "The connection was refused";
 											ErrorMessage = "<p><big>" + sockerr.Message + "</big></p>" +
 											"<ul><li>The site could be temporarily unavailable or too busy. Try again in a few moments.</li>" +
-											"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+											"<li>Try to use an <a href=\"http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "\">" + "archived copy</a> of the web site.</li>" +
 											"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
 											"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
 											"</ul>";
@@ -523,7 +522,7 @@ namespace WebOne
 											ErrorMessageHeader = "The connection has been reset";
 											ErrorMessage = "<p><big>" + sockerr.Message + "</big></p>" +
 											"<ul><li>The site could be temporarily unavailable or too busy. Try again in a few moments.</li>" +
-											"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+											"<li>Try to use an <a href=\"http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "\">" + "archived copy</a> of the web site.</li>" +
 											"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
 											"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
 											"</ul>";
@@ -532,7 +531,7 @@ namespace WebOne
 											ErrorMessageHeader = "The connection can't be stablished";
 											ErrorMessage = "<p><big>" + sockerr.Message + "</big></p>" +
 											"<ul><li>The site could be temporarily unavailable or too busy. Try again in a few moments.</li>" +
-											"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+											"<li>Try to use an <a href=\"http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "\">" + "archived copy</a> of the web site.</li>" +
 											"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
 											"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
 											"</ul><br>Error code: " + sockerr.SocketErrorCode;
@@ -562,7 +561,7 @@ namespace WebOne
 											"<li>Make sure that the OS on the proxy server have all updates installed.</li>" +
 											"<li>Check date and time on the proxy server.</li>" +
 											"<li>Verify that the proxy server operating system have proper support for TLS/SSL version and chiphers used on the site.</li>" +
-											"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+											"<li>Try to use an <a href=\"http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "\">" + "archived copy</a> of the web site.</li>" +
 											"<li>To disable this security check, set <q><b>ValidateCertificates=no</b></q> in proxy configuration file. But this will make the proxy less secure, do this at your own risk.</li>" +
 									"</ul>";
 									break;
@@ -591,7 +590,7 @@ namespace WebOne
 					string ErrorMessageHeader = "The connection has timed out";
 					string ErrorMessage = "<p><big>The request was canceled due to Timeout of 100 seconds elapsing.</big></p>" +
 					"<ul><li>The site could be temporarily unavailable or too busy. Try again in a few moments.</li>" +
-					"<li>Try to use an <a href='http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "'>" + "archived copy</a> of the web site.</li>" +
+					"<li>Try to use an <a href=\"http://web.archive.org/web/" + DateTime.Now.Year + "/" + RequestURL.AbsoluteUri + "\">" + "archived copy</a> of the web site.</li>" +
 					"<li>Internet Archive sometimes became busy. Be patient, wait a some time.</li>" +
 					"<li>If you are unable to load any pages, check your proxy server's network connection.</li>" +
 					"<li>If your proxy server or network is protected by a firewall, make sure that WebOne is permitted to access the Web.</li>" +
@@ -794,7 +793,7 @@ namespace WebOne
 							codepages += "</td>";*/
 							codepages += "</td></tr>\n";
 						}
-						codepages += "</table><br>Use any of these or from <a href=http://docs.microsoft.com/en-us/dotnet/api/system.text.encoding.getencodings?view=net-6.0>.NET documentation</a>.</p>\n";
+						codepages += "</table><br>Use any of these or from <a href=\"http://docs.microsoft.com/en-us/dotnet/api/system.text.encoding.getencodings?view=net-6.0\">.NET documentation</a>.</p>\n";
 
 						codepages += "<p>Code pages for current server's locale:\n" +
 						"<table>" +
@@ -964,7 +963,7 @@ namespace WebOne
 						{
 							string HelpMsg =
 							"<p>WebOne can help download videos from popular sites in preferred format.</p>" +
-							"<p>To download a video, go to <b><a href='/!player/'>Online Video Player</a></b>, enter URL of the video, " +
+							"<p>To download a video, go to <b><a href=\"/!player/\">Online Video Player</a></b>, enter URL of the video, " +
 							"choose container and codecs valid for your system, and then select <b>file</b> or <b>link</b> option.</p>" +
 							"<p>If you choose <b>file</b> option, the video file will start download automatically. " +
 							"If you choose <b>link</b> option, you will get a link, which can be copied to multimedia player program.</p>" +
@@ -1680,16 +1679,6 @@ namespace WebOne
 		}
 
 		/// <summary>
-		/// Get this proxy server name and port
-		/// </summary>
-		private string GetServerName()
-		{
-			string LocalHostName = ConfigFile.DefaultHostName == Environment.MachineName ? LocalIP : ConfigFile.DefaultHostName;
-			if (ConfigFile.Port == 80) return LocalHostName;
-			return LocalHostName + ":" + ConfigFile.Port.ToString();
-		}
-
-		/// <summary>
 		/// Look for the page at RequestURL variable in Internet Archive Wayback Machine
 		/// </summary>
 		/// <returns>Is the response ready or not</returns>
@@ -1800,10 +1789,10 @@ namespace WebOne
 				HelpString += "<p>Client IP: <b>" + ClientRequest.RemoteEndPoint + "</b>.</p>";
 
 				HelpString += "<h2>May be useful:</h2><ul>";
-				HelpString += "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>";
-				HelpString += "<li><a href='/!ca'>WebOne CA root certificate</a>.</li>";
-				HelpString += "<li><a href='/!ftp/'>Web-based FTP client</a>.</li>";
-				HelpString += "<li><a href='/!player/'>Online video player</a>.</li>";
+				HelpString += "<li><a href=\"/auto.pac\">Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>";
+				HelpString += "<li><a href=\"/!ca\">WebOne CA root certificate</a>.</li>";
+				HelpString += "<li><a href=\"/!ftp/\">Web-based FTP client</a>.</li>";
+				HelpString += "<li><a href=\"/!player/\">Online video player</a>.</li>";
 				HelpString += "</ul>";
 			}
 			else if (ConfigFile.DisplayStatusPage == "full")
@@ -1828,15 +1817,15 @@ namespace WebOne
 
 
 				HelpString += "<h2>Internal URLs:</h2><ul>" +
-							  "<li><a href='/!codepages/'>/!codepages/</a> - list of available encodings for OutputEncoding setting</li>" +
-							  "<li><a href='/!img-test/'>/!img-test/</a> - test if ImageMagick is working</li>" +
-							  "<li><a href='/!convert/'>/!convert/</a> - run a file format converter (<a href='/!convert/?src=logo.webp&dest=gif&type=image/gif'>demo</a>)</li>" +
-							  "<li><a href='/!clear/'>/!clear/</a> - remove temporary files in WebOne working directory</li>" +
-							  "<li><a href='/auto.pac'>Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>" +
-							  "<li><a href='/!ca'>/!ca/</a> - WebOne CA root certificate.</li>" +
-							  "<li><a href='/!ftp/'>/!ftp/</a> - Web-based FTP client.</li>" +
-							  "<li><a href='/!player/'>/!player/</a> - online video player.</li>" +
-							  "<li><a href='/!webvideo/'>/!webvideo/</a> - online video downloader.</li>" +
+							  "<li><a href=\"/!codepages/\">/!codepages/</a> - list of available encodings for OutputEncoding setting</li>" +
+							  "<li><a href=\"/!img-test/\">/!img-test/</a> - test if ImageMagick is working</li>" +
+							  "<li><a href=\"/!convert/\">/!convert/</a> - run a file format converter (<a href=\"/!convert/?src=logo.webp&dest=gif&type=image/gif\">demo</a>)</li>" +
+							  "<li><a href=\"/!clear/\">/!clear/</a> - remove temporary files in WebOne working directory</li>" +
+							  "<li><a href=\"/auto.pac\">Proxy auto-configuration file</a>: /!pac/, /auto/, /auto, /auto.pac, /wpad.dat.</li>" +
+							  "<li><a href=\"/!ca\">/!ca/</a> - WebOne CA root certificate.</li>" +
+							  "<li><a href=\"/!ftp/\">/!ftp/</a> - Web-based FTP client.</li>" +
+							  "<li><a href=\"/!player/\">/!player/</a> - online video player.</li>" +
+							  "<li><a href=\"/!webvideo/\">/!webvideo/</a> - online video downloader.</li>" +
 							  "</ul>";
 			}
 			else
@@ -1940,7 +1929,7 @@ namespace WebOne
 
 			if (Message != null) Html += "<P>" + Message + "</P>";
 
-			Html += "<P>Please navigate your browser to <A HREF=" + Url302 + ">" + Url302 + "</A>.</P>" + GetInfoString() + "</BODY></HTML>";
+			Html += "<P>Please navigate your browser to <A HREF=\"" + Url302 + "\">" + Url302 + "</A>.</P>" + GetInfoString() + "</BODY></HTML>";
 
 			byte[] Buffer = (OutputContentEncoding ?? Encoding.Default).GetBytes(Html);
 			try
