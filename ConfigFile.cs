@@ -225,32 +225,32 @@ namespace WebOne
 		public static SslProtocols SslProtocols = SslProtocols.None;
 
 		/// <summary>
-		/// Certificate hashing algorithm used in CA and sites certificates.
+		/// Certificate hashing algorithm used in CA and sites certificates
 		/// </summary>
 		public static HashAlgorithmName SslHashAlgorithm = HashAlgorithmName.SHA1;
 
 		/// <summary>
-		/// Certificate subject to used in CA certificate at time of its generating.
+		/// Certificate subject to used in CA certificate at time of its generating
 		/// </summary>
 		public static string SslRootSubject = CertificateUtil.DefaultCASubject;
 
 		/// <summary>
-		/// Date after which the CA certificate should be considered valid. Used only when generating it.
+		/// Date after which the CA certificate should be considered valid. Used only when generating it
 		/// </summary>
 		public static DateTimeOffset SslRootValidAfter;
 
 		/// <summary>
-		/// Date before which the CA certificate should be considered valid. Used only when generating it.
+		/// Date before which the CA certificate should be considered valid. Used only when generating it
 		/// </summary>
 		public static DateTimeOffset SslRootValidBefore;
 
 		/// <summary>
-		/// Days before current day when site certificates are considered valid.
+		/// Days before current day when site certificates are considered valid
 		/// </summary>
 		public static int SslCertVaildBeforeNow = -7;
 
 		/// <summary>
-		/// Days after current day when site certificates are considered valid.
+		/// Days after current day when site certificates are considered valid
 		/// </summary>
 		public static int SslCertVaildAfterNow = 7;
 
@@ -260,10 +260,15 @@ namespace WebOne
 		public static string SslSiteCerts = "";
 
 		/// <summary>
-		/// Command which creates fake site certificares
+		/// Command which creates fake site certificates
 		/// </summary>
 		public static string SslSiteCertGenerator = "";
 
+
+		/// <summary>
+		/// Allow using CONNECT method to connect to non-HTTPS servers
+		/// </summary>
+		public static bool AllowNonHttpsCONNECT = true;
 
 		/// <summary>
 		/// List of non-HTTPS servers with TLS, which can be accessed via CONNECT method

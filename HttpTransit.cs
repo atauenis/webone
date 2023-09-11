@@ -63,36 +63,6 @@ namespace WebOne
 #endif
 			try
 			{
-				//check for Secure (HTTPS) Proxy mode
-				if (ClientRequest.HttpMethod.ToUpper() == "CONNECT")
-				{
-					try
-					{
-						//work as HTTPS proxy
-						if (ClientRequest.RawUrl.EndsWith("443"))
-						{
-							HttpSecureServer FakeSrv = new(ClientRequest, ClientResponse, Log);
-							FakeSrv.Accept();
-						}
-						else
-						{
-							new HttpSecureNonHttpServer(
-							ClientRequest,
-							ClientResponse,
-							CheckString(ClientRequest.RawUrl.ToLowerInvariant(), ConfigFile.NonHttpSslServers),
-							Log)
-							.Accept();
-						}
-						return;
-					}
-					catch (Exception ex)
-					{
-						Log.WriteLine(" Cannot made SSL connection: {0}", ex);
-						SendError(501, "Sorry, an error occured on creating client SSL tunnel: " + ex.Message + "<br>Error " + ex.StackTrace.Replace("\n", "<br>")); ;
-						return;
-					}
-				}
-
 				//check IP black list
 				if (CheckString(ClientRequest.RemoteEndPoint.ToString(), ConfigFile.IpBanList))
 				{
@@ -111,9 +81,10 @@ namespace WebOne
 					}
 
 				//check for login to proxy if need
-				if (ConfigFile.Authenticate.Count > 0)
+				if (ConfigFile.Authenticate.Count > 0 && !ClientRequest.IsSecureConnection)
 				{
-					switch (ClientRequest.Url.PathAndQuery)
+					var url = ClientRequest.Url ?? new Uri("http://example.com/");
+					switch (url.PathAndQuery ?? "")
 					{
 						case "/!pac/":
 						case "/auto/":
@@ -124,7 +95,7 @@ namespace WebOne
 							//PAC is always unprotected
 							break;
 						default:
-							if (ClientRequest.Headers["Proxy-Authorization"] == null || ClientRequest.Headers["Proxy-Authorization"] == "")
+							if (string.IsNullOrEmpty(ClientRequest.Headers["Proxy-Authorization"]))
 							{
 								Log.WriteLine(" Unauthorized client.");
 								ClientResponse.AddHeader("Proxy-Authenticate", @"Basic realm=""" + ConfigFile.AuthenticateRealm + @"""");
@@ -146,8 +117,37 @@ namespace WebOne
 					}
 				}
 
+				//check for Secure (HTTPS) Proxy mode
+				if (ClientRequest.HttpMethod.ToUpper() == "CONNECT")
+				{
+					try
+					{
+						//work as HTTPS proxy
+						if (ClientRequest.RawUrl.EndsWith(":443"))
+						{
+							new HttpSecureServer(ClientRequest, ClientResponse, Log).Accept();
+						}
+						else
+						{
+							new HttpSecureNonHttpServer(
+							ClientRequest,
+							ClientResponse,
+							CheckString(ClientRequest.RawUrl.ToLowerInvariant(), ConfigFile.NonHttpSslServers),
+							Log)
+							.Accept();
+						}
+						return;
+					}
+					catch (Exception ex)
+					{
+						Log.WriteLine(" Cannot made SSL connection: {0}", ex);
+						SendError(501, "Sorry, an error occured on creating client SSL tunnel: " + ex.Message + "<br>Error " + ex.StackTrace.Replace("\n", "<br>")); ;
+						return;
+					}
+				}
+
 				//get request URL and referer URL
-				//UNDONE: may be need only RequestURL = ClientRequest.Url ?
+				//think: may be need only RequestURL = ClientRequest.Url ?
 				try { RequestURL = new UriBuilder(ClientRequest.RawUrl).Uri; }
 				catch { RequestURL = ClientRequest.Url; };
 

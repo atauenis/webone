@@ -487,6 +487,9 @@ namespace WebOne
 								case "SslSiteCertGenerator":
 									ConfigFile.SslSiteCertGenerator = ExpandMaskedVariables(Option.Value).Replace(@"\\", @"\").Replace("//", "/");
 									break;
+								case "AllowNonHttpsCONNECT":
+									ConfigFile.AllowNonHttpsCONNECT = ToBoolean(Option.Value);
+									break;
 							}
 						}
 						break;
