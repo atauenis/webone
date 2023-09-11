@@ -171,12 +171,14 @@ namespace WebOne
 				catch (Exception CertCreateEx)
 				{
 					Log.WriteLine(true, false, "Unable to create CA Certificate: {0}.", CertCreateEx.Message);
+					/*
 					Log.WriteLine(true, false, CertCreateEx.StackTrace.Replace("\n", " ; ")); //only for debug purposes at this moment
 					Log.WriteLine(true, false, "End of CA build error information. HTTPS won't be available!");
+					*/
 					ConfigFile.SslEnable = false;
 				}
 
-				if(!string.IsNullOrWhiteSpace(ConfigFile.SslSiteCertGenerator) && string.IsNullOrWhiteSpace(ConfigFile.SslSiteCerts))
+				if (!string.IsNullOrWhiteSpace(ConfigFile.SslSiteCertGenerator) && string.IsNullOrWhiteSpace(ConfigFile.SslSiteCerts))
 				{
 					Log.WriteLine(true, false, "Warning: `SslSiteCertGenerator` is set but `SslSiteCerts` is not. Will use internal certificate generator.");
 					ConfigFile.SslSiteCertGenerator = "";

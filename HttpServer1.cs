@@ -39,7 +39,6 @@ namespace WebOne
 		/// </summary>
 		public override void Start()
 		{
-			//Log.WriteLine(true, false, "Starting server...");
 			//if (_listener == null) _listener = new HttpListener();
 			try { int test = _listener.Prefixes.Count; }
 			catch { _listener = new HttpListener(); /*initialize HttpListener if it is not ready*/ }
@@ -58,7 +57,6 @@ namespace WebOne
 		{
 			Working = false;
 			Log.BeginTime = DateTime.Now;
-			//Log.WriteLine(true, true, "Shutdown server...");
 			if (_listener != null)
 			{
 				if (_listener.IsListening) _listener.Stop();
