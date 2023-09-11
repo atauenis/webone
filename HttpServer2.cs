@@ -19,7 +19,6 @@ namespace WebOne
 		private int Port;
 		private static TcpListener Listener;
 		private LogWriter Log = new();
-		private int Load;
 
 		/// <summary>
 		/// Status of this HTTP Server.
