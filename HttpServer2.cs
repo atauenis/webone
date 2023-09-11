@@ -33,7 +33,7 @@ namespace WebOne
 		{
 			Port = port;
 			Working = false;
-			Listener = new(Port);// new TcpListener(IPAddress.Loopback, Port);
+			Listener = new(System.Net.IPAddress.Any, Port);
 		}
 
 		/// <summary>
