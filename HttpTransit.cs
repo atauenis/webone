@@ -122,6 +122,13 @@ namespace WebOne
 				{
 					try
 					{
+						//check validness of request
+						if(!ClientRequest.RawUrl.Contains(':'))
+						{
+							Log.WriteLine(" Invalid CONNECT target: {0}", ClientRequest.RawUrl);
+							SendError(400, "Invalid request. Correct format is <pre>CONNECT example.com:443 HTTP/1.1</pre>");
+							return;
+						}
 						//work as HTTPS proxy
 						if (ClientRequest.RawUrl.EndsWith(":443"))
 						{

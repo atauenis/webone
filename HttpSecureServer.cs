@@ -124,7 +124,7 @@ namespace WebOne
 				ClientStreamTunnel.CipherStrength,
 				ClientStreamTunnel.HashAlgorithm.ToString(),
 				ClientStreamTunnel.HashStrength);
-				new HttpRequestProcessor().ProcessClientRequest(sslc, Logger);
+				new HttpRequestProcessor().ProcessClientRequest(sslc, Logger, RequestReal.RawUrl.Split(':')[0]);
 			}
 			catch (IOException)
 			{

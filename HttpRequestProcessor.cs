@@ -33,9 +33,10 @@ namespace WebOne
 		/// </summary>
 		/// <param name="Backend">HttpUtil.SslClient used to communicate with client.</param>
 		/// <param name="Logger">Log writer.</param>
-		public void ProcessClientRequest(SslClient Backend, LogWriter Logger)
+		/// <param name="SslLogPrefix">Prefix to be shown in log entries.</param>
+		public void ProcessClientRequest(SslClient Backend, LogWriter Logger, string SslLogPrefix)
 		{
-			ProcessClientRequest(Backend as object, Logger);
+			ProcessClientRequest(Backend as object, Logger, SslLogPrefix);
 		}
 
 		/// <summary>
@@ -43,7 +44,8 @@ namespace WebOne
 		/// </summary>
 		/// <param name="Backend">HttpListenerRequest, TcpClient or HttpUtil.SslClient used to communicate with client.</param>
 		/// <param name="Logger">Log writer.</param>
-		private void ProcessClientRequest(object Backend, LogWriter Logger)
+		/// <param name="SslLogPrefix">Used only on HTTPS requests. Prefix to be shown in log entries.</param>
+		private void ProcessClientRequest(object Backend, LogWriter Logger, string SslLogPrefix = "SSL")
 		{
 #if DEBUG
 			if (Backend is SslClient)
@@ -226,7 +228,7 @@ namespace WebOne
 
 			HttpTransit Transit = new(Request, Response, Logger);
 			if (Backend is SslClient)
-				Logger.WriteLine(">[SSL] {0} {1} ({2})", Request.HttpMethod, Request.RawUrl, Transit.GetClientIdString());
+				Logger.WriteLine(">[{3}] {0} {1} ({2})", Request.HttpMethod, Request.RawUrl, Transit.GetClientIdString(), SslLogPrefix);
 			else
 				Logger.WriteLine(">{0} {1} ({2})", Request.HttpMethod, Request.RawUrl, Transit.GetClientIdString());
 			Transit.ProcessTransit();
@@ -235,7 +237,7 @@ namespace WebOne
 			if (Request.KeepAlive && Response.KeepAlive)
 			{
 				Logger.WriteLine("<Done.");
-				ProcessClientRequest(Backend, new());
+				ProcessClientRequest(Backend, new(), Request.Headers["Host"] ?? "Keep-Alive, no Host");
 				return;
 			}
 			else
