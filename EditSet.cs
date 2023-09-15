@@ -32,6 +32,16 @@ namespace WebOne
         public int? OnCode { get; set; }
 
         /// <summary>
+        /// Flag indicating that the edit set should be used only on plain HTTP requests
+        /// </summary>
+        public bool HttpOnly { get; set; }
+
+        /// <summary>
+        /// Flag indicating that the edit set should be used only on HTTPS requests
+        /// </summary>
+        public bool HttpsOnly { get; set; }
+
+        /// <summary>
         /// List of masks of HTTP request headers on which the Set would not be used [OnHeader]
         /// </summary>
         public List<string> HeaderMasks { get; set; }
@@ -108,6 +118,12 @@ namespace WebOne
                                 CorrectHostOS = false;
                                 continue;
 						}
+                    case "OnHttpOnly":
+                        HttpOnly = ToBoolean(Line.Value);
+                        continue;
+                    case "OnHttpsOnly":
+                        HttpsOnly = ToBoolean(Line.Value);
+                        continue;
                     //editing rules
                     case "AddRedirect":
                     case "AddInternalRedirect":
@@ -159,7 +175,6 @@ namespace WebOne
 		private void ProcessComplexRules(string EditSetLocation)
         {
             /* List of virtual editing rules, not listed at https://github.com/atauenis/webone/wiki/Sets-of-edits
-               TODO: Create a wiki article for devs?
 
              * AddFind + AddReplace = AddFindReplace                                             (FindReplaceEditSetRule)
              * AddConvert + AddConvertDest + AddConvertArg1 + AddConvertArg2 = AddConverting     (ConvertEditSetRule)

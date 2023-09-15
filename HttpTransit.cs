@@ -326,6 +326,8 @@ namespace WebOne
 					if (CheckStringRegExp(RequestURL.AbsoluteUri, set.UrlMasks.ToArray()) &&
 						!CheckStringRegExp(RequestURL.AbsoluteUri, set.UrlIgnoreMasks.ToArray()))
 					{
+						if (set.HttpOnly && ClientRequest.IsSecureConnection) continue;
+						if (set.HttpsOnly && !ClientRequest.IsSecureConnection) continue;
 						if (set.HeaderMasks.Count > 0 && ClientRequest.Headers != null)
 						{
 							//check if there are headers listed in OnHeader detection rules
