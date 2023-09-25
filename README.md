@@ -5,14 +5,11 @@ This is a HTTP 1.x proxy server that makes old web browsers and media players us
 
 The proxy is an adapter between the modern Web and old software. It is designed to run on an modern PC in same network with older computers.
 
-WebOne HTTP Proxy Server is working by default on port 8080 and is compatible even with Netscape Navigator 3. Set IP address or hostname of PC with WebOne as HTTP proxy server (or set http://proxyhost:port/auto.pac as Automatic proxy configuration URL) in old browser's settings and begin WWW surfing again. There also a local mode (http://proxyhost:port/http://domain/filename.ext) for browsers that cannot work with proxies.
+WebOne HTTP Proxy Server is working by default on port 8080 and is compatible even with Netscape Navigator 3. Set IP address or hostname of PC with WebOne as HTTP/HTTPS/FTP proxy server (or set http://proxyhost:port/auto.pac as Automatic proxy configuration URL) in old browser's settings and begin WWW surfing again. There also is alternative mode (http://proxyhost:port/http://domain/filename.ext) for browsers that cannot work with proxies.
 
 The program's settings are in the __webone.conf__ file (but any other file name can be used too).
 
 See **[WebOne wiki](https://github.com/atauenis/webone/wiki)** for complete list of features and full documentation.
-
-## Beta Version Notes
-However the latest stable release is 0.15.3, there's a newer beta version is available. See **[README-0.16-BETA.md](https://github.com/atauenis/webone/blob/master/README-0.16-BETA.md)** for details.
 
 ## Server prerequisites
 Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET 6.0 Runtime are required on server PC. See [.NET 6.0 System Requirements](https://github.com/dotnet/core/blob/main/release-notes/6.0/supported-os.md).
@@ -25,7 +22,7 @@ Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET 6.0 Runtime are required on se
 Manuals about how to set up a WebOne proxy on [Windows](https://github.com/atauenis/webone/wiki/Windows-installation) / [Linux](https://github.com/atauenis/webone/wiki/Linux-installation) / [macOS](https://github.com/atauenis/webone/wiki/MacOS-X-installation) servers are in the Wiki.
 
 ## Run
-*	On Windows simply run `webone.exe`. On first launch it will show UAC warning about system settings change - it is normal, as WebOne would configure Windows to allow running proxies without administrator rights. However, you may do this step [manually](https://github.com/atauenis/webone/wiki/Windows-installation#how-to-run-without-admin-privileges) and deny the UAC request.
+*	On Windows simply run `webone.exe`. Then open port 8080 in Windows Firewall settings.
 
 *	On Linux the proxy is installing as a service, so it can be configured via regular service management commands:
 	```

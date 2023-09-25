@@ -6,7 +6,7 @@
 		<TargetFramework>net6.0</TargetFramework>
 		<Authors>Alexander Tauenis</Authors>
 		<Version>0.16.0</Version>
-		<VersionSuffix>-rc0</VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
+		<VersionSuffix></VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
 		<PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
 		<Company>World</Company>
 		<Product>WebOne HTTP Proxy Server</Product>
@@ -170,9 +170,6 @@ fi
 
 	<ItemGroup>
 		<None Update="LICENSE.txt">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
-		<None Update="README-0.16-BETA.md">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="README.md">
