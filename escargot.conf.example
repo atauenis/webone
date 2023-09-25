@@ -1,0 +1,62 @@
+﻿; Windows Live Messenger - Escargot gateway configuration.
+; To enable, rename this file to "escargot.conf".
+; Don't forget to import WebOne Root Certificate in Windows registry.
+
+; 		Login
+[Edit:^http://messenger.hotmail.com/(.*)]
+AddInternalRedirect=https://msnmsgr.escargot.chat/$1
+
+; 		Gateway
+[Edit:^http://gateway.messenger.hotmail.com/(.*)]
+AddInternalRedirect=https://msnmsgr.escargot.chat/$1
+
+; MSN 5 - 7.0	Login
+[Edit:(^http://nexus.passport.com/rdr/pprdr.asp)]
+;AddInternalRedirect=https://msnmsgr.escargot.chat/$1
+AddInternalRedirect=https://m1.escargot.chat/nexus-mock
+
+; MSN 7.5	Login
+[Edit:^http://loginnet.passport.com/(.*)]
+AddInternalRedirect=https://msnmsgr.escargot.chat/$1
+
+; MSN 8		Login
+[Edit:^http://login.live.com/(.*)]
+AddInternalRedirect=https://msnmsgr.escargot.chat/$1
+
+; MSN 6+	configuration
+[Edit:^http://config.messenger.msn.com/(.*)]
+AddInternalRedirect=https://conf.escargot.chat/$1
+
+; MSN 8+	contacts
+[Edit:^http://byrdr.omega.contacts.msn.com/(.*)]
+AddInternalRedirect=https://msnmsgr.escargot.chat/$1
+
+; 		Offline messaging
+[Edit:^http://ows.messenger.msn.com/(.*)]
+AddInternalRedirect=https://msnmsgr.escargot.chat/$1
+[Edit:^http://rsi.hotmail.com/(.*)]
+AddInternalRedirect=https://msnmsgr.escargot.chat/$1
+
+; MSN 8+	Windows Live Space
+[Edit:^http://tkrdr.storage.msn.com/(.*)]
+AddInternalRedirect=https://msnmsgr.escargot.chat/$1
+
+; MSN 9+	What's New service
+[Edit:^http://sup.live.com/(.*)]
+AddInternalRedirect=https://msnmsgr.escargot.chat/$1
+
+[Edit:http://login.live.com/login2.srf(.*)]
+AddInternalRedirect=https://msnmsgr.escargot.chat/login
+;AddInternalRedirect=https://m1.escargot.chat/login
+
+; MSN 7 (old Escargot patch)
+[Edit:http://m1.escargot.chat/login]
+AddInternalRedirect=https://msnmsgr.escargot.chat/login
+
+; .NET Service Status
+[Edit:^http://status.messenger.msn.com/(.*)]
+AddInternalRedirect=http://web.archive.org/web/20090212104204id_/http://status.messenger.msn.com/$1
+
+; Docs:
+; https://wiki.nina.chat/wiki/Protocols/MSNP/URLs_used_by_MSN
+; https://gitlab.com/escargot-chat/server/-/wikis/urls-used-by-msn
