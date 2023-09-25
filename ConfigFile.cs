@@ -275,6 +275,11 @@ namespace WebOne
 		/// </summary>
 		public static List<string> NonHttpSslServers = new();
 
+		/// <summary>
+		/// Redirect these connections for non-HTTP protocols
+		/// </summary>
+		public static Dictionary<string, string> NonHttpConnectRedirect = new();
+
 
 
 		// Hint: All parser-related stuff known from v0.2.0 - 0.10.7 has been rewritten and moved to ConfigFileLoader class.

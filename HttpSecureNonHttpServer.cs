@@ -64,10 +64,13 @@ namespace WebOne
 				return;
 			}
 
+			// Detect domain and port
 			Logger.WriteLine(">Non-HTTP: {0}", RequestReal.RawUrl);
 			string[] Parts = RequestReal.RawUrl.Split(":");
+			string Domain; int Port;
 			if (Parts.Length != 2) throw new Exception("Invalid `domain:port` pair supplied for CONNECT method.");
-			if (!int.TryParse(Parts[1], out int PortNumber)) throw new Exception("Invalid port number supplied for CONNECT method.");
+			Domain = Parts[0];
+			if (!int.TryParse(Parts[1], out Port)) throw new Exception("Invalid port number supplied for CONNECT method.");
 
 			// Check for blacklisted URL
 			if (CheckString(RequestReal.RawUrl, ConfigFile.UrlBlackList))
@@ -81,6 +84,19 @@ namespace WebOne
 			{
 				Logger.WriteLine(" Non-allowed target, goodbye.");
 				return;
+			}
+
+			// Check for redirect
+			foreach (string SourceTarget in ConfigFile.NonHttpConnectRedirect.Keys)
+			{
+				if (RequestReal.RawUrl.Contains(SourceTarget))
+				{
+					RequestReal.RawUrl = ConfigFile.NonHttpConnectRedirect[SourceTarget];
+					Parts = RequestReal.RawUrl.Split(":");
+					Domain = Parts[0];
+					Port = int.Parse(Parts[1]);
+					Logger.WriteLine(" Redirect connection to {0}.", ConfigFile.NonHttpConnectRedirect[SourceTarget]);
+				}
 			}
 
 			// Perform an SSL/TLS handshake if need
@@ -112,7 +128,7 @@ namespace WebOne
 			TcpClient TunnelToRemote = new();
 			try
 			{
-				TunnelToRemote.Connect(Parts[0], PortNumber);
+				TunnelToRemote.Connect(Domain, Port);
 
 				if (Certificate != null)
 				{

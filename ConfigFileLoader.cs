@@ -499,6 +499,23 @@ namespace WebOne
 							ConfigFile.NonHttpSslServers.Add(Line.RawString.ToLowerInvariant());
 						}
 						break;
+					case "NonHttpConnectRedirect":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							if (Line.HaveKeyValue
+							&& Line.Value.Split(':').Length == 2
+							&& !string.IsNullOrWhiteSpace(Line.Value.Split(':')[0])
+							&& int.TryParse(Line.Value.Split(':')[1], out int devnull))
+							{
+								ConfigFile.NonHttpConnectRedirect.Add(Line.Key, Line.Value);
+							}
+							else
+							{
+								Log.WriteLine(true, false, "Warning: Incorrect non-HTTP connection redirect rule at {0}.", Line.Location);
+								continue;
+							}
+						}
+						break;
 					case "FixableURL":
 					case "FixableType":
 					case "ContentPatch":
