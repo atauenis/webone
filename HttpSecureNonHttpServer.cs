@@ -69,6 +69,20 @@ namespace WebOne
 			if (Parts.Length != 2) throw new Exception("Invalid `domain:port` pair supplied for CONNECT method.");
 			if (!int.TryParse(Parts[1], out int PortNumber)) throw new Exception("Invalid port number supplied for CONNECT method.");
 
+			// Check for blacklisted URL
+			if (CheckString(RequestReal.RawUrl, ConfigFile.UrlBlackList))
+			{
+				Logger.WriteLine(" Blacklisted target, goodbye.");
+				return;
+			}
+
+			// Check for URL white list
+			if (ConfigFile.UrlWhiteList.Count > 0 && !CheckString(ConfigFile.UrlWhiteList.ToArray(), RequestReal.RawUrl))
+			{
+				Logger.WriteLine(" Non-allowed target, goodbye.");
+				return;
+			}
+
 			// Perform an SSL/TLS handshake if need
 			if (Certificate != null)
 			{
