@@ -123,7 +123,7 @@ namespace WebOne
 					try
 					{
 						//check validness of request
-						if(!ClientRequest.RawUrl.Contains(':'))
+						if (!ClientRequest.RawUrl.Contains(':'))
 						{
 							Log.WriteLine(" Invalid CONNECT target: {0}", ClientRequest.RawUrl);
 							SendError(400, "Invalid request. Correct format is <pre>CONNECT example.com:443 HTTP/1.1</pre>");
@@ -425,8 +425,18 @@ namespace WebOne
 										RequestURL = new Uri(NewUrlInternal);
 										break;
 									case "AddRedirect":
-										string NewUrl302 = UseRegEx ? ProcessUriMasks(new Regex(Set.UrlMasks[0]).Replace(RequestURL.AbsoluteUri, Edit.Value))
-																	: ProcessUriMasks(Edit.Value);
+										//string NewUrl302 = UseRegEx ? ProcessUriMasks(new Regex(Set.UrlMasks[0]).Replace(RequestURL.AbsoluteUri, Edit.Value))
+										//							  : ProcessUriMasks(Edit.Value);
+										string NewUrl302 = "";
+										if (UseRegEx)
+										{
+											var match = new Regex(Set.UrlMasks[0]).Match(RequestURL.AbsoluteUri);
+											if (match.Groups.Count > 0)
+												NewUrl302 = ProcessUriMasks(new Regex(Set.UrlMasks[0]).Replace(match.Groups[0].Value, Edit.Value));
+											else NewUrl302 = ProcessUriMasks(Edit.Value);
+										}
+										else NewUrl302 = ProcessUriMasks(Edit.Value);
+
 										Log.WriteLine(" Fix to {0}", NewUrl302);
 										Dump("~Redirect using 302 to: " + NewUrl302);
 										SendRedirect(NewUrl302, "Брось каку!");
