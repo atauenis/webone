@@ -53,6 +53,11 @@ AddInternalRedirect=https://msnmsgr.escargot.chat/login
 [Edit:http://m1.escargot.chat/login]
 AddInternalRedirect=https://msnmsgr.escargot.chat/login
 
+; 		Login (application bug)
+[Edit:^http://255.255.255.255/(.*)]
+AddInternalRedirect=https://msnmsgr.escargot.chat/$1
+; used if HKCU\Software\Microsoft\MessengerService\Server = "messenger.hotmail.com;255.255.255.255"
+
 ; .NET Service Status
 [Edit:^http://status.messenger.msn.com/(.*)]
 AddInternalRedirect=http://web.archive.org/web/20090212104204id_/http://status.messenger.msn.com/$1
