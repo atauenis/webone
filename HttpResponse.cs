@@ -28,6 +28,65 @@ namespace WebOne
 		public int StatusCode { get; set; }
 
 		/// <summary>
+		/// Gets or sets the HTTP status code description message, starting with a space character.
+		/// </summary>
+		/// <returns>An status message corresponding to <see cref="StatusCode"/> or set overriden.</returns>
+		public string StatusMessage
+		{
+			get
+			{
+				if (!string.IsNullOrWhiteSpace(statusMsg)) return statusMsg;
+				switch (StatusCode)
+				{
+					case 100: return " Continue";
+					case 101: return " Switching Protocols";
+					case 200: return " OK";
+					case 201: return " Created";
+					case 202: return " Accepted";
+					case 203: return " Non-Authoritative Information";
+					case 204: return " No Content";
+					case 205: return " Reset Content";
+					case 206: return " Partial Content";
+					case 300: return " Multiple Choices";
+					case 301: return " Moved Permanently";
+					case 302: return " Moved Temporarily";
+					case 303: return " See Other";
+					case 304: return " Not Modified";
+					case 305: return " Use Proxy";
+					case 400: return " Bad Request";
+					case 401: return " Unauthorized";
+					case 402: return " Payment Required";
+					case 403: return " Forbidden";
+					case 404: return " Not Found";
+					case 405: return " Method Not Allowed";
+					case 406: return " Not Acceptable";
+					case 407: return " Proxy Authentication Required";
+					case 408: return " Request Timeout";
+					case 409: return " Conflict";
+					case 410: return " Gone";
+					case 411: return " Length Required";
+					case 412: return " Precondition Failed";
+					case 413: return " Request Entity Too Large";
+					case 414: return " Request-URI Too Long";
+					case 415: return " Unsupported Media Type";
+					case 418: return " I'm a teapot";
+					case 500: return " Internal Server Error";
+					case 501: return " Not Implemented";
+					case 502: return " Bad Gateway";
+					case 503: return " Service Unavailable";
+					case 504: return " Gateway Timeout";
+					case 505: return " HTTP Version Not Supported";
+					default: return ""; //don't append message for unknown status codes
+				}
+			}
+			set
+			{
+				if (value.StartsWith(" ") || value == "") statusMsg = value;
+				else throw new ArgumentException("HTTP status message must start from space.", nameof(value));
+			}
+		}
+
+		/// <summary>
 		/// Gets or sets the HTTP version used for the response.
 		/// </summary>
 		/// <returns>A System.Version object indicating the version of HTTP used when responding to the client.</returns>
@@ -182,6 +241,7 @@ namespace WebOne
 		private string contentType;
 		private long contentLength64;
 		private Stream outputStream;
+		private string statusMsg = "";
 
 
 		/// <summary>
@@ -202,7 +262,7 @@ namespace WebOne
 			if (TcpclientBackend != null)
 			{
 				StreamWriter ClientStreamWriter = new(TcpclientBackend.GetStream());
-				ClientStreamWriter.WriteLine(ProtocolVersionString + " " + StatusCode);
+				ClientStreamWriter.WriteLine(ProtocolVersionString + " " + StatusCode + StatusMessage);
 				string HeadersString = Headers.ToString().Replace("\r\n", "\n").Replace("\n\n", "");
 				ClientStreamWriter.WriteLine(HeadersString);
 				ClientStreamWriter.WriteLine();
@@ -213,7 +273,7 @@ namespace WebOne
 			if (SslBackend != null)
 			{
 				StreamWriter ClientStreamWriter = new(SslBackend);
-				ClientStreamWriter.WriteLine(ProtocolVersionString + " " + StatusCode);
+				ClientStreamWriter.WriteLine(ProtocolVersionString + " " + StatusCode + StatusMessage);
 				string HeadersString = Headers.ToString().Replace("\r\n", "\n").Replace("\n\n", "");
 				ClientStreamWriter.WriteLine(HeadersString);
 				ClientStreamWriter.WriteLine();

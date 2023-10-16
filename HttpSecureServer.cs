@@ -79,8 +79,8 @@ namespace WebOne
 			}
 
 			// Answer that this proxy supports HTTPS
-			ResponseReal.ProtocolVersionString = "HTTP/1.1";
-			ResponseReal.StatusCode = 200; //better be "HTTP/1.0 200 Connection established", but "HTTP/1.1 200 OK" is OK too
+			ResponseReal.ProtocolVersion = new Version(1, 1);
+			ResponseReal.StatusCode = 200; //better be "HTTP/1.1 200 Connection established", but "HTTP/1.1 200 OK" is OK too
 			ResponseReal.AddHeader("Via", "1.1 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
 			ResponseReal.SendHeaders();
 

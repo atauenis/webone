@@ -45,15 +45,16 @@ namespace WebOne
 			if (ConfigFile.AllowNonHttpsCONNECT)
 			{
 				// Answer that this proxy supports CONNECT method
-				ResponseReal.ProtocolVersionString = "HTTP/1.1";
-				ResponseReal.StatusCode = 200; //better be "HTTP/1.0 200 Connection established", but "HTTP/1.1 200 OK" is OK too
-				ResponseReal.SendHeaders();
+				ResponseReal.ProtocolVersion = new Version(1, 1);
+				ResponseReal.StatusCode = 200;
+				ResponseReal.StatusMessage = " Connection established";
+				ResponseReal.SendHeaders(); //"HTTP/1.1 200 Connection established"
 			}
 			else
 			{
 				// Reject connection request
 				string OnlyHTTPS = "This proxy is performing only HTTP and HTTPS tunneling.";
-				ResponseReal.ProtocolVersionString = "HTTP/1.1";
+				ResponseReal.ProtocolVersion = new Version(1, 1);
 				ResponseReal.StatusCode = 502;
 				ResponseReal.ContentType = "text/plain";
 				ResponseReal.ContentLength64 = OnlyHTTPS.Length;
