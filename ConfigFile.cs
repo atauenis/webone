@@ -202,6 +202,11 @@ namespace WebOne
 		/// </summary>
 		public static bool UseMsHttpApi = false;
 
+		/// <summary>
+		/// List of user agents without HTTP/1.1 support (work as HTTP/1.0)
+		/// </summary>
+		public static List<string> Http10Only = new();
+
 
 
 		/// <summary>

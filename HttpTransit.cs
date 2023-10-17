@@ -168,6 +168,12 @@ namespace WebOne
 					return;
 				}
 
+				//check for HTTP/1.0-only client
+				if(!string.IsNullOrWhiteSpace(ClientRequest.Headers["User-Agent"]) && CheckStringRegExp(ClientRequest.Headers["User-Agent"], ConfigFile.Http10Only.ToArray()))
+				{ ClientResponse.ProtocolVersion = new Version(1, 0); }
+				else
+				{ ClientResponse.ProtocolVersion = new Version(1, 1); }
+
 				//get proxy's IP address
 				if (ClientRequest.LocalEndPoint.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
 					LocalIP = ClientRequest.LocalEndPoint.Address.ToString(); // IPv4
@@ -691,7 +697,7 @@ namespace WebOne
 				{
 					if (true)
 					{
-						ClientResponse.ProtocolVersion = new Version(1, 0);
+						//ClientResponse.ProtocolVersion = new Version(1, 1);
 						ClientResponse.StatusCode = ResponseCode;
 						ClientResponse.AddHeader("Via", "HTTP/1.0 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
 						if (string.IsNullOrEmpty(ClientResponse.Headers["Content-Type"]) && !string.IsNullOrEmpty(ContentType))

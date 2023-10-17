@@ -147,8 +147,8 @@ namespace WebOne
 				if (IsLocalhost(Host, Port)) //check Host name and Port number
 				{
 					// Target is this server, so StandardLocal or AlternateProxy or DirtyAlternateProxy
-					if (RawUrl.ToLower().StartsWith("/http:") || RawUrl.ToLower().StartsWith("/https:") || RawUrl.ToLower().StartsWith("/ftp:")) 
-					return RequestKind.AlternateProxy;
+					if (RawUrl.ToLower().StartsWith("/http:") || RawUrl.ToLower().StartsWith("/https:") || RawUrl.ToLower().StartsWith("/ftp:"))
+						return RequestKind.AlternateProxy;
 
 					if (RefererHeader != null)
 					{

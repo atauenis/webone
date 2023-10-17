@@ -167,6 +167,12 @@ namespace WebOne
 				return;
 			}
 
+			if (Request.RawUrl.StartsWith("ftp:/") && !Request.RawUrl.StartsWith("ftp://"))
+			{
+				Logger.WriteLine("<Dropped (bad FTP protocol address)."); //IBM WebExplorer bug
+				return;
+			}
+
 			// Define URI from HTTP Command and HTTP Host header.
 			RequestKind Kind = GetKindOfRequest(Request.RawUrl, Request.Headers["Host"], null, Request.HttpMethod == "CONNECT");
 			Request.Kind = Kind;

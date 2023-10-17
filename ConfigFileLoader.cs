@@ -516,6 +516,13 @@ namespace WebOne
 							}
 						}
 						break;
+					case "Http10Only":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							CheckRegExp(Line.RawString, Line.Location);
+							ConfigFile.Http10Only.Add(Line.RawString);
+						}
+						break;
 					case "FixableURL":
 					case "FixableType":
 					case "ContentPatch":

@@ -151,10 +151,16 @@ namespace WebOne
 			set
 			{
 				contentType = value;
+				if (ProtocolVersion < new Version(1, 1))
+				{
+					//strip RFC 2068 §14.18 to RFC 1945 §10.5
+					if (contentType.Contains(';')) contentType = contentType.Substring(0, contentType.IndexOf(';'));
+				}
+
 				if (MshttpapiBackend != null) MshttpapiBackend.ContentType = contentType;
 
 				if (Headers["Content-Type"] == null)
-					AddHeader("Content-Type", contentType);
+					Headers.Add("Content-Type", contentType);
 				else
 					Headers["Content-Type"] = contentType;
 			}
@@ -208,6 +214,7 @@ namespace WebOne
 		{
 			MshttpapiBackend = Backend;
 			OutputStream = Backend.OutputStream;
+			ProtocolVersion = new Version(1, 1);
 
 			Headers = new WebHeaderCollection();
 		}
@@ -220,6 +227,7 @@ namespace WebOne
 		{
 			TcpclientBackend = Backend;
 			OutputStream = Backend.GetStream();
+			ProtocolVersion = new Version(1, 1);
 
 			Headers = new WebHeaderCollection();
 		}
@@ -232,6 +240,7 @@ namespace WebOne
 		{
 			SslBackend = Backend;
 			outputStream = Backend;
+			ProtocolVersion = new Version(1, 1);
 
 			Headers = new WebHeaderCollection();
 		}
@@ -331,7 +340,14 @@ namespace WebOne
 		/// </exception>
 		public void AddHeader(string name, string value)
 		{
-			Headers.Add(name, value);
+			if (name.ToLowerInvariant() == "content-type")
+			{
+				ContentType = value;
+			}
+			else
+			{
+				Headers.Add(name, value);
+			}
 		}
 
 		/// <summary>

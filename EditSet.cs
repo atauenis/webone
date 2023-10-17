@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using static WebOne.Program;
 
 namespace WebOne
@@ -80,7 +79,7 @@ namespace WebOne
 
 			if (Section.Mask != null)
 			{
-				CheckRegExp(Section.Mask, Section.Location);
+				Program.CheckRegExp(Section.Mask, Section.Location);
 				UrlMasks.Add(Section.Mask);
 			}
 
@@ -293,35 +292,11 @@ namespace WebOne
 		}
 
 		/// <summary>
-		/// Test validness of a Regular Expression pattern
-		/// </summary>
-		/// <param name="Pattern">Pattern (mask) to test</param>
-		/// <param name="Location">Pattern location for error message</param>
-		/// <param name="TestText">Test text (optional)</param>
-		/// <param name="TimeoutSec">Test timeout (optional)</param>
-		/// <returns><see cref="True"/> if RegExp is valid or <see cref="False"/> or an exception if it is invalid</returns>
-		private bool CheckRegExp(string Pattern, string Location, string TestText = "", int TimeoutSec = 20)
-		{
-			//thx to https://stackoverflow.com/a/59981119/7600726
-			try
-			{
-				if (string.IsNullOrEmpty(Pattern)) return false;
-				Regex re = new(Pattern, RegexOptions.None, new TimeSpan(0, 0, TimeoutSec));
-				re.IsMatch(TestText); //expect ArgumentException or RegexMatchTimeoutException
-				return true;
-			}
-			catch (Exception ex)
-			{
-				throw new Exception("Problem with regular expression \"" + ex.Message + "\" at " + Location);
-			}
-		}
-
-		/// <summary>
 		/// Test validness of a Regular Expression pattern in a rule line
 		/// </summary>
 		/// <param name="RegExpLine">Rule line</param>
 		/// <returns><see cref="True"/> if RegExp is valid or <see cref="False"/> if it is invalid</returns>
-		private bool CheckRegExp(ConfigFileOption RegExpLine){ return CheckRegExp(RegExpLine.Value, RegExpLine.Location); }
+		private bool CheckRegExp(ConfigFileOption RegExpLine) { return Program.CheckRegExp(RegExpLine.Value, RegExpLine.Location); }
 
 		//test function
 		public override string ToString()
