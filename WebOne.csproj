@@ -6,7 +6,7 @@
 		<TargetFramework>net6.0</TargetFramework>
 		<Authors>Alexander Tauenis</Authors>
 		<Version>0.16.1</Version>
-		<VersionSuffix>--pre</VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
+		<VersionSuffix></VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
 		<PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
 		<Company>World</Company>
 		<Product>WebOne HTTP Proxy Server</Product>
@@ -209,12 +209,28 @@ fi
 		</Content>
 	</ItemGroup>
 
-	<ItemGroup Condition="$(RuntimeIdentifier.Contains('win'))">
-		<None Update="convert.exe">
+	<ItemGroup Condition="$(RuntimeIdentifier.Contains('win-x86'))">
+		<None Include="Win32-all/convert32.exe">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<Link>convert.exe</Link>
 		</None>
-		<None Update="LICENSE-ImageMagick.txt">
+	</ItemGroup>
+	<ItemGroup Condition="$(RuntimeIdentifier.Contains('win-x64'))">
+		<None Include="Win32-all/convert64.exe">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<Link>convert.exe</Link>
+		</None>
+	</ItemGroup>
+	<ItemGroup Condition="$(RuntimeIdentifier.Contains('win-arm'))">
+		<None Include="Win32-all/convertARM.exe">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<Link>convert.exe</Link>
+		</None>
+	</ItemGroup>
+	<ItemGroup Condition="$(RuntimeIdentifier.Contains('win'))">
+		<None Include="Win32-all/*.txt">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<Link>%(Filename)%(Extension)</Link>
 		</None>
 	</ItemGroup>
 
@@ -226,8 +242,13 @@ fi
 	</ItemGroup>
 
 	<ItemGroup Condition="$(Configuration)=='Debug'">
-		<None Include="convert.exe">
+		<None Include="Win32-all/convert64.exe">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<Link>convert.exe</Link>
+		</None>
+		<None Include="Win32-all/*.txt">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<Link>%(Filename)%(Extension)</Link>
 		</None>
 		<None Include="Win32-full/*.*">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
