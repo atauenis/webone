@@ -95,6 +95,7 @@ Decoders:
  V....D libopenh264          OpenH264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (codec h264)
  V..... h264_cuvid           Nvidia CUVID H264 decoder (codec h264)
  VFS..D hap                  Vidvox Hap
+ VF...D hdr                  HDR (Radiance RGBE format) image
  VFS..D hevc                 HEVC (High Efficiency Video Coding)
  V....D hevc_qsv             HEVC video (Intel Quick Sync Video acceleration) (codec hevc)
  V..... hevc_cuvid           Nvidia CUVID HEVC decoder (codec hevc)
@@ -128,6 +129,7 @@ Decoders:
  V....D eamad                Electronic Arts Madcow Video (codec mad)
  VFS..D magicyuv             MagicYUV video
  VF...D mdec                 Sony PlayStation MDEC (Motion DECoder)
+ V....D media100             Media 100
  VF...D mimic                Mimic
  V....D mjpeg                MJPEG (Motion JPEG)
  V..... mjpeg_cuvid          Nvidia CUVID MJPEG decoder (codec mjpeg)
@@ -252,6 +254,7 @@ Decoders:
  V....D xl                   Miro VideoXL (codec vixl)
  V....D vmdvideo             Sierra VMD video
  V....D vmnc                 VMware Screen Codec / VMware Video
+ V....D vnull                null video
  VF..BD vp3                  On2 VP3
  VF..BD vp4                  On2 VP4
  V....D vp5                  On2 VP5
@@ -267,6 +270,8 @@ Decoders:
  V..... libvpx-vp9           libvpx VP9 (codec vp9)
  V..... vp9_cuvid            Nvidia CUVID VP9 decoder (codec vp9)
  V....D vp9_qsv              VP9 video (Intel Quick Sync Video acceleration) (codec vp9)
+ V....D vqc                  ViewQuest VQC
+ VF...D wbmp                 WBMP (Wireless Application Protocol Bitmap) image
  V....D wcmv                 WinCAM Motion Video
  VF...D webp                 WebP image
  V...BD wmv1                 Windows Media Video 7
@@ -347,6 +352,7 @@ Decoders:
  A....D adpcm_thp_le         ADPCM Nintendo THP (little-endian)
  A....D adpcm_vima           LucasArts VIMA audio
  A....D adpcm_xa             ADPCM CDROM XA
+ A....D adpcm_xmd            ADPCM Konami XMD
  A....D adpcm_yamaha         ADPCM Yamaha
  A....D adpcm_zork           ADPCM Zork
  AF...D alac                 ALAC (Apple Lossless Audio Codec)
@@ -354,6 +360,8 @@ Decoders:
  A....D libopencore_amrnb    OpenCORE AMR-NB (Adaptive Multi-Rate Narrow-Band) (codec amr_nb)
  A....D amrwb                AMR-WB (Adaptive Multi-Rate WideBand) (codec amr_wb)
  A....D libopencore_amrwb    OpenCORE AMR-WB (Adaptive Multi-Rate Wide-Band) (codec amr_wb)
+ A....D anull                null audio
+ A....D apac                 Marian's A-pac audio
  A....D ape                  Monkey's Audio
  A....D aptx                 aptX (Audio Processing Technology for Bluetooth)
  A....D aptx_hd              aptX HD (Audio Processing Technology for Bluetooth)
@@ -367,6 +375,8 @@ Decoders:
  A....D binkaudio_dct        Bink Audio (DCT)
  A....D binkaudio_rdft       Bink Audio (RDFT)
  A....D bmv_audio            Discworld II BMV audio
+ A....D bonk                 Bonk audio
+ A....D cbd2_dpcm            DPCM Cuberoot-Delta-Exact
  A....D comfortnoise         RFC 3389 comfort noise generator
  A....D cook                 Cook / Cooker / Gecko (RealAudio G2)
  A....D derf_dpcm            DPCM Xilam DERF
@@ -385,6 +395,7 @@ Decoders:
  A....D evrc                 EVRC (Enhanced Variable Rate Codec)
  A....D fastaudio            MobiClip FastAudio
  AF...D flac                 FLAC (Free Lossless Audio Codec)
+ A....D ftr                  FTR Voice
  A....D g723_1               G.723.1
  A....D g729                 G.729
  A....D gremlin_dpcm         DPCM Gremlin
@@ -400,6 +411,7 @@ Decoders:
  A....D mace3                MACE (Macintosh Audio Compression/Expansion) 3:1
  A....D mace6                MACE (Macintosh Audio Compression/Expansion) 6:1
  A....D metasound            Voxware MetaSound
+ A....D misc4                Micronas SC-4 Audio
  A....D mlp                  MLP (Meridian Lossless Packing)
  A....D mp1                  MP1 (MPEG audio layer 1)
  A....D mp1float             MP1 (MPEG audio layer 1) (codec mp1)
@@ -460,6 +472,7 @@ Decoders:
  A....D real_144             RealAudio 1.0 (14.4K) (codec ra_144)
  A....D real_288             RealAudio 2.0 (28.8K) (codec ra_288)
  A....D ralf                 RealAudio Lossless
+ A....D rka                  RKA (RK Audio)
  A....D roq_dpcm             DPCM id RoQ
  A....D s302m                SMPTE 302M
  A....D sbc                  SBC (low-complexity subband codec)
@@ -479,6 +492,8 @@ Decoders:
  A....D vmdaudio             Sierra VMD audio
  A....D vorbis               Vorbis
  A..... libvorbis            libvorbis (codec vorbis)
+ A....D wady_dpcm            DPCM Marble WADY
+ A....D wavarc               Waveform Archiver
  A....D wavesynth            Wave synthesis pseudo-codec
  AFS..D wavpack              WavPack
  A....D ws_snd1              Westwood Audio (SND1) (codec westwood_snd1)

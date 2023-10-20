@@ -1,4 +1,4 @@
-ffmpeg version n5.1.2-11-g30d432f205-20230202 Copyright (c) 2000-2022 the FFmpeg developers
+ffmpeg version n6.0-22-g549430e14d-20230529 Copyright (c) 2000-2023 the FFmpeg developers
 
 Hyper fast Audio and Video encoder
 usage: ffmpeg [options] [[infile options] -i infile]... {[outfile options] outfile}...
@@ -49,7 +49,6 @@ Global options (affect whole program instead of just one file):
 -filter_complex_threads  number of threads for -filter_complex
 -stats              print progress report during encoding
 -max_error_rate maximum error rate  ratio of decoding errors (0.0: no errors, 1.0: 100% errors) above which ffmpeg returns an error instead of success.
--vol volume         change audio volume (256=normal)
 
 Per-file main options:
 -f fmt              force format
@@ -81,12 +80,14 @@ Video options:
 -fpsmax rate        set max frame rate (Hz value, fraction or abbreviation)
 -s size             set frame size (WxH or abbreviation)
 -aspect aspect      set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)
+-display_rotation angle  set pure counter-clockwise rotation in degrees for stream(s)
+-display_hflip      set display horizontal flip for stream(s) (overrides any display rotation if it is not set)
+-display_vflip      set display vertical flip for stream(s) (overrides any display rotation if it is not set)
 -vn                 disable video
 -vcodec codec       force video codec ('copy' to copy stream)
 -timecode hh:mm:ss[:;.]ff  set initial TimeCode value.
 -pass n             select the pass number (1 to 3)
 -vf filter_graph    set video filters
--ab bitrate         audio bitrate (please use -b:a)
 -b bitrate          video bitrate (please use -b:v)
 -dn                 disable data
 
@@ -97,7 +98,7 @@ Audio options:
 -ac channels        set number of audio channels
 -an                 disable audio
 -acodec codec       force audio codec ('copy' to copy stream)
--vol volume         change audio volume (256=normal)
+-ab bitrate         audio bitrate (please use -b:a)
 -af filter_graph    set audio filters
 
 Subtitle options:
