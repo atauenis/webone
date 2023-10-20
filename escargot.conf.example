@@ -10,10 +10,10 @@ AddInternalRedirect=https://msnmsgr.escargot.chat/$1
 [Edit:^http://gateway.messenger.hotmail.com/(.*)]
 AddInternalRedirect=https://msnmsgr.escargot.chat/$1
 
-; MSN 5 - 7.0	Login
-[Edit:(^http://nexus.passport.com/rdr/pprdr.asp)]
-;AddInternalRedirect=https://msnmsgr.escargot.chat/$1
-AddInternalRedirect=https://m1.escargot.chat/nexus-mock
+; MSN 4.7 - 7.0	Login
+[Edit:^http://nexus.passport.com/(.*)]
+AddInternalRedirect=https://msnmsgr.escargot.chat/$1
+; sadly, but at this moment broken. Use MSN 7.5+ or 4.6-.
 
 ; MSN 7.5	Login
 [Edit:^http://loginnet.passport.com/(.*)]
