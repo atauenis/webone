@@ -203,8 +203,8 @@ fi
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 
-		<Content Include="escargot.conf.example" CopyToPublishDirectory="Always" LinuxFileMode="644">
-			<LinuxPath Condition="$(RuntimeIdentifier.Contains('linux'))">/etc/webone.conf.d/escargot.conf.example</LinuxPath>
+		<Content Include="escargot.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
+			<LinuxPath Condition="$(RuntimeIdentifier.Contains('linux'))">/etc/webone.conf.d/escargot.conf</LinuxPath>
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>

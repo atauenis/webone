@@ -1,5 +1,5 @@
 ﻿# WebOne
-This is a HTTP 1.x proxy server that makes old web browsers and media players usable again in the Web 2.0 world.
+This is a HTTP 1.x proxy server that makes old web browsers, media players and messengers usable again in the Web 2.0 world.
 
 ![](https://raw.githubusercontent.com/atauenis/webone/master/docs/Demo.png)
 
