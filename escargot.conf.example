@@ -13,7 +13,10 @@ AddInternalRedirect=https://msnmsgr.escargot.chat/$1
 ; MSN 4.7 - 7.0	Login
 [Edit:^http://nexus.passport.com/(.*)]
 AddInternalRedirect=https://msnmsgr.escargot.chat/$1
-; sadly, but at this moment broken. Use MSN 7.5+ or 4.6-.
+
+; MSN 4.7	Login, step 2
+[Edit:http://login.live.com/login2.srf]
+AddInternalRedirect=https://msnmsgr.escargot.chat/login
 
 ; MSN 7.5	Login
 [Edit:^http://loginnet.passport.com/(.*)]
@@ -21,6 +24,7 @@ AddInternalRedirect=https://msnmsgr.escargot.chat/$1
 
 ; MSN 8		Login
 [Edit:^http://login.live.com/(.*)]
+IgnoreUrl=login2.srf
 AddInternalRedirect=https://msnmsgr.escargot.chat/$1
 
 ; MSN 6+	configuration
@@ -45,10 +49,6 @@ AddInternalRedirect=https://msnmsgr.escargot.chat/$1
 [Edit:^http://sup.live.com/(.*)]
 AddInternalRedirect=https://msnmsgr.escargot.chat/$1
 
-[Edit:http://login.live.com/login2.srf(.*)]
-AddInternalRedirect=https://msnmsgr.escargot.chat/login
-;AddInternalRedirect=https://m1.escargot.chat/login
-
 ; MSN 7 (old Escargot patch)
 [Edit:http://m1.escargot.chat/login]
 AddInternalRedirect=https://msnmsgr.escargot.chat/login
@@ -58,9 +58,47 @@ AddInternalRedirect=https://msnmsgr.escargot.chat/login
 AddInternalRedirect=https://msnmsgr.escargot.chat/$1
 ; used if HKCU\Software\Microsoft\MessengerService\Server = "messenger.hotmail.com;255.255.255.255"
 
+; HTML content:
 ; .NET Service Status
 [Edit:^http://status.messenger.msn.com/(.*)]
 AddInternalRedirect=http://web.archive.org/web/20090212104204id_/http://status.messenger.msn.com/$1
+
+; Connection troubleshooter
+[Edit:^http://g.msn.com/5meen_us/140]
+AddRedirect=http://web.archive.org/web/20070704092740if_/http://messenger.msn.com/ct/
+
+; What's new in Messenger
+[Edit:^http://g.msn.com/5meen_us/153]
+AddRedirect=https://web.archive.org/web/20060411191031if_/http://www.imagine-msn.com/messenger/runonce/mosaic.aspx?locale=en
+
+; Avatar gallery
+[Edit:^http://g.msn.com/5meen_us/117]
+AddRedirect=https://web.archive.org/web/20040130070134if_/http://messenger.msn.com/resource/cTiles.aspx?mkt=-
+
+; Help
+[Edit:^http://g.msn.com/5meen_us/107]
+AddRedirect=https://web.archive.org/web/20110601234816/http://help.live.com/help.aspx?project=a&market=en-us
+
+; Privacy
+[Edit:^http://g.msn.com/5meen_us/112]
+AddRedirect=https://web.archive.org/web/20060423153451if_/http://privacy.microsoft.com/en-us/default.aspx
+
+; Send Feedback
+[Edit:^http://g.msn.com/5meen_us/150]
+AddRedirect=https://web.archive.org/web/20061022190527if_/http://feedback.live.com/eform.aspx?productkey=wlmessenger
+
+; MSN Home Page
+[Edit:^http://g.msn.com/5meen_us/103]
+AddRedirect=https://escargot.chat/
+
+; Edit Windows XP .NET Passport
+[Edit:^http://account.live.com/EditProf.aspx]
+AddRedirect=https://escargot.chat/account/
+
+; Sign Up for a new .NET Passport
+[Edit:^http://g.msn.com/5meen_us/105]
+AddRedirect=https://escargot.chat/register/
+
 
 ; Docs:
 ; https://wiki.nina.chat/wiki/Protocols/MSNP/URLs_used_by_MSN
