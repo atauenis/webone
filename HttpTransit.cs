@@ -169,7 +169,7 @@ namespace WebOne
 				}
 
 				//check for HTTP/1.0-only client
-				if(!string.IsNullOrWhiteSpace(ClientRequest.Headers["User-Agent"]) && CheckStringRegExp(ClientRequest.Headers["User-Agent"], ConfigFile.Http10Only.ToArray()))
+				if (!string.IsNullOrWhiteSpace(ClientRequest.Headers["User-Agent"]) && CheckStringRegExp(ClientRequest.Headers["User-Agent"], ConfigFile.Http10Only.ToArray()))
 				{ ClientResponse.ProtocolVersion = new Version(1, 0); }
 				else
 				{ ClientResponse.ProtocolVersion = new Version(1, 1); }
@@ -838,10 +838,40 @@ namespace WebOne
 						return;
 					case "/!img-test":
 					case "/!img-test/":
-						SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
+						if (ConfigFile.EnableManualConverting)
+						{
+							SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
+							return;
+						}
+						else
+						{
+							SendError(200, @"ImageMagick test.<br><img src=""/!imagemagicktest.gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
+							return;
+						}
+					case "/!imagemagicktest.gif":
+						foreach (Converter Cvt in ConfigFile.Converters)
+						{
+							if (Cvt.Executable == "convert" && !Cvt.SelfDownload)
+							{
+								var SrcStream = File.OpenRead("logo.webp");
+								SendStream(Cvt.Run(Log, SrcStream, "", "", "gif", "https://github.com/atauenis/webone/"), "image/gif", true);
+								return;
+							}
+						}
+						SendInfoPage("WebOne: ImageMagick error",
+						"Error",
+						"<p>ImageMagick's <b>convert</b> utility is not properly registered in <b>[Converters]</b> section of proxy configuration.</p>" +
+						"<p>Make sure that the line is present in <code>[Converters]</code> section of configuration: <code>convert %SRC% %ARG1% %DESTEXT%:- %ARG2%</code></p>",
+						500);
 						return;
 					case "/!convert":
 					case "/!convert/":
+						if (!ConfigFile.EnableManualConverting)
+						{
+							SendInfoPage("WebOne: Feature disabled", "Feature disabled", "Manual file converting is disabled for security purposes.<br>Proxy administrator can enable it via <code>[Server]</code> section, <code>EnableManualConverting</code> option.", 500);
+							return;
+						}
+
 						string SrcUrl = "", Src = "", Dest = "xbm", DestMime = "image/x-xbitmap", Converter = "convert", Args1 = "", Args2 = "";
 
 						//parse URL

@@ -207,6 +207,11 @@ namespace WebOne
 		/// </summary>
 		public static List<string> Http10Only = new();
 
+		/// <summary>
+		/// Enable http://proxy/!convert/?util=convert&url=url&dest=gif&type=image/gif tool page
+		/// </summary>
+		public static bool EnableManualConverting = true;
+
 
 
 		/// <summary>
