@@ -123,22 +123,31 @@ namespace WebOne
 		/// <summary>
 		/// Gets or sets the number of bytes in the body data included in the response.
 		/// </summary>
-		/// <returns>The value of the response's Content-Length header.</returns>
+		/// <returns>The value of the response's Content-Length header. Or &quot;-1&quot; to use chunked transfer.</returns>
 		public long ContentLength64
 		{
 			get => contentLength64;
 			set
 			{
 				contentLength64 = value;
-				if (MshttpapiBackend != null) MshttpapiBackend.ContentLength64 = contentLength64;
+				if (value < 0 && MshttpapiBackend == null) // Content-Length less than 0 means content with unknown length and chunked transfer
+				{
+#if EnableChunkedTransfer
+					if (Headers["Transfer-Encoding"] == null)
+						AddHeader("Transfer-Encoding", "chunked");
+					else
+						Headers["Transfer-Encoding"] = "chunked";
+#endif
+					return;
+				}
+				if (value < 0 && MshttpapiBackend != null) return;
+				if (value > -1 && MshttpapiBackend != null) { MshttpapiBackend.ContentLength64 = value; }
 
 				if (Headers["Content-Length"] == null)
 					AddHeader("Content-Length", contentLength64.ToString());
 				else
 					Headers["Content-Length"] = contentLength64.ToString();
 			}
-
-			//think about chunked transfers with unknown content length
 		}
 
 		/// <summary>
@@ -174,10 +183,16 @@ namespace WebOne
 		{
 			get
 			{
-				if (false) throw new InvalidOperationException("Content-Length not set."); //todo in future
+				if (HeadersSent)
+				{
+					if (MshttpapiBackend != null) return outputStream; //MsHttpApi processes everything itself
+					if (outputStream is HttpResponseContentStream) return outputStream; //already configured
 
-				if (HeadersSent) return outputStream;
-				else throw new InvalidOperationException("Call SendHeaders() first before sending body.");
+					// Set up HttpResponseContentStream according to headers data (transfer-encoding)
+					outputStream = new HttpResponseContentStream(outputStream, ContentLength64 < 0);
+					return outputStream;
+				}
+				else { throw new InvalidOperationException("Call SendHeaders() first before sending body."); }
 			}
 			set
 			{ outputStream = value; }
@@ -239,7 +254,7 @@ namespace WebOne
 		public HttpResponse(SslStream Backend)
 		{
 			SslBackend = Backend;
-			outputStream = Backend;
+			OutputStream = Backend;
 			ProtocolVersion = new Version(1, 1);
 
 			Headers = new WebHeaderCollection();
@@ -302,13 +317,15 @@ namespace WebOne
 			if (MshttpapiBackend != null) { MshttpapiBackend.Close(); return; }
 			if (TcpclientBackend != null)
 			{
-				TcpclientBackend.GetStream().Flush();
+				if (outputStream is HttpResponseContentStream) (outputStream as HttpResponseContentStream).WriteTerminator();
+				if (TcpclientBackend.Connected) TcpclientBackend.GetStream().Flush();
 				if (!KeepAlive) TcpclientBackend.Close();
 				return;
 			}
 			if (SslBackend != null)
 			{
-				SslBackend.Flush();
+				if (outputStream is HttpResponseContentStream) (outputStream as HttpResponseContentStream).WriteTerminator();
+				if (SslBackend.CanWrite) SslBackend.Flush();
 				if (!KeepAlive) SslBackend.Close();
 				return;
 			}

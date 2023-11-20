@@ -2063,7 +2063,7 @@ namespace WebOne
 				ClientResponse.StatusCode = 200;
 				ClientResponse.ProtocolVersion = new Version(1, 0);
 				ClientResponse.ContentType = ContentType;
-				if (Potok.CanSeek) ClientResponse.ContentLength64 = Potok.Length;
+				if (Potok.CanSeek) ClientResponse.ContentLength64 = Potok.Length; else ClientResponse.ContentLength64 = -1;
 				if (Potok.CanSeek) Potok.Position = 0;
 				ClientResponse.SendHeaders();
 				Potok.CopyTo(ClientResponse.OutputStream);
