@@ -16,7 +16,6 @@
 		<StartupObject>WebOne.Program</StartupObject>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<Configurations>Debug;Release;ReleaseSC</Configurations>
-		<RuntimeIdentifiers>win-x86;win-x64;win-arm;linux-x64;linux-arm;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
 		<NoWarn>$(NoWarn);NETSDK1179;NETSDK1182</NoWarn>
 		<!-- https://github.com/dotnet/sdk/issues/24269, https://stackoverflow.com/questions/69773547/visual-studio-2019-not-showing-net-6-framework/ -->
 	</PropertyGroup>
