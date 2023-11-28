@@ -57,7 +57,7 @@ Latest source code can be always found in the __master__ branch of [Git reposito
 
 The program is built using Microsoft .NET 6.0 SDK and [dotnet-packaging](https://github.com/qmfrederik/dotnet-packaging/) add-on. With them the building is easy on all platforms: use `dotnet publish` & `dotnet deb || dotnet rpm || dotnet zip` tools.
 
-Windows developers can utilize `Build.bat` script for cross-platform building.
+Windows developers can utilize `build.bat` script for cross-platform building. And there is similar `build.sh` script for Linux and macOS environments.
 
 ## Feedback
 Any questions can be written on official [VOGONS thread](https://www.vogons.org/viewtopic.php?f=24&t=67165), [phantom.sannata.ru thread](https://phantom.sannata.org/viewtopic.php?f=16&t=33291), and GitHub [Issues](https://github.com/atauenis/webone/issues) and [Discussions](https://github.com/atauenis/webone/discussions) tabs.

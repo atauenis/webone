@@ -1,4 +1,4 @@
-@echo WebOne build script	30.03.2023
+@echo WebOne build script	28.11.2023
 @echo.
 
 @echo Clean up directories:
@@ -21,26 +21,15 @@
 :Build
 @echo Building WebOne for Debian/Ubuntu, RedHat/CentOS, macOS and Windows...
 dotnet restore
-dotnet publish -c Release -r linux-x64
-dotnet deb --no-restore -c Release -r linux-x64
-dotnet rpm --no-restore -c Release -r linux-x64
-dotnet publish -c ReleaseSC -r linux-arm
-dotnet deb --no-restore -c ReleaseSC -r linux-arm
-dotnet rpm --no-restore -c ReleaseSC -r linux-arm
-dotnet publish -c ReleaseSC -r linux-arm64
-dotnet deb --no-restore -c ReleaseSC -r linux-arm64
-dotnet rpm --no-restore -c ReleaseSC -r linux-arm64
-dotnet publish -c Release -r osx-x64
-dotnet zip --no-restore -c Release -r osx-x64
-dotnet publish -c Release -r osx-arm64
-dotnet zip --no-restore -c Release -r osx-arm64
-dotnet publish -c Release -r win-x86
-dotnet zip --no-restore -c Release -r win-x86
-dotnet zip --no-restore -c ReleaseSC -r win-x86
-dotnet publish -c Release -r win-arm
-dotnet zip --no-restore -c Release -r win-arm
-dotnet publish -c Release -r win-x64
-dotnet zip --no-restore -c Release -r win-x64
+dotnet publish -c Release -r linux-x64 -t:CreateDeb,CreateRpm,Clean
+dotnet publish -c ReleaseSC -r linux-arm -t:CreateDeb,CreateRpm,Clean
+dotnet publish -c ReleaseSC -r linux-arm64 -t:CreateDeb,CreateRpm,Clean
+dotnet publish -c Release -r osx-x64 -t:CreateZip,Clean
+dotnet publish -c Release -r osx-arm64 -t:CreateZip,Clean
+dotnet publish -c Release -r win-x86 -t:CreateZip,Clean
+dotnet publish -c ReleaseSC -r win-x86 -t:CreateZip,Clean
+dotnet publish -c Release -r win-arm -t:CreateZip,Clean
+dotnet publish -c Release -r win-x64 -t:CreateZip,Clean
 @rem Win32 build must be last because else VS debugging will be broken.
 @echo.
 @echo All platforms and kinds of packages are processed.

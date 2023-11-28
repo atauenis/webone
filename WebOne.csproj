@@ -23,8 +23,10 @@
 	<PropertyGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
 		<PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-x64'">amd64</PackageArchitecture>
 		<PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-arm'">armhf</PackageArchitecture>
+		<PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-armv6'">armhf</PackageArchitecture>
 		<PackageArchitecture Condition="$(RuntimeIdentifier)=='linux-arm64'">arm64</PackageArchitecture>
 		<PackageName>webone.$(PackageVersion).linux-$(PackageArchitecture)</PackageName>
+		<PackageName Condition="$(RuntimeIdentifier)=='linux-armv6'">webone.$(PackageVersion).linux-armv6</PackageName>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="$(RuntimeIdentifier.Contains('win'))">
@@ -54,6 +56,10 @@
 	<PropertyGroup Condition="$(RuntimeIdentifier.Contains('win')) AND $(SelfContained)==true">
 		<PackageName>WebOne.$(PackageVersion).$(RuntimeIdentifier).full.self-contained</PackageName>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Packaging.Targets" Version="0.1.*" />
+	</ItemGroup>
 
 	<ItemGroup Condition="$(SelfContained)==false">
 		<DebDotNetDependencies Include="dotnet-runtime-6.0" />
@@ -146,7 +152,7 @@ fi
 	Enable dirty support for "Transfer-Encoding: chunked" instead of raw length-less transfer. 
 	-->
 	<!--<PropertyGroup>
-	  <DefineConstants>EnableChunkedTransfer</DefineConstants>
+		<DefineConstants>EnableChunkedTransfer</DefineConstants>
 	</PropertyGroup>-->
 
 	<ItemGroup>
