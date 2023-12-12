@@ -26,12 +26,6 @@ namespace WebOne
 			this.inner = inner;
 			UseChunkedTransfer = chunked;
 			//todo: add compression support (and compression + chunked).
-
-#if !EnableChunkedTransfer
-			UseChunkedTransfer = false;
-#else
-			//DOES NOT REALLY WORKING, HELP IS WANTED - @atauenis, 20.11.2023
-#endif
 		}
 
 		public override void Flush()
@@ -57,23 +51,17 @@ namespace WebOne
 			if (UseChunkedTransfer)
 			{
 				// Send chunk
-				Console.WriteLine("Chunked: Write {0} bytes.1", count - offset);
 				byte[] StartBuffer = Encoding.ASCII.GetBytes((count - offset).ToString("X") + "\r\n");
 				byte[] EndBuffer = Encoding.ASCII.GetBytes("\r\n");
+
 				inner.Write(StartBuffer, 0, StartBuffer.Length);
 				inner.Write(buffer, offset, count);
 				inner.Write(EndBuffer, 0, EndBuffer.Length);
-				inner.Flush();
-				Console.WriteLine("Chunked: Write {0} bytes.2", count - offset);
-				//SOMEWHY INTERPRETTED AS PLAIN TEXT - HELP NEED TO SOLVE
 			}
 			else
 			{
 				// Just write the body
 				inner.Write(buffer, offset, count);
-#if EnableChunkedTransfer
-				Console.WriteLine("Plain: Write {0} bytes.", count - offset);
-#endif
 			}
 		}
 
@@ -87,7 +75,6 @@ namespace WebOne
 			if (UseChunkedTransfer)
 			{
 				// Write terminating chunk if need
-				Console.WriteLine("Chunked: Terminate by {0} bytes.1", trailer.Length);
 				byte[] TerminatorStartBuffer = Encoding.ASCII.GetBytes("0\r\n");
 				byte[] TerminatorEndBuffer = Encoding.ASCII.GetBytes(trailer + "\r\n");
 				try
@@ -95,8 +82,7 @@ namespace WebOne
 					inner.Write(TerminatorStartBuffer, 0, TerminatorStartBuffer.Length);
 					inner.Write(TerminatorEndBuffer, 0, TerminatorEndBuffer.Length);
 				}
-				catch { /* Sometimes an connection lost may occur here. */ };
-				Console.WriteLine("Chunked: Terminate by {0} bytes.2", trailer.Length);
+				catch { /* Sometimes an connection lost may occur here. It's not a reason to worry. */ };
 			}
 		}
 

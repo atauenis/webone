@@ -148,13 +148,6 @@ fi
 		</PostRemoveScript>
 	</PropertyGroup>
 
-	<!-- 
-	Enable dirty support for "Transfer-Encoding: chunked" instead of raw length-less transfer. 
-	-->
-	<!--<PropertyGroup>
-		<DefineConstants>EnableChunkedTransfer</DefineConstants>
-	</PropertyGroup>-->
-
 	<ItemGroup>
 		<Compile Remove="EXE\**" />
 		<EmbeddedResource Remove="EXE\**" />

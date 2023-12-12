@@ -62,7 +62,7 @@ namespace WebOne
 				try
 				{
 					ResponseReal.StatusCode = 501;
-					ResponseReal.ProtocolVersion = new Version(1, 0);
+					ResponseReal.ProtocolVersion = new Version(1, 1);
 
 					ResponseReal.ContentType = "text/html";
 					ResponseReal.ContentLength64 = Buffer.Length;

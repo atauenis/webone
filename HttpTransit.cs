@@ -1095,7 +1095,7 @@ namespace WebOne
 						try
 						{
 							ClientResponse.StatusCode = 200;
-							ClientResponse.ProtocolVersion = new Version(1, 0);
+							ClientResponse.ProtocolVersion = new Version(1, 1);
 
 							ClientResponse.ContentType = "application/x-ns-proxy-autoconfig";
 							ClientResponse.ContentLength64 = PacString.Length;
@@ -1116,7 +1116,7 @@ namespace WebOne
 						try
 						{
 							ClientResponse.StatusCode = 200;
-							ClientResponse.ProtocolVersion = new Version(1, 0);
+							ClientResponse.ProtocolVersion = new Version(1, 1);
 
 							ClientResponse.ContentType = "text/plain";
 							ClientResponse.ContentLength64 = Robots.Length;
@@ -1936,7 +1936,7 @@ namespace WebOne
 				if (!ClientResponse.HeadersSent)
 				{
 					ClientResponse.StatusCode = Code;
-					ClientResponse.ProtocolVersion = new Version(1, 0);
+					ClientResponse.ProtocolVersion = new Version(1, 1);
 
 					ClientResponse.ContentType = "text/html";
 					ClientResponse.ContentLength64 = Buffer.Length;
@@ -1997,7 +1997,7 @@ namespace WebOne
 			try
 			{
 				ClientResponse.StatusCode = 302;
-				ClientResponse.ProtocolVersion = new Version(1, 0);
+				ClientResponse.ProtocolVersion = new Version(1, 1);
 
 				ClientResponse.AddHeader("Location", Url302);
 				ClientResponse.ContentType = "text/html";
@@ -2027,9 +2027,10 @@ namespace WebOne
 			try
 			{
 				ClientResponse.StatusCode = 200;
-				ClientResponse.ProtocolVersion = new Version(1, 0);
+				ClientResponse.ProtocolVersion = new Version(1, 1);
 				ClientResponse.ContentType = ContentType;
 				if (DestinationFileName != null) ClientResponse.AddHeader("Content-Disposition", "attachment; filename=\"" + DestinationFileName + "\"");
+				ClientResponse.ContentLength64 = new FileInfo(FileName).Length;
 				FileStream potok = File.OpenRead(FileName);
 				ClientResponse.SendHeaders();
 				potok.CopyTo(ClientResponse.OutputStream);
@@ -2061,12 +2062,14 @@ namespace WebOne
 			try
 			{
 				ClientResponse.StatusCode = 200;
-				ClientResponse.ProtocolVersion = new Version(1, 0);
+				ClientResponse.ProtocolVersion = new Version(1, 1);
 				ClientResponse.ContentType = ContentType;
-				if (Potok.CanSeek) ClientResponse.ContentLength64 = Potok.Length; else ClientResponse.ContentLength64 = -1;
+				if (Potok.CanSeek) { ClientResponse.ContentLength64 = Potok.Length; }
+				else { ClientResponse.ContentLength64 = -1; ClientResponse.AddHeader("Transfer-Encoding", "chunked"); }
 				if (Potok.CanSeek) Potok.Position = 0;
 				ClientResponse.SendHeaders();
 				Potok.CopyTo(ClientResponse.OutputStream);
+				//need to debug better: in Netscape 3 we're got garbaged result with chunk edges not decoded by browser
 				if (Close)
 				{
 					ClientResponse.Close();
@@ -2135,7 +2138,7 @@ namespace WebOne
 				try
 				{
 					ClientResponse.StatusCode = Page.HttpStatusCode;
-					ClientResponse.ProtocolVersion = new Version(1, 0);
+					ClientResponse.ProtocolVersion = new Version(1, 1);
 
 					if (Page.HttpHeaders["Content-Type"] != null)
 						ClientResponse.ContentType = Page.HttpHeaders["Content-Type"];
