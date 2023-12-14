@@ -657,7 +657,7 @@ namespace WebOne
 				}
 
 				//look in Web Archive if 404
-				if (ResponseCode >= 403 && ConfigFile.SearchInArchive && ClientRequest.HttpMethod != "POST" && ClientRequest.HttpMethod != "PUT")
+				if (ResponseCode >= 403 && ConfigFile.SearchInArchive && ClientRequest.HttpMethod != "POST" && ClientRequest.HttpMethod != "PUT" && !Stop)
 				{
 					LookInWebArchive();
 				}
@@ -2065,7 +2065,7 @@ namespace WebOne
 				ClientResponse.ProtocolVersion = new Version(1, 1);
 				ClientResponse.ContentType = ContentType;
 				if (Potok.CanSeek) { ClientResponse.ContentLength64 = Potok.Length; }
-				else { ClientResponse.ContentLength64 = -1; ClientResponse.AddHeader("Transfer-Encoding", "chunked"); }
+				else if(!ConfigFile.UseMsHttpApi) { ClientResponse.ContentLength64 = -1; ClientResponse.AddHeader("Transfer-Encoding", "chunked"); }
 				if (Potok.CanSeek) Potok.Position = 0;
 				ClientResponse.SendHeaders();
 				Potok.CopyTo(ClientResponse.OutputStream);

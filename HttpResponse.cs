@@ -339,10 +339,14 @@ namespace WebOne
 		{
 			get
 			{
-				if (MshttpapiBackend != null) return MshttpapiBackend.OutputStream.CanWrite;
-				if (TcpclientBackend != null) return TcpclientBackend.Connected;
-				if (SslBackend != null) return SslBackend.CanWrite;
-				throw new Exception("Backend is unsupported or not set.");
+				try
+				{
+					if (MshttpapiBackend != null) return MshttpapiBackend.OutputStream.CanWrite;
+					if (TcpclientBackend != null) return TcpclientBackend.Connected;
+					if (SslBackend != null) return SslBackend.CanWrite;
+					throw new Exception("Backend is unsupported or not set.");
+				}
+				catch (ObjectDisposedException) { return false; }
 			}
 		}
 
