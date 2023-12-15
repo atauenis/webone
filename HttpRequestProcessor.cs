@@ -242,6 +242,11 @@ namespace WebOne
 			// Restart processing if the connection is persistent. Or exit if not.
 			if (Request.KeepAlive && Response.KeepAlive)
 			{
+				if (Backend is TcpClient tcpb) if (!tcpb.Connected)
+					{
+						Logger.WriteLine("<Done (connection closed by client).");
+						return;
+					}
 				Logger.WriteLine("<Done.");
 				ProcessClientRequest(Backend, new(), Request.Headers["Host"] ?? "Keep-Alive, no Host");
 				return;

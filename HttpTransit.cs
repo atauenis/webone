@@ -2065,7 +2065,7 @@ namespace WebOne
 				ClientResponse.ProtocolVersion = new Version(1, 1);
 				ClientResponse.ContentType = ContentType;
 				if (Potok.CanSeek) { ClientResponse.ContentLength64 = Potok.Length; }
-				else if(!ConfigFile.UseMsHttpApi) { ClientResponse.ContentLength64 = -1; ClientResponse.AddHeader("Transfer-Encoding", "chunked"); }
+				else { ClientResponse.ContentLength64 = -1; }
 				if (Potok.CanSeek) Potok.Position = 0;
 				ClientResponse.SendHeaders();
 				Potok.CopyTo(ClientResponse.OutputStream);

@@ -131,19 +131,26 @@ namespace WebOne
 			set
 			{
 				contentLength64 = value;
-				if (value < 0 && MshttpapiBackend == null) // Content-Length less than 0 means content with unknown length and chunked transfer
-				{
-#if EnableChunkedTransfer
-					if (Headers["Transfer-Encoding"] == null)
-						AddHeader("Transfer-Encoding", "chunked");
-					else
-						Headers["Transfer-Encoding"] = "chunked";
-#endif
-					return;
-				}
-				if (value < 0 && MshttpapiBackend != null) return;
-				if (value > -1 && MshttpapiBackend != null) { MshttpapiBackend.ContentLength64 = value; }
 
+				if (value < 0)
+				{
+					// Content-Length less than 0 means content with unknown length and chunked transfer
+					if (MshttpapiBackend == null)
+					{
+						if (Headers["Transfer-Encoding"] == null) AddHeader("Transfer-Encoding", "chunked");
+						else Headers["Transfer-Encoding"] = "chunked";
+						return;
+					}
+					else
+					{
+						try { MshttpapiBackend.SendChunked = true; }
+						catch (ProtocolViolationException)
+						{ /* System.Net.ProtocolViolationException: Chunked encoding upload is not supported on the HTTP/1.0 protocol. */ }
+						return;
+					}
+				}
+
+				if (MshttpapiBackend != null) { MshttpapiBackend.ContentLength64 = value; }
 				if (Headers["Content-Length"] == null)
 					AddHeader("Content-Length", contentLength64.ToString());
 				else
@@ -275,6 +282,9 @@ namespace WebOne
 		public void SendHeaders()
 		{
 			if (HeadersSent) throw new InvalidOperationException("HTTP response headers are already sent.");
+
+			if (Headers["Server"] == null && Headers["Via"] == null) Headers.Add("Server", "WebOne/" + Program.Variables["WOVer"]);
+			if (Headers["Connection"] == null) { Headers.Add("Connection", "Keep-Alive"); KeepAlive = true; }
 
 			if (MshttpapiBackend != null)
 			{
