@@ -3,6 +3,7 @@ using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Text;
 
 namespace WebOne
 {
@@ -285,23 +286,23 @@ namespace WebOne
 			}
 			if (TcpclientBackend != null)
 			{
-				StreamWriter ClientStreamWriter = new(TcpclientBackend.GetStream());
-				ClientStreamWriter.WriteLine(ProtocolVersionString + " " + StatusCode + StatusMessage);
-				string HeadersString = Headers.ToString().Replace("\r\n", "\n").Replace("\n\n", "");
-				ClientStreamWriter.WriteLine(HeadersString);
-				ClientStreamWriter.WriteLine();
-				ClientStreamWriter.Flush();
+				//UNDONE: some headers loses with Netscape Navigator
+				//        https://github.com/atauenis/webone/issues/103#issuecomment-1857540943
+				string BufferS = ProtocolVersionString + " " + StatusCode + StatusMessage + "\r\n";
+				BufferS += Headers.ToString();
+				if (!BufferS.EndsWith("\r\n\r\n")) { BufferS += "\r\n\r\n"; }
+				byte[] BufferB = Encoding.ASCII.GetBytes(BufferS);
+				TcpclientBackend.GetStream().Write(BufferB, 0, BufferB.Length);
 				HeadersSent = true;
 				return;
 			}
 			if (SslBackend != null)
 			{
-				StreamWriter ClientStreamWriter = new(SslBackend);
-				ClientStreamWriter.WriteLine(ProtocolVersionString + " " + StatusCode + StatusMessage);
-				string HeadersString = Headers.ToString().Replace("\r\n", "\n").Replace("\n\n", "");
-				ClientStreamWriter.WriteLine(HeadersString);
-				ClientStreamWriter.WriteLine();
-				ClientStreamWriter.Flush();
+				string BufferS = ProtocolVersionString + " " + StatusCode + StatusMessage + "\r\n";
+				BufferS += Headers.ToString();
+				if (!BufferS.EndsWith("\r\n\r\n")) { BufferS += "\r\n\r\n"; }
+				byte[] BufferB = Encoding.ASCII.GetBytes(BufferS);
+				SslBackend.Write(BufferB, 0, BufferB.Length);
 				HeadersSent = true;
 				return;
 			}
