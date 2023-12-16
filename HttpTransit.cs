@@ -169,10 +169,13 @@ namespace WebOne
 				}
 
 				//check for HTTP/1.0-only client
-				if (!string.IsNullOrWhiteSpace(ClientRequest.Headers["User-Agent"]) && CheckStringRegExp(ClientRequest.Headers["User-Agent"], ConfigFile.Http10Only.ToArray()))
+				/*if (!string.IsNullOrWhiteSpace(ClientRequest.Headers["User-Agent"]) && CheckStringRegExp(ClientRequest.Headers["User-Agent"], ConfigFile.Http10Only.ToArray()))
 				{ ClientResponse.ProtocolVersion = new Version(1, 0); }
 				else
-				{ ClientResponse.ProtocolVersion = new Version(1, 1); }
+				{*/
+				ClientResponse.ProtocolVersion = ClientRequest.ProtocolVersion;
+				/*}*/
+				//UNDONE: think about ConfigFile.Http10Only work! Not need to ban complex headers for all http/1.0 clients, some like netscape 3/4 can eat "content-type" from http/1.1
 
 				//get proxy's IP address
 				if (ClientRequest.LocalEndPoint.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
@@ -1095,7 +1098,7 @@ namespace WebOne
 						try
 						{
 							ClientResponse.StatusCode = 200;
-							ClientResponse.ProtocolVersion = new Version(1, 1);
+							//ClientResponse.ProtocolVersion = new Version(1, 1);
 
 							ClientResponse.ContentType = "application/x-ns-proxy-autoconfig";
 							ClientResponse.ContentLength64 = PacString.Length;
@@ -1116,7 +1119,7 @@ namespace WebOne
 						try
 						{
 							ClientResponse.StatusCode = 200;
-							ClientResponse.ProtocolVersion = new Version(1, 1);
+							//ClientResponse.ProtocolVersion = new Version(1, 1);
 
 							ClientResponse.ContentType = "text/plain";
 							ClientResponse.ContentLength64 = Robots.Length;
@@ -1936,7 +1939,7 @@ namespace WebOne
 				if (!ClientResponse.HeadersSent)
 				{
 					ClientResponse.StatusCode = Code;
-					ClientResponse.ProtocolVersion = new Version(1, 1);
+					//ClientResponse.ProtocolVersion = new Version(1, 1);
 
 					ClientResponse.ContentType = "text/html";
 					ClientResponse.ContentLength64 = Buffer.Length;
@@ -1997,7 +2000,7 @@ namespace WebOne
 			try
 			{
 				ClientResponse.StatusCode = 302;
-				ClientResponse.ProtocolVersion = new Version(1, 1);
+				//ClientResponse.ProtocolVersion = new Version(1, 1);
 
 				ClientResponse.AddHeader("Location", Url302);
 				ClientResponse.ContentType = "text/html";
@@ -2027,7 +2030,7 @@ namespace WebOne
 			try
 			{
 				ClientResponse.StatusCode = 200;
-				ClientResponse.ProtocolVersion = new Version(1, 1);
+				//ClientResponse.ProtocolVersion = new Version(1, 1);
 				ClientResponse.ContentType = ContentType;
 				if (DestinationFileName != null) ClientResponse.AddHeader("Content-Disposition", "attachment; filename=\"" + DestinationFileName + "\"");
 				ClientResponse.ContentLength64 = new FileInfo(FileName).Length;
@@ -2062,7 +2065,7 @@ namespace WebOne
 			try
 			{
 				ClientResponse.StatusCode = 200;
-				ClientResponse.ProtocolVersion = new Version(1, 1);
+				//ClientResponse.ProtocolVersion = new Version(1, 1);
 				ClientResponse.ContentType = ContentType;
 				if (Potok.CanSeek) { ClientResponse.ContentLength64 = Potok.Length; }
 				else { ClientResponse.ContentLength64 = -1; }
@@ -2138,7 +2141,7 @@ namespace WebOne
 				try
 				{
 					ClientResponse.StatusCode = Page.HttpStatusCode;
-					ClientResponse.ProtocolVersion = new Version(1, 1);
+					//ClientResponse.ProtocolVersion = new Version(1, 1);
 
 					if (Page.HttpHeaders["Content-Type"] != null)
 						ClientResponse.ContentType = Page.HttpHeaders["Content-Type"];

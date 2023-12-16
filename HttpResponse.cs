@@ -132,22 +132,35 @@ namespace WebOne
 			{
 				contentLength64 = value;
 
-				if (value < 0)
+				if (value < 0) // Content-Length less than 0 means stream with unknown length.
 				{
-					// Content-Length less than 0 means content with unknown length and chunked transfer
-					if (MshttpapiBackend == null)
+					if (ProtocolVersion == new Version(1, 1))
 					{
-						if (Headers["Transfer-Encoding"] == null) AddHeader("Transfer-Encoding", "chunked");
-						else Headers["Transfer-Encoding"] = "chunked";
-						return;
+						// Enable chunked transfer (HTTP/1.1 only).
+						if (MshttpapiBackend == null)
+						{
+							if (Headers["Transfer-Encoding"] == null) AddHeader("Transfer-Encoding", "chunked");
+							else Headers["Transfer-Encoding"] = "chunked";
+							return;
+						}
+						else
+						{
+							MshttpapiBackend.SendChunked = true;
+							return;
+						}
 					}
 					else
 					{
-						try { MshttpapiBackend.SendChunked = true; }
-						catch (ProtocolViolationException)
-						{ /* System.Net.ProtocolViolationException: Chunked encoding upload is not supported on the HTTP/1.0 protocol. */ }
+						// "Chunked encoding upload is not supported on the HTTP/1.0 protocol."
+						// With MSHTTPAPI backend will cause ProtocolViolationException, with TCP backend will result in garbaged content.
+						// So simply send as is if version is old.
+						// Length-less transfers are incompatible with persistent connections. That's why chunks were introduced in HTTP/1.1.
+						KeepAlive = false;
+						if (Headers["Connection"] == null) AddHeader("Connection", "Close");
+						else Headers["Connection"] = "Close";
 						return;
 					}
+
 				}
 
 				if (MshttpapiBackend != null) { MshttpapiBackend.ContentLength64 = value; }
@@ -197,7 +210,7 @@ namespace WebOne
 					if (outputStream is HttpResponseContentStream) return outputStream; //already configured
 
 					// Set up HttpResponseContentStream according to headers data (transfer-encoding)
-					outputStream = new HttpResponseContentStream(outputStream, ContentLength64 < 0);
+					outputStream = new HttpResponseContentStream(outputStream, (ContentLength64 < 0 && ProtocolVersion == new Version(1, 1)));
 					return outputStream;
 				}
 				else { throw new InvalidOperationException("Call SendHeaders() first before sending body."); }
@@ -296,8 +309,6 @@ namespace WebOne
 			}
 			if (TcpclientBackend != null)
 			{
-				//UNDONE: some headers loses with Netscape Navigator
-				//        https://github.com/atauenis/webone/issues/103#issuecomment-1857540943
 				string BufferS = ProtocolVersionString + " " + StatusCode + StatusMessage + "\r\n";
 				BufferS += Headers.ToString();
 				if (!BufferS.EndsWith("\r\n\r\n")) { BufferS += "\r\n\r\n"; }
