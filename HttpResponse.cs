@@ -181,7 +181,7 @@ namespace WebOne
 			set
 			{
 				contentType = value;
-				if (ProtocolVersion < new Version(1, 1))
+				if (SimpleContentType)
 				{
 					//strip RFC 2068 §14.18 to RFC 1945 §10.5
 					if (contentType.Contains(';')) contentType = contentType.Substring(0, contentType.IndexOf(';'));
@@ -195,6 +195,11 @@ namespace WebOne
 					Headers["Content-Type"] = contentType;
 			}
 		}
+
+		/// <summary>
+		/// Gets or sets value, meaning use of HTTP/1.0 style of Content-Type header (<c>true</c>). Set to <c>false</c> to use HTTP/1.1 style.
+		/// </summary>
+		public bool SimpleContentType { get; set; }
 
 		/// <summary>
 		/// Specifies a System.IO.Stream object to which a response body can be written.

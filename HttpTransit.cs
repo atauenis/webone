@@ -169,13 +169,11 @@ namespace WebOne
 				}
 
 				//check for HTTP/1.0-only client
-				/*if (!string.IsNullOrWhiteSpace(ClientRequest.Headers["User-Agent"]) && CheckStringRegExp(ClientRequest.Headers["User-Agent"], ConfigFile.Http10Only.ToArray()))
-				{ ClientResponse.ProtocolVersion = new Version(1, 0); }
-				else
-				{*/
+				if (!string.IsNullOrWhiteSpace(ClientRequest.Headers["User-Agent"]) && CheckStringRegExp(ClientRequest.Headers["User-Agent"], ConfigFile.Http10Only.ToArray()))
+				{ ClientResponse.SimpleContentType = true; }
+
+				//set protocol version
 				ClientResponse.ProtocolVersion = ClientRequest.ProtocolVersion;
-				/*}*/
-				//UNDONE: think about ConfigFile.Http10Only work! Not need to ban complex headers for all http/1.0 clients, some like netscape 3/4 can eat "content-type" from http/1.1
 
 				//get proxy's IP address
 				if (ClientRequest.LocalEndPoint.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
