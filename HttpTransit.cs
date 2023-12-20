@@ -159,6 +159,7 @@ namespace WebOne
 				catch { RequestURL = ClientRequest.Url; };
 
 				string RefererUri = ClientRequest.Headers["Referer"];
+				if (RefererUri == "") RefererUri = null;
 
 				//check for blacklisted URL
 				if (CheckString(RequestURL.ToString(), ConfigFile.UrlBlackList))

@@ -157,7 +157,12 @@ namespace WebOne
 				{
 					// Other lines - request headers, load all of them.
 					if (string.IsNullOrWhiteSpace(HttpRequestLine)) continue;
-					Request.Headers.Add(HttpRequestLine.Substring(0, HttpRequestLine.IndexOf(": ")), HttpRequestLine.Substring(HttpRequestLine.IndexOf(": ") + 2));
+					string HeaderName = HttpRequestLine.Substring(0, HttpRequestLine.IndexOf(": "));
+					string HeaderValue = HttpRequestLine.Substring(HttpRequestLine.IndexOf(": ") + 2);
+					if (HeaderName.Contains('\n')) HeaderName = HeaderName.Substring(0, HeaderName.IndexOf('\n'));
+					if (HeaderValue.Contains('\n')) HeaderValue = HeaderValue.Substring(0, HeaderValue.IndexOf('\n'));
+					Request.Headers.Add(HeaderName, HeaderValue);
+					// The '\n' character removing is need because of Arachne 1.97 bug.
 				}
 			}
 
