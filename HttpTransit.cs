@@ -159,6 +159,7 @@ namespace WebOne
 				catch { RequestURL = ClientRequest.Url; };
 
 				string RefererUri = ClientRequest.Headers["Referer"];
+				if (RefererUri == "") RefererUri = null;
 
 				//check for blacklisted URL
 				if (CheckString(RequestURL.ToString(), ConfigFile.UrlBlackList))
@@ -169,10 +170,11 @@ namespace WebOne
 				}
 
 				//check for HTTP/1.0-only client
-				if(!string.IsNullOrWhiteSpace(ClientRequest.Headers["User-Agent"]) && CheckStringRegExp(ClientRequest.Headers["User-Agent"], ConfigFile.Http10Only.ToArray()))
-				{ ClientResponse.ProtocolVersion = new Version(1, 0); }
-				else
-				{ ClientResponse.ProtocolVersion = new Version(1, 1); }
+				if (!string.IsNullOrWhiteSpace(ClientRequest.Headers["User-Agent"]) && CheckStringRegExp(ClientRequest.Headers["User-Agent"], ConfigFile.Http10Only.ToArray()))
+				{ ClientResponse.SimpleContentType = true; }
+
+				//set protocol version
+				ClientResponse.ProtocolVersion = ClientRequest.ProtocolVersion;
 
 				//get proxy's IP address
 				if (ClientRequest.LocalEndPoint.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
@@ -657,7 +659,7 @@ namespace WebOne
 				}
 
 				//look in Web Archive if 404
-				if (ResponseCode >= 403 && ConfigFile.SearchInArchive && ClientRequest.HttpMethod != "POST" && ClientRequest.HttpMethod != "PUT")
+				if (ResponseCode >= 403 && ConfigFile.SearchInArchive && ClientRequest.HttpMethod != "POST" && ClientRequest.HttpMethod != "PUT" && !Stop)
 				{
 					LookInWebArchive();
 				}
@@ -838,10 +840,40 @@ namespace WebOne
 						return;
 					case "/!img-test":
 					case "/!img-test/":
-						SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
+						if (ConfigFile.EnableManualConverting)
+						{
+							SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
+							return;
+						}
+						else
+						{
+							SendError(200, @"ImageMagick test.<br><img src=""/!imagemagicktest.gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
+							return;
+						}
+					case "/!imagemagicktest.gif":
+						foreach (Converter Cvt in ConfigFile.Converters)
+						{
+							if (Cvt.Executable == "convert" && !Cvt.SelfDownload)
+							{
+								var SrcStream = File.OpenRead("logo.webp");
+								SendStream(Cvt.Run(Log, SrcStream, "", "", "gif", "https://github.com/atauenis/webone/"), "image/gif", true);
+								return;
+							}
+						}
+						SendInfoPage("WebOne: ImageMagick error",
+						"Error",
+						"<p>ImageMagick's <b>convert</b> utility is not properly registered in <b>[Converters]</b> section of proxy configuration.</p>" +
+						"<p>Make sure that the line is present in <code>[Converters]</code> section of configuration: <code>convert %SRC% %ARG1% %DESTEXT%:- %ARG2%</code></p>",
+						500);
 						return;
 					case "/!convert":
 					case "/!convert/":
+						if (!ConfigFile.EnableManualConverting)
+						{
+							SendInfoPage("WebOne: Feature disabled", "Feature disabled", "Manual file converting is disabled for security purposes.<br>Proxy administrator can enable it via <code>[Server]</code> section, <code>EnableManualConverting</code> option.", 500);
+							return;
+						}
+
 						string SrcUrl = "", Src = "", Dest = "xbm", DestMime = "image/x-xbitmap", Converter = "convert", Args1 = "", Args2 = "";
 
 						//parse URL
@@ -1065,7 +1097,7 @@ namespace WebOne
 						try
 						{
 							ClientResponse.StatusCode = 200;
-							ClientResponse.ProtocolVersion = new Version(1, 0);
+							//ClientResponse.ProtocolVersion = new Version(1, 1);
 
 							ClientResponse.ContentType = "application/x-ns-proxy-autoconfig";
 							ClientResponse.ContentLength64 = PacString.Length;
@@ -1086,7 +1118,7 @@ namespace WebOne
 						try
 						{
 							ClientResponse.StatusCode = 200;
-							ClientResponse.ProtocolVersion = new Version(1, 0);
+							//ClientResponse.ProtocolVersion = new Version(1, 1);
 
 							ClientResponse.ContentType = "text/plain";
 							ClientResponse.ContentLength64 = Robots.Length;
@@ -1906,7 +1938,7 @@ namespace WebOne
 				if (!ClientResponse.HeadersSent)
 				{
 					ClientResponse.StatusCode = Code;
-					ClientResponse.ProtocolVersion = new Version(1, 0);
+					//ClientResponse.ProtocolVersion = new Version(1, 1);
 
 					ClientResponse.ContentType = "text/html";
 					ClientResponse.ContentLength64 = Buffer.Length;
@@ -1967,7 +1999,7 @@ namespace WebOne
 			try
 			{
 				ClientResponse.StatusCode = 302;
-				ClientResponse.ProtocolVersion = new Version(1, 0);
+				//ClientResponse.ProtocolVersion = new Version(1, 1);
 
 				ClientResponse.AddHeader("Location", Url302);
 				ClientResponse.ContentType = "text/html";
@@ -1997,9 +2029,10 @@ namespace WebOne
 			try
 			{
 				ClientResponse.StatusCode = 200;
-				ClientResponse.ProtocolVersion = new Version(1, 0);
+				//ClientResponse.ProtocolVersion = new Version(1, 1);
 				ClientResponse.ContentType = ContentType;
 				if (DestinationFileName != null) ClientResponse.AddHeader("Content-Disposition", "attachment; filename=\"" + DestinationFileName + "\"");
+				ClientResponse.ContentLength64 = new FileInfo(FileName).Length;
 				FileStream potok = File.OpenRead(FileName);
 				ClientResponse.SendHeaders();
 				potok.CopyTo(ClientResponse.OutputStream);
@@ -2031,12 +2064,14 @@ namespace WebOne
 			try
 			{
 				ClientResponse.StatusCode = 200;
-				ClientResponse.ProtocolVersion = new Version(1, 0);
+				//ClientResponse.ProtocolVersion = new Version(1, 1);
 				ClientResponse.ContentType = ContentType;
-				if (Potok.CanSeek) ClientResponse.ContentLength64 = Potok.Length;
+				if (Potok.CanSeek) { ClientResponse.ContentLength64 = Potok.Length; }
+				else { ClientResponse.ContentLength64 = -1; }
 				if (Potok.CanSeek) Potok.Position = 0;
 				ClientResponse.SendHeaders();
 				Potok.CopyTo(ClientResponse.OutputStream);
+				//need to debug better: in Netscape 3 we're got garbaged result with chunk edges not decoded by browser
 				if (Close)
 				{
 					ClientResponse.Close();
@@ -2105,7 +2140,7 @@ namespace WebOne
 				try
 				{
 					ClientResponse.StatusCode = Page.HttpStatusCode;
-					ClientResponse.ProtocolVersion = new Version(1, 0);
+					//ClientResponse.ProtocolVersion = new Version(1, 1);
 
 					if (Page.HttpHeaders["Content-Type"] != null)
 						ClientResponse.ContentType = Page.HttpHeaders["Content-Type"];

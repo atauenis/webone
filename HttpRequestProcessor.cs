@@ -157,7 +157,12 @@ namespace WebOne
 				{
 					// Other lines - request headers, load all of them.
 					if (string.IsNullOrWhiteSpace(HttpRequestLine)) continue;
-					Request.Headers.Add(HttpRequestLine.Substring(0, HttpRequestLine.IndexOf(": ")), HttpRequestLine.Substring(HttpRequestLine.IndexOf(": ") + 2));
+					string HeaderName = HttpRequestLine.Substring(0, HttpRequestLine.IndexOf(": "));
+					string HeaderValue = HttpRequestLine.Substring(HttpRequestLine.IndexOf(": ") + 2);
+					if (HeaderName.Contains('\n')) HeaderName = HeaderName.Substring(0, HeaderName.IndexOf('\n'));
+					if (HeaderValue.Contains('\n')) HeaderValue = HeaderValue.Substring(0, HeaderValue.IndexOf('\n'));
+					Request.Headers.Add(HeaderName, HeaderValue);
+					// The '\n' character removing is need because of Arachne 1.97 bug.
 				}
 			}
 
@@ -242,6 +247,11 @@ namespace WebOne
 			// Restart processing if the connection is persistent. Or exit if not.
 			if (Request.KeepAlive && Response.KeepAlive)
 			{
+				if (Backend is TcpClient tcpb) if (!tcpb.Connected)
+					{
+						Logger.WriteLine("<Done (connection closed by client).");
+						return;
+					}
 				Logger.WriteLine("<Done.");
 				ProcessClientRequest(Backend, new(), Request.Headers["Host"] ?? "Keep-Alive, no Host");
 				return;

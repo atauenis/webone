@@ -3,6 +3,7 @@ using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Text;
 
 namespace WebOne
 {
@@ -123,22 +124,51 @@ namespace WebOne
 		/// <summary>
 		/// Gets or sets the number of bytes in the body data included in the response.
 		/// </summary>
-		/// <returns>The value of the response's Content-Length header.</returns>
+		/// <returns>The value of the response's Content-Length header. Or &quot;-1&quot; to use chunked transfer.</returns>
 		public long ContentLength64
 		{
 			get => contentLength64;
 			set
 			{
 				contentLength64 = value;
-				if (MshttpapiBackend != null) MshttpapiBackend.ContentLength64 = contentLength64;
 
+				if (value < 0) // Content-Length less than 0 means stream with unknown length.
+				{
+					if (ProtocolVersion == new Version(1, 1))
+					{
+						// Enable chunked transfer (HTTP/1.1 only).
+						if (MshttpapiBackend == null)
+						{
+							if (Headers["Transfer-Encoding"] == null) AddHeader("Transfer-Encoding", "chunked");
+							else Headers["Transfer-Encoding"] = "chunked";
+							return;
+						}
+						else
+						{
+							MshttpapiBackend.SendChunked = true;
+							return;
+						}
+					}
+					else
+					{
+						// "Chunked encoding upload is not supported on the HTTP/1.0 protocol."
+						// With MSHTTPAPI backend will cause ProtocolViolationException, with TCP backend will result in garbaged content.
+						// So simply send as is if version is old.
+						// Length-less transfers are incompatible with persistent connections. That's why chunks were introduced in HTTP/1.1.
+						KeepAlive = false;
+						if (Headers["Connection"] == null) AddHeader("Connection", "Close");
+						else Headers["Connection"] = "Close";
+						return;
+					}
+
+				}
+
+				if (MshttpapiBackend != null) { MshttpapiBackend.ContentLength64 = value; }
 				if (Headers["Content-Length"] == null)
 					AddHeader("Content-Length", contentLength64.ToString());
 				else
 					Headers["Content-Length"] = contentLength64.ToString();
 			}
-
-			//think about chunked transfers with unknown content length
 		}
 
 		/// <summary>
@@ -151,7 +181,7 @@ namespace WebOne
 			set
 			{
 				contentType = value;
-				if (ProtocolVersion < new Version(1, 1))
+				if (SimpleContentType)
 				{
 					//strip RFC 2068 §14.18 to RFC 1945 §10.5
 					if (contentType.Contains(';')) contentType = contentType.Substring(0, contentType.IndexOf(';'));
@@ -167,6 +197,11 @@ namespace WebOne
 		}
 
 		/// <summary>
+		/// Gets or sets value, meaning use of HTTP/1.0 style of Content-Type header (<c>true</c>). Set to <c>false</c> to use HTTP/1.1 style.
+		/// </summary>
+		public bool SimpleContentType { get; set; }
+
+		/// <summary>
 		/// Specifies a System.IO.Stream object to which a response body can be written.
 		/// </summary>
 		/// <returns>A System.IO.Stream object to which a response body can be written.</returns>
@@ -174,10 +209,16 @@ namespace WebOne
 		{
 			get
 			{
-				if (false) throw new InvalidOperationException("Content-Length not set."); //todo in future
+				if (HeadersSent)
+				{
+					if (MshttpapiBackend != null) return outputStream; //MsHttpApi processes everything itself
+					if (outputStream is HttpResponseContentStream) return outputStream; //already configured
 
-				if (HeadersSent) return outputStream;
-				else throw new InvalidOperationException("Call SendHeaders() first before sending body.");
+					// Set up HttpResponseContentStream according to headers data (transfer-encoding)
+					outputStream = new HttpResponseContentStream(outputStream, (ContentLength64 < 0 && ProtocolVersion == new Version(1, 1)));
+					return outputStream;
+				}
+				else { throw new InvalidOperationException("Call SendHeaders() first before sending body."); }
 			}
 			set
 			{ outputStream = value; }
@@ -239,7 +280,7 @@ namespace WebOne
 		public HttpResponse(SslStream Backend)
 		{
 			SslBackend = Backend;
-			outputStream = Backend;
+			OutputStream = Backend;
 			ProtocolVersion = new Version(1, 1);
 
 			Headers = new WebHeaderCollection();
@@ -260,6 +301,9 @@ namespace WebOne
 		{
 			if (HeadersSent) throw new InvalidOperationException("HTTP response headers are already sent.");
 
+			if (Headers["Server"] == null && Headers["Via"] == null) Headers.Add("Server", "WebOne/" + Program.Variables["WOVer"]);
+			if (Headers["Connection"] == null) { Headers.Add("Connection", "Keep-Alive"); KeepAlive = true; }
+
 			if (MshttpapiBackend != null)
 			{
 				MshttpapiBackend.StatusCode = StatusCode;
@@ -270,23 +314,21 @@ namespace WebOne
 			}
 			if (TcpclientBackend != null)
 			{
-				StreamWriter ClientStreamWriter = new(TcpclientBackend.GetStream());
-				ClientStreamWriter.WriteLine(ProtocolVersionString + " " + StatusCode + StatusMessage);
-				string HeadersString = Headers.ToString().Replace("\r\n", "\n").Replace("\n\n", "");
-				ClientStreamWriter.WriteLine(HeadersString);
-				ClientStreamWriter.WriteLine();
-				ClientStreamWriter.Flush();
+				string BufferS = ProtocolVersionString + " " + StatusCode + StatusMessage + "\r\n";
+				BufferS += Headers.ToString();
+				if (!BufferS.EndsWith("\r\n\r\n")) { BufferS += "\r\n\r\n"; }
+				byte[] BufferB = Encoding.ASCII.GetBytes(BufferS);
+				TcpclientBackend.GetStream().Write(BufferB, 0, BufferB.Length);
 				HeadersSent = true;
 				return;
 			}
 			if (SslBackend != null)
 			{
-				StreamWriter ClientStreamWriter = new(SslBackend);
-				ClientStreamWriter.WriteLine(ProtocolVersionString + " " + StatusCode + StatusMessage);
-				string HeadersString = Headers.ToString().Replace("\r\n", "\n").Replace("\n\n", "");
-				ClientStreamWriter.WriteLine(HeadersString);
-				ClientStreamWriter.WriteLine();
-				ClientStreamWriter.Flush();
+				string BufferS = ProtocolVersionString + " " + StatusCode + StatusMessage + "\r\n";
+				BufferS += Headers.ToString();
+				if (!BufferS.EndsWith("\r\n\r\n")) { BufferS += "\r\n\r\n"; }
+				byte[] BufferB = Encoding.ASCII.GetBytes(BufferS);
+				SslBackend.Write(BufferB, 0, BufferB.Length);
 				HeadersSent = true;
 				return;
 			}
@@ -302,13 +344,15 @@ namespace WebOne
 			if (MshttpapiBackend != null) { MshttpapiBackend.Close(); return; }
 			if (TcpclientBackend != null)
 			{
-				TcpclientBackend.GetStream().Flush();
+				if (outputStream is HttpResponseContentStream) (outputStream as HttpResponseContentStream).WriteTerminator();
+				if (TcpclientBackend.Connected) TcpclientBackend.GetStream().Flush();
 				if (!KeepAlive) TcpclientBackend.Close();
 				return;
 			}
 			if (SslBackend != null)
 			{
-				SslBackend.Flush();
+				if (outputStream is HttpResponseContentStream) (outputStream as HttpResponseContentStream).WriteTerminator();
+				if (SslBackend.CanWrite) SslBackend.Flush();
 				if (!KeepAlive) SslBackend.Close();
 				return;
 			}
@@ -322,10 +366,14 @@ namespace WebOne
 		{
 			get
 			{
-				if (MshttpapiBackend != null) return MshttpapiBackend.OutputStream.CanWrite;
-				if (TcpclientBackend != null) return TcpclientBackend.Connected;
-				if (SslBackend != null) return SslBackend.CanWrite;
-				throw new Exception("Backend is unsupported or not set.");
+				try
+				{
+					if (MshttpapiBackend != null) return MshttpapiBackend.OutputStream.CanWrite;
+					if (TcpclientBackend != null) return TcpclientBackend.Connected;
+					if (SslBackend != null) return SslBackend.CanWrite;
+					throw new Exception("Backend is unsupported or not set.");
+				}
+				catch (ObjectDisposedException) { return false; }
 			}
 		}
 
