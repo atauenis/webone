@@ -7,37 +7,29 @@ echo -e "__ |/ |/ //  __/  /_/ / /_/ /  / / /  __/"
 echo -e "____/|__/ \\___//_.___/\\____//_/ /_/\\___/ "
 echo -e "----------------------------------------"
 echo -e "                    by Alexander Tauenis"
-echo -e "\n\033[0m\n"
+echo -e "\n\033[0m"
 RD="$(cd $(dirname "$0") && pwd)"
 SERVICE="
-[Unit]
-Description=WebOne HTTP(S) Proxy Server
-Documentation=https://github.com/atauenis/webone/wiki/
-Requires=network-online.target
-After=network-online.target
-
-[Service]
-Type=simple
-DynamicUser=yes
-Environment="HOME=/tmp/"
-ExecStart=/usr/local/bin/webone --daemon -cfg "/etc/webone/webone.conf"
-ReadWriteDirectories=-/var/log/
-TimeoutStopSec=10
-Restart=on-failure
-RestartSec=5
-StartLimitInterval=5s
-StartLimitBurst=3
-
-[Install]
-WantedBy=default.target
-"
+[Unit]\n
+Description=WebOne HTTP(S) Proxy Server\nDocumentation=https://github.com/atauenis/webone/wiki/\nRequires=network-online.target\nAfter=network-online.target\n
+\n
+[Service]\nType=simple\nDynamicUser=yes\nEnvironment="HOME=/tmp/"\nExecStart=/usr/local/bin/webone --daemon -cfg "/etc/webone/webone.conf"\nReadWriteDirectories=-/var/log/\nTimeoutStopSec=10\nRestart=on-failure\nRestartSec=5\nStartLimitInterval=5s\nStartLimitBurst=3\n
+\n
+[Install]\nWantedBy=default.target\n"
+# check if the necessary utilities are installed and accessible
+if ! command -v git &> /dev/null; then
+    echo -e "\033[1;31m(!) please, install git\033[0m\n"
+    exit 0
+fi
+# getting things ready
 echo -e "\033[1;35m- PREPARE\033[0m\n"
 if [ ! -d "$RD/webone" ]; then
+    git config --global http.version HTTP/1.1
     git clone -b master --depth=1 --single-branch https://github.com/atauenis/webone.git && cd webone
     git config pull.rebase false
-else 
+else
     cd "$RD/webone" && git pull
-fi 
+fi
 cd $RD
 echo -e "\n\033[1;35m- INSTALLATION\033[0m\n"
 systemctl stop webone > /dev/null 2>&1
@@ -54,7 +46,9 @@ if [ -d "/etc/webone" ]; then
     echo -e "- entering /etc/webone"
     cd /etc/webone
     rm ./webone.conf.old > /dev/null 2>&1
-    mv ./webone.conf ./webone.conf.old
+    if [ -f "./webone.conf" ]; then
+        mv ./webone.conf ./webone.conf.old
+    fi
 else
     mkdir /etc/webone
     chmod -r 755 /etc/webone
@@ -68,11 +62,13 @@ cd $RD/webone
 rm -rf ./webone-build > /dev/null 2>&1
 # trying to install dotnet
 if [ "$(which dotnet)" == "" ]; then
-    wget https://dot.net/v1/dotnet-install.sh 
+    wget https://dot.net/v1/dotnet-install.sh
     chmod +x ./dotnet-install.sh
     ./dotnet-install.sh -c 7.0
     rm dotnet-install.sh
     ln -s /root/.dotnet/dotnet  /usr/local/bin
+    # optout on telemetry
+    set DOTNET_CLI_TELEMETRY_OPTOUT=1
 fi
 echo -e "\n-- Build\n"
 dotnet build ./WebOne.csproj -r linux-arm64
@@ -91,9 +87,9 @@ else
 fi
 # creating service
 if [ ! -f "/etc/systemd/system/webone.service" ]; then
-    echo $SERVICE > /etc/systemd/system/webone.service
-else 
-    rm webone.service
+    echo -e $SERVICE > /etc/systemd/system/webone.service
+else
+    rm webone.service > /dev/null 2>&1
 fi
 # cleanup
 rm README.md CONTRIBUTING.md  > /dev/null 2>&1
@@ -114,6 +110,6 @@ systemctl status webone
 echo -e "\n-- Cleanup\n"
 cd ..
 dotnet clean WebOne.csproj
-rm -r ./webone-build
+rm -r ./webone-build > /dev/null 2>&1
 echo -e "\n\033[1;35m- ALL DONE\033[0m\n"
 exit 0
