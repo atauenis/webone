@@ -6,7 +6,7 @@
 		<TargetFramework>net6.0</TargetFramework>
 		<Authors>Alexander Tauenis</Authors>
 		<Version>0.16.2</Version>
-		<VersionSuffix></VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
+		<VersionSuffix>-next</VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
 		<PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
 		<Company>World</Company>
 		<Product>WebOne HTTP Proxy Server</Product>
@@ -82,11 +82,19 @@
 
 	<ItemGroup Condition="$(SelfContained)==true">
 		<!--
-		Fix for self-contained debs on Ubuntu 20.xx
+		Fix of .NET armhf/arm64 dependency list for Ubuntu 22.04+, Debian 12+.
 		https://github.com/quamotion/dotnet-packaging/issues/222
+		https://github.com/quamotion/dotnet-packaging/issues/241#issuecomment-1650045249
+		https://github.com/atauenis/webone/issues/111
 		-->
-		<DebDotNetDependencies Remove=" libc6, libgcc1, libgssapi-krb5-2, libstdc++6, zlib1g, libssl1.1 | libssl1.0.2 | libssl1.0.1 | libssl1.0.0 | libssl0.9.8, libicu70 | libicu69 | libicu68 | libicu67 | libicu66 | libicu65 | libicu64 | libicu63 | libicu62 | libicu61 | libicu60 | libicu59 | libicu58 | libicu57 | libicu56 | libicu55 | libicu54 | libicu53 | libicu52" />
-		<DebDotNetDependencies Include="libc6, libgcc1, libgssapi-krb5-2, libstdc++6, zlib1g, libssl3 | libssl1.1 | libssl1.0.2 | libssl1.0.1 | libssl1.0.0 | libssl0.9.8, libicu70 | libicu69 | libicu68 | libicu67 | libicu66 | libicu65 | libicu64 | libicu63 | libicu62 | libicu61 | libicu60 | libicu59 | libicu58 | libicu57 | libicu56 | libicu55 | libicu54 | libicu53 | libicu52" />
+		<DebDotNetDependencies Remove="@(DebDotNetDependencies)" />
+		<DebDotNetDependencies Include="libc6"/>
+		<DebDotNetDependencies Include="libgcc1 | libgcc-s1"/>
+		<DebDotNetDependencies Include="libgssapi-krb5-2"/>
+		<DebDotNetDependencies Include="libstdc++6"/>
+		<DebDotNetDependencies Include="zlib1g"/>
+		<DebDotNetDependencies Include="libssl3 | libssl1.1 | libssl1.0.2 | libssl1.0.1 | libssl1.0.0 | libssl0.9.8"/>
+		<DebDotNetDependencies Include="libicu80 | libicu79 | libicu78 | libicu77 | libicu76 | libicu75 | libicu74 | libicu73 | libicu72 | libicu71 | libicu70 | libicu69 | libicu68 | libicu67 | libicu66 | libicu65 | libicu64 | libicu63 | libicu62 | libicu61 | libicu60 | libicu59 | libicu58 | libicu57 | libicu56 | libicu55 | libicu54 | libicu53 | libicu52"/>
 	</ItemGroup>
 
 	<PropertyGroup>
