@@ -1,8 +1,6 @@
-﻿using Microsoft.VisualBasic.CompilerServices;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Text;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using static WebOne.Program;
 
@@ -57,12 +55,13 @@ namespace WebOne
 					string CommandLineArgs = string.Empty;
 					for (int i = 1; i < Environment.GetCommandLineArgs().Length; i++) { CommandLineArgs += " " + Environment.GetCommandLineArgs()[i]; };
 
-					string StartMsg = string.Format("{0}\tWebOne {1}{5} ({2}{3}, Runtime {4}) log started.",
+					string StartMsg = string.Format("{0}\tWebOne {1}{6} ({2} {3}, Runtime {4} {5}) log started.",
 						DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
-						System.Reflection.Assembly.GetExecutingAssembly().GetName().Version,
-						Environment.OSVersion.Platform,
-						Environment.Is64BitOperatingSystem ? "-64" : "-32",
+						Variables["WOVer"],
+						RuntimeInformation.OSDescription,
+						RuntimeInformation.OSArchitecture,
 						Environment.Version,
+						RuntimeInformation.ProcessArchitecture,
 						CommandLineArgs);
 					LogStreamWriter.WriteLine(StartMsg);
 					Console.WriteLine("Using event log file {0}.", LogFileName);
@@ -127,14 +126,14 @@ namespace WebOne
 
 			if (FirstTime)
 			{
-				timestamp = string.Format("{0}+0", BeginTime.ToString("dd.MM.yyyy HH:mm:ss.fff")); FirstTime = false; 
+				timestamp = string.Format("{0}+0", BeginTime.ToString("dd.MM.yyyy HH:mm:ss.fff")); FirstTime = false;
 			}
 			else
-			{ 
-				timestamp = GetTime(BeginTime); 
+			{
+				timestamp = GetTime(BeginTime);
 			}
 
-			if(displayTimestamp) //e.g. ">GET http://example.com/ (127.0.0.1)"
+			if (displayTimestamp) //e.g. ">GET http://example.com/ (127.0.0.1)"
 			{
 				if (timestamp.Length < 20) //23.02.2021 15:55:58.283+7600010 = 31 character long
 				{
