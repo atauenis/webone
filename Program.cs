@@ -193,8 +193,9 @@ namespace WebOne
 			}
 
 			if (!DefaultPACoverriden) DefaultPAC += DefaultPACfooter;
+			if (!DefaultPACoverriden) ConfigFile.PAC = DefaultPAC;
 
-			Log.WriteLine(false, false, "Configured to http://{1}:{2}/, {3}", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port, Protocols);
+				Log.WriteLine(false, false, "Configured to http://{1}:{2}/, {3}", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port, Protocols);
 
 			//initialize server
 			try
