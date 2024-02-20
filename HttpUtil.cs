@@ -60,7 +60,7 @@ namespace WebOne
 			-> http://127.0.0.1/123     StandardHttp
 
 			GET /http://example.com/123
-			Host: 
+			Host: 127.0.0.1
 			-> http://example.com/123   AlternateProxy
 
 			GET /http://example.com/123
