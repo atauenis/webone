@@ -201,8 +201,8 @@ namespace WebOne
 				};
 				foreach (var entry in Program.Variables) { DefaultVars.TryAdd(entry.Key, entry.Value); }
 
-				//check for local or internal URL
-				if (ClientRequest.Kind == HttpUtil.RequestKind.StandardLocal)
+				//check for internal URL
+				if (ClientRequest.Kind == HttpUtil.RequestKind.StandardHttp)
 				{
 					// Internal URIs
 					string InternalPage = "/";
