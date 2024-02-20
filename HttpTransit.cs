@@ -310,9 +310,13 @@ namespace WebOne
 				}
 
 				//make referer secure if need
-				if (RequestURL.Host == new Uri(RefererUri ?? "about:blank").Host)
-					if (RequestURL.AbsoluteUri.StartsWith("https://") && !RefererUri.StartsWith("https://"))
-						RefererUri = "https" + RefererUri.Substring(4);
+				try
+				{
+					if (RequestURL.Host == new Uri(RefererUri ?? "about:blank").Host)
+						if (RequestURL.AbsoluteUri.StartsWith("https://") && !RefererUri.StartsWith("https://"))
+							RefererUri = "https" + RefererUri.Substring(4);
+				}
+				catch { }
 
 				LastURL = RequestURL.AbsoluteUri;
 				LastContentType = "unknown/unknown"; //will be populated in MakeOutput
