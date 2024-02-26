@@ -1,9 +1,9 @@
-Version: ImageMagick 7.1.1-20 Q8 x64 98bb1d4:20231008 https://imagemagick.org
+Version: ImageMagick 7.1.1-29 Q8 x64 0deac72:20240225 https://imagemagick.org
 Copyright: (C) 1999 ImageMagick Studio LLC
 License: https://imagemagick.org/script/license.php
 Features: Channel-masks(64-bit) Cipher DPC OpenCL OpenMP(2.0) 
 Delegates (built-in): bzlib cairo freetype gslib heic jng jp2 jpeg jxl lcms lqr lzma openexr pangocairo png ps raqm raw rsvg tiff webp xml zip zlib
-Compiler: Visual Studio 2022 (193532217)
+Compiler: Visual Studio 2022 (193833135)
 Usage: convert64 [options ...] file [ [options ...] file ...] [options ...] file
 
 Image Settings:
