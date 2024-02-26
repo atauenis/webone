@@ -131,13 +131,13 @@ namespace WebOne
 		public static RequestKind GetKindOfRequest(string RawUrl, string HostHeader = null, string RefererHeader = null, bool IsCONNECT = false)
 		{
 			string Host = HostHeader ?? "127.0.0.1";
-			int Port = ConfigFile.Port;
+			int Port = 80;
 
 			// Detect port number (if any)
-			if (!Host.StartsWith("/") && Host.Contains(":"))
+			if (!Host.StartsWith("/") && Host.Contains(':'))
 			{
-				Port = int.Parse(Host.Substring(Host.LastIndexOf(":") + 1));
-				Host = Host.Substring(0, Host.LastIndexOf(":"));
+				Port = int.Parse(Host.Substring(Host.LastIndexOf(':') + 1));
+				Host = Host.Substring(0, Host.LastIndexOf(':'));
 			}
 
 			if (RawUrl.StartsWith("/"))
