@@ -970,8 +970,8 @@ namespace WebOne
 										{
 											if (!File.Exists(Src))
 											{
-												if (File.Exists(new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + Src))
-													Src = new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + Src;
+												if (File.Exists(new FileInfo(AppContext.BaseDirectory).DirectoryName + Path.DirectorySeparatorChar + Src))
+													Src = new FileInfo(AppContext.BaseDirectory).DirectoryName + Path.DirectorySeparatorChar + Src;
 												else
 													throw new FileNotFoundException("No such file: " + Src);
 											}

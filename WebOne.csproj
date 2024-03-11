@@ -5,8 +5,8 @@
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net6.0</TargetFramework>
 		<Authors>Alexander Tauenis</Authors>
-		<Version>0.16.3</Version>
-		<VersionSuffix></VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
+		<Version>0.17.0</Version>
+		<VersionSuffix>-pre</VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
 		<PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
 		<Company>World</Company>
 		<Product>WebOne HTTP Proxy Server</Product>
@@ -43,6 +43,15 @@
 		<CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
 		<DebugType>None</DebugType>
 		<DebugSymbols>false</DebugSymbols>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<PublishSingleFile>true</PublishSingleFile>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="$(SelfContained)==true">
+		<PublishTrimmed>true</PublishTrimmed>
+		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="$(Configuration)=='Release' AND !$(RuntimeIdentifier.Contains('linux-arm'))">

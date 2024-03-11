@@ -61,7 +61,7 @@ namespace WebOne
 			Assembly.GetExecutingAssembly().GetName().Version.Major + "." +
 			Assembly.GetExecutingAssembly().GetName().Version.Minor + "." +
 			Assembly.GetExecutingAssembly().GetName().Version.Build
-			//+ "-pre"
+			+ "-pre"
 			);
 			Variables.Add("WOSystem", Environment.OSVersion.ToString());
 
@@ -1023,7 +1023,7 @@ namespace WebOne
 				default:
 				case PlatformID.Unix:
 					CurrentDirConfigFile = "./webone.conf";
-					DefaultConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + "/webone.conf";
+					DefaultConfigFile = new FileInfo(AppContext.BaseDirectory).DirectoryName + "/webone.conf";
 					UserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.config/webone/webone.conf";
 					CommonConfigFile = "/etc/webone.conf";
 
@@ -1034,7 +1034,7 @@ namespace WebOne
 					break;
 				case PlatformID.Win32NT:
 					CurrentDirConfigFile = @".\webone.conf";
-					DefaultConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + @"\webone.conf";
+					DefaultConfigFile = new FileInfo(AppContext.BaseDirectory).DirectoryName + @"\webone.conf";
 					UserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\WebOne\webone.conf";
 					CommonConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + @"\WebOne\webone.conf";
 					break;
