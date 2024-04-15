@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Security;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -63,7 +64,7 @@ namespace WebOne
 			Assembly.GetExecutingAssembly().GetName().Version.Build
 			+ "-pre"
 			);
-			Variables.Add("WOSystem", Environment.OSVersion.ToString());
+			Variables.Add("WOSystem", RuntimeInformation.OSDescription);
 
 			Console.Title = "WebOne";
 			Console.WriteLine("WebOne HTTP Proxy Server {0}\nhttps://github.com/atauenis/webone\n\n", Variables["WOVer"]);

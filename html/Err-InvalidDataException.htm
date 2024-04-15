@@ -1,0 +1,16 @@
+﻿<html>
+<title>WebOne: Decompression failed</title>
+<meta charset="utf-8"/>
+<link href="http://%ServerName%/webone.css" rel="stylesheet" />
+<body>
+<h1>Invalid data has been recieved</h1>
+<p><big>Cannot decode HTTP data.</big></p>+
+<ul>Remote server may use unsupported HTTP compression algorithm.
+<li>Try to set AllowHttpCompression=false option in configuration file to skip HTTP decompression, which may cause this error due to .NET bug.</li>
+<li>Installing a newer version of .NET Runtime also <i>may</i> solve the problem.</li>
+<li>If you are unable to load any pages, check your proxy server's network connection.</li>
+</ul>
+<br>URL: %URL%
+<hr>WebOne Proxy Server %WOVer% <br>on %WOSystem%
+</body>
+</html>

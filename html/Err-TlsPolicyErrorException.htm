@@ -1,0 +1,18 @@
+﻿<html>
+<title>WebOne: connection error</title>
+<meta charset="utf-8"/>
+<link href="http://%ServerName%/webone.css" rel="stylesheet" />
+<body>
+<h1>Secure connection could not be established</h1>
+<p><big>%ErrorMessage%.</big></p>
+<ul><li>The page you are trying to view cannot be shown because the authenticity of the received data could not be verified.</li>
+<li>Make sure that the OS on the proxy server have all updates installed.</li>
+<li>Check date and time on the proxy server.</li>
+<li>Verify that the proxy server operating system have proper support for TLS/SSL version and chiphers used on the site.</li>
+<li>Try to use an <a href="http://web.archive.org/web/2/%URL%">archived copy</a> of the web site.</li>
+<li>To disable this security check, set <q><b>ValidateCertificates=no</b></q> in proxy configuration file. But this will make the proxy less secure, do this at your own risk.</li>
+</ul>
+<br>URL: %URL%
+<hr>WebOne Proxy Server %WOVer% <br>on %WOSystem%
+</body>
+</html>
