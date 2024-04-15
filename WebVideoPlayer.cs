@@ -237,7 +237,7 @@ namespace WebOne
 					// (http://www.jmcgowan.com/aviweb.html)
 					// also: https://web.archive.org/web/19990117015933/http://www.microsoft.com/devonly/tech/amov1doc/amsdk008.htm
 					// tries to work also in IE 3-6.
-					string PlaceholderUrl = "http://www.linuxtopia.org/HowToGuides/HTML_tutorials/graphics/moonflag.gif";
+					string PlaceholderUrl = "/nodynsrc.gif";
 					Page.Content = "<center><IMG DYNSRC='" + VideoUrl + "' CONTROLS START='FILEOPEN' SRC='" + PlaceholderUrl + "'></center>";
 					Page.AddCss = false;
 					Page.Title = "Video player - Dynamic Image";

@@ -212,6 +212,11 @@ namespace WebOne
 		/// </summary>
 		public static bool EnableManualConverting = true;
 
+		/// <summary>
+		/// Location of internal pages' HTML (CSS, JS, GIF, etc) files
+		/// </summary>
+		public static string ContentDirectory = "./html";
+
 
 
 		/// <summary>

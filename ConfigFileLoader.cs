@@ -276,6 +276,12 @@ namespace WebOne
 								case "EnableManualConverting":
 									ConfigFile.EnableManualConverting = ToBoolean(Option.Value);
 									break;
+								case "ContentDirectory":
+									if (Directory.Exists(Option.Value))
+										ConfigFile.ContentDirectory = Option.Value;
+									else
+										Log.WriteLine(true, false, "Warning: Incorrect ContentDirectory '{0}'.", Option.Value);
+									break;
 								default:
 									Log.WriteLine(true, false, "Warning: Unknown server option {0} in {1}.", Option.Key, Option.Location);
 									break;
