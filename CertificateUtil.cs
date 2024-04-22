@@ -10,7 +10,7 @@ using static WebOne.Program;
 namespace WebOne
 {
 	/// <summary>
-	/// Utilities for manipulating TLS/SSL Certificates and Keys.
+	/// Utilities for manipulating TLS/SSL Certificates and their Keys.
 	/// </summary>
 	static class CertificateUtil
 	{
@@ -56,27 +56,23 @@ namespace WebOne
 
 			// Issue & self-sign the certificate.
 			X509Certificate2 certificate;
-			if (true) //for testing purposes, use custom Signature Generator 
-			{
-				byte[] certSerialNumber = new byte[16];
-				new Random().NextBytes(certSerialNumber);
+			byte[] certSerialNumber = new byte[16];
+			new Random().NextBytes(certSerialNumber);
 
-				X500DistinguishedName certName = new(certSubject);
-				RsaPkcs1SignatureGenerator customSignatureGenerator = new(rsa);
-				certificate = certRequest.Create(
-					certName,
-					customSignatureGenerator,
-					ConfigFile.SslRootValidAfter,
-					ConfigFile.SslRootValidBefore,
-					certSerialNumber);
-			}
-			else //if problems, try .NET Signature Generator without MD5/SHA1 support
-			{
-				/*certificate = certRequest.CreateSelfSigned(
-					ConfigFile.SslRootValidAfter,
-					ConfigFile.SslRootValidBefore);
-					*/
-			}
+			X500DistinguishedName certName = new(certSubject);
+			RsaPkcs1SignatureGenerator customSignatureGenerator = new(rsa);
+			certificate = certRequest.Create(
+				certName,
+				customSignatureGenerator,
+				ConfigFile.SslRootValidAfter,
+				ConfigFile.SslRootValidBefore,
+				certSerialNumber);
+			/*
+			//try .NET Signature Generator without MD5 / SHA1 support
+			certificate = certRequest.CreateSelfSigned(
+				ConfigFile.SslRootValidAfter,
+				ConfigFile.SslRootValidBefore);
+			*/
 
 			// Export the private key.
 			string privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey(), Base64FormattingOptions.InsertLineBreaks);
@@ -177,8 +173,6 @@ namespace WebOne
 
 			// If not found, initialize private key generator & set up a certificate creation request.
 			using RSA rsa = RSA.Create();
-			//CertificateRequest certRequest = new(certSubject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-			//CertificateRequest certRequest = new(certSubject, rsa, certHashAlgorithm, RSASignaturePadding.Pkcs1);
 
 			// Generate an unique serial number.
 			byte[] certSerialNumber = new byte[16];
@@ -186,23 +180,18 @@ namespace WebOne
 
 			// Issue & sign the certificate.
 			X509Certificate2 certificate;
-			/*if (false) //an config file option will be added in future
-			{
-				// set up a certificate creation request.
-				CertificateRequest certRequestAny = new(certSubject, rsa, certHashAlgorithm, RSASignaturePadding.Pkcs1);
-				X500DistinguishedName certName = new(certSubject);
-				RsaPkcs1SignatureGenerator customSignatureGenerator = new(rsa);
-				certificate = certRequestAny.Create(
-					issuerCertificate.SubjectName,
-					customSignatureGenerator,
-					DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildBeforeNow),
-					DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildAfterNow),
-					certSerialNumber);
-			}
-			else
-			{*/
-			// strange, RsaPkcs1SignatureGenerator gives a "sec_error_bad_signature", so use .NET signature generator & SHA256 in some cases.
 			// set up a certificate creation request.
+			CertificateRequest certRequestAny = new(certSubject, rsa, certHashAlgorithm, RSASignaturePadding.Pkcs1);
+			RsaPkcs1SignatureGenerator customSignatureGenerator = new(RootCertificate.GetRSAPrivateKey());
+			certificate = certRequestAny.Create(
+				issuerCertificate.IssuerName,
+				customSignatureGenerator,
+				DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildBeforeNow),
+				DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildAfterNow),
+				certSerialNumber);
+			/*
+			// set up a certificate creation request.
+			// using .NET signature generator & SHA256 only.
 			CertificateRequest certRequestSha256 = new(certSubject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 			certificate = certRequestSha256.Create(
 				issuerCertificate,
@@ -210,21 +199,20 @@ namespace WebOne
 				DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildAfterNow),
 				certSerialNumber
 			);
-			/*}*/
+			*/
 
 			// Export the issued certificate with private key.
 			X509Certificate2 certificateWithKey = new(certificate.CopyWithPrivateKey(rsa).Export(X509ContentType.Pkcs12));
-			/*if (false)
-			{
-				//save to file for debug purposes
-				const string CRT_HEADER = "-----BEGIN CERTIFICATE-----\n";
-				const string CRT_FOOTER = "\n-----END CERTIFICATE-----";
+			/*
+			//save to file for debug purposes
+			const string CRT_HEADER = "-----BEGIN CERTIFICATE-----\n";
+			const string CRT_FOOTER = "\n-----END CERTIFICATE-----";
 
-				// Export the certificate.
-				byte[] exportData = certificate.Export(X509ContentType.Cert);
-				string crt = Convert.ToBase64String(exportData, Base64FormattingOptions.InsertLineBreaks);
-				File.WriteAllText(certSubject + ".crt", CRT_HEADER + crt + CRT_FOOTER);
-			}*/
+			// Export the certificate.
+			byte[] exportData = certificate.Export(X509ContentType.Cert);
+			string crt = Convert.ToBase64String(exportData, Base64FormattingOptions.InsertLineBreaks);
+			File.WriteAllText(certSubject + ".crt", CRT_HEADER + crt + CRT_FOOTER);
+			*/
 
 			// Save the certificate and return it.
 			FakeCertificates.Add(certSubject, certificateWithKey);
