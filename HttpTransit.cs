@@ -100,6 +100,11 @@ namespace WebOne
 							//PAC is always unprotected
 							break;
 						default:
+							if (ConfigFile.OpenForLocalIPs && IsLanIP(ClientRequest.RemoteEndPoint.Address))
+							{
+								Log.WriteLine(" Bypassed authorization of local client.");
+								break;
+							}
 							if (string.IsNullOrEmpty(ClientRequest.Headers["Proxy-Authorization"]))
 							{
 								Log.WriteLine(" Unauthorized client.");

@@ -976,6 +976,21 @@ namespace WebOne
 			return IPs.ToArray();
 		}
 
+		/// <summary>
+		/// Check if IP is inside LAN (behind router)
+		/// </summary>
+		/// <param name="address">The IP Address to check</param>
+		/// <returns><c>True</c> if it's local address or <c>False</c> if it's from Internet</returns>
+		public static bool IsLanIP(IPAddress address)
+		{
+			var ping = new Ping();
+			var rep = ping.Send(address, 100, new byte[] { 1 }, new PingOptions()
+			{
+				DontFragment = true,
+				Ttl = 1
+			});
+			return rep.Status != IPStatus.TtlExpired && rep.Status != IPStatus.TimedOut && rep.Status != IPStatus.TimeExceeded;
+		}
 
 		/// <summary>
 		/// Get this proxy server name and port

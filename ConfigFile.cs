@@ -217,6 +217,11 @@ namespace WebOne
 		/// </summary>
 		public static string ContentDirectory = "./html";
 
+		/// <summary>
+		/// Bypass client authentication for local IPs
+		/// </summary>
+		public static bool OpenForLocalIPs = false;
+
 
 
 		/// <summary>

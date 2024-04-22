@@ -370,6 +370,9 @@ namespace WebOne
 										case "AuthenticateRealm":
 											ConfigFile.AuthenticateRealm = Line.Value;
 											break;
+										case "OpenForLocalIPs":
+											ConfigFile.OpenForLocalIPs = ToBoolean(Line.Value);
+											break;
 										default:
 											Log.WriteLine(true, false, "Warning: Invalid authentication option at {0}.", Line.Location);
 											break;
