@@ -87,11 +87,16 @@ namespace WebOne
 			try
 			{
 				// Perform SSL handshake and establish a inner tunnel
+				SslServerAuthenticationOptions ClientStreamTunnelOptions = new();
+				ClientStreamTunnelOptions.ServerCertificate = Certificate;
+				ClientStreamTunnelOptions.ClientCertificateRequired = false;
+				ClientStreamTunnelOptions.CertificateRevocationCheckMode = X509RevocationMode.NoCheck;
+				ClientStreamTunnelOptions.EnabledSslProtocols = ConfigFile.SslProtocols;
+				ClientStreamTunnelOptions.CipherSuitesPolicy = ConfigFile.SslCipherSuitesPolicy;
+
 				ClientStreamTunnel = new SslStream(ClientStreamReal, false);
-				//ClientStreamTunnel.AuthenticateAsServer(Certificate, false, SslProtocols.Tls | SslProtocols.Ssl3 | SslProtocols.Ssl2, true);
-				//ClientStreamTunnel.AuthenticateAsServer(Certificate, false, SslProtocols.Default, false);
-				//ClientStreamTunnel.AuthenticateAsServer(Certificate, false, SslProtocols.Ssl3, false);
-				ClientStreamTunnel.AuthenticateAsServer(Certificate, false, ConfigFile.SslProtocols, false);
+				ClientStreamTunnel.AuthenticateAsServer(ClientStreamTunnelOptions);
+				
 
 				/* Result:
 				 * Ssl2 with Rc4 128-bit, Md5 128-bit

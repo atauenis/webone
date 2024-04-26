@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Security;
 using static WebOne.Program;
 
 namespace WebOne
@@ -203,8 +205,12 @@ namespace WebOne
 									ConfigFile.ArchiveUrlSuffix = Option.Value;
 									break;
 								case "SecurityProtocols":
-									try { System.Net.ServicePointManager.SecurityProtocol = (System.Net.SecurityProtocolType)(int.Parse(Option.Value)); }
-									catch (NotSupportedException) { Log.WriteLine(true, false, "Warning: Bad TLS version {1} ({0}), using {2} ({2:D}).", Option.Value, (System.Net.SecurityProtocolType)(int.Parse(Option.Value)), System.Net.ServicePointManager.SecurityProtocol); };
+									SecurityProtocolType spt = SecurityProtocolType.SystemDefault;
+									if (!Enum.TryParse(Option.Value, out spt))
+									{
+										Log.WriteLine(true, false, "Warning: Bad TLS version {1} ({0}), using {2} ({2:D}).", Option.Value, spt, ServicePointManager.SecurityProtocol);
+									}
+									ServicePointManager.SecurityProtocol = spt;
 									break;
 								case "UserAgent":
 									ConfigFile.UserAgent = Option.Value;
@@ -439,7 +445,36 @@ namespace WebOne
 									ConfigFile.SslPrivateKey = ExpandMaskedVariables(Option.Value).Replace(@"\\", @"\").Replace("//", "/");
 									break;
 								case "SslProtocols":
-									ConfigFile.SslProtocols = (System.Security.Authentication.SslProtocols)(int.Parse(Option.Value));
+									if (!Enum.TryParse(Option.Value, out ConfigFile.SslProtocols))
+									{
+										Log.WriteLine(true, false, "Warning: incorrect SSL/TLS protocol set '{0}', at {1}.", Option.Value, Option.Location);
+									}
+									break;
+								case "SslCipherSuites":
+									var Suites = Option.Value.Split(',');
+									foreach (var SuiteName in Suites)
+									{
+										if (Enum.TryParse(SuiteName, out TlsCipherSuite Suite))
+										{
+											ConfigFile.SslCipherSuites.Add(Suite);
+										}
+										else
+										{
+											Log.WriteLine(true, false, "Warning: incorrect cipher suite '{0}', at {1}.", SuiteName.Trim(), Option.Location);
+										}
+									}
+
+									try
+									{
+										ConfigFile.SslCipherSuitesPolicy = new CipherSuitesPolicy(ConfigFile.SslCipherSuites);
+									}
+									catch (PlatformNotSupportedException)
+									{
+										ConfigFile.SslCipherSuitesPolicy = null;
+										Log.WriteLine(true, false, "Warning: Order of cipher suites cannot be overriden on this OS, at {0}.", Option.Location);
+										//"Platform is not a Linux system with OpenSSL 1.1.1 or higher or a macOS."
+										//https://learn.microsoft.com/en-us/dotnet/api/system.net.security.ciphersuitespolicy.-ctor?view=net-6.0#exceptions
+									}
 									break;
 								case "SslHashAlgorithm":
 									switch (Option.Value.ToUpper())
