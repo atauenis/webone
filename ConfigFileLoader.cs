@@ -283,8 +283,11 @@ namespace WebOne
 									ConfigFile.EnableManualConverting = ToBoolean(Option.Value);
 									break;
 								case "ContentDirectory":
+									string AltContentDirName = new FileInfo(AppContext.BaseDirectory).DirectoryName + Option.Value;
 									if (Directory.Exists(Option.Value))
 										ConfigFile.ContentDirectory = Option.Value;
+									else if (Directory.Exists(AltContentDirName))
+										ConfigFile.ContentDirectory = AltContentDirName;
 									else
 										Log.WriteLine(true, false, "Warning: Incorrect ContentDirectory '{0}'.", Option.Value);
 									break;
