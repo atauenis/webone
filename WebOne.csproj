@@ -215,6 +215,9 @@ fi
 		<Content Include="webone.logrotate" CopyToPublishDirectory="Always" LinuxFileMode="644">
 			<LinuxPath>/etc/logrotate.d/webone</LinuxPath>
 		</Content>
+		<Content Include="openssl_webone.cnf" CopyToPublishDirectory="Always" LinuxFileMode="644">
+			<LinuxPath>/etc/webone.conf.d/openssl_webone.cnf</LinuxPath>
+		</Content>
 	</ItemGroup>
 
 	<ItemGroup>
