@@ -21,6 +21,22 @@ Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET 6.0 Runtime are required on se
 ## Install
 Manuals about how to set up a WebOne proxy on [Windows](https://github.com/atauenis/webone/wiki/Windows-installation) / [Linux](https://github.com/atauenis/webone/wiki/Linux-installation) / [macOS](https://github.com/atauenis/webone/wiki/MacOS-X-installation) servers are in the Wiki.
 
+### Automation scripts
+
+<p align="center">
+    <img src="https://skillicons.dev/icons?i=bash" />
+</p>
+
+Before to continue with building and installation, please check the [./autoinstall](./autoinstall/) directory, there maybe a faster and more convenient way of doing so.
+
+### Docker
+
+<p align="center">
+    <img src="https://skillicons.dev/icons?i=docker" />
+</p>
+
+Please follow the guidelines available at [docker-webone](https://github.com/way5/docker-webone).
+
 ## Run
 *	On Windows simply run `webone.exe`. Then open port 8080 in Windows Firewall settings.
 

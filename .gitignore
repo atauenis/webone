@@ -221,7 +221,7 @@ ClientBin/
 *.publishsettings
 orleans.codegen.cs
 
-# Including strong name files can present a security risk 
+# Including strong name files can present a security risk
 # (https://github.com/github/gitignore/pull/2483#issue-259490424)
 #*.snk
 
@@ -317,7 +317,7 @@ __pycache__/
 # OpenCover UI analysis results
 OpenCover/
 
-# Azure Stream Analytics local run output 
+# Azure Stream Analytics local run output
 ASALocalRun/
 
 # MSBuild Binary and Structured Log
@@ -326,7 +326,7 @@ ASALocalRun/
 # NVidia Nsight GPU debugger configuration file
 *.nvuser
 
-# MFractors (Xamarin productivity tool) working folder 
+# MFractors (Xamarin productivity tool) working folder
 .mfractor/
 
 # ATauenis's (WebOne main developer) garbage & test playground
@@ -338,3 +338,45 @@ ImageMagic/
 EXE/NotForGit/
 viewtube/
 WebFixes/
+
+# VSCode
+.vscode
+# !.vscode/settings.json
+# !.vscode/tasks.json
+# !.vscode/extensions.json
+# !.vscode/*.code-snippets
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+# MACOS General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+# Thumbnails
+# ._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+Thumbs.db
