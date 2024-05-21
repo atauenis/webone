@@ -1,0 +1,40 @@
+# OpenSSL configuration for WebOne.
+# It's allows SSL 3.0, weak ciphers, and weak certificates.
+# use (bash/sh): export OPENSSL_CONF=/etc/webone.conf.d/openssl_webone.cnf
+# use (systemd): Environment="OPENSSL_CONF=/etc/webone.conf.d/openssl_webone.cnf"
+
+# Try this configuration in case of error "Using SSL certificate failed with OpenSSL error - ca md too weak."
+
+# NOT WELL TESTED AT THIS MOMENT
+
+openssl_conf = default_conf
+
+[default_conf]
+ssl_conf = ssl_sect
+
+[ssl_sect]
+system_default = system_default_sect
+
+[system_default_sect]
+DEPRECATED_CRYPTO_FLAGS = "enable-weak-ssl-ciphers"
+MinProtocol  = SSLv3
+CipherString = ALL@SECLEVEL=0
+Ciphersuites = SSL_RSA_WITH_NULL_MD5:SSL_RSA_WITH_NULL_SHA:SSL_RSA_EXPORT_WITH_RC4_40_MD5:SSL_RSA_WITH_RC4_128_MD5:SSL_RSA_WITH_RC4_128_SHA:SSL_RSA_EXPORT_WITH_RC2_CBC_40_MD5:SSL_RSA_WITH_IDEA_CBC_SHA:SSL_RSA_EXPORT_WITH_DES40_CBC_SHA:SSL_RSA_WITH_DES_CBC_SHA:SSL_RSA_WITH_3DES_EDE_CBC_SHA:TLS_AES_256_GCM_SHA384:TLS_AES_128_GCM_SHA256:TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256:TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256:TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384:TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256:TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384:TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256:TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA:TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA:TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA:TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA:TLS_RSA_WITH_AES_256_GCM_SHA384:TLS_RSA_WITH_AES_128_GCM_SHA256:TLS_RSA_WITH_AES_256_CBC_SHA256:TLS_RSA_WITH_AES_128_CBC_SHA256:TLS_RSA_WITH_AES_256_CBC_SHA:TLS_RSA_WITH_AES_128_CBC_SHA:TLS_RSA_WITH_NULL_SHA256:TLS_RSA_WITH_NULL_SHA:TLS_DHE_RSA_WITH_AES_256_GCM_SHA384:TLS_DHE_RSA_WITH_AES_128_GCM_SHA256:TLS_RSA_WITH_3DES_EDE_CBC_SHA:TLS_CHACHA20_POLY1305_SHA256:TLS_DHE_RSA_WITH_AES_256_CBC_SHA:TLS_DHE_RSA_WITH_AES_128_CBC_SHA:TLS_DHE_DSS_WITH_AES_256_CBC_SHA256:TLS_DHE_DSS_WITH_AES_128_CBC_SHA256:TLS_DHE_DSS_WITH_AES_256_CBC_SHA:TLS_DHE_DSS_WITH_AES_128_CBC_SHA:TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA:TLS_RSA_WITH_RC4_128_SHA:TLS_RSA_WITH_RC4_128_MD5:TLS_RSA_WITH_DES_CBC_SHA:TLS_DHE_DSS_WITH_DES_CBC_SHA:TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA:TLS_RSA_WITH_NULL_MD5:TLS_RSA_EXPORT1024_WITH_RC4_56_SHA:TLS_RSA_EXPORT_WITH_RC4_40_MD5:TLS_RSA_EXPORT1024_WITH_DES_CBC_SHA:TLS_PSK_WITH_AES_256_GCM_SHA384:TLS_PSK_WITH_AES_128_GCM_SHA256:TLS_PSK_WITH_AES_256_CBC_SHA384:TLS_PSK_WITH_AES_128_CBC_SHA256:TLS_PSK_WITH_NULL_SHA384:TLS_PSK_WITH_NULL_SHA256:SSL_CK_RC4_128_WITH_MD5:SSL_CK_DES_192_EDE3_CBC_WITH_MD5:SSL_CK_RC4_128_EXPORT40_MD5:SSL_CK_DES_64_CBC_WITH_MD5
+
+
+# Hints:
+
+# Minimum protocol: https://www.openssl.org/docs/man1.1.1/man3/SSL_CONF_cmd.html
+# - Currently supported protocol values are SSLv3, TLSv1, TLSv1.1, TLSv1.2, TLSv1.3, DTLSv1 and DTLSv1.2.
+
+# Security levels: https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_get_security_level.html
+# - Level number zero is only suitable with WebOne due to pre-SHA2 certificates and less than 256-bit ciphers.
+# - "ALL" is really removes all security nitpicking which can be bypassed. "DEFAULT" enables some of them.
+# - This is why WebOne should use a custom OpenSSL configuration (to prevent making the server insecure).
+
+# Cipher suites: https://www.openssl.org/docs/man1.1.1/man1/ciphers.html
+# HOW TO TWEAK: Write here all cipher suites. Or at least those which are compatible with RSA certificates (not requires epileptic curve-based private key).
+# TEST: $ openssl ciphers -s -v
+# - Should display all of entered cipher suites (minimum SSL/TLS version, crypto alrogithm, strength, hash).
+# - Huh, if they're not banned at OpenSSL compile time. Be ready to rebuild it from sources.
+# Problems with cipher support will result in a "SSL Handshake failed with OpenSSL error - SSL_ERROR_SSL" error.

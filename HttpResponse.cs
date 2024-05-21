@@ -303,6 +303,7 @@ namespace WebOne
 
 			if (Headers["Server"] == null && Headers["Via"] == null) Headers.Add("Server", "WebOne/" + Program.Variables["WOVer"]);
 			if (Headers["Connection"] == null) { Headers.Add("Connection", "Keep-Alive"); KeepAlive = true; }
+			if (Headers["Content-Type"] == "webone/unknown-content-type") Headers.Remove("Content-Type");
 
 			if (MshttpapiBackend != null)
 			{

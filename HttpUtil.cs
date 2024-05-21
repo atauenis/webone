@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -54,14 +53,14 @@ namespace WebOne
 
 			GET /123
 			Host: 127.0.0.1
-			-> http://127.0.0.1/123     StandardLocal
+			-> http://127.0.0.1/123     StandardHttp
 
 			GET /123
 			no host, assuming 127.0.0.1
-			-> http://127.0.0.1/123     StandardLocal
+			-> http://127.0.0.1/123     StandardHttp
 
 			GET /http://example.com/123
-			Host: 
+			Host: 127.0.0.1
 			-> http://example.com/123   AlternateProxy
 
 			GET /http://example.com/123
@@ -101,7 +100,7 @@ namespace WebOne
 			/// <summary>
 			/// Standard HTTP request to this server.
 			/// </summary>
-			StandardLocal,
+			StandardHttp,
 			/// <summary>
 			/// Standard HTTP request to this server; "Alternate Proxy Mode".
 			/// </summary>
@@ -132,13 +131,13 @@ namespace WebOne
 		public static RequestKind GetKindOfRequest(string RawUrl, string HostHeader = null, string RefererHeader = null, bool IsCONNECT = false)
 		{
 			string Host = HostHeader ?? "127.0.0.1";
-			int Port = ConfigFile.Port;
+			int Port = 80;
 
 			// Detect port number (if any)
-			if (!Host.StartsWith("/") && Host.Contains(":"))
+			if (!Host.StartsWith("/") && Host.Contains(':'))
 			{
-				Port = int.Parse(Host.Substring(Host.LastIndexOf(":") + 1));
-				Host = Host.Substring(0, Host.LastIndexOf(":"));
+				Port = int.Parse(Host.Substring(Host.LastIndexOf(':') + 1));
+				Host = Host.Substring(0, Host.LastIndexOf(':'));
 			}
 
 			if (RawUrl.StartsWith("/"))
@@ -146,7 +145,7 @@ namespace WebOne
 				// Standard* or Dirty
 				if (IsLocalhost(Host, Port)) //check Host name and Port number
 				{
-					// Target is this server, so StandardLocal or AlternateProxy or DirtyAlternateProxy
+					// Target is this server, so StandardHttp or AlternateProxy or DirtyAlternateProxy
 					if (RawUrl.ToLower().StartsWith("/http:") || RawUrl.ToLower().StartsWith("/https:") || RawUrl.ToLower().StartsWith("/ftp:"))
 						return RequestKind.AlternateProxy;
 
@@ -157,7 +156,7 @@ namespace WebOne
 						if (string.IsNullOrEmpty(RefererHeader) && RefererHeader.Contains("/https://")) return RequestKind.DirtyAlternateProxy;
 					}
 
-					return RequestKind.StandardLocal;
+					return RequestKind.StandardHttp;
 				}
 				else
 				{
@@ -167,7 +166,8 @@ namespace WebOne
 			}
 			else
 			{
-				// Proxy or StandardSslProxy
+				// Proxy, StandardSslProxy or StandardHttp
+				if (IsLocalhost(Host, Port)) return RequestKind.StandardHttp;
 				if (RawUrl.Contains("://")) return RequestKind.StandardProxy;
 				else if (IsCONNECT) return RequestKind.StandardSslProxy;
 				else throw new Exception("Cannot guess kind of requested target.");
@@ -183,7 +183,7 @@ namespace WebOne
 		public static bool IsLocalhost(string Host, int Port)
 		{
 			if (Host.Contains(':') && !Host.EndsWith("]")) //"ipv4:port" or "[i::p::v::6]:port" but not "[i::p::v::6]"
-			throw new ArgumentException("Forget to split 'host:port' pair.", nameof(Host));
+				throw new ArgumentException("Forget to split 'host:port' pair.", nameof(Host));
 			return CheckString(Host, GetLocalHostNames(), true) && Port == ConfigFile.Port;
 		}
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -75,6 +76,10 @@ namespace WebOne
 				if (ConfigFile.IpWhiteList.Count > 0)
 					if (!CheckString(ClientRequest.RemoteEndPoint.ToString(), ConfigFile.IpWhiteList))
 					{
+						string ErrorPageId = "Err-IpNotWhitelisted.htm";
+						string ErrorPageArguments = "?IP=" + ClientRequest.RemoteEndPoint.Address.ToString();
+						if (SendInternalContent(ErrorPageId, ErrorPageArguments)) return;
+
 						SendError(403, "You are not in the list of allowed clients. Contact proxy server's administrator to add your IP address in it.");
 						Log.WriteLine(" Non-whitelisted client.");
 						return;
@@ -95,6 +100,11 @@ namespace WebOne
 							//PAC is always unprotected
 							break;
 						default:
+							if (ConfigFile.OpenForLocalIPs && IsLanIP(ClientRequest.RemoteEndPoint.Address))
+							{
+								Log.WriteLine(" Bypassed authorization of local client.");
+								break;
+							}
 							if (string.IsNullOrEmpty(ClientRequest.Headers["Proxy-Authorization"]))
 							{
 								Log.WriteLine(" Unauthorized client.");
@@ -165,6 +175,11 @@ namespace WebOne
 				if (CheckString(RequestURL.ToString(), ConfigFile.UrlBlackList))
 				{
 					Log.WriteLine(" Blacklisted URL.");
+
+					string ErrorPageId = "Err-UrlBlacklisted.htm";
+					string ErrorPageArguments = "?URL=" + RequestURL.AbsoluteUri.ToString();
+					if (SendInternalContent(ErrorPageId, ErrorPageArguments, 403)) return;
+
 					SendError(403, "Access to this web page is disallowed by proxy settings.");
 					return;
 				}
@@ -201,15 +216,15 @@ namespace WebOne
 				};
 				foreach (var entry in Program.Variables) { DefaultVars.TryAdd(entry.Key, entry.Value); }
 
-				//check for local or internal URL
-				if (ClientRequest.Kind == HttpUtil.RequestKind.StandardLocal)
+				//check for internal URL
+				if (ClientRequest.Kind == HttpUtil.RequestKind.StandardHttp)
 				{
 					// Internal URIs
 					string InternalPage = "/";
 					if (RequestURL.Segments.Length > 1) InternalPage = RequestURL.Segments[1].ToLower();
 					InternalPage = "/" + InternalPage.TrimEnd('/');
 
-					SendInternalPage(InternalPage);
+					SendInternalPage(InternalPage, RequestURL.Query);
 					return;
 				}
 
@@ -246,6 +261,10 @@ namespace WebOne
 					string[] KnownProtocols = { "http", "https", "ftp" };
 					if (!CheckString(RequestURL.Scheme, KnownProtocols))
 					{
+						string ErrorPageId = "Err-UnknownProtocol.htm";
+						string ErrorPageArguments = "?Scheme=" + RequestURL.Scheme.ToUpper() + "&URL=" + ClientRequest.RawUrl;
+						if (SendInternalContent(ErrorPageId, ErrorPageArguments)) return;
+
 						string BadProtocolMessage =
 						"<p>You're attempted to request content from <i>" + ClientRequest.RawUrl + "</i>. " +
 						"The protocol specified in the URL is not supported by this proxy server.</p>" +
@@ -310,9 +329,13 @@ namespace WebOne
 				}
 
 				//make referer secure if need
-				if (RequestURL.Host == new Uri(RefererUri ?? "about:blank").Host)
-					if (RequestURL.AbsoluteUri.StartsWith("https://") && !RefererUri.StartsWith("https://"))
-						RefererUri = "https" + RefererUri.Substring(4);
+				try
+				{
+					if (RequestURL.Host == new Uri(RefererUri ?? "about:blank").Host)
+						if (RequestURL.AbsoluteUri.StartsWith("https://") && !RefererUri.StartsWith("https://"))
+							RefererUri = "https" + RefererUri.Substring(4);
+				}
+				catch { }
 
 				LastURL = RequestURL.AbsoluteUri;
 				LastContentType = "unknown/unknown"; //will be populated in MakeOutput
@@ -366,6 +389,10 @@ namespace WebOne
 				if (ConfigFile.UrlWhiteList.Count > 0)
 					if (!CheckString(RequestURL.ToString(), ConfigFile.UrlWhiteList))
 					{
+						string ErrorPageId = "Err-UrlNotWhitelisted.htm";
+						string ErrorPageArguments = "?URL=" + RequestURL.AbsoluteUri.ToString();
+						if (SendInternalContent(ErrorPageId, ErrorPageArguments, 403)) return;
+
 						SendError(403, "Proxy server administrator has been limited this proxy server to work with several web sites only.");
 						Log.WriteLine(" URL out of white list.");
 						return;
@@ -512,6 +539,11 @@ namespace WebOne
 							{
 								case "System.Net.Sockets.SocketException":
 									System.Net.Sockets.SocketException sockerr = httpex.InnerException as System.Net.Sockets.SocketException;
+
+									string ErrorPageId = "Err-" + sockerr.SocketErrorCode.ToString() + ".htm";
+									string ErrorPageArguments = "?ErrorMessage=" + sockerr.Message + "&URL=" + RequestURL.AbsoluteUri.ToString();
+									if (SendInternalContent(ErrorPageId, ErrorPageArguments)) return;
+
 									switch (sockerr.SocketErrorCode)
 									{
 										case System.Net.Sockets.SocketError.HostNotFound:
@@ -582,6 +614,11 @@ namespace WebOne
 											polerr = httpex.InnerException.Message;
 											break;
 									}
+
+									ErrorPageId = "Err-TlsPolicyErrorException.htm";
+									ErrorPageArguments = "?ErrorMessage=" + polerr + "&URL=" + RequestURL.AbsoluteUri.ToString();
+									if (SendInternalContent(ErrorPageId, ErrorPageArguments)) return;
+
 									ErrorMessageHeader = "Secure connection could not be established";
 									ErrorMessage = "<p><big>" + polerr + "</big></p>" +
 									"<ul><li>The page you are trying to view cannot be shown because the authenticity of the received data could not be verified.</li>" +
@@ -614,6 +651,10 @@ namespace WebOne
 				{
 					Dump("!Connection timeout (100 sec)");
 
+					string ErrorPageId = "Err-TaskCanceledException.htm";
+					string ErrorPageArguments = "?ErrorMessage=The request was canceled due to Timeout of 100 seconds elapsing.&URL=" + RequestURL.AbsoluteUri.ToString();
+					if (SendInternalContent(ErrorPageId, ErrorPageArguments)) return;
+
 					string ErrorMessageHeader = "The connection has timed out";
 					string ErrorMessage = "<p><big>The request was canceled due to Timeout of 100 seconds elapsing.</big></p>" +
 					"<ul><li>The site could be temporarily unavailable or too busy. Try again in a few moments.</li>" +
@@ -630,6 +671,10 @@ namespace WebOne
 				catch (InvalidDataException)
 				{
 					Dump("!Decompression failed");
+
+					string ErrorPageId = "Err-InvalidDataException.htm";
+					string ErrorPageArguments = "?ErrorMessage=Cannot decode HTTP data.&URL=" + RequestURL.AbsoluteUri.ToString();
+					if (SendInternalContent(ErrorPageId, ErrorPageArguments)) return;
 
 					string ErrorMessageHeader = "Invalid data has been recieved";
 					string ErrorMessage = "<p><big>Cannot decode HTTP data.</big></p>" +
@@ -668,6 +713,11 @@ namespace WebOne
 				if (ResponseCode >= 403 && RequestURL.AbsoluteUri.StartsWith("http://web.archive.org/web/") && ConfigFile.ShortenArchiveErrors)
 				{
 					Log.WriteLine(" Wayback Machine error page shortened.");
+
+					string ErrorPageId = "Err-WA" + ResponseCode + ".htm";
+					string ErrorPageArguments = "?ErrorMessage=" + ((HttpStatusCode)ResponseCode).ToString() + "&URL=" + RequestURL.AbsoluteUri.ToString();
+					if (SendInternalContent(ErrorPageId, ErrorPageArguments, ResponseCode)) return;
+
 					switch (ResponseCode)
 					{
 						case 404:
@@ -782,7 +832,7 @@ namespace WebOne
 		/// Send an internal page.
 		/// </summary>
 		/// <param name="InternalPageId">Name of internal page (lowercase, never ends with &quot;/&quot;).</param>
-		private void SendInternalPage(string InternalPageId)
+		private void SendInternalPage(string InternalPageId, string Arguments)
 		{
 			try
 			{
@@ -966,8 +1016,8 @@ namespace WebOne
 										{
 											if (!File.Exists(Src))
 											{
-												if (File.Exists(new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + Src))
-													Src = new FileInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).DirectoryName + Path.DirectorySeparatorChar + Src;
+												if (File.Exists(new FileInfo(AppContext.BaseDirectory).DirectoryName + Path.DirectorySeparatorChar + Src))
+													Src = new FileInfo(AppContext.BaseDirectory).DirectoryName + Path.DirectorySeparatorChar + Src;
 												else
 													throw new FileNotFoundException("No such file: " + Src);
 											}
@@ -1113,6 +1163,8 @@ namespace WebOne
 					case "/robots.txt":
 						//attempt to include in google index; kick the bot off
 						Log.WriteLine("<Return robot kicker.");
+						if (SendInternalContent("robots.txt", "")) return;
+
 						string Robots = "User-agent: *\nDisallow: / ";
 						byte[] RobotsBuffer = Encoding.Default.GetBytes(Robots);
 						try
@@ -1132,13 +1184,21 @@ namespace WebOne
 						}
 						return;
 					default:
-						//thanks for idea: https://www.artlebedev.ru/yandex/404/
-						string msg404 =
-						"<p>The page you are viewing does not exist.</p>" +
-						"<p>If you think we brought you here on purpose by posting a wrong link, send us that link via GitHub.</p>" +
-						"<p>And if you really want to find something on the Internet, specify IP of the WebOne server in your browser's proxy server settings.</p>" +
-						"<pre>" + InternalPageId + "</pre>";
-						SendInfoPage("WebOne: 404", "404 - there's no page.", msg404, 404);
+						if (SendInternalContent(InternalPageId, Arguments))
+						{
+							// an internal content is succesfully sent
+						}
+						else
+						{
+							// 404
+							//thanks for idea: https://www.artlebedev.ru/yandex/404/
+							string msg404 =
+							"<p>The page you are viewing does not exist.</p>" +
+							"<p>If you think we brought you here on purpose by posting a wrong link, send us that link via GitHub.</p>" +
+							"<p>And if you really want to find something on the Internet, specify IP of the WebOne server in your browser's proxy server settings.</p>" +
+							"<pre>" + InternalPageId + "</pre>";
+							SendInfoPage("WebOne: 404", "404 - there's no page.", msg404, 404);
+						}
 						return;
 
 				}
@@ -1154,6 +1214,94 @@ namespace WebOne
 				return;
 			}
 
+		}
+
+		/// <summary>
+		/// Send internal content file body.
+		/// </summary>
+		/// <param name="ContentId">Content ID.</param>
+		/// <param name="Arguments">Arguments for the content.</param>
+		/// <returns>True if file exists, False if there's no such content.</returns>
+		public bool SendInternalContent(string ContentId, string Arguments, int StatusCode = 200)
+		{
+			if (!ContentId.StartsWith("!")) ContentId = "/" + ContentId;
+			string ContentFilePath = ConfigFile.ContentDirectory + ContentId;
+			if (File.Exists(ContentFilePath))
+			{
+				string Extension = ContentId.Substring(ContentId.LastIndexOf('.') + 1).ToLowerInvariant();
+				string MimeType = "application/octet-stream";
+				if (ConfigFile.MimeTypes.ContainsKey(Extension)) MimeType = ConfigFile.MimeTypes[Extension];
+
+				if (CheckString(MimeType, ConfigFile.TextTypes))
+				{
+					Dictionary<string, string> Subcontent = ParseQueryString(Arguments);
+					Subcontent.Add("ServerName", GetServerName());
+					Subcontent.Add("PendingRequests", Load.ToString());
+					Subcontent.Add("UsedMemory", ((int)Environment.WorkingSet / 1024 / 1024).ToString());
+					Subcontent.Add("ClientIP", ClientRequest.RemoteEndPoint.ToString());
+
+					ClientResponse.StatusCode = StatusCode;
+					ClientResponse.ProtocolVersion = new Version(1, 1);
+					string ContentString = File.ReadAllText(ContentFilePath);
+					ContentString = ExpandMaskedVariables(ContentString, Subcontent);
+					byte[] Buffer = (OutputContentEncoding ?? Encoding.Default).GetBytes(ContentString);
+					ClientResponse.ContentLength64 = Buffer.Length;
+					ClientResponse.SendHeaders();
+					ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
+					ClientResponse.Close();
+					return true;
+				}
+				else
+				{
+					ClientResponse.StatusCode = 200;
+					ClientResponse.ProtocolVersion = new Version(1, 1);
+					byte[] ContentBinary = File.ReadAllBytes(ContentFilePath);
+					ClientResponse.ContentType = ContentType;
+					ClientResponse.ContentLength64 = ContentBinary.Length;
+					ClientResponse.SendHeaders();
+					ClientResponse.OutputStream.Write(ContentBinary, 0, ContentBinary.Length);
+					ClientResponse.Close();
+					return true;
+				}
+			}
+			else
+			{
+				Log.WriteLine("Cannot find the file: {0}.", ContentFilePath);
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// Convert URL query string to an Dictionary
+		/// </summary>
+		/// <param name="query"></param>
+		/// <returns></returns>
+		public static Dictionary<string, string> ParseQueryString(String query)
+		{
+			NameValueCollection queryParameters = new();
+			Dictionary<string, string> queryDictionary = new();
+
+			if (string.IsNullOrWhiteSpace(query)) return queryDictionary;
+
+			string[] querySegments = query.Split('&');
+			foreach (string segment in querySegments)
+			{
+				string[] parts = segment.Split('=');
+				if (parts.Length > 0)
+				{
+					string key = parts[0].Trim(new char[] { '?', ' ' });
+					string val = parts[1].Trim();
+
+					queryParameters.Add(key, val);
+				}
+			}
+
+			foreach (var k in queryParameters.AllKeys)
+			{
+				queryDictionary.Add(k, queryParameters[k]);
+			}
+
+			return queryDictionary;
 		}
 
 		/// <summary>
@@ -1774,6 +1922,10 @@ namespace WebOne
 							}
 							catch (Exception ArchiveRetrieveException)
 							{
+								string ErrorPageId = "Err-WArchiveRetrieveException.htm";
+								string ErrorPageArguments = "?ErrorMessage=" + ArchiveRetrieveException.Message.Replace("\n", "<br>") + "&URL=" + RequestURL.AbsoluteUri.ToString();
+								if (SendInternalContent(ErrorPageId, ErrorPageArguments)) return true;
+
 								SendInfoPage("WebOne: Web Archive retrieve error.", "Cannot load this page from Web Archive", string.Format("<b>The requested page is found only at Web Archive, but cannot be delivered from it.</b><br>{0}", ArchiveRetrieveException.Message.Replace("\n", "<br>")));
 								return true; //error page is ready
 							}
@@ -1805,6 +1957,10 @@ namespace WebOne
 				}
 				catch (Exception ArchiveException)
 				{
+					string ErrorPageId = "Err-WArchiveException.htm";
+					string ErrorPageArguments = "?ErrorMessage=" + ArchiveException.Message.Replace("\n", "<br>") + "&URL=" + RequestURL.AbsoluteUri.ToString();
+					if (SendInternalContent(ErrorPageId, ErrorPageArguments)) return true;
+
 					SendInfoPage("WebOne: Web Archive error.", "Cannot load this page", string.Format("<b>The requested server or page is not found and a Web Archive error occured.</b><br>{0}", ArchiveException.Message.Replace("\n", "<br>")));
 					return true; //error page is ready
 				}
@@ -1894,7 +2050,10 @@ namespace WebOne
 			}
 			else
 			{
-				HelpString = "<h2>It works!</h2>";
+				if (SendInternalContent(ConfigFile.DisplayStatusPage, ""))
+				{ return; }
+				else
+				{ HelpString = "<h2>It works!</h2>"; }
 			}
 
 
@@ -2165,74 +2324,6 @@ namespace WebOne
 			{
 				SendStream(Page.Attachment, Page.AttachmentContentType);
 			}
-		}
-	}
-
-	/// <summary>
-	/// An information page (used by internal status and other pages inside WebOne)
-	/// </summary>
-	public class InfoPage
-	{
-		/// <summary>
-		/// The information page title
-		/// </summary>
-		public string Title { get; set; }
-		/// <summary>
-		/// The information page 1st level header (or null if no title)
-		/// </summary>
-		public string Header { get; set; }
-		/// <summary>
-		/// The information page content (HTML)
-		/// </summary>
-		public string Content { get; set; }
-
-		/// <summary>
-		/// Attached binary file (used instead of the page body)
-		/// </summary>
-		public Stream Attachment { get; set; }
-
-		public string AttachmentContentType
-		{
-			get { return HttpHeaders["Content-Type"]; }
-			set { HttpHeaders["Content-Type"] = value; }
-		}
-
-		/// <summary>
-		/// Additional HTTP headers, which can be sent to the client
-		/// </summary>
-		public WebHeaderCollection HttpHeaders { get; set; }
-
-		/// <summary>
-		/// HTTP status code ("200 OK" by default)
-		/// </summary>
-		public int HttpStatusCode { get; set; }
-
-		/// <summary>
-		/// Show the WebOne &amp; OS version in the page footer
-		/// </summary>
-		public bool ShowFooter { get; set; }
-
-		/// <summary>
-		/// Add default CSS styles to the page HTML header
-		/// </summary>
-		public bool AddCss { get; set; }
-
-		/// <summary>
-		/// Create an information page
-		/// </summary>
-		/// <param name="Title">The information page title</param>
-		/// <param name="Header">The information page 1st level header (or null if no title)</param>
-		/// <param name="Content">The information page content (HTML)</param>
-		/// <param name="HttpStatusCode">The information page HTTP status code (200/404/302/500/etc)</param>
-		public InfoPage(string Title = null, string Header = null, string Content = "No description is available.", int HttpStatusCode = 200)
-		{
-			this.HttpStatusCode = HttpStatusCode;
-			this.HttpHeaders = new WebHeaderCollection();
-			this.Title = Title;
-			this.Header = Header;
-			this.Content = Content;
-			ShowFooter = true;
-			AddCss = true;
 		}
 	}
 }

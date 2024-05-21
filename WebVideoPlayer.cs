@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Specialized;
 using System.Web;
 
 namespace WebOne
@@ -28,13 +23,13 @@ namespace WebOne
 			// Initial page & iframe status
 			string SampleUrl = Parameters["url"] ?? "https://www.youtube.com/watch?v=XXXXXXX";
 			string PreferPage = "intro";
-			if(Parameters["gui"]=="1")
+			if (Parameters["gui"] == "1")
 			{
 				Parameters["type"] = null;
 				if (Parameters["prefer"] != null) PreferPage = Parameters["prefer"] + "&url=" + SampleUrl;
 			}
 
-			if(!Program.ToBoolean(ConfigFile.WebVideoOptions["Enable"] ?? "yes"))
+			if (!Program.ToBoolean(ConfigFile.WebVideoOptions["Enable"] ?? "yes"))
 			{
 				Page.Content = "Sorry, proxy server administrator has disabled the online video download feature.";
 				return;
@@ -71,8 +66,8 @@ namespace WebOne
 					"                <option value='ogg'>Ogg</option>" +              // Theora & Vorbis only
 					"                <option value='webm'>WebM</option>" +            // Only VP8 or VP9 or AV1 video and Vorbis or Opus audio and WebVTT subtitles are supported for WebM.
 					"                <option value='swf'>Macromedia Flash</option>" + // SWF muxer only supports VP6, FLV1 and MJPEG
-					//"                <option value='rm'>RealMedia</option>" + //[rm @ 06cc61c0] Invalid codec tag
-					//"                <option value='3gp'>3GPP</option>" + //muxer does not support non seekable output
+																					  //"                <option value='rm'>RealMedia</option>" + //[rm @ 06cc61c0] Invalid codec tag
+																					  //"                <option value='3gp'>3GPP</option>" + //muxer does not support non seekable output
 					"            </select></td>" +
 					"            <td align='right'>Codecs</td>" +
 					"            <td align='left'><select name='vcodec' size='1'" +
@@ -178,7 +173,7 @@ namespace WebOne
 					string VlcHtml = "<embed id='MediaPlayer' type='application/x-vlc-plugin'" +
 					"codebase='http://download.videolan.org/pub/videolan/vlc/last/win32/axvlc.cab'" +
 					"pluginspage='http://www.videolan.org'" +
-					"showcontrols='true' showpositioncontrols='true' showstatusbar='tue' showgotobar='true'" +
+					"showcontrols='true' showpositioncontrols='true' showstatusbar='tue' showgotobar='true' autoplay='yes'" +
 					"src='" + VideoUrl + "' autostart='true' style='width: 100%; height: 100%;' />";
 					Page.Content = VlcHtml;
 					Page.AddCss = false;
@@ -190,9 +185,10 @@ namespace WebOne
 					// CODEBASE='http://www.microsoft.com/netshow/download/en/nsasfinf.cab#Version=2,0,0,912'
 					// CODEBASE='http://www.microsoft.com/netshow/download/en/nsmp2inf.cab#Version=5,1,51,415'
 					// NetShow 2.0 for Win95/NT -> nscore.exe from nscore.cab
-					string NSActiveXhtml = "<center><object ID='MediaPlayer' style='width: 100%; height: 100%;' "+
+					string NSActiveXhtml = "<center><object ID='MediaPlayer' style='width: 100%; height: 100%;' " +
 					"CLASSID='CLSID:2179C5D3-EBFF-11CF-B6FD-00AA00B4E220' " +
 					"codebase='http://www.microsoft.com/netshow/download/en/nsasfinf.cab#Version=2,0,0,912'>" +
+					"standby='Loading Microsoft Windows Media Player components...' " +
 					"<param name='FileName' value='" + VideoUrl + "'>" +
 					"<param name='ShowControls' value='true'>" +
 					"<param name='ShowDisplay' value='true'>" +
@@ -201,6 +197,7 @@ namespace WebOne
 					"<param name='ShowGoToBar' value='true'>" +
 					"<param name='Controls' value='true'>" +
 					"<param name='AutoSize' value='true'>" +
+					"<param name='AutoStart' value='true'>" +
 					"</object></center>";
 					Page.Content = NSActiveXhtml;
 					Page.AddCss = false;
@@ -209,11 +206,19 @@ namespace WebOne
 				case "objectwm":
 					// Windows Media Player 6.4 - ActiveX
 					// Download: http://microsoft.com/windows/mediaplayer/en/download/
-					string WMPActiveXhtml = "<object ID='MediaPlayer' style='width: 100%; height: 100%;' "+
-					"CLASSID='CLSID:6BF52A52-394A-11d3-B153-00C04F79FAA6' "+
-					"standby='Loading Microsoft Windows Media Player components...' " +
+					string WMPActiveXhtml = "<object ID='MediaPlayer' style='width: 100%; height: 100%;' " +
+					"CLASSID='CLSID:6BF52A52-394A-11d3-B153-00C04F79FAA6' " +
 					"codebase='http://activex.microsoft.com/activex/controls/mplayer/en/nsmp2inf.cab#Version=6,4,7,1112'>" +
+					"standby='Loading Microsoft Windows Media Player components...' " +
 					"<param name='URL' value='" + VideoUrl + "'>" +
+					"<param name='ShowControls' value='true'>" +
+					"<param name='ShowDisplay' value='true'>" +
+					"<param name='ShowStatusBar' value='true'>" +
+					"<param name='ShowPositionControls' value='true'>" +
+					"<param name='ShowGoToBar' value='true'>" +
+					"<param name='Controls' value='true'>" +
+					"<param name='AutoSize' value='true'>" +
+					"<param name='AutoStart' value='true'>" +
 					"</object>";
 					Page.Content = WMPActiveXhtml;
 					Page.AddCss = false;
@@ -221,7 +226,7 @@ namespace WebOne
 					break;
 				case "html5":
 					// HTML5 VIDEO tag
-					Page.Content = "<center><video id='MediaPlayer' src='" + VideoUrl + "' controls='yes' style='width: 100%; height: 100%;'>"
+					Page.Content = "<center><video id='MediaPlayer' src='" + VideoUrl + "' controls='yes' autoplay='yes' style='width: 100%; height: 100%;'>"
 					+ "Try another player type, as HTML5 is not supported.</video></center>";
 					Page.AddCss = false;
 					//idea: made multi-source code with hard-coded containers (ogg, webm, etc)
@@ -232,7 +237,7 @@ namespace WebOne
 					// (http://www.jmcgowan.com/aviweb.html)
 					// also: https://web.archive.org/web/19990117015933/http://www.microsoft.com/devonly/tech/amov1doc/amsdk008.htm
 					// tries to work also in IE 3-6.
-					string PlaceholderUrl = "http://www.linuxtopia.org/HowToGuides/HTML_tutorials/graphics/moonflag.gif";
+					string PlaceholderUrl = "/nodynsrc.gif";
 					Page.Content = "<center><IMG DYNSRC='" + VideoUrl + "' CONTROLS START='FILEOPEN' SRC='" + PlaceholderUrl + "'></center>";
 					Page.AddCss = false;
 					Page.Title = "Video player - Dynamic Image";

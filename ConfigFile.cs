@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Text;
@@ -212,6 +213,16 @@ namespace WebOne
 		/// </summary>
 		public static bool EnableManualConverting = true;
 
+		/// <summary>
+		/// Location of internal pages' HTML (CSS, JS, GIF, etc) files
+		/// </summary>
+		public static string ContentDirectory = "./html";
+
+		/// <summary>
+		/// Bypass client authentication for local IPs
+		/// </summary>
+		public static bool OpenForLocalIPs = false;
+
 
 
 		/// <summary>
@@ -233,6 +244,16 @@ namespace WebOne
 		/// Protocols used in SSL/TLS tunnels through this Secure proxy
 		/// </summary>
 		public static SslProtocols SslProtocols = SslProtocols.None;
+
+		/// <summary>
+		/// Cipher Suites used in SSL/TLS tunnels through this Secure proxy
+		/// </summary>
+		public static List<TlsCipherSuite> SslCipherSuites = new();
+
+		/// <summary>
+		/// Cipher Suite Policy used in SSL/TLS tunnels through this Secure proxy [*nix-only]
+		/// </summary>
+		public static CipherSuitesPolicy SslCipherSuitesPolicy = null;
 
 		/// <summary>
 		/// Certificate hashing algorithm used in CA and sites certificates

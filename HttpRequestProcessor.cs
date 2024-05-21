@@ -187,9 +187,10 @@ namespace WebOne
 				case RequestKind.StandardProxy:
 					Request.Url = new Uri(Request.RawUrl);
 					break;
-				case RequestKind.StandardLocal:
+				case RequestKind.StandardHttp:
 				case RequestKind.StandardRemote:
-					Request.Url = new Uri("http://" + Host + Request.RawUrl);
+					try { Request.Url = new Uri("http://" + Host + Request.RawUrl); }
+					catch { Request.Url = new Uri(Request.RawUrl); }
 					break;
 				case RequestKind.AlternateProxy:
 					Request.Url = new Uri(Request.RawUrl[1..]);

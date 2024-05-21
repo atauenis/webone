@@ -1,0 +1,24 @@
+; WebOne default stylesheet
+h1, h2, h3, h4
+{
+	font-family: sans-serif;
+}
+html
+{
+	font-family: Cambria, sans-serif;
+}
+body
+{
+	margin:4em auto;
+	max-width: 52em;
+	min-width: 13em;
+	padding: 3em;
+}
+li
+{
+	margin: 0px;
+}
+ul
+{
+	list-style: square;
+}

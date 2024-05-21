@@ -1,0 +1,114 @@
+﻿<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=utf-8">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>Retro online video player</title>
+<style type="text/css">h1, h2, h3, h4 { font-family: sans-serif; } html {
+font-family: Cambria, sans-serif; } body { padding: 3em; } li {
+margin: 0px; } ul { list-style: square; } </style>
+</head>
+
+<body>
+
+<form action="/!player/" method="GET" target="player_frame"
+align="center">
+    <table border="0" width="100%">
+        <tr>
+            <td align="right">Video</td>
+            <td align="center" colspan="4"><input type="text"
+            size="65" name="url"
+            value="https://www.youtube.com/watch?v=XXXXXXX"
+            style="width: 100%"></td>
+            <td align="center" rowspan="3" colspan="2"><input
+            type="submit" value="Load video"
+            style="height: 70px;"></td>
+        </tr>
+        <tr>
+            <td align="right">Format</td>
+            <td><select name="f" size="1"
+            title="Audio/video container">
+                <option value="avi">AVI</option>
+                <option value="mpeg1video">MPEG 1</option>
+                <option value="mpeg2video">MPEG 2</option>
+                <option selected value="mpegts">MPEG TS</option>
+                <option value="asf">Microsoft ASF</option>
+                <option value="asf_stream">Microsoft ASF (stream)</option>
+                <option value="ogg">Ogg</option>
+                <option value="webm">WebM</option>
+                <option value="swf">Macromedia Flash</option>
+            </select></td>
+            <td align="right">Codecs</td>
+            <td><select name="vcodec" size="1"
+            title="Video codec">
+                <option value="mpeg1video">MPEG 1</option>
+                <option value="mpeg2video">MPEG 2</option>
+                <option value="mpeg4">MPEG 4</option>
+                <option value="wmv1">WMV 7</option>
+                <option value="wmv2">WMV 8</option>
+                <option value="h263">H.263</option>
+                <option selected value="h264">H.264 AVC</option>
+                <option value="hevc">H.265 HEVC</option>
+                <option value="theora">Ogg Theora</option>
+                <option value="vp8">VP8</option>
+                <option value="vp9">VP9</option>
+                <option value="mjpeg">MJPEG</option>
+                <option value="msvideo1">MS Video 1</option>
+                <option value="copy">(original)</option>
+            </select> <select name="vf" size="1"
+            title="Video resolution">
+                <option value="scale=&quot;1080:-1&quot;">1080p</option>
+                <option value="scale=&quot;720:-1&quot;">720p</option>
+                <option selected value="scale=&quot;480:-1&quot;">480p</option>
+                <option value="scale=&quot;360:-1&quot;">360p</option>
+                <option value="scale=&quot;240:-1&quot;">240p</option>
+                <option value="scale=&quot;144:-1&quot;">144p</option>
+                <option value="scale=&quot;1024x768&quot;">1024x768</option>
+                <option value="scale=&quot;800x600&quot;">800x600</option>
+                <option value="scale=&quot;640x480&quot;">640x480</option>
+                <option value="scale=&quot;320x200&quot;">320x200</option>
+                <option value="scale=&quot;704x576&quot;">704x576</option>
+                <option value="scale=&quot;352x288&quot;">352x288</option>
+                <option value="scale=&quot;176x144&quot;">176x144</option>
+                <option value="scale=&quot;128x96&quot;">128x96</option>
+                <option value="scale=&quot;-1:-1&quot;">(original)</option>
+            </select>   <select name="acodec" size="1"
+            title="Audio codec">
+                <option value="mp2">MPEG 2</option>
+                <option selected value="mp3">MPEG 3</option>
+                <option value="wmav1">WMA 1</option>
+                <option value="wmav2">WMA 2</option>
+                <option value="aac">AAC</option>
+                <option value="pcm_dvd">PCM</option>
+                <option value="vorbis -strict -2">Ogg Vorbis</option>
+                <option value="opus -strict -2">Opus</option>
+                <option value="ra_144">RealAudio 1</option>
+                <option value="copy">(original)</option>
+            </select> <select name="ac" size="1"
+            title="Audio channels">
+                <option selected value="1">Mono</option>
+                <option value="2">Stereo</option>
+            </select></td>
+            <td>(<a
+            href="http://github.com/atauenis/webone/wiki/YouTube-playback">?</a>)</td>
+        </tr>
+        <tr>
+            <td align="right">&nbsp;</td>
+            <td align="center" colspan="4"><input type="radio"
+            name="type" value="embed">Embed, <input type="radio"
+            checked name="type" value="embedwm">WMP, <input
+            type="radio" name="type" value="embedvlc">VLC, <input
+            type="radio" name="type" value="objectwm">WinMedia, <input
+            type="radio" name="type" value="objectns">NetShow, <input
+            type="radio" name="type" value="dynimg">DynImg, <input
+            type="radio" name="type" value="html5">HTML5, <input
+            type="radio" name="type" value="link">link, <input
+            type="radio" name="type" value="file">file </td>
+        </tr>
+    </table>
+</form>
+<iframe name="player_frame" src="/!player/?type=intro" border="0" width="100%" height="100%" style="border-style: none;">
+<p>Use the toolbar to watch a video.</iframe> </p>
+</body>
+</html>

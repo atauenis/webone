@@ -8,6 +8,7 @@ After=network-online.target
 Type=simple
 DynamicUser=yes
 Environment="HOME=/tmp/"
+Environment="OPENSSL_CONF=/etc/webone.conf.d/openssl_webone.cnf"
 ExecStart=/usr/local/bin/webone --daemon
 ReadWriteDirectories=-/var/log/
 ReadWriteDirectories=-/etc/webone.conf.d/

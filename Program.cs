@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Security;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -61,9 +62,9 @@ namespace WebOne
 			Assembly.GetExecutingAssembly().GetName().Version.Major + "." +
 			Assembly.GetExecutingAssembly().GetName().Version.Minor + "." +
 			Assembly.GetExecutingAssembly().GetName().Version.Build
-			//+ "-pre"
+			+ "-pre"
 			);
-			Variables.Add("WOSystem", Environment.OSVersion.ToString());
+			Variables.Add("WOSystem", RuntimeInformation.OSDescription);
 
 			Console.Title = "WebOne";
 			Console.WriteLine("WebOne HTTP Proxy Server {0}\nhttps://github.com/atauenis/webone\n\n", Variables["WOVer"]);
@@ -193,8 +194,9 @@ namespace WebOne
 			}
 
 			if (!DefaultPACoverriden) DefaultPAC += DefaultPACfooter;
+			if (!DefaultPACoverriden) ConfigFile.PAC = DefaultPAC;
 
-			Log.WriteLine(false, false, "Configured to http://{1}:{2}/, {3}", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port, Protocols);
+				Log.WriteLine(false, false, "Configured to http://{1}:{2}/, {3}", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port, Protocols);
 
 			//initialize server
 			try
@@ -974,6 +976,21 @@ namespace WebOne
 			return IPs.ToArray();
 		}
 
+		/// <summary>
+		/// Check if IP is inside LAN (behind router)
+		/// </summary>
+		/// <param name="address">The IP Address to check</param>
+		/// <returns><c>True</c> if it's local address or <c>False</c> if it's from Internet</returns>
+		public static bool IsLanIP(IPAddress address)
+		{
+			var ping = new Ping();
+			var rep = ping.Send(address, 100, new byte[] { 1 }, new PingOptions()
+			{
+				DontFragment = true,
+				Ttl = 1
+			});
+			return rep.Status != IPStatus.TtlExpired && rep.Status != IPStatus.TimedOut && rep.Status != IPStatus.TimeExceeded;
+		}
 
 		/// <summary>
 		/// Get this proxy server name and port
@@ -1022,7 +1039,7 @@ namespace WebOne
 				default:
 				case PlatformID.Unix:
 					CurrentDirConfigFile = "./webone.conf";
-					DefaultConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + "/webone.conf";
+					DefaultConfigFile = new FileInfo(AppContext.BaseDirectory).DirectoryName + "/webone.conf";
 					UserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.config/webone/webone.conf";
 					CommonConfigFile = "/etc/webone.conf";
 
@@ -1033,7 +1050,7 @@ namespace WebOne
 					break;
 				case PlatformID.Win32NT:
 					CurrentDirConfigFile = @".\webone.conf";
-					DefaultConfigFile = new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName + @"\webone.conf";
+					DefaultConfigFile = new FileInfo(AppContext.BaseDirectory).DirectoryName + @"\webone.conf";
 					UserConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\WebOne\webone.conf";
 					CommonConfigFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + @"\WebOne\webone.conf";
 					break;

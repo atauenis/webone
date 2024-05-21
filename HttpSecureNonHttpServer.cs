@@ -112,7 +112,14 @@ namespace WebOne
 				SslStream ClientStreamTunnel = new(RequestReal.InputStream, true);
 				try
 				{
-					ClientStreamTunnel.AuthenticateAsServer(Certificate, false, ConfigFile.SslProtocols, false);
+					SslServerAuthenticationOptions ClientStreamTunnelOptions = new();
+					ClientStreamTunnelOptions.ServerCertificate = Certificate;
+					ClientStreamTunnelOptions.ClientCertificateRequired = false;
+					ClientStreamTunnelOptions.CertificateRevocationCheckMode = X509RevocationMode.NoCheck;
+					ClientStreamTunnelOptions.EnabledSslProtocols = ConfigFile.SslProtocols;
+					ClientStreamTunnelOptions.CipherSuitesPolicy = ConfigFile.SslCipherSuitesPolicy;
+
+					ClientStreamTunnel.AuthenticateAsServer(ClientStreamTunnelOptions);
 					ClientStream = ClientStreamTunnel;
 				}
 				catch (Exception HandshakeEx)
