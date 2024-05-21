@@ -11,7 +11,8 @@ Options:
                                     CHANNEL can be a repository as well. CHANNEL
                                     and TAG default to "stable" and "latest"
                                     respectively if omitted; See "UPDATE" for
-                                    details. Supported channels: stable, nightly
+                                    details. Supported channels: stable,
+                                    nightly, master
     -i, --ignore-errors             Ignore download and postprocessing errors.
                                     The download will be considered successful
                                     even if the postprocessing fails
@@ -41,7 +42,7 @@ Options:
                                     URLs, but emits an error if this is not
                                     possible instead of searching
     --ignore-config                 Don't load any more configuration files
-                                    except those given by --config-locations.
+                                    except those given to --config-locations.
                                     For backward compatibility, if this option
                                     is found inside the system configuration
                                     file, the user configuration is not loaded.
@@ -106,6 +107,10 @@ Options:
                                     direct connection
     --socket-timeout SECONDS        Time to wait before giving up, in seconds
     --source-address IP             Client-side IP address to bind to
+    --impersonate CLIENT[:OS]       Client to impersonate for requests. E.g.
+                                    chrome, chrome-110, chrome:windows-10. Pass
+                                    --impersonate="" to impersonate any client.
+    --list-impersonate-targets      List available clients to impersonate.
     -4, --force-ipv4                Make all connections via IPv4
     -6, --force-ipv6                Make all connections via IPv6
     --enable-file-urls              Enable file:// URLs. This is disabled by
@@ -187,6 +192,9 @@ Options:
     --max-downloads NUMBER          Abort after downloading NUMBER files
     --break-on-existing             Stop the download process when encountering
                                     a file that is in the archive
+    --no-break-on-existing          Do not stop the download process when
+                                    encountering a file that is in the archive
+                                    (default)
     --break-per-input               Alters --max-downloads, --break-on-existing,
                                     --break-match-filter, and autonumber to
                                     reset per input URL
@@ -309,7 +317,7 @@ Options:
     -o, --output [TYPES:]TEMPLATE   Output filename template; see "OUTPUT
                                     TEMPLATE" for details
     --output-na-placeholder TEXT    Placeholder for unavailable fields in
-                                    "OUTPUT TEMPLATE" (default: "NA")
+                                    --output (default: "NA")
     --restrict-filenames            Restrict filenames to only ASCII characters,
                                     and avoid "&" and spaces in filenames
     --no-restrict-filenames         Allow Unicode characters, "&" and spaces in
@@ -464,6 +472,7 @@ Options:
                                     --console-title --progress-template
                                     "download-
                                     title:%(info.id)s-%(progress.eta)s"
+    --progress-delta SECONDS        Time between progress output (default: 0)
     -v, --verbose                   Print various debugging information
     --dump-pages                    Print downloaded pages encoded using base64
                                     to debug problems (very verbose)
@@ -564,7 +573,7 @@ Options:
                                     Defaults to ~/.netrc
     --netrc-cmd NETRC_CMD           Command to execute to get the credentials
                                     for an extractor.
-    --video-password PASSWORD       Video password (vimeo, youku)
+    --video-password PASSWORD       Video-specific password
     --ap-mso MSO                    Adobe Pass multiple-system operator (TV
                                     provider) identifier, use --ap-list-mso for
                                     a list of available MSOs
