@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Web;
 using static WebOne.Program;
 
 namespace WebOne
@@ -1290,7 +1291,7 @@ namespace WebOne
 				if (parts.Length > 0)
 				{
 					string key = parts[0].Trim(new char[] { '?', ' ' });
-					string val = parts[1].Trim();
+					string val = HttpUtility.UrlDecode(parts[1]).Trim();
 
 					queryParameters.Add(key, val);
 				}
@@ -2277,8 +2278,20 @@ namespace WebOne
 			{
 				Log.WriteLine("<Return information page: {0}.", Page.Title);
 
+				if (Page.ShowFooter)
+				{
+					string ContentFilePath = ConfigFile.ContentDirectory + "/InfoPage.htm";
+					if (File.Exists(ContentFilePath))
+					{
+						string PageArguments = "?Title=" + HttpUtility.UrlEncode(Page.Title) + "&Header=" + HttpUtility.UrlEncode(Page.Header) + "&Content=" + HttpUtility.UrlEncode(Page.Content);
+						SendInternalContent("InfoPage.htm", PageArguments, Page.HttpStatusCode);
+						return;
+					}
+				}
+				else { /*not implemented yet, use old code*/ }
+
 				string BodyStyleHtml = ConfigFile.PageStyleHtml == "" ? "" : " " + ConfigFile.PageStyleHtml;
-				string BodyStyleCss = ConfigFile.PageStyleCss == "" ? "" : "<style type='text/css'>" + ConfigFile.PageStyleCss + "</style>";
+				string BodyStyleCss= ConfigFile.PageStyleCss == "" ? "" : "<style type='text/css'>" + ConfigFile.PageStyleCss + "</style>";
 				string title = "<title>WebOne: untitled</title>"; if (Page.Title != null) title = "<title>" + Page.Title + "</title>\n";
 				string header1 = ""; if (Page.Header != null) header1 = "<h1>" + Page.Header + "</h1>\n";
 

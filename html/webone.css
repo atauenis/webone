@@ -22,3 +22,33 @@ ul
 {
 	list-style: square;
 }
+table
+{
+	margin-bottom:1.4em;
+	width:100%;
+	border-collapse:collapse;
+}
+th 
+{
+	font-weight:bold; 
+	background-color:#f0f0f0;
+}
+th,td 
+{
+	border:1px solid #ddd; 
+	padding:.33em .67em; 
+	vertical-align:middle;
+}
+tr:nth-of-type(even) 
+{
+	background-color:#f8f8f8;
+}
+tr:hover 
+{
+	background-color:#FFFCDB;
+}
+table.nostyle, th.nostyle, tr.nostyle, td.nostyle, tr.nostyle:hover, tr.nostyle:nth-of-type(even) {
+	border: 0px none;
+	background-color: transparent;
+	padding: unset;
+}
