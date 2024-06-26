@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -1185,7 +1186,12 @@ namespace WebOne
 						}
 						return;
 					default:
-						if (SendInternalContent(InternalPageId, Arguments))
+						if (CheckInternalContentModification(InternalPageId, ClientRequest.Headers["If-Modified-Since"]))
+						{
+							// send 304 Not Modified code
+							SendError(304);
+						}
+						else if (SendInternalContent(InternalPageId, Arguments))
 						{
 							// an internal content is succesfully sent
 						}
@@ -1247,6 +1253,9 @@ namespace WebOne
 					ContentString = ExpandMaskedVariables(ContentString, Subcontent);
 					byte[] Buffer = (OutputContentEncoding ?? Encoding.Default).GetBytes(ContentString);
 					ClientResponse.ContentLength64 = Buffer.Length;
+					ClientResponse.ContentType = MimeType;
+					if (string.IsNullOrWhiteSpace(Arguments)) ClientResponse.AddHeader("Expires", DateTime.Now.AddDays(30).ToUniversalTime()
+	 .ToString("ddd, dd MMM yyyy HH:mm:ss 'GMT'", DateTimeFormatInfo.InvariantInfo));
 					ClientResponse.SendHeaders();
 					ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
 					ClientResponse.Close();
@@ -1257,8 +1266,10 @@ namespace WebOne
 					ClientResponse.StatusCode = 200;
 					ClientResponse.ProtocolVersion = new Version(1, 1);
 					byte[] ContentBinary = File.ReadAllBytes(ContentFilePath);
-					ClientResponse.ContentType = ContentType;
+					ClientResponse.ContentType = MimeType;
 					ClientResponse.ContentLength64 = ContentBinary.Length;
+					if (string.IsNullOrWhiteSpace(Arguments)) ClientResponse.AddHeader("Expires", DateTime.Now.AddDays(30).ToUniversalTime()
+.ToString("ddd, dd MMM yyyy HH:mm:ss 'GMT'"));
 					ClientResponse.SendHeaders();
 					ClientResponse.OutputStream.Write(ContentBinary, 0, ContentBinary.Length);
 					ClientResponse.Close();
@@ -1270,6 +1281,31 @@ namespace WebOne
 				Log.WriteLine("Cannot find the file: {0}.", ContentFilePath);
 				return false;
 			}
+		}
+
+		/// <summary>
+		/// Check if it's need to return 304 instead of call <see cref="SendInternalContent"/>.
+		/// </summary>
+		/// <param name="ContentId">Content ID.</param>
+		/// <param name="IfModifiedSince">Value of &quot;If-Modified-Since&quot; request HTTP header.</param>
+		/// <returns><c>true</c> if need to return 304 or <c>false</c> if need to return 200 or 404 via <see cref="SendInternalContent"/></returns>
+		public bool CheckInternalContentModification(string ContentId, string IfModifiedSince)
+		{
+			if (string.IsNullOrWhiteSpace(IfModifiedSince)) return false;
+			try
+			{
+				if (!ContentId.StartsWith("!")) ContentId = "/" + ContentId;
+				string ContentFilePath = ConfigFile.ContentDirectory + ContentId;
+
+				if (File.Exists(ContentFilePath))
+				{
+					var IMS = ToDateTimeOffset(IfModifiedSince);
+					var FileDate = new FileInfo(ContentFilePath).LastWriteTime;
+					return IMS >= FileDate;
+				}
+				else { return false; }
+			}
+			catch { return false; }
 		}
 
 		/// <summary>
@@ -2291,7 +2327,7 @@ namespace WebOne
 				else { /*not implemented yet, use old code*/ }
 
 				string BodyStyleHtml = ConfigFile.PageStyleHtml == "" ? "" : " " + ConfigFile.PageStyleHtml;
-				string BodyStyleCss= ConfigFile.PageStyleCss == "" ? "" : "<style type='text/css'>" + ConfigFile.PageStyleCss + "</style>";
+				string BodyStyleCss = ConfigFile.PageStyleCss == "" ? "" : "<style type='text/css'>" + ConfigFile.PageStyleCss + "</style>";
 				string title = "<title>WebOne: untitled</title>"; if (Page.Title != null) title = "<title>" + Page.Title + "</title>\n";
 				string header1 = ""; if (Page.Header != null) header1 = "<h1>" + Page.Header + "</h1>\n";
 
