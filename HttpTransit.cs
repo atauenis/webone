@@ -1932,6 +1932,7 @@ namespace WebOne
 				try
 				{
 					if (RequestURL.Host == "web.archive.org") return false;
+					if (RequestURL.Host == "archive.org") return false;
 					Log.WriteLine(" Look in Archive.org...");
 					Dump("=Look in Web Archive...");
 					WebArchiveRequest war = new WebArchiveRequest(RequestURL.ToString());
