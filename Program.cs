@@ -148,7 +148,7 @@ namespace WebOne
 					if (HaveCrtKey) HaveCrtKey = (new FileInfo(ConfigFile.SslCertificate).Length > MinPemLentgh) && (new FileInfo(ConfigFile.SslPrivateKey).Length > MinPemLentgh);
 					if (HaveCrtKey)
 					{ Log.WriteLine(false, false, "Using as SSL Certificate Authority: {0}, {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey); }
-					else if(!RebuildCA)
+					else if (!RebuildCA)
 					{
 						CreateRootCertificate();
 					}
@@ -157,34 +157,45 @@ namespace WebOne
 						Console.WriteLine();
 						Log.WriteLine(true, false, "CA Certificate will be new, so import it to browser(s) after build succeeds.");
 						CreateRootCertificate();
+						RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));
+						Log.WriteLine(true, false, "The new certificate is called \"" + RootCertificate.GetNameInfo(X509NameType.SimpleName, false) + "\".");
 						Log.WriteLine(true, false, "WebOne will now exit.");
 						Environment.Exit(0);
 					}
-
-					RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));
-					Protocols += ", HTTPS 1.1";
-					if (!DefaultPACoverriden) DefaultPAC += DefaultPAChttps;
-
-					//check validness period
-					if (RootCertificate.NotAfter < DateTime.Now || RootCertificate.NotBefore > DateTime.Now)
+					try
 					{
-						Log.WriteLine(true, false, "Warning! CA Certificate is out of date: {0}-{1}, now {2}.", RootCertificate.NotBefore, RootCertificate.NotAfter, DateTime.Now);
+						RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));
+						Protocols += ", HTTPS 1.1";
+						if (!DefaultPACoverriden) DefaultPAC += DefaultPAChttps;
+
+						//check validness period
+						if (RootCertificate.NotAfter < DateTime.Now || RootCertificate.NotBefore > DateTime.Now)
+						{
+							Log.WriteLine(true, false, "Warning! CA Certificate is out of date: {0}-{1}, now {2}.", RootCertificate.NotBefore, RootCertificate.NotAfter, DateTime.Now);
+						}
+
+						if (RootCertificate.NotAfter < DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildAfterNow) ||
+						RootCertificate.NotBefore > DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildBeforeNow))
+						{
+							Log.WriteLine(true, false, "Warning! CA Certificate is too fresh or expires too soon. Check configuration.");
+						}
 					}
-
-					if (RootCertificate.NotAfter < DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildAfterNow) ||
-					RootCertificate.NotBefore > DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildBeforeNow))
+					catch (Exception CertLoadEx)
 					{
-						Log.WriteLine(true, false, "Warning! CA Certificate is too fresh or expires too soon. Check configuration.");
-
+						if (CertLoadEx.InnerException != null)
+						{
+							Log.WriteLine(true, false, "Unable to load CA Certificate: {0}.", CertLoadEx.InnerException.Message);
+						}
+						else
+						{
+							Log.WriteLine(true, false, "Unable to load CA Certificate: {0}.", CertLoadEx.Message);
+						}
+						ConfigFile.SslEnable = false;
 					}
 				}
 				catch (Exception CertCreateEx)
 				{
 					Log.WriteLine(true, false, "Unable to create CA Certificate: {0}.", CertCreateEx.Message);
-					/*
-					Log.WriteLine(true, false, CertCreateEx.StackTrace.Replace("\n", " ; ")); //only for debug purposes at this moment
-					Log.WriteLine(true, false, "End of CA build error information. HTTPS won't be available!");
-					*/
 					ConfigFile.SslEnable = false;
 				}
 
