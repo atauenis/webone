@@ -1186,6 +1186,11 @@ namespace WebOne
 						}
 						return;
 					default:
+						if (InternalPageId.ToLowerInvariant() == "/rovp.htm" && !Program.ToBoolean(ConfigFile.WebVideoOptions["Enable"] ?? "yes"))
+						{
+							SendRedirect("/norovp.htm", "ROVP is disabled on this server.");
+							return;
+						}
 						if (CheckInternalContentModification(InternalPageId, ClientRequest.Headers["If-Modified-Since"]))
 						{
 							// send 304 Not Modified code
