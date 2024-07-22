@@ -2288,7 +2288,18 @@ namespace WebOne
 					if (ex is FileNotFoundException) ErrNo = 404;
 					SendError(ErrNo, "Cannot retreive stream.<br>" + ex.ToString().Replace("\n", "<br>"));
 				}
-				else { Log.WriteLine("<Stream not sent: {0}", ex.Message); }
+				else
+				{
+					try
+					{
+						Potok.Close();
+						Log.WriteLine("<Stream closed: {0}", ex.Message);
+					}
+					catch
+					{
+						Log.WriteLine("<Stream not sent: {0}", ex.Message);
+					}
+				}
 			}
 			Dump("End is stream of " + ContentType);
 		}
