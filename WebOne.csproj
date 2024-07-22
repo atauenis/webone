@@ -289,5 +289,7 @@ fi
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 			<Link>__MACOSX/%(Filename)%(Extension)</Link>
 		</None>
+		<None Include="openssl_webone.cnf" CopyToPublishDirectory="Always">
+		</None>
 	</ItemGroup>
 </Project>
