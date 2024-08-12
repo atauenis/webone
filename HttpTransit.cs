@@ -232,15 +232,18 @@ namespace WebOne
 
 				if (ClientRequest.Kind == HttpUtil.RequestKind.AlternateProxy)
 				{
-					// "Local proxy mode"
+					// "Alternate proxy access mode"
+					// ex. "Local proxy mode"
 					string FixedUrl = ClientRequest.RawUrl[1..];
+					if (FixedUrl.Contains(":/") && !FixedUrl.Contains("://")) FixedUrl = FixedUrl.Replace(":/", "://");
 					RequestURL = new Uri(FixedUrl);
 					Log.WriteLine(" Alternate: {0}", RequestURL);
 				}
 
 				if (ClientRequest.Kind == HttpUtil.RequestKind.DirtyAlternateProxy)
 				{
-					// "Dirty local proxy mode", try to use last used host: http://localhost/favicon.ico = http://example.com/favicon.ico
+					// "Dirty alternate proxy access mode", try to use last used host: http://localhost/favicon.ico = http://example.com/favicon.ico
+					// ex. "Dirty local proxy mode"
 					string FixedUrl = "http://" + new Uri(LastURL).Host + RequestURL.LocalPath;
 					RequestURL = new Uri(FixedUrl);
 					if (RequestURL.Host == "999.999.999.999") { SendError(404, "The proxy server cannot guess domain name."); return; }
