@@ -5,7 +5,7 @@
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net6.0</TargetFramework>
 		<Authors>Alexander Tauenis</Authors>
-		<Version>0.17.1</Version>
+		<Version>0.17.2</Version>
 		<VersionSuffix></VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
 		<PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
 		<Company>World</Company>
@@ -288,6 +288,8 @@ fi
 		<None Include="macOS-resforks/*.*">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 			<Link>__MACOSX/%(Filename)%(Extension)</Link>
+		</None>
+		<None Include="openssl_webone.cnf" CopyToPublishDirectory="Always">
 		</None>
 	</ItemGroup>
 </Project>

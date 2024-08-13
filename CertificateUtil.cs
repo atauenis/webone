@@ -215,7 +215,8 @@ namespace WebOne
 			*/
 
 			// Save the certificate and return it.
-			FakeCertificates.Add(certSubject, certificateWithKey);
+			if (!FakeCertificates.ContainsKey(certSubject))
+				FakeCertificates.Add(certSubject, certificateWithKey);
 			return certificateWithKey;
 		}
 	}

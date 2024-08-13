@@ -141,7 +141,12 @@ namespace WebOne
 				{
 					if (InputStream != null) new Task(() =>
 					 {
-						 while (InputStream.CanRead && !ConvProc.HasExited) { }; if (!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine();
+						 while (InputStream.CanRead && !ConvProc.HasExited)
+						 {
+							 Thread.Sleep(5000);
+							 if (InputStream.CanRead && !ConvProc.HasExited) Log.WriteLine(" Converter is still running.");
+						 }
+						 if (!ConvProc.HasExited) ConvProc.Kill(); Console.WriteLine();
 					 }).Start();
 
 					new Task(() =>
@@ -162,6 +167,9 @@ namespace WebOne
 #endif
 					if (File.Exists(SourceTmpFile)) File.Delete(SourceTmpFile);
 					if (File.Exists(DestinationTmpFile)) File.Delete(DestinationTmpFile);
+#if DEBUG
+					Log.WriteLine(" Remove temporary files if any.");
+#endif
 				}).Start();
 				return ConvProc.StandardOutput.BaseStream;
 			}
@@ -181,8 +189,18 @@ namespace WebOne
 #endif
 				ConvProc.WaitForExit();
 				InputStream.Close();
-				if (File.Exists(SourceTmpFile)) File.Delete(SourceTmpFile);
-				if (File.Exists(DestinationTmpFile)) File.Delete(DestinationTmpFile);
+
+				new Task(() =>
+				{
+					//wait 1 minute for let client time to download the file
+					Thread.Sleep(60000);
+#if DEBUG
+					Log.WriteLine(" Remove temporary files.");
+#endif
+					if (File.Exists(SourceTmpFile)) File.Delete(SourceTmpFile);
+					if (File.Exists(DestinationTmpFile)) File.Delete(DestinationTmpFile);
+				}).Start();
+
 				return File.OpenRead(DestinationTmpFile);
 			}
 		}

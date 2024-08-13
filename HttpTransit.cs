@@ -232,15 +232,18 @@ namespace WebOne
 
 				if (ClientRequest.Kind == HttpUtil.RequestKind.AlternateProxy)
 				{
-					// "Local proxy mode"
+					// "Alternate proxy access mode"
+					// ex. "Local proxy mode"
 					string FixedUrl = ClientRequest.RawUrl[1..];
+					if (FixedUrl.Contains(":/") && !FixedUrl.Contains("://")) FixedUrl = FixedUrl.Replace(":/", "://");
 					RequestURL = new Uri(FixedUrl);
 					Log.WriteLine(" Alternate: {0}", RequestURL);
 				}
 
 				if (ClientRequest.Kind == HttpUtil.RequestKind.DirtyAlternateProxy)
 				{
-					// "Dirty local proxy mode", try to use last used host: http://localhost/favicon.ico = http://example.com/favicon.ico
+					// "Dirty alternate proxy access mode", try to use last used host: http://localhost/favicon.ico = http://example.com/favicon.ico
+					// ex. "Dirty local proxy mode"
 					string FixedUrl = "http://" + new Uri(LastURL).Host + RequestURL.LocalPath;
 					RequestURL = new Uri(FixedUrl);
 					if (RequestURL.Host == "999.999.999.999") { SendError(404, "The proxy server cannot guess domain name."); return; }
@@ -1186,6 +1189,11 @@ namespace WebOne
 						}
 						return;
 					default:
+						if (InternalPageId.ToLowerInvariant() == "/rovp.htm" && !Program.ToBoolean(ConfigFile.WebVideoOptions["Enable"] ?? "yes"))
+						{
+							SendRedirect("/norovp.htm", "ROVP is disabled on this server.");
+							return;
+						}
 						if (CheckInternalContentModification(InternalPageId, ClientRequest.Headers["If-Modified-Since"]))
 						{
 							// send 304 Not Modified code
@@ -2283,7 +2291,18 @@ namespace WebOne
 					if (ex is FileNotFoundException) ErrNo = 404;
 					SendError(ErrNo, "Cannot retreive stream.<br>" + ex.ToString().Replace("\n", "<br>"));
 				}
-				else { Log.WriteLine("<Stream not sent: {0}", ex.Message); }
+				else
+				{
+					try
+					{
+						Potok.Close();
+						Log.WriteLine("<Stream closed: {0}", ex.Message);
+					}
+					catch
+					{
+						Log.WriteLine("<Stream not sent: {0}", ex.Message);
+					}
+				}
 			}
 			Dump("End is stream of " + ContentType);
 		}

@@ -38,6 +38,7 @@ align="center">
                 <option value="ogg">Ogg</option>
                 <option value="webm">WebM</option>
                 <option value="swf">Macromedia Flash</option>
+                <!-- MPEG4, QuickTime, 3GPP, RealMedia - "muxer does not support non seekable output" -->
             </select></td>
             <td align="right">Codecs</td>
             <td><select name="vcodec" size="1"
@@ -56,6 +57,10 @@ align="center">
                 <option value="mjpeg">MJPEG</option>
                 <option value="msvideo1">MS Video 1</option>
                 <option value="copy">(original)</option>
+                <!--
+                    WebM - Only VP8 or VP9 or AV1 video and Vorbis or Opus audio and WebVTT subtitles are supported for WebM.
+                    Flash - SWF muxer only supports VP6, FLV1 and MJPEG.
+                -->
             </select> <select name="vf" size="1"
             title="Video resolution">
                 <option value="scale=&quot;1080:-1&quot;">1080p</option>
@@ -73,6 +78,10 @@ align="center">
                 <option value="scale=&quot;176x144&quot;">176x144</option>
                 <option value="scale=&quot;128x96&quot;">128x96</option>
                 <option value="scale=&quot;-1:-1&quot;">(original)</option>
+                <!--
+                    H.263 - Valid resolutions are 128x96, 176x144, 352x288, 704x576, and 1408x1152.
+                    MS Video 1 - width and height must be multiples of 4.
+                -->
             </select>   <select name="acodec" size="1"
             title="Audio codec">
                 <option value="mp2">MPEG 2</option>
@@ -85,6 +94,7 @@ align="center">
                 <option value="opus -strict -2">Opus</option>
                 <option value="ra_144">RealAudio 1</option>
                 <option value="copy">(original)</option>
+                <!-- Vorbis - Current FFmpeg Vorbis encoder only supports 2 channels. -->
             </select> <select name="ac" size="1"
             title="Audio channels">
                 <option selected value="1">Mono</option>

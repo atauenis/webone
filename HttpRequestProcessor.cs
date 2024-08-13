@@ -193,7 +193,9 @@ namespace WebOne
 					catch { Request.Url = new Uri(Request.RawUrl); }
 					break;
 				case RequestKind.AlternateProxy:
-					Request.Url = new Uri(Request.RawUrl[1..]);
+					string url = Request.RawUrl[1..];
+					if (url.Contains(":/") && !url.Contains("://")) url = url.Replace(":/", "://");
+					Request.Url = new Uri(url);
 					break;
 				case RequestKind.StandardSslProxy:
 					Request.Url = null;
