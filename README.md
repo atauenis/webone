@@ -69,7 +69,7 @@ Note that this app is not intended for daily use, as removing any encryption fro
 The server can be started even on public hosts. But don't forget to enable password protection in config file to make the proxy non-public.
 
 ## Build
-Latest source code can be always found in the __master__ branch of [Git repository](https://github.com/atauenis/webone).
+Latest source code can be always found in the __master__ (![](https://img.shields.io/github/v/tag/atauenis/webone?include_prereleases&label=)) and the __dev__ branches of the [Git repository](https://github.com/atauenis/webone).
 
 The program is built using Microsoft .NET 6.0 SDK and [dotnet-packaging](https://github.com/qmfrederik/dotnet-packaging/) add-on. With them the building is easy on all platforms: use `dotnet publish` & `dotnet deb || dotnet rpm || dotnet zip` tools.
 
@@ -84,7 +84,7 @@ Currently the project is maintained mostly by a single person, Alexander Tauenis
 ## How to help the project
 WebOne project welcomes any help in the development. Forks, Pull Requests, and Bug Reports are welcome.
 
-Even if you don't know C#, but have skills on HTML/CSS/JS development, it's possible to help with [creating web page edits](https://github.com/atauenis/webone/wiki/Sets-of-edits).
+Even if you don't know C#, but have skills on HTML/CSS/JS development, it's possible to help with [creating web traffic edits](https://github.com/atauenis/webone/wiki/Sets-of-edits).
 
 # Описание по-русски
 __WebOne__ - прокси-сервер HTTP (HTTPS), позволяющий открывать современные сайты на старых браузерах. Своеобразный переходник между реальным Web 2.0 и историческим Web 1.0. Работает по принципу MITM.

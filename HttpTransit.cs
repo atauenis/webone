@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Web;
 using static WebOne.Program;
 
 namespace WebOne
@@ -230,15 +232,18 @@ namespace WebOne
 
 				if (ClientRequest.Kind == HttpUtil.RequestKind.AlternateProxy)
 				{
-					// "Local proxy mode"
+					// "Alternate proxy access mode"
+					// ex. "Local proxy mode"
 					string FixedUrl = ClientRequest.RawUrl[1..];
+					if (FixedUrl.Contains(":/") && !FixedUrl.Contains("://")) FixedUrl = FixedUrl.Replace(":/", "://");
 					RequestURL = new Uri(FixedUrl);
 					Log.WriteLine(" Alternate: {0}", RequestURL);
 				}
 
 				if (ClientRequest.Kind == HttpUtil.RequestKind.DirtyAlternateProxy)
 				{
-					// "Dirty local proxy mode", try to use last used host: http://localhost/favicon.ico = http://example.com/favicon.ico
+					// "Dirty alternate proxy access mode", try to use last used host: http://localhost/favicon.ico = http://example.com/favicon.ico
+					// ex. "Dirty local proxy mode"
 					string FixedUrl = "http://" + new Uri(LastURL).Host + RequestURL.LocalPath;
 					RequestURL = new Uri(FixedUrl);
 					if (RequestURL.Host == "999.999.999.999") { SendError(404, "The proxy server cannot guess domain name."); return; }
@@ -1184,7 +1189,17 @@ namespace WebOne
 						}
 						return;
 					default:
-						if (SendInternalContent(InternalPageId, Arguments))
+						if (InternalPageId.ToLowerInvariant() == "/rovp.htm" && !Program.ToBoolean(ConfigFile.WebVideoOptions["Enable"] ?? "yes"))
+						{
+							SendRedirect("/norovp.htm", "ROVP is disabled on this server.");
+							return;
+						}
+						if (CheckInternalContentModification(InternalPageId, ClientRequest.Headers["If-Modified-Since"]))
+						{
+							// send 304 Not Modified code
+							SendError(304);
+						}
+						else if (SendInternalContent(InternalPageId, Arguments))
 						{
 							// an internal content is succesfully sent
 						}
@@ -1246,6 +1261,9 @@ namespace WebOne
 					ContentString = ExpandMaskedVariables(ContentString, Subcontent);
 					byte[] Buffer = (OutputContentEncoding ?? Encoding.Default).GetBytes(ContentString);
 					ClientResponse.ContentLength64 = Buffer.Length;
+					ClientResponse.ContentType = MimeType;
+					if (string.IsNullOrWhiteSpace(Arguments)) ClientResponse.AddHeader("Expires", DateTime.Now.AddDays(30).ToUniversalTime()
+	 .ToString("ddd, dd MMM yyyy HH:mm:ss 'GMT'", DateTimeFormatInfo.InvariantInfo));
 					ClientResponse.SendHeaders();
 					ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
 					ClientResponse.Close();
@@ -1256,8 +1274,10 @@ namespace WebOne
 					ClientResponse.StatusCode = 200;
 					ClientResponse.ProtocolVersion = new Version(1, 1);
 					byte[] ContentBinary = File.ReadAllBytes(ContentFilePath);
-					ClientResponse.ContentType = ContentType;
+					ClientResponse.ContentType = MimeType;
 					ClientResponse.ContentLength64 = ContentBinary.Length;
+					if (string.IsNullOrWhiteSpace(Arguments)) ClientResponse.AddHeader("Expires", DateTime.Now.AddDays(30).ToUniversalTime()
+.ToString("ddd, dd MMM yyyy HH:mm:ss 'GMT'"));
 					ClientResponse.SendHeaders();
 					ClientResponse.OutputStream.Write(ContentBinary, 0, ContentBinary.Length);
 					ClientResponse.Close();
@@ -1269,6 +1289,31 @@ namespace WebOne
 				Log.WriteLine("Cannot find the file: {0}.", ContentFilePath);
 				return false;
 			}
+		}
+
+		/// <summary>
+		/// Check if it's need to return 304 instead of call <see cref="SendInternalContent"/>.
+		/// </summary>
+		/// <param name="ContentId">Content ID.</param>
+		/// <param name="IfModifiedSince">Value of &quot;If-Modified-Since&quot; request HTTP header.</param>
+		/// <returns><c>true</c> if need to return 304 or <c>false</c> if need to return 200 or 404 via <see cref="SendInternalContent"/></returns>
+		public bool CheckInternalContentModification(string ContentId, string IfModifiedSince)
+		{
+			if (string.IsNullOrWhiteSpace(IfModifiedSince)) return false;
+			try
+			{
+				if (!ContentId.StartsWith("!")) ContentId = "/" + ContentId;
+				string ContentFilePath = ConfigFile.ContentDirectory + ContentId;
+
+				if (File.Exists(ContentFilePath))
+				{
+					var IMS = ToDateTimeOffset(IfModifiedSince);
+					var FileDate = new FileInfo(ContentFilePath).LastWriteTime;
+					return IMS >= FileDate;
+				}
+				else { return false; }
+			}
+			catch { return false; }
 		}
 
 		/// <summary>
@@ -1290,7 +1335,7 @@ namespace WebOne
 				if (parts.Length > 0)
 				{
 					string key = parts[0].Trim(new char[] { '?', ' ' });
-					string val = parts[1].Trim();
+					string val = HttpUtility.UrlDecode(parts[1]).Trim();
 
 					queryParameters.Add(key, val);
 				}
@@ -1895,6 +1940,7 @@ namespace WebOne
 				try
 				{
 					if (RequestURL.Host == "web.archive.org") return false;
+					if (RequestURL.Host == "archive.org") return false;
 					Log.WriteLine(" Look in Archive.org...");
 					Dump("=Look in Web Archive...");
 					WebArchiveRequest war = new WebArchiveRequest(RequestURL.ToString());
@@ -2245,7 +2291,18 @@ namespace WebOne
 					if (ex is FileNotFoundException) ErrNo = 404;
 					SendError(ErrNo, "Cannot retreive stream.<br>" + ex.ToString().Replace("\n", "<br>"));
 				}
-				else { Log.WriteLine("<Stream not sent: {0}", ex.Message); }
+				else
+				{
+					try
+					{
+						Potok.Close();
+						Log.WriteLine("<Stream closed: {0}", ex.Message);
+					}
+					catch
+					{
+						Log.WriteLine("<Stream not sent: {0}", ex.Message);
+					}
+				}
 			}
 			Dump("End is stream of " + ContentType);
 		}
@@ -2276,6 +2333,18 @@ namespace WebOne
 			if (Page.Attachment == null)
 			{
 				Log.WriteLine("<Return information page: {0}.", Page.Title);
+
+				if (Page.ShowFooter)
+				{
+					string ContentFilePath = ConfigFile.ContentDirectory + "/InfoPage.htm";
+					if (File.Exists(ContentFilePath))
+					{
+						string PageArguments = "?Title=" + HttpUtility.UrlEncode(Page.Title) + "&Header=" + HttpUtility.UrlEncode(Page.Header) + "&Content=" + HttpUtility.UrlEncode(Page.Content);
+						SendInternalContent("InfoPage.htm", PageArguments, Page.HttpStatusCode);
+						return;
+					}
+				}
+				else { /*not implemented yet, use old code*/ }
 
 				string BodyStyleHtml = ConfigFile.PageStyleHtml == "" ? "" : " " + ConfigFile.PageStyleHtml;
 				string BodyStyleCss = ConfigFile.PageStyleCss == "" ? "" : "<style type='text/css'>" + ConfigFile.PageStyleCss + "</style>";

@@ -33,6 +33,7 @@ namespace WebOne
 		public static string Protocols = "HTTP 1.1";
 		public static bool DaemonMode = false;
 		static bool ShutdownInitiated = false;
+		static bool RebuildCA = false;
 
 		const string CmdLineArgUnnamed = "--wo-short";
 		static List<KeyValuePair<string, string>> CmdLineOptions = new List<KeyValuePair<string, string>>();
@@ -62,7 +63,7 @@ namespace WebOne
 			Assembly.GetExecutingAssembly().GetName().Version.Major + "." +
 			Assembly.GetExecutingAssembly().GetName().Version.Minor + "." +
 			Assembly.GetExecutingAssembly().GetName().Version.Build
-			+ "-pre"
+			//+ "-pre"
 			);
 			Variables.Add("WOSystem", RuntimeInformation.OSDescription);
 
@@ -147,36 +148,54 @@ namespace WebOne
 					if (HaveCrtKey) HaveCrtKey = (new FileInfo(ConfigFile.SslCertificate).Length > MinPemLentgh) && (new FileInfo(ConfigFile.SslPrivateKey).Length > MinPemLentgh);
 					if (HaveCrtKey)
 					{ Log.WriteLine(false, false, "Using as SSL Certificate Authority: {0}, {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey); }
-					else
+					else if (!RebuildCA)
 					{
-						Log.WriteLine(true, false, "Creating root SSL Certificate & Private Key for CA...");
-						CertificateUtil.MakeSelfSignedCert(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey, ConfigFile.SslRootSubject, ConfigFile.SslHashAlgorithm);
-						Log.WriteLine(true, false, "CA Certificate: {0};   Key: {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
+						CreateRootCertificate();
 					}
-					RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));
-					Protocols += ", HTTPS 1.1";
-					if (!DefaultPACoverriden) DefaultPAC += DefaultPAChttps;
-
-					//check validness period
-					if (RootCertificate.NotAfter < DateTime.Now || RootCertificate.NotBefore > DateTime.Now)
+					if (RebuildCA)
 					{
-						Log.WriteLine(true, false, "Warning! CA Certificate is out of date: {0}-{1}, now {2}.", RootCertificate.NotBefore, RootCertificate.NotAfter, DateTime.Now);
+						Console.WriteLine();
+						Log.WriteLine(true, false, "CA Certificate will be new, so import it to browser(s) after build succeeds.");
+						CreateRootCertificate();
+						RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));
+						Log.WriteLine(true, false, "The new certificate is called \"" + RootCertificate.GetNameInfo(X509NameType.SimpleName, false) + "\".");
+						Log.WriteLine(true, false, "WebOne will now exit.");
+						Environment.Exit(0);
 					}
-
-					if (RootCertificate.NotAfter < DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildAfterNow) ||
-					RootCertificate.NotBefore > DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildBeforeNow))
+					try
 					{
-						Log.WriteLine(true, false, "Warning! CA Certificate is too fresh or expires too soon. Check configuration.");
+						RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));
+						Protocols += ", HTTPS 1.1";
+						if (!DefaultPACoverriden) DefaultPAC += DefaultPAChttps;
 
+						//check validness period
+						if (RootCertificate.NotAfter < DateTime.Now || RootCertificate.NotBefore > DateTime.Now)
+						{
+							Log.WriteLine(true, false, "Warning! CA Certificate is out of date: {0}-{1}, now {2}.", RootCertificate.NotBefore, RootCertificate.NotAfter, DateTime.Now);
+						}
+
+						if (RootCertificate.NotAfter < DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildAfterNow) ||
+						RootCertificate.NotBefore > DateTimeOffset.Now.AddDays(ConfigFile.SslCertVaildBeforeNow))
+						{
+							Log.WriteLine(true, false, "Warning! CA Certificate is too fresh or expires too soon. Check configuration.");
+						}
+					}
+					catch (Exception CertLoadEx)
+					{
+						if (CertLoadEx.InnerException != null)
+						{
+							Log.WriteLine(true, false, "Unable to load CA Certificate: {0}.", CertLoadEx.InnerException.Message);
+						}
+						else
+						{
+							Log.WriteLine(true, false, "Unable to load CA Certificate: {0}.", CertLoadEx.Message);
+						}
+						ConfigFile.SslEnable = false;
 					}
 				}
 				catch (Exception CertCreateEx)
 				{
 					Log.WriteLine(true, false, "Unable to create CA Certificate: {0}.", CertCreateEx.Message);
-					/*
-					Log.WriteLine(true, false, CertCreateEx.StackTrace.Replace("\n", " ; ")); //only for debug purposes at this moment
-					Log.WriteLine(true, false, "End of CA build error information. HTTPS won't be available!");
-					*/
 					ConfigFile.SslEnable = false;
 				}
 
@@ -196,7 +215,7 @@ namespace WebOne
 			if (!DefaultPACoverriden) DefaultPAC += DefaultPACfooter;
 			if (!DefaultPACoverriden) ConfigFile.PAC = DefaultPAC;
 
-				Log.WriteLine(false, false, "Configured to http://{1}:{2}/, {3}", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port, Protocols);
+			Log.WriteLine(false, false, "Configured to http://{1}:{2}/, {3}", ConfigFileName, ConfigFile.DefaultHostName, ConfigFile.Port, Protocols);
 
 			//initialize server
 			try
@@ -278,6 +297,16 @@ namespace WebOne
 
 			//the end
 			Shutdown();
+		}
+
+		/// <summary>
+		/// Create certificate and private key files for WebOne Certificate Authority
+		/// </summary>
+		private static void CreateRootCertificate()
+		{
+			Log.WriteLine(true, false, "Creating root SSL Certificate & Private Key for CA...");
+			CertificateUtil.MakeSelfSignedCert(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey, ConfigFile.SslRootSubject, ConfigFile.SslHashAlgorithm);
+			Log.WriteLine(true, false, "CA Certificate: {0};   Key: {1}.", ConfigFile.SslCertificate, ConfigFile.SslPrivateKey);
 		}
 
 		/// <summary>
@@ -381,6 +410,9 @@ namespace WebOne
 					case "--dump-headers":
 					case "--dump-requests":
 						//all will be processed in ProcessCommandLineOptions()
+						break;
+					case "--rebuild-ca":
+						RebuildCA = true;
 						break;
 					case "--daemon":
 						DaemonMode = true;
