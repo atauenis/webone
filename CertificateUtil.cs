@@ -17,8 +17,9 @@ namespace WebOne
 		// Based on ideas from:
 		// https://github.com/wheever/ProxHTTPSProxyMII/blob/master/CertTool.py#L58
 		// https://github.com/rwatjen/AzureIoTDPSCertificates/blob/master/src/DPSCertificateTool/CertificateUtil.cs#L46
+		// https://blog.rassie.dk/2018/04/creating-an-x-509-certificate-chain-in-c/
 
-		public const string DefaultCASubject = "C=SU, O=MITM Proxy, OU=This is not really secure connection, CN=WebOne Certificate Authority";
+		public const string DefaultCASubject = "CN=WebOne Certificate Authority %number%,OU=This is not really secure connection,O=MITM Proxy,C=SU";
 
 		/// <summary>
 		/// Create a self-signed SSL certificate and private key, and save them to PEM files.
@@ -38,11 +39,13 @@ namespace WebOne
 
 			// Append unique ID of certificate in its CN if it's default.
 			// This prevents "sec_error_bad_signature" error in Firefox.
-			if (certSubject == DefaultCASubject) certSubject += " [" + new Random().NextInt64(100, 999) + "]";
+			var RandomNumber = new Random().NextInt64(100, 999);
+			if (certSubject == DefaultCASubject) certSubject = certSubject.Replace("%number%", RandomNumber.ToString());
+			X500DistinguishedName certName = new(certSubject);
 
 			// Set up a certificate creation request.
 			using RSA rsa = RSA.Create();
-			CertificateRequest certRequest = new(certSubject, rsa, certHashAlgorithm, RSASignaturePadding.Pkcs1);
+			CertificateRequest certRequest = new(certName, rsa, certHashAlgorithm, RSASignaturePadding.Pkcs1);
 
 			// Configure the certificate as CA.
 			certRequest.CertificateExtensions.Add(
@@ -56,10 +59,10 @@ namespace WebOne
 
 			// Issue & self-sign the certificate.
 			X509Certificate2 certificate;
-			byte[] certSerialNumber = new byte[16];
-			new Random().NextBytes(certSerialNumber);
+			byte[] certSerialNumber = BitConverter.GetBytes(RandomNumber);
+			//byte[] certSerialNumber = new byte[16];
+			//new Random().NextBytes(certSerialNumber);
 
-			X500DistinguishedName certName = new(certSubject);
 			RsaPkcs1SignatureGenerator customSignatureGenerator = new(rsa);
 			certificate = certRequest.Create(
 				certName,
@@ -183,6 +186,10 @@ namespace WebOne
 			// set up a certificate creation request.
 			CertificateRequest certRequestAny = new(certSubject, rsa, certHashAlgorithm, RSASignaturePadding.Pkcs1);
 			RsaPkcs1SignatureGenerator customSignatureGenerator = new(RootCertificate.GetRSAPrivateKey());
+			SubjectAlternativeNameBuilder sanBuilder = new();
+			sanBuilder.AddDnsName(certSubject.Replace("CN=",""));
+			X509Extension sanExtension = sanBuilder.Build();
+			certRequestAny.CertificateExtensions.Add(sanExtension);
 			certificate = certRequestAny.Create(
 				issuerCertificate.IssuerName,
 				customSignatureGenerator,
