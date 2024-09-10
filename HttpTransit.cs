@@ -2355,6 +2355,7 @@ namespace WebOne
 				title +
 				string.Format("<meta charset=\"{0}\"/>", OutputContentEncoding == null ? "utf-8" : OutputContentEncoding.WebName) + "\n" +
 				(Page.AddCss ? BodyStyleCss : "") +
+				Page.HtmlHeaders + 
 				"<body" + BodyStyleHtml + ">\n" +
 				header1 + "\n" +
 				Page.Content + "\n" +

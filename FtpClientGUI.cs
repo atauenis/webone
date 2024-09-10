@@ -481,6 +481,9 @@ namespace WebOne
 			this.Title = Title;
 			this.Header = Header;
 			this.Content = Content;
+			this.ShowFooter = false;
+			this.AddCss = false;
+			this.HtmlHeaders = @"<link href=""/webone.css"" rel=""stylesheet""/><link rel=""shortcut icon"" href=""/ftpfav.ico"" type=""image/x-icon"">";
 		}
 	}
 }

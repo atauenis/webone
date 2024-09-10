@@ -53,6 +53,11 @@ namespace WebOne
 		public bool AddCss { get; set; }
 
 		/// <summary>
+		/// Specify additional HTML headers (before body tag)
+		/// </summary>
+		public string HtmlHeaders { get; set; }
+
+		/// <summary>
 		/// Create an information page
 		/// </summary>
 		/// <param name="Title">The information page title</param>
@@ -63,6 +68,7 @@ namespace WebOne
 		{
 			this.HttpStatusCode = HttpStatusCode;
 			this.HttpHeaders = new WebHeaderCollection();
+			this.HtmlHeaders = "";
 			this.Title = Title;
 			this.Header = Header;
 			this.Content = Content;
