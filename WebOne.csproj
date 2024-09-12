@@ -45,7 +45,7 @@
 		<DebugSymbols>false</DebugSymbols>
 	</PropertyGroup>
 
-	<PropertyGroup>
+	<PropertyGroup Condition="$(RuntimeIdentifier)!='linux-armv6'">
 		<PublishSingleFile>true</PublishSingleFile>
 	</PropertyGroup>
 
