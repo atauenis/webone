@@ -211,6 +211,7 @@ namespace WebOne
 				Protocols += ", CERN-compatible";
 				if (!DefaultPACoverriden) DefaultPAC += DefaultPACftp;
 			}
+			else { ConfigFile.SslEnable = false; }
 
 			if (!DefaultPACoverriden) DefaultPAC += DefaultPACfooter;
 			if (!DefaultPACoverriden) ConfigFile.PAC = DefaultPAC;

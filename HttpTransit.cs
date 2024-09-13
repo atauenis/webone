@@ -1131,8 +1131,30 @@ namespace WebOne
 						return;
 					case "/!ca":
 					case "/!ca/":
+					case "/WebOneCA.crt":
 						Log.WriteLine("<Return WebOne CA (root) certificate.");
-						SendFile(ConfigFile.SslCertificate, "application/x-x509-ca-cert", "WebOneCA.crt");
+						if (!ConfigFile.SslEnable)
+						{
+							SendError(404, "SSL and TLS are disabled. Use <i>http://</i> URL protocol to access any <i>https://</i> websites.");
+							return;
+						}
+						try
+						{
+							byte[] CertificateBuff = RootCertificate.Export(System.Security.Cryptography.X509Certificates.X509ContentType.Cert);
+							ClientResponse.StatusCode = 200;
+							//ClientResponse.ProtocolVersion = new Version(1, 1);
+
+							ClientResponse.ContentType = "application/x-x509-ca-cert";
+							ClientResponse.ContentLength64 = CertificateBuff.Length;
+							ClientResponse.AddHeader("Content-Disposition", "attachment; filename=\"WebOneCA.crt\"");
+							ClientResponse.SendHeaders();
+							ClientResponse.OutputStream.Write(CertificateBuff, 0, CertificateBuff.Length);
+							ClientResponse.Close();
+						}
+						catch (Exception cacex)
+						{
+							Log.WriteLine("Cannot return CA cert! " + cacex.Message);
+						}
 						return;
 					case "/!pac":
 					case "/!pac/":
@@ -2355,7 +2377,7 @@ namespace WebOne
 				title +
 				string.Format("<meta charset=\"{0}\"/>", OutputContentEncoding == null ? "utf-8" : OutputContentEncoding.WebName) + "\n" +
 				(Page.AddCss ? BodyStyleCss : "") +
-				Page.HtmlHeaders + 
+				Page.HtmlHeaders +
 				"<body" + BodyStyleHtml + ">\n" +
 				header1 + "\n" +
 				Page.Content + "\n" +
