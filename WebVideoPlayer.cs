@@ -48,6 +48,7 @@ namespace WebOne
 					break;
 				case "intro":
 					Page.Content = "<p align='center'><big>Use the toolbar above to watch a video.</big></p>";
+					Page.Content += "<noscript><p align='center'>If you have troubles with playback, read help page (&quot;?&quot; at the top).</p></noscript>";
 					Page.AddCss = false;
 					Page.Title = "Video player - INTRO";
 					break;
