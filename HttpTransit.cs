@@ -1299,7 +1299,7 @@ namespace WebOne
 					ClientResponse.ContentType = MimeType;
 					ClientResponse.ContentLength64 = ContentBinary.Length;
 					if (string.IsNullOrWhiteSpace(Arguments)) ClientResponse.AddHeader("Expires", DateTime.Now.AddDays(30).ToUniversalTime()
-.ToString("ddd, dd MMM yyyy HH:mm:ss 'GMT'"));
+.ToString("ddd, dd MMM yyyy HH:mm:ss 'GMT'", new CultureInfo("en-US")));
 					ClientResponse.SendHeaders();
 					ClientResponse.OutputStream.Write(ContentBinary, 0, ContentBinary.Length);
 					ClientResponse.Close();
