@@ -29,22 +29,20 @@ function validate(form) {
 			if(!good) alert('Only VP8 or VP9 or AV1 video and Vorbis or Opus audio and WebVTT subtitles are supported for WebM.');
 			return false;
 		case 'swf':
-			switch (form.type.value)
+			if (form.type[0].checked || form.type[7].checked || form.type[8].checked) { good = true; }
+			else
 			{
-				case 'embed':
-				case 'link':
-				case 'file':
-					good = true;
-					break;
-				default:
-					good = false;
-					alert('Flash videos can be played only via Macromedia/Adobe plug-in or player.');
-					return false;
+				good = false;
+				alert('Flash videos can be played only via Macromedia/Adobe plug-in or player.');
+				return false
 			}
 			if(form.vcodec.value != 'mjpeg') {good = false;}
 			if(form.acodec.value != 'mp3') {good = false;}
-			if(!good) alert('SWF muxer only supports MJPEG and MP3.');		
-			return false;
+			if (!good)
+			{
+				alert('SWF muxer only supports MJPEG and MP3.');
+				return false;
+			}
 	}
 	if (!good) return false;
 

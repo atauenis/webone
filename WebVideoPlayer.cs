@@ -41,10 +41,10 @@ namespace WebOne
 			{
 				case "":
 				case null:
-					Page.Content = "<p align=\"center\">";
-					Page.Content += "<a href=\"/rovp.htm\"><img src=\"/rovp.gif\" alt=\"Click here to open Retro Online Video Player.\"></a>";
+					Page.Content = "<div style=\"background-color: black; color: white; padding: 3em;\"><p align=\"center\">";
+					Page.Content += "<a href=\"/rovp.htm\"><img src=\"/rovp.gif\" alt=\"Click here to open Retro Online Video Player.\" border=\"0\"></a>";
 					Page.Content += "<br><h1 align=\"center\">Retro Online Video Player</h1>";
-					Page.Content += "</p>";
+					Page.Content += "</p></div>";
 					Page.HttpHeaders.Add("Refresh", "5;url=/rovp.htm");
 					break;
 				case "intro":
@@ -84,12 +84,14 @@ namespace WebOne
 					Page.Title = "Video player - VLC";
 					break;
 				case "objectns":
-					// [NetShow] ActiveMovie Control, NetShow Player 2.x Control - ActiveX
+					// [NetShow] NetShow Player Control, Windows Media Player 5/6 Control - ActiveX
 					// Docs: https://web.archive.org/web/20010124080600/http://msdn.microsoft.com/library/psdk/wm_media/wmplay/mmp_sdk/
+					// Docs: https://web.archive.org/web/19990117015933/http://www.microsoft.com/devonly/tech/amov1doc/amsdk008.htm
 					/*
 					 * Download: http://www.microsoft.com/netshow/download/player.htm
-					 * CODEBASE='http://www.microsoft.com/netshow/download/en/nsasfinf.cab#Version=2,0,0,912'
-					 * CODEBASE='http://www.microsoft.com/netshow/download/en/nsmp2inf.cab#Version=5,1,51,415'
+					 * CODEBASE='http://www.microsoft.com/netshow/download/en/nsasfinf.cab#Version=2,0,0,912'  - NS 2.0
+					 * CODEBASE='http://www.microsoft.com/netshow/download/en/nsmp2inf.cab#Version=5,1,51,415' - NS 3.0 aka WMP 5.2 Beta
+					 * CODEBASE='http://activex.microsoft.com/activex/controls/mplayer/en/nsmp2inf.cab#Version=6,4,7,1112' - WMP 6.4 RTM
 					 */
 					string NSActiveXhtml = "<center><object ID='MediaPlayer' style='width: 100%; height: 100%;' " +
 					"CLASSID='CLSID:2179C5D3-EBFF-11CF-B6FD-00AA00B4E220' " +
@@ -108,7 +110,7 @@ namespace WebOne
 					Page.Title = "Video player - NetShow ActiveX";
 					break;
 				case "objectwm":
-					// [WinMedia] Windows Media Player 6.4 Control - ActiveX
+					// [WinMedia] Windows Media Player 7.0 Control - ActiveX
 					// Download: http://microsoft.com/windows/mediaplayer/en/download/
 					// Docs: https://learn.microsoft.com/en-us/previous-versions/windows/desktop/wmp/detailed-object-model-comparison
 					string WMPActiveXhtml = "<center><object ID='MediaPlayer' style='width: 100%; height: 100%;' " +
@@ -124,7 +126,7 @@ namespace WebOne
 					"<param name='Controls' value='true'>" +
 					"<param name='AutoSize' value='true'>" +
 					"<param name='AutoStart' value='true'>" +
-					"Try another player type, as Windows Media Player Control 6.4 (or newer) is unavailable." +
+					"Try another player type, as Windows Media Player Control 7.0 (or newer) is unavailable." +
 					"</object></center>";
 					Page.Content = WMPActiveXhtml;
 					Page.AddCss = false;
@@ -139,10 +141,10 @@ namespace WebOne
 					Page.Title = "Video player - HTML5";
 					break;
 				case "dynimg":
-					// Dynamic Image - IE 2.0 only 
+					// Dynamic Image - IE only 
 					// (http://www.jmcgowan.com/aviweb.html)
 					// also: https://web.archive.org/web/19990117015933/http://www.microsoft.com/devonly/tech/amov1doc/amsdk008.htm
-					// tries to work also in IE 3-6.
+					// optimized for MPEG format & codec
 					string PlaceholderUrl = "/nodynsrc.gif";
 					Page.Content = "<center><IMG DYNSRC='" + VideoUrl + "' CONTROLS START='FILEOPEN' SRC='" + PlaceholderUrl + "'></center>";
 					Page.AddCss = false;
