@@ -7,31 +7,34 @@ function validate(form) {
 	switch(form.f.value)
 	{
 		case 'ogg':
-			if(form.vcodec.value != 'theora') {good = false;}
-			if(form.acodec.value != 'vorbis -strict -2') {good = false;}
-			if(!good) alert('Ogg is supporting only Theora video and Vorbis audio codecs.');
-			return false;
-		case 'webm':
-			switch(form.vcodec.value)
-			{
-			case 'vp8': case 'vp9': case 'av1':
-				good = true; break;
-			default:
-				good = false;
+			if (form.vcodec.value != 'theora') { good = false; }
+			if (form.acodec.value != 'vorbis -strict -2') { good = false; }
+			if (!good) {
+				alert('Ogg is supporting only Theora video and Vorbis audio codecs.');
+				return false;
 			}
-			if(good) switch(form.acodec.value)
-			{
+			break;
+		case 'webm':
+			switch (form.vcodec.value) {
+				case 'vp8': case 'vp9': case 'av1':
+					good = true; break;
+				default:
+					good = false;
+			}
+			if (good) switch (form.acodec.value) {
 				case 'vorbis -strict -2': case 'opus -strict -2':
 					good = true; break;
 				default:
 					good = false;
 			}
-			if(!good) alert('Only VP8 or VP9 or AV1 video and Vorbis or Opus audio and WebVTT subtitles are supported for WebM.');
-			return false;
+			if (!good) {
+				alert('Only VP8 or VP9 or AV1 video and Vorbis or Opus audio and WebVTT subtitles are supported for WebM.');
+				return false;
+			}
+			break;
 		case 'swf':
 			if (form.type[0].checked || form.type[7].checked || form.type[8].checked) { good = true; }
-			else
-			{
+			else {
 				good = false;
 				alert('Flash videos can be played only via Macromedia/Adobe plug-in or player.');
 				return false
@@ -50,8 +53,7 @@ function validate(form) {
 	switch(form.vcodec.value)
 	{
 		case 'h263':
-			switch (form.vf.value)
-			{
+			switch (form.vf.value) {
 				case 'scale="128x96"':
 				case 'scale="176x144"':
 				case 'scale="352x288"':
@@ -66,8 +68,7 @@ function validate(form) {
 			}
 			break;
 		case 'msvideo1':
-			switch(form.vf.value)
-			{
+			switch (form.vf.value) {
 				case 'scale="1024x768"':
 				case 'scale="800x600"':
 				case 'scale="640x480"':
@@ -78,7 +79,7 @@ function validate(form) {
 					good = false;
 					alert('MS Video 1 - width and height must be multiples of 4. Choose 4:3 video format.');
 					return false;
-			}			
+			}
 			break;
 	}
 	if (!good) return false;
@@ -87,9 +88,11 @@ function validate(form) {
 	switch(form.acodec.value)
 	{
 		case 'vorbis -strict -2':
-			if(form.ac.value != '2') {good = false;}
-			if(!good) alert('Current FFmpeg Vorbis encoder only supports 2 channels.');
-			return false;
+			if (form.ac.value != '2') { good = false; }
+			if (!good) {
+				alert('Current FFmpeg Vorbis encoder only supports 2 channels.');
+				return false;
+			}
 	}
 
 	return good;
