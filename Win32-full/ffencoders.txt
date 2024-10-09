@@ -19,9 +19,9 @@ Encoders:
  V....D av1_nvenc            NVIDIA NVENC av1 encoder (codec av1)
  V..... av1_qsv              AV1 (Intel Quick Sync Video acceleration) (codec av1)
  V....D av1_amf              AMD AMF AV1 encoder (codec av1)
+ V....D av1_vaapi            AV1 (VAAPI) (codec av1)
  V....D avrp                 Avid 1:1 10-bit RGB Packer
  V..X.D avui                 Avid Meridien Uncompressed
- V....D ayuv                 Uncompressed packed MS 4:4:4:4
  VF...D bitpacked            Bitpacked
  V....D bmp                  BMP (Windows and OS/2 bitmap)
  VF...D cfhd                 GoPro CineForm HD
@@ -31,6 +31,7 @@ Encoders:
  VFS..D dnxhd                VC3/DNxHD
  V....D dpx                  DPX (Digital Picture Exchange) image
  VFS..D dvvideo              DV (Digital Video)
+ VFS..D dxv                  Resolume DXV
  VF...D exr                  OpenEXR image
  V.S..D ffv1                 FFmpeg video codec #1
  VF...D ffvhuff              Huffyuv FFmpeg variant
@@ -42,36 +43,37 @@ Encoders:
  V..... h261                 H.261
  V..... h263                 H.263 / H.263-1996
  V.S... h263p                H.263+ / H.263-1998 / H.263 version 2
- V....D libx264              libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (codec h264)
- V....D libx264rgb           libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 RGB (codec h264)
  V....D libopenh264          OpenH264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (codec h264)
  V....D h264_amf             AMD AMF H.264 Encoder (codec h264)
  V....D h264_mf              H264 via MediaFoundation (codec h264)
  V....D h264_nvenc           NVIDIA NVENC H.264 encoder (codec h264)
  V..... h264_qsv             H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (Intel Quick Sync Video acceleration) (codec h264)
+ V....D h264_vaapi           H.264/AVC (VAAPI) (codec h264)
  VF...D hdr                  HDR (Radiance RGBE format) image
- V....D libx265              libx265 H.265 / HEVC (codec hevc)
  V....D hevc_amf             AMD AMF HEVC encoder (codec hevc)
  V....D hevc_mf              HEVC via MediaFoundation (codec hevc)
  V....D hevc_nvenc           NVIDIA NVENC hevc encoder (codec hevc)
  V..... hevc_qsv             HEVC (Intel Quick Sync Video acceleration) (codec hevc)
+ V....D hevc_vaapi           H.265/HEVC (VAAPI) (codec hevc)
  V....D libkvazaar           libkvazaar H.265 / HEVC (codec hevc)
  VF...D huffyuv              Huffyuv / HuffYUV
- V....D jpeg2000             JPEG 2000
+ VF...D jpeg2000             JPEG 2000
  VF.... libopenjpeg          OpenJPEG JPEG 2000 (codec jpeg2000)
  VF...D jpegls               JPEG-LS
- V..... libjxl               libjxl JPEG XL (codec jpegxl)
+ V....D libjxl               libjxl JPEG XL (codec jpegxl)
  VF...D ljpeg                Lossless JPEG
- VF...D magicyuv             MagicYUV video
+ VFS..D magicyuv             MagicYUV video
  VFS... mjpeg                MJPEG (Motion JPEG)
  V..... mjpeg_qsv            MJPEG (Intel Quick Sync Video acceleration) (codec mjpeg)
+ V....D mjpeg_vaapi          MJPEG (VAAPI) (codec mjpeg)
  V.S... mpeg1video           MPEG-1 video
  V.S... mpeg2video           MPEG-2 video
  V..... mpeg2_qsv            MPEG-2 video (Intel Quick Sync Video acceleration) (codec mpeg2video)
+ V....D mpeg2_vaapi          MPEG-2 (VAAPI) (codec mpeg2video)
  V.S... mpeg4                MPEG-4 part 2
- V....D libxvid              libxvidcore MPEG-4 part 2 (codec mpeg4)
  V..... msmpeg4v2            MPEG-4 part 2 Microsoft variant version 2
  V..... msmpeg4              MPEG-4 part 2 Microsoft variant version 3 (codec msmpeg4v3)
+ V....D msrle                Microsoft RLE
  V..... msvideo1             Microsoft Video-1
  V....D pam                  PAM (Portable AnyMap) image
  V....D pbm                  PBM (Portable BitMap) image
@@ -111,7 +113,9 @@ Encoders:
  V.S..D vbn                  Vizrt Binary Image
  V..... vnull                null video
  V....D libvpx               libvpx VP8 (codec vp8)
+ V....D vp8_vaapi            VP8 (VAAPI) (codec vp8)
  V....D libvpx-vp9           libvpx VP9 (codec vp9)
+ V....D vp9_vaapi            VP9 (VAAPI) (codec vp9)
  V..... vp9_qsv              VP9 video (Intel Quick Sync Video acceleration) (codec vp9)
  VF...D wbmp                 WBMP (Wireless Application Protocol Bitmap) image
  V....D libwebp_anim         libwebp WebP image (codec webp)
