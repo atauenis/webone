@@ -17,7 +17,7 @@ namespace WebOne
 			Page.ShowFooter = false;
 			Page.HtmlHeaders = "<style type='text/css'>html, body { border-style: none; } </style>";
 
-			string VideoUrl = Program.ProcessUriMasks("http://%Proxy%/!webvideo/?");
+			string VideoUrl = Program.ProcessUriMasks("/!webvideo/?");
 			foreach (string Par in Parameters.AllKeys)
 			{ if (Par != "type") VideoUrl += Par + "=" + HttpUtility.UrlEncode(Parameters[Par]) + "&"; }
 

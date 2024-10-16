@@ -6,6 +6,18 @@ function validate(form) {
 	//check Container
 	switch(form.f.value)
 	{
+		case "mpeg1video":
+			if (form.vcodec.value != 'mpeg1video') {
+				alert('MPEG1 muxer supports only codec MPEG1 for video.');
+				return false;
+			}
+			break;
+		case "mpeg2video":
+			if (form.vcodec.value != 'mpeg2video') {
+				alert('MPEG2 muxer supports only codec MPEG2 for video.');
+				return false;
+			}
+			break;
 		case 'ogg':
 			if (form.vcodec.value != 'theora') { good = false; }
 			if (form.acodec.value != 'vorbis -strict -2') { good = false; }
