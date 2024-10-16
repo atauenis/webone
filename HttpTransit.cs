@@ -198,6 +198,7 @@ namespace WebOne
 					LocalIP = ClientRequest.LocalEndPoint.Address.ToString(); // IPv4
 				else
 					LocalIP = "[" + ClientRequest.LocalEndPoint.Address.ToString() + "]"; //IPv6
+				if (LocalIP == "127.0.0.1" && ClientRequest.Url.Host == "10.0.2.2") LocalIP = "10.0.2.2"; //SLIRP access
 
 				//fill variables
 				UriBuilder builder = new UriBuilder(RequestURL);

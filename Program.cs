@@ -1006,6 +1006,7 @@ namespace WebOne
 							 from ipa in Netif.GetIPProperties().UnicastAddresses
 							 select (Netif, ipa))
 				IPs.Add(ipa.Address);
+			IPs.Add(IPAddress.Parse("10.0.2.2")); //QEMU, SheepShaver, Basilisk II emulators host system IP address (SLIRP)
 			return IPs.ToArray();
 		}
 
