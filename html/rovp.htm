@@ -6,8 +6,10 @@ content="text/html; charset=utf-8">
 <meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
 <title>Retro online video player</title>
 <style type="text/css">h1, h2, h3, h4 { font-family: sans-serif; } html {
-font-family: Cambria, sans-serif; } body { padding: 3em; } li {
-margin: 0px; } ul { list-style: square; } </style>
+font-family: Cambria, sans-serif; } body { padding: 1em; } li {
+margin: 0px; } ul { list-style: square; } iframe { border-style: none; } </style>
+<link rel="shortcut icon" href="rovpfav.ico" type="image/x-icon">
+<script language="JavaScript" type="text/javascript" src="rovp.js"></script>
 </head>
 
 <body>
@@ -23,7 +25,7 @@ align="center">
             style="width: 100%"></td>
             <td align="center" rowspan="3" colspan="2"><input
             type="submit" value="Load video"
-            style="height: 70px;"></td>
+            style="height: 70px;" onclick="return validate(this.form)"></td>
         </tr>
         <tr>
             <td align="right">Format</td>
@@ -54,6 +56,7 @@ align="center">
                 <option value="theora">Ogg Theora</option>
                 <option value="vp8">VP8</option>
                 <option value="vp9">VP9</option>
+                <option value="flv">FLV</option>
                 <option value="mjpeg">MJPEG</option>
                 <option value="msvideo1">MS Video 1</option>
                 <option value="copy">(original)</option>
@@ -72,7 +75,9 @@ align="center">
                 <option value="scale=&quot;1024x768&quot;">1024x768</option>
                 <option value="scale=&quot;800x600&quot;">800x600</option>
                 <option value="scale=&quot;640x480&quot;">640x480</option>
+                <option value="scale=&quot;320x240&quot;">320x240</option>
                 <option value="scale=&quot;320x200&quot;">320x200</option>
+                <option value="scale=&quot;1408x1152&quot;">1408x1152</option>
                 <option value="scale=&quot;704x576&quot;">704x576</option>
                 <option value="scale=&quot;352x288&quot;">352x288</option>
                 <option value="scale=&quot;176x144&quot;">176x144</option>
@@ -119,6 +124,6 @@ align="center">
     </table>
 </form>
 <iframe name="player_frame" src="/!player/?type=intro" border="0" width="100%" height="100%" style="border-style: none;">
-<p>Use the toolbar to watch a video.</iframe> </p>
+	<p>Use the toolbar to watch a video.</p></iframe>
 </body>
 </html>

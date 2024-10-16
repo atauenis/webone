@@ -85,7 +85,7 @@ namespace WebOne
 				case LineType.DOS:
 					return ParseDOS(Line);
 				default:
-					throw new ArgumentOutOfRangeException("Unknown LIST result line type", nameof(Type));
+					throw new ArgumentOutOfRangeException(nameof(Type), "Unknown LIST result line type");
 			}
 		}
 

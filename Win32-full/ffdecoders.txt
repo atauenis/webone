@@ -34,7 +34,6 @@ Decoders:
  V....D avrp                 Avid 1:1 10-bit RGB Packer
  V....D avs                  AVS (Audio Video Standard) video
  V....D avui                 Avid Meridien Uncompressed
- V....D ayuv                 Uncompressed packed MS 4:4:4:4
  V....D bethsoftvid          Bethesda VID video
  V....D bfi                  Brute Force & Ignorance
  V....D binkvideo            Bink video
@@ -116,13 +115,13 @@ Decoders:
  V....D interplayvideo       Interplay MVE video
  V....D ipu                  IPU Video
  VFS..D jpeg2000             JPEG 2000
- VF...D libopenjpeg          OpenJPEG JPEG 2000 (codec jpeg2000)
  V....D jpegls               JPEG-LS
  V....D libjxl               libjxl JPEG XL (codec jpegxl)
  V....D jv                   Bitmap Brothers JV video
  V....D kgv1                 Kega Game Video
  V....D kmvc                 Karl Morton's video codec
  VF...D lagarith             Lagarith lossless
+ V....D lead                 LEAD MCMP
  V....D loco                 LOCO
  V....D lscr                 LEAD Screen Capture
  V....D m101                 Matrox Uncompressed SD
@@ -171,6 +170,7 @@ Decoders:
  V....D pam                  PAM (Portable AnyMap) image
  V....D pbm                  PBM (Portable BitMap) image
  V....D pcx                  PC Paintbrush PCX image
+ V....D pdv                  PDV (PlayDate Video)
  V....D pfm                  PFM (Portable FloatMap) image
  V....D pgm                  PGM (Portable GrayMap) image
  V....D pgmyuv               PGMYUV (Portable GrayMap YUV) image
@@ -197,6 +197,7 @@ Decoders:
  V....D roqvideo             id RoQ video (codec roq)
  V....D rpza                 QuickTime video (RPZA)
  V....D rscc                 innoHeim/Rsupport Screen Capture Codec
+ VF...D rtv1                 RTV1 (RivaTuner Video)
  V....D rv10                 RealVideo 1.0
  V....D rv20                 RealVideo 2.0
  VF...D rv30                 RealVideo 3.0
@@ -253,6 +254,7 @@ Decoders:
  V....D vcr1                 ATI VCR1
  V....D xl                   Miro VideoXL (codec vixl)
  V....D vmdvideo             Sierra VMD video
+ VFS..D vmix                 vMix Video
  V....D vmnc                 VMware Screen Codec / VMware Video
  V....D vnull                null video
  VF..BD vp3                  On2 VP3
@@ -271,6 +273,7 @@ Decoders:
  V..... vp9_cuvid            Nvidia CUVID VP9 decoder (codec vp9)
  V....D vp9_qsv              VP9 video (Intel Quick Sync Video acceleration) (codec vp9)
  V....D vqc                  ViewQuest VQC
+ V..X.D vvc                  VVC (Versatile Video Coding)
  VF...D wbmp                 WBMP (Wireless Application Protocol Bitmap) image
  V....D wcmv                 WinCAM Motion Video
  VF...D webp                 WebP image
@@ -430,6 +433,7 @@ Decoders:
  A....D nellymoser           Nellymoser Asao
  A....D opus                 Opus
  A....D libopus              libopus Opus (codec opus)
+ A....D osq                  OSQ (Original Sound Quality)
  A....D paf_audio            Amazing Studio Packed Animation File Audio
  A....D pcm_alaw             PCM A-law / G.711 A-law
  A....D pcm_bluray           PCM signed 16|20|24-bit big-endian for Blu-ray media
@@ -469,6 +473,7 @@ Decoders:
  A....D qcelp                QCELP / PureVoice
  A....D qdm2                 QDesign Music Codec 2
  A....D qdmc                 QDesign Music Codec 1
+ A....D qoa                  QOA (Quite OK Audio)
  A....D real_144             RealAudio 1.0 (14.4K) (codec ra_144)
  A....D real_288             RealAudio 2.0 (28.8K) (codec ra_288)
  A....D ralf                 RealAudio Lossless
@@ -505,13 +510,14 @@ Decoders:
  A....D xan_dpcm             DPCM Xan
  A....D xma1                 Xbox Media Audio 1
  A....D xma2                 Xbox Media Audio 2
+ S..... libaribcaption       ARIB STD-B24 caption decoder (codec arib_caption)
  S..... libaribb24           libaribb24 ARIB STD-B24 caption decoder (codec arib_caption)
  S..... ssa                  ASS (Advanced SubStation Alpha) subtitle (codec ass)
  S..... ass                  ASS (Advanced SubStation Alpha) subtitle
  S..... dvbsub               DVB subtitles (codec dvb_subtitle)
  S..... libzvbi_teletextdec  Libzvbi DVB teletext decoder (codec dvb_teletext)
  S..... dvdsub               DVD subtitles (codec dvd_subtitle)
- S..... cc_dec               Closed Caption (EIA-608 / CEA-708) (codec eia_608)
+ S..... cc_dec               Closed Captions (EIA-608 / CEA-708) (codec eia_608)
  S..... pgssub               HDMV Presentation Graphic Stream subtitles (codec hdmv_pgs_subtitle)
  S..... jacosub              JACOsub subtitle
  S..... microdvd             MicroDVD subtitle

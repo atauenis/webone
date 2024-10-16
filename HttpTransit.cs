@@ -198,6 +198,7 @@ namespace WebOne
 					LocalIP = ClientRequest.LocalEndPoint.Address.ToString(); // IPv4
 				else
 					LocalIP = "[" + ClientRequest.LocalEndPoint.Address.ToString() + "]"; //IPv6
+				if (LocalIP == "127.0.0.1" && ClientRequest.Url.Host == "10.0.2.2") LocalIP = "10.0.2.2"; //SLIRP access
 
 				//fill variables
 				UriBuilder builder = new UriBuilder(RequestURL);
@@ -1131,8 +1132,64 @@ namespace WebOne
 						return;
 					case "/!ca":
 					case "/!ca/":
+					case "/weboneca.crt":
+					case "/weboneca.cer":
+					case "/weboneca.der":
 						Log.WriteLine("<Return WebOne CA (root) certificate.");
-						SendFile(ConfigFile.SslCertificate, "application/x-x509-ca-cert", "WebOneCA.crt");
+						if (!ConfigFile.SslEnable)
+						{
+							SendError(404, "SSL and TLS are disabled. Use <i>http://</i> URL protocol to access any <i>https://</i> websites.");
+							return;
+						}
+						try
+						{
+							byte[] CertificateBuff = RootCertificate.Export(System.Security.Cryptography.X509Certificates.X509ContentType.Cert);
+							ClientResponse.StatusCode = 200;
+							//ClientResponse.ProtocolVersion = new Version(1, 1);
+
+							ClientResponse.ContentType = "application/x-x509-ca-cert";
+							ClientResponse.ContentLength64 = CertificateBuff.Length;
+							ClientResponse.AddHeader("Content-Disposition", "attachment; filename=\"WebOneCA.crt\"");
+							ClientResponse.SendHeaders();
+							ClientResponse.OutputStream.Write(CertificateBuff, 0, CertificateBuff.Length);
+							ClientResponse.Close();
+						}
+						catch (Exception cacex)
+						{
+							Log.WriteLine("Cannot return CA cert! " + cacex.Message);
+						}
+						return;
+					case "/weboneca.pem":
+					case "/weboneca.txt":
+						const string CRT_HEADER = "-----BEGIN CERTIFICATE-----\n";
+						const string CRT_FOOTER = "\n-----END CERTIFICATE-----";
+
+						Log.WriteLine("<Return WebOne CA (root) certificate in PEM format.");
+						if (!ConfigFile.SslEnable)
+						{
+							SendError(404, "SSL and TLS are disabled. Use <i>http://</i> URL protocol to access any <i>https://</i> websites.");
+							return;
+						}
+						try
+						{
+							byte[] CertificateBin = RootCertificate.Export(System.Security.Cryptography.X509Certificates.X509ContentType.Cert);
+							string CertificatePEM = CRT_HEADER + Convert.ToBase64String(CertificateBin, Base64FormattingOptions.InsertLineBreaks) + CRT_FOOTER;
+							byte[] CertificateBuff = Encoding.Default.GetBytes(CertificatePEM);
+
+							ClientResponse.StatusCode = 200;
+							//ClientResponse.ProtocolVersion = new Version(1, 1);
+
+							ClientResponse.ContentType = "application/x-x509-ca-cert";
+							ClientResponse.ContentLength64 = CertificateBuff.Length;
+							ClientResponse.AddHeader("Content-Disposition", "attachment; filename=\"WebOneCA.crt\"");
+							ClientResponse.SendHeaders();
+							ClientResponse.OutputStream.Write(CertificateBuff, 0, CertificateBuff.Length);
+							ClientResponse.Close();
+						}
+						catch (Exception cacex)
+						{
+							Log.WriteLine("Cannot return CA cert as PEM! " + cacex.Message);
+						}
 						return;
 					case "/!pac":
 					case "/!pac/":
@@ -1277,7 +1334,7 @@ namespace WebOne
 					ClientResponse.ContentType = MimeType;
 					ClientResponse.ContentLength64 = ContentBinary.Length;
 					if (string.IsNullOrWhiteSpace(Arguments)) ClientResponse.AddHeader("Expires", DateTime.Now.AddDays(30).ToUniversalTime()
-.ToString("ddd, dd MMM yyyy HH:mm:ss 'GMT'"));
+.ToString("ddd, dd MMM yyyy HH:mm:ss 'GMT'", new CultureInfo("en-US")));
 					ClientResponse.SendHeaders();
 					ClientResponse.OutputStream.Write(ContentBinary, 0, ContentBinary.Length);
 					ClientResponse.Close();
@@ -2355,6 +2412,7 @@ namespace WebOne
 				title +
 				string.Format("<meta charset=\"{0}\"/>", OutputContentEncoding == null ? "utf-8" : OutputContentEncoding.WebName) + "\n" +
 				(Page.AddCss ? BodyStyleCss : "") +
+				Page.HtmlHeaders +
 				"<body" + BodyStyleHtml + ">\n" +
 				header1 + "\n" +
 				Page.Content + "\n" +

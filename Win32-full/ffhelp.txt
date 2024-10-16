@@ -1,6 +1,6 @@
-ffmpeg version n6.0-22-g549430e14d-20230529 Copyright (c) 2000-2023 the FFmpeg developers
+ffmpeg version n7.0.2-20-gf5f590b1e7-20241007 Copyright (c) 2000-2024 the FFmpeg developers
 
-Hyper fast Audio and Video encoder
+Universal media converter
 usage: ffmpeg [options] [[infile options] -i infile]... {[outfile options] outfile}...
 
 Getting help:
@@ -10,104 +10,62 @@ Getting help:
     -h type=name -- print all options for the named decoder/encoder/demuxer/muxer/filter/bsf/protocol
     See man ffmpeg for detailed description of the options.
 
+Per-stream options can be followed by :<stream_spec> to apply that option to specific streams only. <stream_spec> can be a stream index, or v/a/s for video/audio/subtitle (see manual for full syntax).
+
 Print help / information / capabilities:
 -L                  show license
--h topic            show help
--? topic            show help
--help topic         show help
---help topic        show help
+-h <topic>          show help
 -version            show version
--buildconf          show build configuration
--formats            show available formats
 -muxers             show available muxers
 -demuxers           show available demuxers
 -devices            show available devices
--codecs             show available codecs
 -decoders           show available decoders
 -encoders           show available encoders
--bsfs               show available bit stream filters
--protocols          show available protocols
 -filters            show available filters
 -pix_fmts           show available pixel formats
 -layouts            show standard channel layouts
 -sample_fmts        show available audio sample formats
--dispositions       show available stream dispositions
--colors             show available color names
--sources device     list sources of the input device
--sinks device       list sinks of the output device
--hwaccels           show available HW acceleration methods
 
 Global options (affect whole program instead of just one file):
--loglevel loglevel  set logging level
--v loglevel         set logging level
--report             generate a report
--max_alloc bytes    set maximum size of a single allocated block
+-v <loglevel>       set logging level
 -y                  overwrite output files
 -n                  never overwrite output files
--ignore_unknown     Ignore unknown stream types
--filter_threads     number of non-complex filter threads
--filter_complex_threads  number of threads for -filter_complex
 -stats              print progress report during encoding
--max_error_rate maximum error rate  ratio of decoding errors (0.0: no errors, 1.0: 100% errors) above which ffmpeg returns an error instead of success.
 
-Per-file main options:
--f fmt              force format
--c codec            codec name
--codec codec        codec name
--pre preset         preset name
--map_metadata outfile[,metadata]:infile[,metadata]  set metadata information of outfile from infile
--t duration         record or transcode "duration" seconds of audio/video
--to time_stop       record or transcode stop time
--fs limit_size      set the limit file size in bytes
--ss time_off        set the start time offset
--sseof time_off     set the start time offset relative to EOF
--seek_timestamp     enable/disable seeking by timestamp with -ss
--timestamp time     set the recording timestamp ('now' to set the current time)
--metadata string=string  add metadata
--program title=string:st=number...  add program with specified streams
--target type        specify target file type ("vcd", "svcd", "dvd", "dv" or "dv50" with optional prefixes "pal-", "ntsc-" or "film-")
--apad               audio pad
--frames number      set the number of frames to output
--filter filter_graph  set stream filtergraph
--filter_script filename  read stream filtergraph description from a file
--reinit_filter      reinit filtergraph on input parameter changes
--discard            discard
--disposition        disposition
+Per-file options (input and output):
+-f <fmt>            force container format (auto-detected otherwise)
+-t <duration>       stop transcoding after specified duration
+-to <time_stop>     stop transcoding after specified time is reached
+-ss <time_off>      start transcoding at specified time
+
+
+Per-file options (output-only):
+-metadata[:<spec>] <key=value>  add metadata
+
+Per-stream options:
+-c[:<stream_spec>] <codec>  select encoder/decoder ('copy' to copy stream without reencoding)
+-filter[:<stream_spec>] <filter_graph>  apply specified filters to audio/video
 
 Video options:
--vframes number     set the number of video frames to output
--r rate             set frame rate (Hz value, fraction or abbreviation)
--fpsmax rate        set max frame rate (Hz value, fraction or abbreviation)
--s size             set frame size (WxH or abbreviation)
--aspect aspect      set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)
--display_rotation angle  set pure counter-clockwise rotation in degrees for stream(s)
--display_hflip      set display horizontal flip for stream(s) (overrides any display rotation if it is not set)
--display_vflip      set display vertical flip for stream(s) (overrides any display rotation if it is not set)
+-r[:<stream_spec>] <rate>  override input framerate/convert to given output framerate (Hz value, fraction or abbreviation)
+-aspect[:<stream_spec>] <aspect>  set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)
 -vn                 disable video
--vcodec codec       force video codec ('copy' to copy stream)
--timecode hh:mm:ss[:;.]ff  set initial TimeCode value.
--pass n             select the pass number (1 to 3)
--vf filter_graph    set video filters
--b bitrate          video bitrate (please use -b:v)
--dn                 disable data
+-vcodec <codec>     alias for -c:v (select encoder/decoder for video streams)
+-vf <filter_graph>  alias for -filter:v (apply filters to video streams)
+-b <bitrate>        video bitrate (please use -b:v)
 
 Audio options:
--aframes number     set the number of audio frames to output
--aq quality         set audio quality (codec-specific)
--ar rate            set audio sampling rate (in Hz)
--ac channels        set number of audio channels
+-aq <quality>       set audio quality (codec-specific)
+-ar[:<stream_spec>] <rate>  set audio sampling rate (in Hz)
+-ac[:<stream_spec>] <channels>  set number of audio channels
 -an                 disable audio
--acodec codec       force audio codec ('copy' to copy stream)
--ab bitrate         audio bitrate (please use -b:a)
--af filter_graph    set audio filters
+-acodec <codec>     alias for -c:a (select encoder/decoder for audio streams)
+-ab <bitrate>       alias for -b:a (select bitrate for audio streams)
+-af <filter_graph>  alias for -filter:a (apply filters to audio streams)
 
 Subtitle options:
--s size             set frame size (WxH or abbreviation)
 -sn                 disable subtitle
--scodec codec       force subtitle codec ('copy' to copy stream)
--stag fourcc/tag    force subtitle tag/fourcc
--fix_sub_duration   fix subtitles duration
--canvas_size size   set canvas size (WxH or abbreviation)
--spre preset        set the subtitle options to the indicated preset
+-scodec <codec>     alias for -c:s (select encoder/decoder for subtitle streams)
 
 
+https://github.com/defisym/FFmpeg-Builds-Win32/releases/tag/autobuild-2024-10-07-12-41

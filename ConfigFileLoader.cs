@@ -485,6 +485,7 @@ namespace WebOne
 										case "MD5":
 											ConfigFile.SslHashAlgorithm = System.Security.Cryptography.HashAlgorithmName.MD5;
 											break;
+										case "SHA":
 										case "SHA1":
 											ConfigFile.SslHashAlgorithm = System.Security.Cryptography.HashAlgorithmName.SHA1;
 											break;
@@ -501,6 +502,11 @@ namespace WebOne
 											ConfigFile.SslHashAlgorithm = System.Security.Cryptography.HashAlgorithmName.SHA512;
 											break;
 										default:
+											//Try detect from OID:
+											//https://source.dot.net/#System.Security.Cryptography/src/libraries/Common/src/System/Security/Cryptography/Oids.cs,69
+											bool SupportedOID = System.Security.Cryptography.HashAlgorithmName.TryFromOid(Option.Value, out ConfigFile.SslHashAlgorithm);
+											if (SupportedOID) break;
+
 											Log.WriteLine(true, false, "Warning: '{0}' is not a valid hash algorithm name, at {1}.", Option.Value, Option.Location);
 											break;
 									}
