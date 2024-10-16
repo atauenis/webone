@@ -1132,7 +1132,9 @@ namespace WebOne
 						return;
 					case "/!ca":
 					case "/!ca/":
-					case "/WebOneCA.crt":
+					case "/weboneca.crt":
+					case "/weboneca.cer":
+					case "/weboneca.der":
 						Log.WriteLine("<Return WebOne CA (root) certificate.");
 						if (!ConfigFile.SslEnable)
 						{
@@ -1155,6 +1157,38 @@ namespace WebOne
 						catch (Exception cacex)
 						{
 							Log.WriteLine("Cannot return CA cert! " + cacex.Message);
+						}
+						return;
+					case "/weboneca.pem":
+					case "/weboneca.txt":
+						const string CRT_HEADER = "-----BEGIN CERTIFICATE-----\n";
+						const string CRT_FOOTER = "\n-----END CERTIFICATE-----";
+
+						Log.WriteLine("<Return WebOne CA (root) certificate in PEM format.");
+						if (!ConfigFile.SslEnable)
+						{
+							SendError(404, "SSL and TLS are disabled. Use <i>http://</i> URL protocol to access any <i>https://</i> websites.");
+							return;
+						}
+						try
+						{
+							byte[] CertificateBin = RootCertificate.Export(System.Security.Cryptography.X509Certificates.X509ContentType.Cert);
+							string CertificatePEM = CRT_HEADER + Convert.ToBase64String(CertificateBin, Base64FormattingOptions.InsertLineBreaks) + CRT_FOOTER;
+							byte[] CertificateBuff = Encoding.Default.GetBytes(CertificatePEM);
+
+							ClientResponse.StatusCode = 200;
+							//ClientResponse.ProtocolVersion = new Version(1, 1);
+
+							ClientResponse.ContentType = "application/x-x509-ca-cert";
+							ClientResponse.ContentLength64 = CertificateBuff.Length;
+							ClientResponse.AddHeader("Content-Disposition", "attachment; filename=\"WebOneCA.crt\"");
+							ClientResponse.SendHeaders();
+							ClientResponse.OutputStream.Write(CertificateBuff, 0, CertificateBuff.Length);
+							ClientResponse.Close();
+						}
+						catch (Exception cacex)
+						{
+							Log.WriteLine("Cannot return CA cert as PEM! " + cacex.Message);
 						}
 						return;
 					case "/!pac":
