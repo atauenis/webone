@@ -51,11 +51,21 @@ function validate(form) {
 				alert('Flash videos can be played only via Macromedia/Adobe plug-in or player.');
 				return false
 			}
-			if(form.vcodec.value != 'mjpeg') {good = false;}
-			if(form.acodec.value != 'mp3') {good = false;}
+			switch (form.vcodec.value)
+			{
+				case "mjpeg":
+				case "flv":
+				case "vp6":
+					good = true;
+					break;
+				default:
+					good = false
+					break;
+            }
+			if(form.acodec.value != 'mp3') { good = false; }
 			if (!good)
 			{
-				alert('SWF muxer only supports MJPEG and MP3.');
+				alert('SWF muxer only supports FLV/MJPEG video and MP3 audio.');
 				return false;
 			}
 	}
