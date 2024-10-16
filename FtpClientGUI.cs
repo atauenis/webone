@@ -300,15 +300,15 @@ namespace WebOne
 
 					//Decode the directory listing
 					List<FtpDirectoryListEntry> FileListTable = new List<FtpDirectoryListEntry>();
-					FtpDirectoryListEntry.LineType lineType = FtpDirectoryListEntry.LineType.Unknown;
 					foreach (string fileListLine in FileList.Split("\n"))
 					{
 						if (string.IsNullOrWhiteSpace(fileListLine)) continue;
-						if (lineType == FtpDirectoryListEntry.LineType.Unknown)
-						{
-							if (FtpDirectoryListEntry.IsUnixLine(fileListLine)) lineType = FtpDirectoryListEntry.LineType.UNIX;
-							if (FtpDirectoryListEntry.IsDosLine(fileListLine)) lineType = FtpDirectoryListEntry.LineType.DOS;
-						}
+
+						FtpDirectoryListEntry.LineType lineType = FtpDirectoryListEntry.LineType.Unknown;
+						if (FtpDirectoryListEntry.IsUnixLine(fileListLine)) lineType = FtpDirectoryListEntry.LineType.UNIX;
+						if (FtpDirectoryListEntry.IsDosLine(fileListLine)) lineType = FtpDirectoryListEntry.LineType.DOS;
+						if (lineType == FtpDirectoryListEntry.LineType.Unknown) continue;
+
 						FtpDirectoryListEntry Line = FtpDirectoryListEntry.ParseLine(fileListLine.Trim('\r', '\n'), lineType);
 
 						if (Line.Name == "." || Line.Name == "..") continue;
