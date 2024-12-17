@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,7 +19,7 @@ namespace WebOne
 		/// </summary>
 		public WebVideo ConvertVideo(Dictionary<string, string> Arguments, LogWriter Log)
 		{
-			WebVideo video = new WebVideo();
+			WebVideo video = new();
 			try
 			{
 				string YoutubeDlArgs = "";
@@ -34,18 +32,17 @@ namespace WebOne
 				{ throw new InvalidOperationException("Internet video address is missing."); }
 
 				// Load default options
+				if (!ConfigFile.WebVideoOptions.ContainsKey("Enable")) ConfigFile.WebVideoOptions["Enable"] = "false";
+				if (!ConfigFile.WebVideoOptions.ContainsKey("YouTubeDlApp")) ConfigFile.WebVideoOptions["YouTubeDlApp"] = "yt-dlp";
+				if (!ConfigFile.WebVideoOptions.ContainsKey("FFmpegApp")) ConfigFile.WebVideoOptions["FFmpegApp"] = "ffmpeg";
 				foreach (var x in ConfigFile.WebVideoOptions)
 				{ if (!Arguments.ContainsKey(x.Key)) Arguments[x.Key] = x.Value; }
 
-				// Check does the feature is not disabled
-				if (!ConfigFile.WebVideoOptions.ContainsKey("Enable"))
-				{ throw new Exception("This feature is not enabled by administrator."); }
-
 				// Configure output file type
 				string PreferredMIME = "application/octet-stream", PreferredName = "video.avi";
-				if(Arguments.ContainsKey("f")) // (ffmpeg output format)
+				if (Arguments.ContainsKey("f")) // (ffmpeg output format)
 				{
-					switch(Arguments["f"])
+					switch (Arguments["f"])
 					{
 						case "avi":
 							PreferredMIME = "video/msvideo";
@@ -100,7 +97,7 @@ namespace WebOne
 							break;
 					}
 				}
-				if(Arguments.ContainsKey("j") ||
+				if (Arguments.ContainsKey("j") ||
 				   Arguments.ContainsKey("J") ||
 				   Arguments.ContainsKey("dump-json") ||
 				   Arguments.ContainsKey("dump-single-json") ||
@@ -119,14 +116,14 @@ namespace WebOne
 				// Load all parameters
 				foreach (var Arg in Arguments)
 				{
-					if((Arg.Key.StartsWith("vf") && Arguments["vcodec"] != "copy") ||
+					if ((Arg.Key.StartsWith("vf") && Arguments["vcodec"] != "copy") ||
 					   (Arg.Key.StartsWith("af") && Arguments["acodec"] != "copy"))
 					{
 						// Don't apply filters if codec is original
 						FFmpegArgs += string.Format(" -{0} {1}", Arg.Key, Arg.Value);
 						continue;
 					}
-					if(Arg.Key.StartsWith("filter"))
+					if (Arg.Key.StartsWith("filter"))
 					{
 						/* Currently may cause FFMPEG errors if combined with `-vcodec copy`:
 						 * Filtergraph 'scale=480:-1' was defined for video output stream 0:0 but codec copy was selected.
@@ -347,9 +344,9 @@ namespace WebOne
 						if (e.Data != null && Regex.IsMatch(e.Data, @"\[download\].*ETA (\d\d:\d\d:\d\d|\d\d:\d\d)"))
 						{
 							Match match = Regex.Match(e.Data, @"\[download\].*ETA (\d\d:\d\d:\d\d|\d\d:\d\d)");
-											//assuming, it's succcessfull & have 2 groups
+							//assuming, it's succcessfull & have 2 groups
 
-											string ETA = (Regex.IsMatch(match.Groups[1].Value, @"\d\d:\d\d:\d\d")) ? match.Groups[1].Value : "00:" + match.Groups[1].Value;
+							string ETA = (Regex.IsMatch(match.Groups[1].Value, @"\d\d:\d\d:\d\d")) ? match.Groups[1].Value : "00:" + match.Groups[1].Value;
 							EndTime = DateTime.Now.Add(TimeSpan.Parse(ETA));
 						}
 					};
@@ -376,7 +373,7 @@ namespace WebOne
 						video.VideoStream = YoutubeDl.StandardOutput.BaseStream;
 					}
 				}
-				if(GetYoutubeJson)
+				if (GetYoutubeJson)
 				{
 					// - Redirect yt-dlp STDERR to return stream (video metadata JSON)
 					video.VideoStream = YoutubeDl.StandardError.BaseStream;
@@ -393,16 +390,16 @@ namespace WebOne
 						PreventProcessIdle(ref YoutubeDl, ref YoutubeDlCpuLoad, Log);
 					}
 				}).Start();
-				if(UseFFmpeg) new Task(() =>
-				{
-					while (DateTime.Now < EndTime) { Thread.Sleep(1000); }
-					float FFmpegCpuLoad = 0;
-					while (!FFmpeg.HasExited)
-					{
-						Thread.Sleep(1000);
-						PreventProcessIdle(ref FFmpeg, ref FFmpegCpuLoad, Log);
-					}
-				}).Start();
+				if (UseFFmpeg) new Task(() =>
+				 {
+					 while (DateTime.Now < EndTime) { Thread.Sleep(1000); }
+					 float FFmpegCpuLoad = 0;
+					 while (!FFmpeg.HasExited)
+					 {
+						 Thread.Sleep(1000);
+						 PreventProcessIdle(ref FFmpeg, ref FFmpegCpuLoad, Log);
+					 }
+				 }).Start();
 
 				// Wait for YT-DLP & FFmpeg to start working or end with error
 				Thread.Sleep(5000);
