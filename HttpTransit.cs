@@ -1064,6 +1064,11 @@ namespace WebOne
 						return;
 					case "/!webvideo":
 					case "/!webvideo/":
+						if (!ConfigFile.WebVideoOptions.ContainsKey("Enable") || !Program.ToBoolean(ConfigFile.WebVideoOptions["Enable"] ?? "yes"))
+						{
+							SendRedirect("/norovp.htm", "Video Converting and ROVP are disabled on this server.");
+							return;
+						}
 						Dictionary<string, string> VidArgs = new();
 
 						foreach (string UrlArg in System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query).AllKeys)

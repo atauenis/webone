@@ -37,6 +37,10 @@ namespace WebOne
 				foreach (var x in ConfigFile.WebVideoOptions)
 				{ if (!Arguments.ContainsKey(x.Key)) Arguments[x.Key] = x.Value; }
 
+				// Check does the feature is not disabled
+				if (!ConfigFile.WebVideoOptions.ContainsKey("Enable"))
+				{ throw new Exception("This feature is not enabled by administrator."); }
+
 				// Configure output file type
 				string PreferredMIME = "application/octet-stream", PreferredName = "video.avi";
 				if(Arguments.ContainsKey("f")) // (ffmpeg output format)

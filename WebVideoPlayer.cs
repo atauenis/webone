@@ -30,7 +30,7 @@ namespace WebOne
 				if (Parameters["prefer"] != null) PreferPage = Parameters["prefer"] + "&url=" + SampleUrl;
 			}
 
-			if (!Program.ToBoolean(ConfigFile.WebVideoOptions["Enable"] ?? "yes"))
+			if (!ConfigFile.WebVideoOptions.ContainsKey("Enable") || !Program.ToBoolean(ConfigFile.WebVideoOptions["Enable"] ?? "yes"))
 			{
 				Page.Content = "It's disabled.";
 				Page.HttpHeaders.Add("Refresh", "0;url=/norovp.htm");
