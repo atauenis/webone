@@ -71,8 +71,10 @@
 	</ItemGroup>
 
 	<ItemGroup Condition="$(SelfContained)==false">
+		<DebDotNetDependencies Remove="@(DebDotNetDependencies)" />
 		<DebDotNetDependencies Include="dotnet-runtime-6.0" />
-		<RpmDotNetDependencies Include="dotnet-runtime-6.0" />
+		<RpmDotNetDependency Remove="@(RpmDotNetDependency)" />
+		<RpmDotNetDependency Include="dotnet-runtime-6.0" />
 	</ItemGroup>
 
 	<ItemGroup>
