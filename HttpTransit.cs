@@ -1303,6 +1303,13 @@ namespace WebOne
 		{
 			if (!ContentId.StartsWith("!")) ContentId = "/" + ContentId;
 			string ContentFilePath = ConfigFile.ContentDirectory + ContentId;
+
+			ContentFilePath = ContentFilePath.Replace("//", "/").Replace(@"\\", @"\");
+			if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+				ContentFilePath = ContentFilePath.Replace("/", @"\");
+			if (Environment.OSVersion.Platform == PlatformID.Unix)
+				ContentFilePath = ContentFilePath.Replace(@"\", "/");
+
 			if (File.Exists(ContentFilePath))
 			{
 				string Extension = ContentId.Substring(ContentId.LastIndexOf('.') + 1).ToLowerInvariant();
@@ -1366,6 +1373,12 @@ namespace WebOne
 			{
 				if (!ContentId.StartsWith("!")) ContentId = "/" + ContentId;
 				string ContentFilePath = ConfigFile.ContentDirectory + ContentId;
+
+				ContentFilePath = ContentFilePath.Replace("//", "/").Replace(@"\\", @"\");
+				if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+					ContentFilePath = ContentFilePath.Replace("/", @"\");
+				if (Environment.OSVersion.Platform == PlatformID.Unix)
+					ContentFilePath = ContentFilePath.Replace(@"\", "/");
 
 				if (File.Exists(ContentFilePath))
 				{
