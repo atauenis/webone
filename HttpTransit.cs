@@ -848,10 +848,12 @@ namespace WebOne
 					case "/":
 					case "/!":
 					case "/!/":
+						// Status page
 						SendInternalStatusPage();
 						return;
 					case "/!codepages":
 					case "/!codepages/":
+						// Code page list
 						string codepages = "<p>The following code pages are available: <br>\n" +
 										   "<table><tr><td><b>Name</b></td><td><b>#</b></td><td><b>Description</b></td></tr>\n";
 						codepages += "<tr><td><b>AsIs</b></td><td>0</td><td>Keep original encoding (code page)</td></tr>\n";
@@ -896,6 +898,7 @@ namespace WebOne
 						return;
 					case "/!img-test":
 					case "/!img-test/":
+						// ImageMagick test v1
 						if (ConfigFile.EnableManualConverting)
 						{
 							SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
@@ -907,6 +910,7 @@ namespace WebOne
 							return;
 						}
 					case "/!imagemagicktest.gif":
+						// ImageMagick test v2
 						foreach (Converter Cvt in ConfigFile.Converters)
 						{
 							if (Cvt.Executable == "convert" && !Cvt.SelfDownload)
@@ -924,6 +928,7 @@ namespace WebOne
 						return;
 					case "/!convert":
 					case "/!convert/":
+						// File format converting
 						if (!ConfigFile.EnableManualConverting)
 						{
 							SendInfoPage("WebOne: Feature disabled", "Feature disabled", "Manual file converting is disabled for security purposes.<br>Proxy administrator can enable it via <code>[Server]</code> section, <code>EnableManualConverting</code> option.", 500);
@@ -1064,6 +1069,7 @@ namespace WebOne
 						return;
 					case "/!webvideo":
 					case "/!webvideo/":
+						// ROVP video content processor
 						if (!ConfigFile.WebVideoOptions.ContainsKey("Enable") || !Program.ToBoolean(ConfigFile.WebVideoOptions["Enable"] ?? "yes"))
 						{
 							SendRedirect("/norovp.htm", "Video Converting and ROVP are disabled on this server.");
@@ -1118,10 +1124,12 @@ namespace WebOne
 						}
 					case "/!player":
 					case "/!player/":
+						// ROVP
 						SendInfoPage(new WebVideoPlayer(System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query)).Page);
 						return;
 					case "/!clear":
 					case "/!clear/":
+						// Clear temporary files
 						int FilesDeleted = 0;
 						foreach (FileInfo file in (new DirectoryInfo(ConfigFile.TemporaryDirectory)).EnumerateFiles("convert-*.*"))
 						{
@@ -1132,7 +1140,7 @@ namespace WebOne
 						return;
 					case "/!ftp":
 					case "/!ftp/":
-						//FTP client
+						// FTP client
 						SendInfoPage(new FtpClientGUI(ClientRequest).GetPage());
 						return;
 					case "/!ca":
@@ -1140,6 +1148,7 @@ namespace WebOne
 					case "/weboneca.crt":
 					case "/weboneca.cer":
 					case "/weboneca.der":
+						// Root certificate (DER-encoded)
 						Log.WriteLine("<Return WebOne CA (root) certificate.");
 						if (!ConfigFile.SslEnable)
 						{
@@ -1166,6 +1175,7 @@ namespace WebOne
 						return;
 					case "/weboneca.pem":
 					case "/weboneca.txt":
+						// Root certificate (PEM BASE64-encoded)
 						const string CRT_HEADER = "-----BEGIN CERTIFICATE-----\n";
 						const string CRT_FOOTER = "\n-----END CERTIFICATE-----";
 
@@ -1203,7 +1213,7 @@ namespace WebOne
 					case "/auto.pac":
 					case "/wpad.dat":
 					case "/wpad.da":
-						//Proxy Auto-Config
+						// Proxy Auto-Config
 						Log.WriteLine("<Return PAC/WPAD script.");
 						string LocalHostAdress = GetServerName();
 						if (LocalHostAdress.StartsWith("[")) LocalHostAdress = ConfigFile.DefaultHostName + ":" + ConfigFile.Port; //on IPv6, fallback to DefaultHostName:Port
@@ -1228,7 +1238,7 @@ namespace WebOne
 						}
 						return;
 					case "/robots.txt":
-						//attempt to include in google index; kick the bot off
+						// Attempt to include in Google index; kick the bot off
 						Log.WriteLine("<Return robot kicker.");
 						if (SendInternalContent("robots.txt", "")) return;
 
@@ -1251,11 +1261,14 @@ namespace WebOne
 						}
 						return;
 					default:
-						if (InternalPageId.ToLowerInvariant() == "/rovp.htm" && !Program.ToBoolean(ConfigFile.WebVideoOptions["Enable"] ?? "yes"))
+						// Custom content (CSS or ROVP)
+						if (InternalPageId.ToLowerInvariant() == "/rovp.htm" &&
+						(!ConfigFile.WebVideoOptions.ContainsKey("Enable") || !Program.ToBoolean(ConfigFile.WebVideoOptions["Enable"] ?? "yes")))
 						{
 							SendRedirect("/norovp.htm", "ROVP is disabled on this server.");
 							return;
 						}
+
 						if (CheckInternalContentModification(InternalPageId, ClientRequest.Headers["If-Modified-Since"]))
 						{
 							// send 304 Not Modified code
