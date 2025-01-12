@@ -169,7 +169,12 @@ namespace WebOne
 							switch (Option.Key)
 							{
 								case "Port":
-									ConfigFile.Port = Convert.ToInt32(ExpandMaskedVariables(Option.Value));
+									string Port = ExpandMaskedVariables(Option.Value);
+									if (!int.TryParse(Port, out ConfigFile.Port))
+									{ throw new ArgumentOutOfRangeException("Port", "\"" + Port + "\" is not a TCP/IP port number."); }
+
+									if (ConfigFile.Port < IPEndPoint.MinPort || ConfigFile.Port > IPEndPoint.MaxPort)
+									{ throw new ArgumentOutOfRangeException("Port", "\"" + Port + "\" is out of the range of valid values."); }
 									break;
 								case "Port2":
 								case "HttpPort":

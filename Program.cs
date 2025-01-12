@@ -228,7 +228,7 @@ namespace WebOne
 			}
 			catch (Exception ex)
 			{
-				Log.WriteLine(true, false, "Server initilize failed: {0}", ex.Message);
+				Log.WriteLine(true, false, "Server initialize failed: {0}", ex.Message);
 				Shutdown(ex.HResult);
 				return;
 			}
