@@ -2091,12 +2091,17 @@ namespace WebOne
 				}
 				catch (Exception ArchiveException)
 				{
-					string ErrorPageId = "Err-WArchiveException.htm";
-					string ErrorPageArguments = "?ErrorMessage=" + ArchiveException.Message.Replace("\n", "<br>") + "&URL=" + RequestURL.AbsoluteUri.ToString();
-					if (SendInternalContent(ErrorPageId, ErrorPageArguments)) return true;
+					try
+					{
+						string ErrorPageId = "Err-WArchiveException.htm";
+						string ErrorPageArguments = "?ErrorMessage=" + ArchiveException.Message.Replace("\n", "<br>") + "&URL=" + RequestURL.AbsoluteUri.ToString();
+						if (SendInternalContent(ErrorPageId, ErrorPageArguments)) return true;
 
-					SendInfoPage("WebOne: Web Archive error.", "Cannot load this page", string.Format("<b>The requested server or page is not found and a Web Archive error occured.</b><br>{0}", ArchiveException.Message.Replace("\n", "<br>")));
-					return true; //error page is ready
+						SendInfoPage("WebOne: Web Archive error.", "Cannot load this page", string.Format("<b>The requested server or page is not found and a Web Archive error occured.</b><br>{0}", ArchiveException.Message.Replace("\n", "<br>")));
+						return true; //error page is ready
+					}
+					catch (InvalidOperationException)
+					{ return true; } //catch case of "HTTP response headers are already sent."
 				}
 			}
 			else return false; //nothing ready
