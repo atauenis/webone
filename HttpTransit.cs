@@ -1711,16 +1711,34 @@ namespace WebOne
 			//fix the body if it will be deliveried through Alternate mode
 			if (ClientRequest.Kind == HttpUtil.RequestKind.AlternateProxy || ClientRequest.Kind == HttpUtil.RequestKind.DirtyAlternateProxy)
 			{
-				Body = Body.Replace("http://", "http://" + GetServerName() + "/http://");
-				Body = Body.Replace("href=\"./", "href=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
-				Body = Body.Replace("src=\"./", "src=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
-				Body = Body.Replace("action=\"./", "action=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
-				Body = Body.Replace("href=\"//", "href=\"http://" + GetServerName() + "/http://");
-				Body = Body.Replace("src=\"//", "src=\"http://" + GetServerName() + "/http://");
-				Body = Body.Replace("action=\"//", "action=\"http://" + GetServerName() + "/http://");
-				Body = Body.Replace("href=\"/", "href=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
-				Body = Body.Replace("src=\"/", "src=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
-				Body = Body.Replace("action=\"/", "action=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
+				string LocalPathDirectory = "/";
+				for (int i = 0; i < RequestURL.Segments.Length-1; i++)
+				{
+					LocalPathDirectory += RequestURL.Segments[i];
+				}
+				Body = Body.Replace("\"http://", "\"/http://");
+				Body = Body.Replace("\"https://", "\"/http://");
+				Body = Body.Replace("\"ftp://", "\"/ftp://");
+				Body = Body.Replace("'http://", "'/http://");
+				Body = Body.Replace("'https://", "'/http://");
+				Body = Body.Replace("'ftp://", "'/ftp://");
+
+				//Body = Body.Replace("\"//", "\"/http://");
+				Body = Body.Replace("\"/", "\"/http://" + RequestURL.Host + "/");
+				Body = Body.Replace("\"./", "\"/http://" + RequestURL.Host + LocalPathDirectory);
+
+				//Body = Body.Replace("'//", "'/http://");
+				Body = Body.Replace("'/", "'/http://" + RequestURL.Host + "/");
+				Body = Body.Replace("'./", "'/http://" + RequestURL.Host + LocalPathDirectory);
+
+				Body = Body.Replace(":url(http://", ":url(/http://" + RequestURL.Host + "/");
+				Body = Body.Replace(":url(https://", ":url(/http://" + RequestURL.Host + "/");
+				//Body = Body.Replace(":url(//", ":url(/http://");
+				Body = Body.Replace(":url(/", ":url(/http://" + RequestURL.Host + "/");
+				Body = Body.Replace(":url(./", ":url(/http://" + RequestURL.Host + LocalPathDirectory);
+
+				//UNDONE: need to rewrite "//" & "/" replacement masks to a difficulty RegExp (may be)
+				//UNDONE: THIS BREAKS 0.17.4 RELEASE
 			}
 
 			return Body;
