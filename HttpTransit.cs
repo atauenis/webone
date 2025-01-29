@@ -1712,33 +1712,45 @@ namespace WebOne
 			if (ClientRequest.Kind == HttpUtil.RequestKind.AlternateProxy || ClientRequest.Kind == HttpUtil.RequestKind.DirtyAlternateProxy)
 			{
 				string LocalPathDirectory = "/";
-				for (int i = 0; i < RequestURL.Segments.Length-1; i++)
+				for (int i = 0; i < RequestURL.Segments.Length - 1; i++)
 				{
 					LocalPathDirectory += RequestURL.Segments[i];
 				}
-				Body = Body.Replace("\"http://", "\"/http://");
-				Body = Body.Replace("\"https://", "\"/http://");
-				Body = Body.Replace("\"ftp://", "\"/ftp://");
-				Body = Body.Replace("'http://", "'/http://");
-				Body = Body.Replace("'https://", "'/http://");
-				Body = Body.Replace("'ftp://", "'/ftp://");
+				
+				Body = Body.Replace(".replace(/\"/g", ".replace(/\"WEBONEGOOGLEFIX1/g");
+				Body = Body.Replace(".replace(/'/g", ".replace(/'WEBONEGOOGLEFIX2/g");
 
-				//Body = Body.Replace("\"//", "\"/http://");
+				Body = Body.Replace("\"http://", "\"@@@/http://");
+				Body = Body.Replace("\"https://", "\"@@@/http://");
+				Body = Body.Replace("\"ftp://", "\"@@@/ftp://");
+
+				Body = Body.Replace("\"//", "\"@@@/http://");
 				Body = Body.Replace("\"/", "\"/http://" + RequestURL.Host + "/");
 				Body = Body.Replace("\"./", "\"/http://" + RequestURL.Host + LocalPathDirectory);
+				Body = Body.Replace("\"@@@/http://", "\"/http://");
+				Body = Body.Replace("\"@@@/ftp://", "\"/ftp://");
 
-				//Body = Body.Replace("'//", "'/http://");
+				Body = Body.Replace("'http://", "'@@@/http://");
+				Body = Body.Replace("'https://", "'@@@/http://");
+				Body = Body.Replace("'ftp://", "'@@@/ftp://");
+
+				Body = Body.Replace("'//", "'@@@/http://");
 				Body = Body.Replace("'/", "'/http://" + RequestURL.Host + "/");
 				Body = Body.Replace("'./", "'/http://" + RequestURL.Host + LocalPathDirectory);
+				Body = Body.Replace("'@@@/http://", "'/http://");
+				Body = Body.Replace("'@@@/ftp://", "'/ftp://");
 
 				Body = Body.Replace(":url(http://", ":url(/http://" + RequestURL.Host + "/");
 				Body = Body.Replace(":url(https://", ":url(/http://" + RequestURL.Host + "/");
-				//Body = Body.Replace(":url(//", ":url(/http://");
+				Body = Body.Replace(":url(//", ":url(@@@/http://");
 				Body = Body.Replace(":url(/", ":url(/http://" + RequestURL.Host + "/");
 				Body = Body.Replace(":url(./", ":url(/http://" + RequestURL.Host + LocalPathDirectory);
+				Body = Body.Replace(":url(@@@/http://", ":url(/http://");
 
-				//UNDONE: need to rewrite "//" & "/" replacement masks to a difficulty RegExp (may be)
-				//UNDONE: THIS BREAKS 0.17.4 RELEASE
+				Body = Body.Replace(".replace(/\"WEBONEGOOGLEFIX1/g", ".replace(/\"/g");
+				Body = Body.Replace(".replace(/'WEBONEGOOGLEFIX2/g", ".replace(/'/g");
+
+				// Note: "@@@" is workaround to differ strings.
 			}
 
 			return Body;
