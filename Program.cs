@@ -228,7 +228,7 @@ namespace WebOne
 			}
 			catch (Exception ex)
 			{
-				Log.WriteLine(true, false, "Server initilize failed: {0}", ex.Message);
+				Log.WriteLine(true, false, "Server initialize failed: {0}", ex.Message);
 				Shutdown(ex.HResult);
 				return;
 			}
@@ -1001,11 +1001,32 @@ namespace WebOne
 		public static IPAddress[] GetLocalIPAddresses()
 		{
 			List<IPAddress> IPs = new List<IPAddress>();
-			foreach ((NetworkInterface Netif, UnicastIPAddressInformation ipa) in
-							 from NetworkInterface Netif in NetworkInterface.GetAllNetworkInterfaces()
-							 from ipa in Netif.GetIPProperties().UnicastAddresses
-							 select (Netif, ipa))
-				IPs.Add(ipa.Address);
+			try
+			{
+				foreach ((NetworkInterface Netif, UnicastIPAddressInformation ipa) in
+								 from NetworkInterface Netif in NetworkInterface.GetAllNetworkInterfaces()
+								 from ipa in Netif.GetIPProperties().UnicastAddresses
+								 select (Netif, ipa))
+					IPs.Add(ipa.Address);
+			}
+			catch
+			{
+				// On Android 13+ the GetAllNetworkInterfaces() may not work and throw NetworkInformationException or something.
+				// http://www.win3x.org/win3board/viewtopic.php?p=206998#p206998
+				// https://www.cyberforum.ru/xamarin/thread3032822.html
+				// https://stackoverflow.com/questions/6803073/get-local-ip-address/27376368#27376368
+				// Not well tested.
+				try
+				{
+					using (var socket = new System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.InterNetwork, System.Net.Sockets.SocketType.Dgram, 0))
+					{
+						socket.Connect("8.8.8.8", 65530);
+						IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
+						IPs.Add(endPoint.Address);
+					}
+				}
+				catch { }
+			}
 			IPs.Add(IPAddress.Parse("10.0.2.2")); //QEMU, SheepShaver, Basilisk II emulators host system IP address (SLIRP)
 			return IPs.ToArray();
 		}

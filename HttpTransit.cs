@@ -848,10 +848,12 @@ namespace WebOne
 					case "/":
 					case "/!":
 					case "/!/":
+						// Status page
 						SendInternalStatusPage();
 						return;
 					case "/!codepages":
 					case "/!codepages/":
+						// Code page list
 						string codepages = "<p>The following code pages are available: <br>\n" +
 										   "<table><tr><td><b>Name</b></td><td><b>#</b></td><td><b>Description</b></td></tr>\n";
 						codepages += "<tr><td><b>AsIs</b></td><td>0</td><td>Keep original encoding (code page)</td></tr>\n";
@@ -896,6 +898,7 @@ namespace WebOne
 						return;
 					case "/!img-test":
 					case "/!img-test/":
+						// ImageMagick test v1
 						if (ConfigFile.EnableManualConverting)
 						{
 							SendError(200, @"ImageMagick test.<br><img src=""/!convert/?src=logo.webp&dest=gif&type=image/gif"" alt=""ImageMagick logo"" width=640 height=480><br>A wizard should appear nearby.");
@@ -907,6 +910,7 @@ namespace WebOne
 							return;
 						}
 					case "/!imagemagicktest.gif":
+						// ImageMagick test v2
 						foreach (Converter Cvt in ConfigFile.Converters)
 						{
 							if (Cvt.Executable == "convert" && !Cvt.SelfDownload)
@@ -924,6 +928,7 @@ namespace WebOne
 						return;
 					case "/!convert":
 					case "/!convert/":
+						// File format converting
 						if (!ConfigFile.EnableManualConverting)
 						{
 							SendInfoPage("WebOne: Feature disabled", "Feature disabled", "Manual file converting is disabled for security purposes.<br>Proxy administrator can enable it via <code>[Server]</code> section, <code>EnableManualConverting</code> option.", 500);
@@ -1064,6 +1069,12 @@ namespace WebOne
 						return;
 					case "/!webvideo":
 					case "/!webvideo/":
+						// ROVP video content processor
+						if (!ConfigFile.WebVideoOptions.ContainsKey("Enable") || !Program.ToBoolean(ConfigFile.WebVideoOptions["Enable"] ?? "yes"))
+						{
+							SendRedirect("/norovp.htm", "Video Converting and ROVP are disabled on this server.");
+							return;
+						}
 						Dictionary<string, string> VidArgs = new();
 
 						foreach (string UrlArg in System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query).AllKeys)
@@ -1113,10 +1124,12 @@ namespace WebOne
 						}
 					case "/!player":
 					case "/!player/":
+						// ROVP
 						SendInfoPage(new WebVideoPlayer(System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query)).Page);
 						return;
 					case "/!clear":
 					case "/!clear/":
+						// Clear temporary files
 						int FilesDeleted = 0;
 						foreach (FileInfo file in (new DirectoryInfo(ConfigFile.TemporaryDirectory)).EnumerateFiles("convert-*.*"))
 						{
@@ -1127,7 +1140,7 @@ namespace WebOne
 						return;
 					case "/!ftp":
 					case "/!ftp/":
-						//FTP client
+						// FTP client
 						SendInfoPage(new FtpClientGUI(ClientRequest).GetPage());
 						return;
 					case "/!ca":
@@ -1135,6 +1148,7 @@ namespace WebOne
 					case "/weboneca.crt":
 					case "/weboneca.cer":
 					case "/weboneca.der":
+						// Root certificate (DER-encoded)
 						Log.WriteLine("<Return WebOne CA (root) certificate.");
 						if (!ConfigFile.SslEnable)
 						{
@@ -1161,6 +1175,7 @@ namespace WebOne
 						return;
 					case "/weboneca.pem":
 					case "/weboneca.txt":
+						// Root certificate (PEM BASE64-encoded)
 						const string CRT_HEADER = "-----BEGIN CERTIFICATE-----\n";
 						const string CRT_FOOTER = "\n-----END CERTIFICATE-----";
 
@@ -1198,7 +1213,7 @@ namespace WebOne
 					case "/auto.pac":
 					case "/wpad.dat":
 					case "/wpad.da":
-						//Proxy Auto-Config
+						// Proxy Auto-Config
 						Log.WriteLine("<Return PAC/WPAD script.");
 						string LocalHostAdress = GetServerName();
 						if (LocalHostAdress.StartsWith("[")) LocalHostAdress = ConfigFile.DefaultHostName + ":" + ConfigFile.Port; //on IPv6, fallback to DefaultHostName:Port
@@ -1223,7 +1238,7 @@ namespace WebOne
 						}
 						return;
 					case "/robots.txt":
-						//attempt to include in google index; kick the bot off
+						// Attempt to include in Google index; kick the bot off
 						Log.WriteLine("<Return robot kicker.");
 						if (SendInternalContent("robots.txt", "")) return;
 
@@ -1246,11 +1261,14 @@ namespace WebOne
 						}
 						return;
 					default:
-						if (InternalPageId.ToLowerInvariant() == "/rovp.htm" && !Program.ToBoolean(ConfigFile.WebVideoOptions["Enable"] ?? "yes"))
+						// Custom content (CSS or ROVP)
+						if (InternalPageId.ToLowerInvariant() == "/rovp.htm" &&
+						(!ConfigFile.WebVideoOptions.ContainsKey("Enable") || !Program.ToBoolean(ConfigFile.WebVideoOptions["Enable"] ?? "yes")))
 						{
 							SendRedirect("/norovp.htm", "ROVP is disabled on this server.");
 							return;
 						}
+
 						if (CheckInternalContentModification(InternalPageId, ClientRequest.Headers["If-Modified-Since"]))
 						{
 							// send 304 Not Modified code
@@ -1298,6 +1316,13 @@ namespace WebOne
 		{
 			if (!ContentId.StartsWith("!")) ContentId = "/" + ContentId;
 			string ContentFilePath = ConfigFile.ContentDirectory + ContentId;
+
+			ContentFilePath = ContentFilePath.Replace("//", "/").Replace(@"\\", @"\");
+			if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+				ContentFilePath = ContentFilePath.Replace("/", @"\");
+			if (Environment.OSVersion.Platform == PlatformID.Unix)
+				ContentFilePath = ContentFilePath.Replace(@"\", "/");
+
 			if (File.Exists(ContentFilePath))
 			{
 				string Extension = ContentId.Substring(ContentId.LastIndexOf('.') + 1).ToLowerInvariant();
@@ -1361,6 +1386,12 @@ namespace WebOne
 			{
 				if (!ContentId.StartsWith("!")) ContentId = "/" + ContentId;
 				string ContentFilePath = ConfigFile.ContentDirectory + ContentId;
+
+				ContentFilePath = ContentFilePath.Replace("//", "/").Replace(@"\\", @"\");
+				if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+					ContentFilePath = ContentFilePath.Replace("/", @"\");
+				if (Environment.OSVersion.Platform == PlatformID.Unix)
+					ContentFilePath = ContentFilePath.Replace(@"\", "/");
 
 				if (File.Exists(ContentFilePath))
 				{
@@ -1680,16 +1711,46 @@ namespace WebOne
 			//fix the body if it will be deliveried through Alternate mode
 			if (ClientRequest.Kind == HttpUtil.RequestKind.AlternateProxy || ClientRequest.Kind == HttpUtil.RequestKind.DirtyAlternateProxy)
 			{
-				Body = Body.Replace("http://", "http://" + GetServerName() + "/http://");
-				Body = Body.Replace("href=\"./", "href=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
-				Body = Body.Replace("src=\"./", "src=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
-				Body = Body.Replace("action=\"./", "action=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
-				Body = Body.Replace("href=\"//", "href=\"http://" + GetServerName() + "/http://");
-				Body = Body.Replace("src=\"//", "src=\"http://" + GetServerName() + "/http://");
-				Body = Body.Replace("action=\"//", "action=\"http://" + GetServerName() + "/http://");
-				Body = Body.Replace("href=\"/", "href=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
-				Body = Body.Replace("src=\"/", "src=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
-				Body = Body.Replace("action=\"/", "action=\"http://" + GetServerName() + "/http://" + RequestURL.Host + "/");
+				string LocalPathDirectory = "/";
+				for (int i = 0; i < RequestURL.Segments.Length - 1; i++)
+				{
+					LocalPathDirectory += RequestURL.Segments[i];
+				}
+				
+				Body = Body.Replace(".replace(/\"/g", ".replace(/\"WEBONEGOOGLEFIX1/g");
+				Body = Body.Replace(".replace(/'/g", ".replace(/'WEBONEGOOGLEFIX2/g");
+
+				Body = Body.Replace("\"http://", "\"@@@/http://");
+				Body = Body.Replace("\"https://", "\"@@@/http://");
+				Body = Body.Replace("\"ftp://", "\"@@@/ftp://");
+
+				Body = Body.Replace("\"//", "\"@@@/http://");
+				Body = Body.Replace("\"/", "\"/http://" + RequestURL.Host + "/");
+				Body = Body.Replace("\"./", "\"/http://" + RequestURL.Host + LocalPathDirectory);
+				Body = Body.Replace("\"@@@/http://", "\"/http://");
+				Body = Body.Replace("\"@@@/ftp://", "\"/ftp://");
+
+				Body = Body.Replace("'http://", "'@@@/http://");
+				Body = Body.Replace("'https://", "'@@@/http://");
+				Body = Body.Replace("'ftp://", "'@@@/ftp://");
+
+				Body = Body.Replace("'//", "'@@@/http://");
+				Body = Body.Replace("'/", "'/http://" + RequestURL.Host + "/");
+				Body = Body.Replace("'./", "'/http://" + RequestURL.Host + LocalPathDirectory);
+				Body = Body.Replace("'@@@/http://", "'/http://");
+				Body = Body.Replace("'@@@/ftp://", "'/ftp://");
+
+				Body = Body.Replace(":url(http://", ":url(/http://" + RequestURL.Host + "/");
+				Body = Body.Replace(":url(https://", ":url(/http://" + RequestURL.Host + "/");
+				Body = Body.Replace(":url(//", ":url(@@@/http://");
+				Body = Body.Replace(":url(/", ":url(/http://" + RequestURL.Host + "/");
+				Body = Body.Replace(":url(./", ":url(/http://" + RequestURL.Host + LocalPathDirectory);
+				Body = Body.Replace(":url(@@@/http://", ":url(/http://");
+
+				Body = Body.Replace(".replace(/\"WEBONEGOOGLEFIX1/g", ".replace(/\"/g");
+				Body = Body.Replace(".replace(/'WEBONEGOOGLEFIX2/g", ".replace(/'/g");
+
+				// Note: "@@@" is workaround to differ strings.
 			}
 
 			return Body;
@@ -2060,12 +2121,17 @@ namespace WebOne
 				}
 				catch (Exception ArchiveException)
 				{
-					string ErrorPageId = "Err-WArchiveException.htm";
-					string ErrorPageArguments = "?ErrorMessage=" + ArchiveException.Message.Replace("\n", "<br>") + "&URL=" + RequestURL.AbsoluteUri.ToString();
-					if (SendInternalContent(ErrorPageId, ErrorPageArguments)) return true;
+					try
+					{
+						string ErrorPageId = "Err-WArchiveException.htm";
+						string ErrorPageArguments = "?ErrorMessage=" + ArchiveException.Message.Replace("\n", "<br>") + "&URL=" + RequestURL.AbsoluteUri.ToString();
+						if (SendInternalContent(ErrorPageId, ErrorPageArguments)) return true;
 
-					SendInfoPage("WebOne: Web Archive error.", "Cannot load this page", string.Format("<b>The requested server or page is not found and a Web Archive error occured.</b><br>{0}", ArchiveException.Message.Replace("\n", "<br>")));
-					return true; //error page is ready
+						SendInfoPage("WebOne: Web Archive error.", "Cannot load this page", string.Format("<b>The requested server or page is not found and a Web Archive error occured.</b><br>{0}", ArchiveException.Message.Replace("\n", "<br>")));
+						return true; //error page is ready
+					}
+					catch (InvalidOperationException)
+					{ return true; } //catch case of "HTTP response headers are already sent."
 				}
 			}
 			else return false; //nothing ready

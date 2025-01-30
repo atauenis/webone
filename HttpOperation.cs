@@ -139,7 +139,7 @@ namespace WebOne
 
 			try
 			{
-				var resp = Program.HTTPClient.SendAsync(Request);
+				var resp = Program.HTTPClient.SendAsync(Request, HttpCompletionOption.ResponseHeadersRead);
 				resp.Wait();
 				Response = resp.Result;
 				//Response = Program.HTTPClient.Send(Request);
