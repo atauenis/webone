@@ -87,8 +87,8 @@ namespace WebOne
 			}
 			if (ConfigFileName.StartsWith("./") || ConfigFileName.StartsWith(@".\")) DefaultConfigDir = ".";
 			if (!string.IsNullOrEmpty(CustomConfigFile)) DefaultConfigDir = new FileInfo(CustomConfigFile).DirectoryName;
-			Includable = Includable.Replace("%WOConfigDir%", DefaultConfigDir);
 			Variables["WOConfigDir"] = DefaultConfigDir;
+			Includable = ExpandMaskedVariables(Includable);
 
 			if (Includable.Contains('*') || Includable.Contains('?')) //it's a file mask
 			{
@@ -169,7 +169,12 @@ namespace WebOne
 							switch (Option.Key)
 							{
 								case "Port":
-									ConfigFile.Port = Convert.ToInt32(Option.Value);
+									string Port = ExpandMaskedVariables(Option.Value);
+									if (!int.TryParse(Port, out ConfigFile.Port))
+									{ throw new ArgumentOutOfRangeException("Port", "\"" + Port + "\" is not a TCP/IP port number."); }
+
+									if (ConfigFile.Port < IPEndPoint.MinPort || ConfigFile.Port > IPEndPoint.MaxPort)
+									{ throw new ArgumentOutOfRangeException("Port", "\"" + Port + "\" is out of the range of valid values."); }
 									break;
 								case "Port2":
 								case "HttpPort":
@@ -178,7 +183,7 @@ namespace WebOne
 									Log.WriteLine(true, false, "Warning: Use of '{0}' is deprecated, use 'Port' at {1}.", Option.Key, Option.Location);
 									break;
 								case "OutputEncoding":
-									ConfigFile.OutputEncoding = GetCodePage(Option.Value);
+									ConfigFile.OutputEncoding = GetCodePage(ExpandMaskedVariables(Option.Value));
 									break;
 								case "Authenticate":
 									ConfigFile.Authenticate.Add(Option.Value);
@@ -216,20 +221,30 @@ namespace WebOne
 									ConfigFile.UserAgent = Option.Value;
 									break;
 								case "DefaultHostName":
-									ConfigFile.DefaultHostName = Option.Value.Replace("%HostName%", Environment.MachineName);
+									Dictionary<string, string> SuggestedHostNames = new();
+									int LanNo = 0;
+									foreach (IPAddress LocIP in Program.GetLocalIPAddresses())
+									{
+										SuggestedHostNames.Add("IP" + LanNo, LocIP.ToString());
+										LanNo++;
+									}
+									SuggestedHostNames.Add("HostName", Environment.MachineName);
+									ConfigFile.DefaultHostName = ExpandMaskedVariables(Option.Value, SuggestedHostNames);
+
 									bool ValidHostName = (Environment.MachineName.ToLower() == ConfigFile.DefaultHostName.ToLower());
-									if (!ValidHostName) foreach (System.Net.IPAddress LocIP in Program.GetLocalIPAddresses())
+									if (!ValidHostName) foreach (IPAddress LocIP in Program.GetLocalIPAddresses())
 										{ if (LocIP.ToString() == ConfigFile.DefaultHostName) ValidHostName = true; }
 									if (!ValidHostName)
-									{ try { if (System.Net.Dns.GetHostEntry(ConfigFile.DefaultHostName).AddressList.Count() > 0) ValidHostName = true; } catch { } }
-									if (!ValidHostName) Log.WriteLine(true, false, "Warning: DefaultHostName setting is not applicable to this computer!");
+									{ try { if (Dns.GetHostEntry(ConfigFile.DefaultHostName).AddressList.Count() > 0) ValidHostName = true; } catch { } }
+									if (!ValidHostName) Log.WriteLine(true, false, "Warning: DefaultHostName setting is not applicable to this computer.");
 									break;
 								case "ValidateCertificates":
 									ConfigFile.ValidateCertificates = ToBoolean(Option.Value);
 									break;
 								case "TemporaryDirectory":
-									if (Option.Value.ToUpper() == "%TEMP%" || Option.Value == "$TEMP" || Option.Value == "$TMPDIR") ConfigFile.TemporaryDirectory = Path.GetTempPath();
-									else ConfigFile.TemporaryDirectory = Option.Value;
+									ConfigFile.TemporaryDirectory = ExpandMaskedVariables(Option.Value);
+									if (!Directory.Exists(ConfigFile.TemporaryDirectory))
+										Log.WriteLine(true, false, "Warning: Temporary directory {0} does not exists.", Option.Value);
 									break;
 								case "LogFile":
 									if (Program.OverrideLogFile != null && Program.OverrideLogFile == "")
@@ -240,7 +255,7 @@ namespace WebOne
 										LogAgent.OpenLogFile(Program.GetLogFilePath(Option.Value.Replace(@"\\", @"\").Replace("//", "/")), true);
 									break;
 								case "DisplayStatusPage":
-									ConfigFile.DisplayStatusPage = Option.Value;
+									ConfigFile.DisplayStatusPage = ExpandMaskedVariables(Option.Value);
 									break;
 								case "ArchiveDateLimit":
 									int ArchiveDateLimit = 0;
@@ -256,7 +271,7 @@ namespace WebOne
 									Log.WriteLine(true, false, "Warning: The ArchiveDateLimit must be in YYYYMMDD format.");
 									break;
 								case "UpperProxy":
-									ConfigFile.UpperProxy = Option.Value;
+									ConfigFile.UpperProxy = ExpandMaskedVariables(Option.Value);
 									break;
 								case "PageStyleHtml":
 									ConfigFile.PageStyleHtml = Option.Value;
@@ -283,13 +298,14 @@ namespace WebOne
 									ConfigFile.EnableManualConverting = ToBoolean(Option.Value);
 									break;
 								case "ContentDirectory":
-									string AltContentDirName = new FileInfo(AppContext.BaseDirectory).DirectoryName + Option.Value;
-									if (Directory.Exists(Option.Value))
-										ConfigFile.ContentDirectory = Option.Value;
+									string ContentDirName = ExpandMaskedVariables(Option.Value);
+									string AltContentDirName = new FileInfo(AppContext.BaseDirectory).DirectoryName + ContentDirName;
+									if (Directory.Exists(ContentDirName))
+										ConfigFile.ContentDirectory = ContentDirName;
 									else if (Directory.Exists(AltContentDirName))
 										ConfigFile.ContentDirectory = AltContentDirName;
 									else
-										Log.WriteLine(true, false, "Warning: Incorrect ContentDirectory '{0}'.", Option.Value);
+										Log.WriteLine(true, false, "Warning: Incorrect ContentDirectory '{0}'.", ContentDirName);
 									break;
 								default:
 									Log.WriteLine(true, false, "Warning: Unknown server option {0} in {1}.", Option.Key, Option.Location);
@@ -357,7 +373,7 @@ namespace WebOne
 					case "HostNames":
 						foreach (ConfigFileOption Line in Section.Options)
 						{
-							ConfigFile.HostNames.Add(Line.RawString);
+							ConfigFile.HostNames.Add(ExpandMaskedVariables(Line.RawString));
 						}
 						break;
 					case "Authenticate":
@@ -485,6 +501,7 @@ namespace WebOne
 										case "MD5":
 											ConfigFile.SslHashAlgorithm = System.Security.Cryptography.HashAlgorithmName.MD5;
 											break;
+										case "SHA":
 										case "SHA1":
 											ConfigFile.SslHashAlgorithm = System.Security.Cryptography.HashAlgorithmName.SHA1;
 											break;
@@ -501,6 +518,11 @@ namespace WebOne
 											ConfigFile.SslHashAlgorithm = System.Security.Cryptography.HashAlgorithmName.SHA512;
 											break;
 										default:
+											//Try detect from OID:
+											//https://source.dot.net/#System.Security.Cryptography/src/libraries/Common/src/System/Security/Cryptography/Oids.cs,69
+											bool SupportedOID = System.Security.Cryptography.HashAlgorithmName.TryFromOid(Option.Value, out ConfigFile.SslHashAlgorithm);
+											if (SupportedOID) break;
+
 											Log.WriteLine(true, false, "Warning: '{0}' is not a valid hash algorithm name, at {1}.", Option.Value, Option.Location);
 											break;
 									}
@@ -509,7 +531,7 @@ namespace WebOne
 									if (!Option.Value.Contains("CN="))
 										Log.WriteLine(true, false, "Warning: '{0}' is not a valid X.500 distinguished subject name, at {1}.", Option.Value, Option.Location);
 									else
-										ConfigFile.SslRootSubject = Option.Value;
+										ConfigFile.SslRootSubject = ExpandMaskedVariables(Option.Value);
 									break;
 								case "SslRootValidAfter":
 									ConfigFile.SslRootValidAfter = ToDateTimeOffset(Option.Value);

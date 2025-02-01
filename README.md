@@ -54,7 +54,7 @@ Please follow the guidelines available at [docker-webone](https://github.com/way
 	$ ./webone 5170				(start on specific port, e.g. 5170)
 	$ sudo ./webone 80			(if port is less than 1024, root rights are need)
 	$ ./webone /some/folder/myconfig.conf	(to use specific configuration file instead of default)
-	$ dotnet webone.dll			(alternative way)
+	$ dotnet webone.dll			(alternative way, armv6 only)
 	```
 	These commands also can be used on Linux when systemd service is disabled.
 
