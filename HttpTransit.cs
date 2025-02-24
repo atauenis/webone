@@ -224,8 +224,15 @@ namespace WebOne
 				{
 					// Internal URIs
 					string InternalPage = "/";
-					if (RequestURL.Segments.Length > 1) InternalPage = RequestURL.Segments[1].ToLower();
-					InternalPage = "/" + InternalPage.TrimEnd('/');
+					if (RequestURL.Segments.Length > 1)
+					{
+						for (int s = 1; s < RequestURL.Segments.Length; s++)
+						{
+							InternalPage += RequestURL.Segments[s];
+						}
+					}
+					//InternalPage = RequestURL.Segments[1].ToLower();
+					InternalPage = InternalPage.TrimEnd('/').ToLowerInvariant();
 
 					SendInternalPage(InternalPage, RequestURL.Query);
 					return;

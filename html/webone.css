@@ -52,3 +52,9 @@ table.nostyle, th.nostyle, tr.nostyle, td.nostyle, tr.nostyle:hover, tr.nostyle:
 	background-color: transparent;
 	padding: unset;
 }
+img.fileicon{
+	vertical-align: bottom;
+	border-style: none;
+	width: 16px;
+	height: 16px;
+}

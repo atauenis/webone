@@ -291,6 +291,9 @@ namespace WebOne
 								case "EnableWebFtp":
 									ConfigFile.EnableWebFtp = ToBoolean(Option.Value);
 									break;
+								case "ShowFileIcons":
+									ConfigFile.ShowFileIcons = ToBoolean(Option.Value);
+									break;
 								case "UseMsHttpApi":
 									ConfigFile.UseMsHttpApi = ToBoolean(Option.Value);
 									break;

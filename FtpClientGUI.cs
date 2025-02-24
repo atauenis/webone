@@ -20,6 +20,8 @@ namespace WebOne
 
 		int ClientID = 0;
 
+		bool EnableIcons = ConfigFile.ShowFileIcons;
+
 		/// <summary>
 		/// Create an instance of Web-FTP client GUI
 		/// </summary>
@@ -28,6 +30,14 @@ namespace WebOne
 		{
 			this.ClientRequest = ClientRequest;
 			RequestArguments = System.Web.HttpUtility.ParseQueryString(ClientRequest.Url.Query);
+
+			if(EnableIcons)
+			{
+				if (!File.Exists(ConfigFile.ContentDirectory + "/filetypes/_dir.gif")) EnableIcons = false;
+				if (!File.Exists(ConfigFile.ContentDirectory + "/filetypes/_dir-up.gif")) EnableIcons = false;
+				if (!File.Exists(ConfigFile.ContentDirectory + "/filetypes/_file.gif")) EnableIcons = false;
+				if (!File.Exists(ConfigFile.ContentDirectory + "/filetypes/_link.gif")) EnableIcons = false;
+			}
 		}
 
 		/// <summary>
@@ -321,6 +331,7 @@ namespace WebOne
 					{
 						Page.Content += "<tr>";
 						Page.Content += "<td>";
+						if (EnableIcons) Page.Content += "<img border=\"0\" src=\"" + GetIconFileName("._dir-up") + "\" width=\"16px\" height=\"16px\" class=\"fileicon\"> ";
 						Page.Content += "[<a href=\"/!ftp/?client=" + ClientID + "&task=listdir&cwd=" + Uri.EscapeDataString(Backend.WorkdirPath + "..") + "\">..</a>]";
 						Page.Content += "</td>";
 						Page.Content += "<td>";
@@ -332,23 +343,34 @@ namespace WebOne
 					foreach (var Item in FileListTable)
 					{
 						string FileName = Item.Name;
+						string IconHtml = "";
+
+						if (EnableIcons)
+						{
+							if (Item.Directory) IconHtml = "<img border=\"0\" src=\"" + GetIconFileName("._dir") + "\" width=\"16px\" height=\"16px\" class=\"fileicon\"> ";
+							else IconHtml = "<img border=\"0\" src=\"" + GetIconFileName(FileName) + "\" width=\"16px\" height=\"16px\" class=\"fileicon\"> ";
+						}
 
 						Page.Content += "<tr>";
 						Page.Content += "<td>";
 						if (Item.Directory && !Item.SymLink)
 						{
+							Page.Content += IconHtml;
 							Page.Content += "[<a href=\"/!ftp/?client=" + ClientID + "&task=listdir&cwd=" + Uri.EscapeDataString(Backend.WorkdirPath + FileName) + "\">" + FileName + "</a>]";
 						}
 						else if (Item.Directory && Item.SymLink)
 						{
+							if (EnableIcons) Page.Content += "<img border=\"0\" src=\"" + GetIconFileName("._link") + "\" width=\"16px\" height=\"16px\" class=\"fileicon\"> ";
 							Page.Content += "<i>[" + FileName + "]</i>";
 						}
 						else if (!Item.Directory && Item.SymLink)
 						{
+							if (EnableIcons) Page.Content += "<img border=\"0\" src=\"" + GetIconFileName("._link") + "\" width=\"16px\" height=\"16px\" class=\"fileicon\"> ";
 							Page.Content += "<i>" + FileName + "</i>";
 						}
 						else
 						{
+							Page.Content += IconHtml;
 							Page.Content += "<a href=\"/!ftp/?client=" + ClientID + "&task=retr&name=" + Uri.EscapeDataString(Backend.WorkdirPath + FileName) + "\" target='_blank'>" + FileName + "</a>";
 						}
 						Page.Content += "</td>";
@@ -462,6 +484,35 @@ namespace WebOne
 			Page.Header = "Sorry";
 			Page.Content = "The server administrator has disabled FTP browsing via this proxy.";
 			return Page;
+		}
+
+		/// <summary>
+		/// Get content file name for icon, describing the file in Web-FTP directory listing
+		/// </summary>
+		/// <param name="OriginalFileName">File name on remote FTP server</param>
+		string GetIconFileName(string OriginalFileName)
+		{
+			if (!EnableIcons) throw new InvalidOperationException("File type icons are disabled.");
+			if (!OriginalFileName.Contains('.'))
+			{
+				return "/filetypes/_file.gif";
+			}
+			string ext = OriginalFileName.Substring(OriginalFileName.LastIndexOf(".") + 1);
+			if (string.IsNullOrWhiteSpace(ext))
+			{
+				return "/filetypes/_file.gif";
+			}
+			else
+			{
+				try
+				{
+					if (File.Exists(ConfigFile.ContentDirectory + "/filetypes/" + ext + ".gif"))
+						return "/filetypes/" + ext + ".gif";
+					else
+						return "/filetypes/_file.gif";
+				}
+				catch { return "/filetypes/_file.gif"; }
+			}
 		}
 	}
 

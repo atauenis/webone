@@ -199,6 +199,11 @@ namespace WebOne
 		public static bool EnableWebFtp = true;
 
 		/// <summary>
+		/// Enable or disable file type icons in Web-FTP client
+		/// </summary>
+		public static bool ShowFileIcons = true;
+
+		/// <summary>
 		/// Use Microsoft HTTPAPI (HttpListener) for processing incoming traffic
 		/// </summary>
 		public static bool UseMsHttpApi = false;
