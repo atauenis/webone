@@ -1979,6 +1979,7 @@ namespace WebOne
 					Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 					string FoundEncoding = HeaderCharset.Groups[1].Value.ToLower() == "utf8" ? "utf-8" : HeaderCharset.Groups[1].Value;
 					FoundEncoding = FoundEncoding.Replace("\"", "").Replace("'", "");
+					if (FoundEncoding.Contains(';')) FoundEncoding = FoundEncoding.Substring(0, FoundEncoding.IndexOf(';'));
 					return Encoding.GetEncoding(FoundEncoding);
 				}
 			}
