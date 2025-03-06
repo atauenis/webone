@@ -852,6 +852,7 @@ namespace WebOne
 				Log.WriteLine(" Internal page: {0} ", InternalPageId);
 				switch (InternalPageId)
 				{
+					case "":
 					case "/":
 					case "/!":
 					case "/!/":
@@ -1723,7 +1724,7 @@ namespace WebOne
 				{
 					LocalPathDirectory += RequestURL.Segments[i];
 				}
-				
+
 				Body = Body.Replace(".replace(/\"/g", ".replace(/\"WEBONEGOOGLEFIX1/g");
 				Body = Body.Replace(".replace(/'/g", ".replace(/'WEBONEGOOGLEFIX2/g");
 
