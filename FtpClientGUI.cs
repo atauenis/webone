@@ -96,14 +96,15 @@ namespace WebOne
 
 			Page.Header = "File Transfer Protocol client";
 			Page.Content = "<p>Welcome to space of computer files, directories and servers. Here you'll be able to download something to your PC from FTP servers without quitting a web browser.</p>";
+			Page.HtmlHeaders += "\n<style>.formlabel { width: 80px; display: inline-block; display:-moz-inline-block; display:-moz-inline-stack; text-align: right; }</style>";
 
 			string Form =
 			"<form action=\"/!ftp/\" method=\"GET\" name=\"Connect\">\n" +
 			"<center><input type=\"hidden\" name=\"client\" value=\"-1\">\n" +
-			"<p>Server: <input type=\"text\" size=\"23\" name=\"server\" value=\"\"><br>\n" +
-			"or URI: <input type=\"text\" size=\"23\" name=\"uri\" value=\"\"></p>\n" +
-			"<p>Username: <input type=\"text\" size=\"20\" name=\"user\" value=\"anonymous\"><br>\n" +
-			"Password: <input type=\"password\" size=\"20\" name=\"pass\"value=\"user@domain.su\"></p>\n" +
+			"<p><label class=\"formlabel\" for=\"server\">Server:</label> <input type=\"text\" size=\"23\" name=\"server\" id=\"server\" value=\"\"><br>\n" +
+			"<label class=\"formlabel\" for=\"uri\">or URI:</label> <input type=\"text\" size=\"23\" name=\"uri\" id=\"uri\" value=\"\"></p>\n" +
+			"<p><label class=\"formlabel\" for=\"user\">Username:</label> <input type=\"text\" size=\"20\" name=\"user\" id=\"user\" value=\"anonymous\"><br>\n" +
+			"<label class=\"formlabel\" for=\"pass\">Password:</label> <input type=\"password\" size=\"20\" name=\"pass\" id=\"pass\" value=\"user@domain.su\"></p>\n" +
 			"<p><input type=\"submit\" value=\"Let's go!\"></p>\n" +
 			"</center></form>";
 
@@ -238,7 +239,7 @@ namespace WebOne
 					if (cmd.Code != 257)
 					{
 						Page.Content += "<p><b>&quot;Print Working Directory&quot; command has returned an unexpected result:</b> " + cmd.ToString() + "</p>";
-						Page.Content += "<p>Return to <a href=\"/!ftp/\"><b>start page</b></a> and try to connect again.</p>";
+						Page.Content += "<p>Reload this page or return to <a href=\"/!ftp/\"><b>start page</b></a> and try to connect again.</p>";
 						return Page;
 					}
 
@@ -534,7 +535,7 @@ namespace WebOne
 			this.Content = Content;
 			this.ShowFooter = false;
 			this.AddCss = false;
-			this.HtmlHeaders = @"<link href=""/webone.css"" rel=""stylesheet""/><link rel=""shortcut icon"" href=""/ftpfav.ico"" type=""image/x-icon"">";
+			this.HtmlHeaders = "<link href=\"/webone.css\" rel=\"stylesheet\"/>\n<link rel=\"shortcut icon\" href=\"/ftpfav.ico\" type=\"image/x-icon\">";
 		}
 	}
 }
