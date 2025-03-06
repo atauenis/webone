@@ -1322,6 +1322,13 @@ namespace WebOne
 		/// <returns>True if file exists, False if there's no such content.</returns>
 		public bool SendInternalContent(string ContentId, string Arguments, int StatusCode = 200)
 		{
+			if(ContentId.Contains("../"))
+			{
+				// Prevent access local files outside /html/ directory.
+				SendError(403, "Please specify an absoulte path.");
+				return true;
+			}
+
 			if (!ContentId.StartsWith("!")) ContentId = "/" + ContentId;
 			string ContentFilePath = ConfigFile.ContentDirectory + ContentId;
 
