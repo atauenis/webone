@@ -215,7 +215,7 @@ Decoders:
  V....D smvjpeg              SMV JPEG
  V....D snow                 Snow
  V....D sp5x                 Sunplus JPEG (SP5X)
- V....D speedhq              NewTek SpeedHQ
+ VFS..D speedhq              NewTek SpeedHQ
  V....D srgc                 Screen Recorder Gold Codec
  V....D sunrast              Sun Rasterfile image
  V....D svq1                 Sorenson Vector Quantizer 1 / Sorenson Video 1 / SVQ1
@@ -273,7 +273,8 @@ Decoders:
  V..... vp9_cuvid            Nvidia CUVID VP9 decoder (codec vp9)
  V....D vp9_qsv              VP9 video (Intel Quick Sync Video acceleration) (codec vp9)
  V....D vqc                  ViewQuest VQC
- V..X.D vvc                  VVC (Versatile Video Coding)
+ V....D vvc                  VVC (Versatile Video Coding)
+ V....D vvc_qsv              VVC video (Intel Quick Sync Video acceleration) (codec vvc)
  VF...D wbmp                 WBMP (Wireless Application Protocol Bitmap) image
  V....D wcmv                 WinCAM Motion Video
  VF...D webp                 WebP image
@@ -293,7 +294,7 @@ Decoders:
  V....D xwd                  XWD (X Window Dump) image
  V....D y41p                 Uncompressed YUV 4:1:1 12-bit
  VF...D ylc                  YUY2 Lossless Codec
- V..... yop                  Psygnosis YOP Video
+ V....D yop                  Psygnosis YOP Video
  V....D yuv4                 Uncompressed packed 4:2:0
  V....D zerocodec            ZeroCodec Lossless Video
  VF...D zlib                 LCL (LossLess Codec Library) ZLIB
