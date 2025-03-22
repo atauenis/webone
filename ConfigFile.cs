@@ -227,6 +227,21 @@ namespace WebOne
 		/// Bypass client authentication for local IPs
 		/// </summary>
 		public static bool OpenForLocalIPs = false;
+		
+		/// <summary>
+		/// Enable emulation of Microsoft ActiveX components search engine
+		/// </summary>
+		public static bool ActivexGalleryEmulation = true;
+
+		/// <summary>
+		/// Emulate Microsoft ActiveX components search engine at URL
+		/// </summary>
+		public static string ActivexGalleryUrl = "http://activex.microsoft.com/objects/ocget.dll";
+
+		/// <summary>
+		/// Database of OLE Controls, DirectShow Codecs, etc, servicing by http://activex.microsoft.com/objects/ocget.dll
+		/// </summary>
+		public static Dictionary<string, string> ActivexGalleryCLSIDs = new();
 
 
 

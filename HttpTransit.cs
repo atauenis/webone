@@ -523,6 +523,17 @@ namespace WebOne
 					}
 					Dump();
 
+					//check for Microsoft Internet Component Gallery emulation
+					if (ConfigFile.ActivexGalleryEmulation && RequestURL.OriginalString.StartsWith(ConfigFile.ActivexGalleryUrl))
+					{
+						string ActivexGalleryLookupResult = GetActiveXCabUrl();
+						if (!string.IsNullOrWhiteSpace(ActivexGalleryLookupResult))
+						{
+							SendRedirect(ActivexGalleryLookupResult, "Nate entu vashu codebase.");
+							return;
+						}
+					}
+
 					//send the request
 					operation = new HttpOperation(Log);
 					operation.Method = ClientRequest.HttpMethod;
@@ -1322,7 +1333,7 @@ namespace WebOne
 		/// <returns>True if file exists, False if there's no such content.</returns>
 		public bool SendInternalContent(string ContentId, string Arguments, int StatusCode = 200)
 		{
-			if(ContentId.Contains("../"))
+			if (ContentId.Contains("../"))
 			{
 				// Prevent access local files outside /html/ directory.
 				SendError(403, "Please specify an absoulte path.");
@@ -2164,6 +2175,81 @@ namespace WebOne
 				StreamWriter DumpWriter = new StreamWriter(new FileStream(DumpFile, FileMode.Append));
 				DumpWriter.WriteLine(str);
 				DumpWriter.Close();
+			}
+		}
+
+		/// <summary>
+		/// Emulate http://activex.microsoft.com/objects/ocget.dll codebase search server
+		/// </summary>
+		/// <returns>Path to a ActiveX Control, a DirectShow Codec or something by specified CLSID; or empty string if real service should be used.</returns>
+		public string GetActiveXCabUrl()
+		{
+			// Reverse-engineered "Microsoft Internet Component Download ISAPI Dll" v3.0.0.3433
+
+			/* Example:
+				>>>POST http://activex.microsoft.com/objects/ocget.dll HTTP/1.0
+				Accept: application/x-cabinet-win32-x86, application/x-pe-win32-x86, application/x-oleobject, application/octet-stream, text/html, text/plain, application/x-setupscript, *\/*
+				Content-Type: application/x-www-form-urlencoded
+				User-Agent: Mozilla/2.0 (compatible; MSIE 3.02; Update a; Windows NT) WebOne/0.17.5-pre
+				Host: activex.microsoft.com
+				Content-Length: 44
+
+
+				CLSID={31564D57-0000-0010-8000-00AA00389B71}
+
+
+				<<<302 HTTP/1.0
+				Server: AkamaiGHost
+				Mime-Version: 1.0
+				Location: http://codecs.microsoft.com/codecs/i386/wmvax.cab
+				Content-Length: 397
+				Content-Type: text/html
+			 */
+
+			int Content_Length = 0;
+			if (ClientRequest.Headers["Content-Length"] != null) Content_Length = Int32.Parse(ClientRequest.Headers["Content-Length"]);
+			if (Content_Length != 0)
+			{
+				// Read POST request body
+				MemoryStream RequestBodyStream = new();
+				ClientRequest.InputStream.CopyTo(RequestBodyStream);
+				RequestBodyStream.Position = 0;
+				string POSTRequestBody = new StreamReader(RequestBodyStream).ReadToEnd();
+
+				Match match = Regex.Match(POSTRequestBody, @"CLSID=\{(.*)\}");
+				if (!match.Success)
+				{
+					Dump("--OCGET Emulation: Request not understood, unknown syntax.--");
+
+					RequestBodyStream.Position = 0;
+					ClientRequest.InputStream = RequestBodyStream;
+					return string.Empty;
+				}
+
+				string OleControlClassId = match.Groups[1].Value.ToUpperInvariant();
+				if (ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlClassId))
+				{
+					string OleControlCodebase = ConfigFile.ActivexGalleryCLSIDs[OleControlClassId];
+
+					Dump("--OCGET Emulation: " + OleControlClassId + " is " + OleControlCodebase + ".--");
+					Log.WriteLine("OCGET Emulation: found codebase for {0}, return 302.", OleControlClassId);
+
+					return OleControlCodebase;
+				}
+
+				Dump("--OCGET Emulation: using real Microsoft service for " + OleControlClassId + ".--");
+				Log.WriteLine("OCGET Emulation: using real Microsoft service for {0}.", OleControlClassId);
+
+				RequestBodyStream.Position = 0;
+				ClientRequest.InputStream = RequestBodyStream;
+				return string.Empty;
+			}
+			else
+			{
+				Dump("--OCGET Emulation: Request not understood, as no body found.--");
+				return string.Empty;
+
+				// Need to add support for "GET http://activex.microsoft.com/objects/ocget.dll?CLSID=abcde HTTP/1.1".
 			}
 		}
 
