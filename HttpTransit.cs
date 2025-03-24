@@ -2206,7 +2206,7 @@ namespace WebOne
 				Content-Type: text/html
 			 */
 
-			/* Also may work by GET request, AFAIK. */
+			/* Also may work by GET request, AFAIR. In 2025 does not working. */
 
 			/*
 			 * Documentation:
@@ -2240,7 +2240,7 @@ namespace WebOne
 			else
 			{
 				// Read from GET query
-				Match GETRequestMatch = Regex.Match(ClientRequest.Url.Query.ToUpperInvariant(), @"CLSID=\{(.*)\}");
+				Match GETRequestMatch = Regex.Match(ClientRequest.Url.Query.ToUpperInvariant(), @"CLSID=%7(.*)%7");
 				if (GETRequestMatch.Success)
 				{ OleControlClassId = GETRequestMatch.Groups[1].Value.ToUpperInvariant(); }
 			}
