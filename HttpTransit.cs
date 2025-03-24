@@ -524,7 +524,7 @@ namespace WebOne
 					Dump();
 
 					//check for Microsoft Internet Component Gallery emulation
-					if (ConfigFile.ActivexGalleryEmulation && RequestURL.OriginalString.StartsWith(ConfigFile.ActivexGalleryUrl))
+					if (ConfigFile.ActivexGalleryEmulation && CheckString(RequestURL.OriginalString, ConfigFile.ActivexGalleryUrls))
 					{
 						string ActivexGalleryLookupResult = GetActiveXCabUrl();
 						if (!string.IsNullOrWhiteSpace(ActivexGalleryLookupResult))
@@ -2181,7 +2181,7 @@ namespace WebOne
 		/// <summary>
 		/// Emulate http://activex.microsoft.com/objects/ocget.dll codebase search server
 		/// </summary>
-		/// <returns>Path to a ActiveX Control, a DirectShow Codec or something by specified CLSID; or empty string if real service should be used.</returns>
+		/// <returns>Path to an ActiveX Control, an DirectShow Codec or an something else by specified CLSID; or empty string if real service should be used.</returns>
 		public string GetActiveXCabUrl()
 		{
 			// Reverse-engineered "Microsoft Internet Component Download ISAPI Dll" v3.0.0.3433
@@ -2206,51 +2206,65 @@ namespace WebOne
 				Content-Type: text/html
 			 */
 
+			/* Also may work by GET request, AFAIK. */
+
+			/*
+			 * Documentation:
+			 * https://web.archive.org/web/20000420214227/http://msdn.microsoft.com/workshop/delivery/download/overview/entry.asp
+			 * https://web.archive.org/web/19990508052802/http://msdn.microsoft.com/workshop/delivery/msicd/reference/reference.asp
+			 * https://web.archive.org/web/20000415045606/http://msdn.microsoft.com/workshop/delivery/download/overview/implementation.asp
+			 * https://learn.microsoft.com/en-us/previous-versions/troubleshoot/browsers/development-website/activex-not-loaded-modified-codebase
+			 * https://web.archive.org/web/20051215070627/http://support.microsoft.com/kb/323207/
+			 * https://www.betaarchive.com/wiki/index.php?title=Microsoft_KB_Archive/323207
+			 * https://web.archive.org/web/20010609131648if_/http://activex.microsoft.com:80/objects/ocget.dll - original DLL file
+			 */
+
+			string OleControlClassId = null;
+
 			int Content_Length = 0;
 			if (ClientRequest.Headers["Content-Length"] != null) Content_Length = Int32.Parse(ClientRequest.Headers["Content-Length"]);
 			if (Content_Length != 0)
 			{
-				// Read POST request body
-				MemoryStream RequestBodyStream = new();
-				ClientRequest.InputStream.CopyTo(RequestBodyStream);
-				RequestBodyStream.Position = 0;
-				string POSTRequestBody = new StreamReader(RequestBodyStream).ReadToEnd();
+				// Read from POST request body
+				MemoryStream POSTRequestBodyStream = new();
+				ClientRequest.InputStream.CopyTo(POSTRequestBodyStream);
+				POSTRequestBodyStream.Position = 0;
+				string POSTRequestBody = new StreamReader(POSTRequestBodyStream).ReadToEnd();
+				POSTRequestBodyStream.Position = 0;
+				ClientRequest.InputStream = POSTRequestBodyStream;
 
-				Match match = Regex.Match(POSTRequestBody, @"CLSID=\{(.*)\}");
-				if (!match.Success)
-				{
-					Dump("--OCGET Emulation: Request not understood, unknown syntax.--");
-
-					RequestBodyStream.Position = 0;
-					ClientRequest.InputStream = RequestBodyStream;
-					return string.Empty;
-				}
-
-				string OleControlClassId = match.Groups[1].Value.ToUpperInvariant();
-				if (ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlClassId))
-				{
-					string OleControlCodebase = ConfigFile.ActivexGalleryCLSIDs[OleControlClassId];
-
-					Dump("--OCGET Emulation: " + OleControlClassId + " is " + OleControlCodebase + ".--");
-					Log.WriteLine("OCGET Emulation: found codebase for {0}, return 302.", OleControlClassId);
-
-					return OleControlCodebase;
-				}
-
-				Dump("--OCGET Emulation: using real Microsoft service for " + OleControlClassId + ".--");
-				Log.WriteLine("OCGET Emulation: using real Microsoft service for {0}.", OleControlClassId);
-
-				RequestBodyStream.Position = 0;
-				ClientRequest.InputStream = RequestBodyStream;
-				return string.Empty;
+				Match POSTRequestMatch = Regex.Match(POSTRequestBody, @"CLSID=\{(.*)\}");
+				if (POSTRequestMatch.Success)
+				{ OleControlClassId = POSTRequestMatch.Groups[1].Value.ToUpperInvariant(); }
 			}
 			else
 			{
-				Dump("--OCGET Emulation: Request not understood, as no body found.--");
-				return string.Empty;
-
-				// Need to add support for "GET http://activex.microsoft.com/objects/ocget.dll?CLSID=abcde HTTP/1.1".
+				// Read from GET query
+				Match GETRequestMatch = Regex.Match(ClientRequest.Url.Query.ToUpperInvariant(), @"CLSID=\{(.*)\}");
+				if (GETRequestMatch.Success)
+				{ OleControlClassId = GETRequestMatch.Groups[1].Value.ToUpperInvariant(); }
 			}
+
+			if (OleControlClassId == null)
+			{
+				Dump("--OCGET Emulation: Request not understood, unknown syntax.--");
+				return string.Empty;
+			}
+
+			// Look in database
+			if (ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlClassId))
+			{
+				string OleControlCodebase = ConfigFile.ActivexGalleryCLSIDs[OleControlClassId];
+
+				Dump("--OCGET Emulation: " + OleControlClassId + " is " + OleControlCodebase + ".--");
+				Log.WriteLine("OCGET Emulation: found codebase for {0}, return 302.", OleControlClassId);
+
+				return OleControlCodebase;
+			}
+
+			Dump("--OCGET Emulation: using real Microsoft service for " + OleControlClassId + ".--");
+			Log.WriteLine("OCGET Emulation: using real Microsoft service for {0}.", OleControlClassId);
+			return string.Empty;
 		}
 
 		/// <summary>

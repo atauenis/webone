@@ -227,19 +227,19 @@ namespace WebOne
 		/// Bypass client authentication for local IPs
 		/// </summary>
 		public static bool OpenForLocalIPs = false;
-		
+
 		/// <summary>
-		/// Enable emulation of Microsoft ActiveX components search engine
+		/// Enable emulation of Microsoft ActiveX components search engine (MSICD)
 		/// </summary>
 		public static bool ActivexGalleryEmulation = true;
 
 		/// <summary>
-		/// Emulate Microsoft ActiveX components search engine at URL
+		/// Emulate Microsoft ActiveX components search engine (MSICD) at URLs
 		/// </summary>
-		public static string ActivexGalleryUrl = "http://activex.microsoft.com/objects/ocget.dll";
+		public static List<string> ActivexGalleryUrls = new();
 
 		/// <summary>
-		/// Database of OLE Controls, DirectShow Codecs, etc, servicing by http://activex.microsoft.com/objects/ocget.dll
+		/// Database of OLE Controls, DirectShow Codecs, etc, servicing by http://activex.microsoft.com/objects/ocget.dll (MSICD)
 		/// </summary>
 		public static Dictionary<string, string> ActivexGalleryCLSIDs = new();
 

@@ -608,17 +608,13 @@ namespace WebOne
 									//Enable/Disable
 									ConfigFile.ActivexGalleryEmulation = ToBoolean(Line.Value);
 								else
-									//CLSID
+									//CLSID (path to corresponding MSICD CAB file)
 									ConfigFile.ActivexGalleryCLSIDs.Add(Line.Key.Replace("{", "").Replace("}", "").ToUpperInvariant(), Line.Value);
 							}
-							else if (System.Text.RegularExpressions.Regex.IsMatch(Line.RawString, "http://"))
+							else if (System.Text.RegularExpressions.Regex.IsMatch(Line.RawString, "^http://"))
 							{
 								//Codebase search engine URL
-								ConfigFile.ActivexGalleryUrl = Line.RawString;
-
-								//need to add support for multiple URLs here
-								//https://learn.microsoft.com/en-us/previous-versions/troubleshoot/browsers/development-website/activex-not-loaded-modified-codebase
-								//https://web.archive.org/web/20051215070627/http://support.microsoft.com/kb/323207/
+								ConfigFile.ActivexGalleryUrls.Add(Line.RawString);
 							}
 							else
 							{
