@@ -529,7 +529,8 @@ namespace WebOne
 						string ActivexGalleryLookupResult = GetActiveXCabUrl();
 						if (!string.IsNullOrWhiteSpace(ActivexGalleryLookupResult))
 						{
-							SendRedirect(ActivexGalleryLookupResult, "Nate entu vashu codebase.");
+							if (ActivexGalleryLookupResult == "404") SendError(404, "The specified Internet Component is known and is up to date.");
+							else SendRedirect(ActivexGalleryLookupResult, "Nate entu vashu codebase, zhrite.");
 							return;
 						}
 					}
@@ -2179,47 +2180,25 @@ namespace WebOne
 		}
 
 		/// <summary>
-		/// Emulate http://activex.microsoft.com/objects/ocget.dll codebase search server
+		/// Emulate http://activex.microsoft.com/objects/ocget.dll object codebase search server
 		/// </summary>
-		/// <returns>Path to an ActiveX Control, an DirectShow Codec or an something else by specified CLSID; or empty string if real service should be used.</returns>
+		/// <returns>Path to an ActiveX Control, an DirectShow Codec or an something else by specified CLSID; empty string if real service should be used; &quot;404&quot; if need to reply with 404 error.</returns>
 		public string GetActiveXCabUrl()
 		{
 			// Reverse-engineered "Microsoft Internet Component Download ISAPI Dll" v3.0.0.3433
 
-			/* Example:
-				>>>POST http://activex.microsoft.com/objects/ocget.dll HTTP/1.0
-				Accept: application/x-cabinet-win32-x86, application/x-pe-win32-x86, application/x-oleobject, application/octet-stream, text/html, text/plain, application/x-setupscript, *\/*
-				Content-Type: application/x-www-form-urlencoded
-				User-Agent: Mozilla/2.0 (compatible; MSIE 3.02; Update a; Windows NT) WebOne/0.17.5-pre
-				Host: activex.microsoft.com
-				Content-Length: 44
-
-
-				CLSID={31564D57-0000-0010-8000-00AA00389B71}
-
-
-				<<<302 HTTP/1.0
-				Server: AkamaiGHost
-				Mime-Version: 1.0
-				Location: http://codecs.microsoft.com/codecs/i386/wmvax.cab
-				Content-Length: 397
-				Content-Type: text/html
-			 */
-
-			/* Also may work by GET request, AFAIR. In 2025 does not working. */
-
 			/*
 			 * Documentation:
-			 * https://web.archive.org/web/20000420214227/http://msdn.microsoft.com/workshop/delivery/download/overview/entry.asp
-			 * https://web.archive.org/web/19990508052802/http://msdn.microsoft.com/workshop/delivery/msicd/reference/reference.asp
-			 * https://web.archive.org/web/20000415045606/http://msdn.microsoft.com/workshop/delivery/download/overview/implementation.asp
-			 * https://learn.microsoft.com/en-us/previous-versions/troubleshoot/browsers/development-website/activex-not-loaded-modified-codebase
-			 * https://web.archive.org/web/20051215070627/http://support.microsoft.com/kb/323207/
+			 * https://web.archive.org/web/20000415045606/http://www.msdn.microsoft.com/workshop/delivery/download/overview/implementation.asp - the API
+			 * https://web.archive.org/web/20051215070627/http://support.microsoft.com/kb/323207/ - case of use
 			 * https://www.betaarchive.com/wiki/index.php?title=Microsoft_KB_Archive/323207
+			 * https://web.archive.org/web/20070116235508/http://support.microsoft.com/kb/262380/
 			 * https://web.archive.org/web/20010609131648if_/http://activex.microsoft.com:80/objects/ocget.dll - original DLL file
 			 */
 
 			string OleControlClassId = null;
+			string OleControlVersion = null;
+			string OleControlMimeType = null;
 
 			int Content_Length = 0;
 			if (ClientRequest.Headers["Content-Length"] != null) Content_Length = Int32.Parse(ClientRequest.Headers["Content-Length"]);
@@ -2229,42 +2208,117 @@ namespace WebOne
 				MemoryStream POSTRequestBodyStream = new();
 				ClientRequest.InputStream.CopyTo(POSTRequestBodyStream);
 				POSTRequestBodyStream.Position = 0;
-				string POSTRequestBody = new StreamReader(POSTRequestBodyStream).ReadToEnd();
+				string POSTRequestBody = new StreamReader(POSTRequestBodyStream).ReadToEnd().ToUpperInvariant();
 				POSTRequestBodyStream.Position = 0;
 				ClientRequest.InputStream = POSTRequestBodyStream;
 
-				Match POSTRequestMatch = Regex.Match(POSTRequestBody, @"CLSID=\{(.*)\}");
-				if (POSTRequestMatch.Success)
-				{ OleControlClassId = POSTRequestMatch.Groups[1].Value.ToUpperInvariant(); }
+				Match POSTRequestMatchCLSID = Regex.Match(POSTRequestBody, @"CLSID=\{(.*)\}");
+				if (POSTRequestMatchCLSID.Success)
+				{ OleControlClassId = POSTRequestMatchCLSID.Groups[1].Value; }
+
+				Match POSTRequestMatchVer = Regex.Match(POSTRequestBody, @"VERSION=(.*)");
+				if (POSTRequestMatchVer.Success)
+				{ OleControlVersion = POSTRequestMatchVer.Groups[1].Value; }
+
+				Match POSTRequestMatchMime = Regex.Match(POSTRequestBody, @"MIMETYPE=(.*)");
+				if (POSTRequestMatchMime.Success)
+				{ OleControlMimeType = POSTRequestMatchMime.Groups[1].Value; }
 			}
 			else
 			{
 				// Read from GET query
-				Match GETRequestMatch = Regex.Match(ClientRequest.Url.Query.ToUpperInvariant(), @"CLSID=%7(.*)%7");
-				if (GETRequestMatch.Success)
-				{ OleControlClassId = GETRequestMatch.Groups[1].Value.ToUpperInvariant(); }
+				string GETRequestQuery = ClientRequest.Url.Query.ToUpperInvariant();
+
+				Match GETRequestMatchCLSID = Regex.Match(GETRequestQuery, @"CLSID=%7(.*)%7");
+				if (GETRequestMatchCLSID.Success)
+				{ OleControlClassId = GETRequestMatchCLSID.Groups[1].Value; }
+
+				Match GETRequestMatchVer = Regex.Match(GETRequestQuery, @"VERSION=(.*)");
+				if (GETRequestMatchVer.Success)
+				{ OleControlVersion = GETRequestMatchVer.Groups[1].Value; }
+
+				Match GETRequestMatchMime = Regex.Match(GETRequestQuery, @"MIMETYPE=(.*)");
+				if (GETRequestMatchMime.Success)
+				{ OleControlMimeType = GETRequestMatchMime.Groups[1].Value; }
 			}
 
-			if (OleControlClassId == null)
+			// Check presence of required parameters
+			if (OleControlClassId == null && OleControlMimeType == null)
 			{
 				Dump("--OCGET Emulation: Request not understood, unknown syntax.--");
+				Log.WriteLine("OCGET Emulation: missing search terms.");
 				return string.Empty;
 			}
+			if (OleControlVersion != null) { OleControlVersion = OleControlVersion.Replace(',', '.'); }
 
-			// Look in database
-			if (ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlClassId))
+			// Look up in database (CLSID & version)
+			if (OleControlClassId != null && ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlClassId))
 			{
 				string OleControlCodebase = ConfigFile.ActivexGalleryCLSIDs[OleControlClassId];
 
+				if (OleControlVersion != null && Version.TryParse(OleControlVersion, out Version ReportedVersion))
+				{
+					// If version is specified, also look up it in the database
+					string OleControlLatestVersionKey = OleControlClassId + ",LATEST";
+					if (ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlLatestVersionKey))
+					{
+						// Latest version is known, compare
+						Version LatestVersion = Version.Parse(ConfigFile.ActivexGalleryCLSIDs[OleControlLatestVersionKey]);
+						if (ReportedVersion >= LatestVersion) return "404"; // "do not update existing component"
+					}
+					// Latest version is unknown or later than installed one, give the component codebase
+				}
+
+				// Return found object codebase
 				Dump("--OCGET Emulation: " + OleControlClassId + " is " + OleControlCodebase + ".--");
 				Log.WriteLine("OCGET Emulation: found codebase for {0}, return 302.", OleControlClassId);
-
 				return OleControlCodebase;
 			}
 
-			Dump("--OCGET Emulation: using real Microsoft service for " + OleControlClassId + ".--");
-			Log.WriteLine("OCGET Emulation: using real Microsoft service for {0}.", OleControlClassId);
+			// Look up in database (MIME type & version)
+			if (OleControlMimeType != null && ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlMimeType))
+			{
+				string OleControlCodebase = ConfigFile.ActivexGalleryCLSIDs[OleControlMimeType];
+
+				if (OleControlVersion != null && Version.TryParse(OleControlVersion, out Version ReportedVersion))
+				{
+					// If version is specified, also look up it in the database
+					string OleControlLatestVersionKey = OleControlMimeType + ",LATEST";
+					if (ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlLatestVersionKey))
+					{
+						// Latest version is known, compare
+						Version LatestVersion = Version.Parse(ConfigFile.ActivexGalleryCLSIDs[OleControlLatestVersionKey]);
+						if (ReportedVersion >= LatestVersion) return "404"; // "do not update existing component"
+					}
+					// Latest version is unknown or later than installed one, give the component codebase
+				}
+
+				// Return found object codebase
+				Dump("--OCGET Emulation: " + OleControlMimeType + " is " + OleControlCodebase + ".--");
+				Log.WriteLine("OCGET Emulation: found codebase for {0}, return 302.", OleControlMimeType);
+				return OleControlCodebase;
+			}
+
+			// Not found
+			string ReportMessage = "something";
+			if (OleControlClassId != null) ReportMessage = OleControlClassId;
+			if (OleControlMimeType != null) ReportMessage = OleControlMimeType;
+			if (OleControlVersion != null) ReportMessage += ";version=" + OleControlVersion;
+			Dump("--OCGET Emulation: using real Microsoft service for " + ReportMessage + ".--");
+			Log.WriteLine("OCGET Emulation: using real Microsoft service for {0}.", ReportMessage);
 			return string.Empty;
+
+			/* Unimplemented in current OCGET emulator:
+			 * 
+			 * Language and OS detection.
+			 * MSDN says: "queries to object stores will also include HTTP headers for Accept (MIME type) and Accept-Language, thus 
+			specifying the desired platforms."
+			 * MSIE at Windows NT4 sends: 
+			 * "Accept: application/x-cabinet-win32-x86, application/x-pe-win32-x86, application/x-oleobject, application/octet-stream, text/html, text/plain, application/x-setupscript, *\/*"
+			 * "Accept-Language: ru,en-us;q=0.5"
+			 * 
+			 * So, need to do this.
+			 */
 		}
 
 		/// <summary>

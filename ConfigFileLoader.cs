@@ -605,11 +605,30 @@ namespace WebOne
 							if (Line.HaveKeyValue)
 							{
 								if (Line.Key.ToLowerInvariant() == "ActiveXGalleryEmulation".ToLowerInvariant())
+								{
 									//Enable/Disable
 									ConfigFile.ActivexGalleryEmulation = ToBoolean(Line.Value);
+								}
 								else
-									//CLSID (path to corresponding MSICD CAB file)
-									ConfigFile.ActivexGalleryCLSIDs.Add(Line.Key.Replace("{", "").Replace("}", "").ToUpperInvariant(), Line.Value);
+								{
+									//Component information
+									string CLSIDString = Line.Key.Replace("{", "").Replace("}", "").ToUpperInvariant();
+
+									if (Line.Key.EndsWith(",latest"))
+									{
+										//CLSID,latest (latest version of corresponding component)
+										string VersionString = Line.Value.Replace(',', '.');
+										if (!Version.TryParse(VersionString, out Version Ver))
+										{
+											Log.WriteLine(true, false, "Warning: Incorrect component latest version at {0}.", Line.Location);
+											continue;
+										}
+										ConfigFile.ActivexGalleryCLSIDs.Add(CLSIDString, VersionString);
+										continue;
+									}
+									//CLSID or CLSID,language (path to corresponding MSICD CAB file)
+									ConfigFile.ActivexGalleryCLSIDs.Add(CLSIDString, Line.Value);
+								}
 							}
 							else if (System.Text.RegularExpressions.Regex.IsMatch(Line.RawString, "^http://"))
 							{
