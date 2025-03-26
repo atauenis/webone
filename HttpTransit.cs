@@ -1447,7 +1447,7 @@ namespace WebOne
 			foreach (string segment in querySegments)
 			{
 				string[] parts = segment.Split('=');
-				if (parts.Length > 0)
+				if (parts.Length > 1)
 				{
 					string key = parts[0].Trim(new char[] { '?', ' ' });
 					string val = HttpUtility.UrlDecode(parts[1]).Trim();
