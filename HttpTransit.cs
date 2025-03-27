@@ -1373,9 +1373,13 @@ namespace WebOne
 					ClientResponse.ContentType = MimeType;
 					if (string.IsNullOrWhiteSpace(Arguments)) ClientResponse.AddHeader("Expires", DateTime.Now.AddDays(30).ToUniversalTime()
 	 .ToString("ddd, dd MMM yyyy HH:mm:ss 'GMT'", DateTimeFormatInfo.InvariantInfo));
-					ClientResponse.SendHeaders();
-					ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
-					ClientResponse.Close();
+					try
+					{
+						ClientResponse.SendHeaders();
+						ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
+						ClientResponse.Close();
+					}
+					catch (IOException) { if (!ConfigFile.HideClientErrors) throw; }
 					return true;
 				}
 				else
@@ -1387,9 +1391,14 @@ namespace WebOne
 					ClientResponse.ContentLength64 = ContentBinary.Length;
 					if (string.IsNullOrWhiteSpace(Arguments)) ClientResponse.AddHeader("Expires", DateTime.Now.AddDays(30).ToUniversalTime()
 .ToString("ddd, dd MMM yyyy HH:mm:ss 'GMT'", new CultureInfo("en-US")));
-					ClientResponse.SendHeaders();
-					ClientResponse.OutputStream.Write(ContentBinary, 0, ContentBinary.Length);
-					ClientResponse.Close();
+
+					try
+					{
+						ClientResponse.SendHeaders();
+						ClientResponse.OutputStream.Write(ContentBinary, 0, ContentBinary.Length);
+						ClientResponse.Close();
+					}
+					catch (IOException) { if (!ConfigFile.HideClientErrors) throw; }
 					return true;
 				}
 			}
