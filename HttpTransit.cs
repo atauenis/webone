@@ -2199,7 +2199,9 @@ namespace WebOne
 			string OleControlClassId = null;
 			string OleControlVersion = null;
 			string OleControlMimeType = null;
+			string OleControlLanguage = null;
 
+			// Read request
 			int Content_Length = 0;
 			if (ClientRequest.Headers["Content-Length"] != null) Content_Length = Int32.Parse(ClientRequest.Headers["Content-Length"]);
 			if (Content_Length != 0)
@@ -2242,7 +2244,14 @@ namespace WebOne
 				{ OleControlMimeType = GETRequestMatchMime.Groups[1].Value; }
 			}
 
-			// Check presence of required parameters
+			if (ClientRequest.Headers["Accept-Language"] != null)
+			{
+				// Read Accept-Language header if any
+				Match RequestMatchAcceptLanguage = Regex.Match(ClientRequest.Headers["Accept-Language"], "[a-zA-Z]*");
+				if (RequestMatchAcceptLanguage.Success) OleControlLanguage = RequestMatchAcceptLanguage.Value.ToUpperInvariant();
+			}
+
+			// Check presence of required and optional parameters
 			if (OleControlClassId == null && OleControlMimeType == null)
 			{
 				Dump("--OCGET Emulation: Request not understood, unknown syntax.--");
@@ -2250,12 +2259,14 @@ namespace WebOne
 				return string.Empty;
 			}
 			if (OleControlVersion != null) { OleControlVersion = OleControlVersion.Replace(',', '.'); }
+			if (OleControlLanguage == null) OleControlLanguage = string.Empty;
 
-			// Look up in database (CLSID & version)
+			// Look up in database
+			string OleControlCodebase = null;
+
+			// ...by CLSID & version
 			if (OleControlClassId != null && ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlClassId))
 			{
-				string OleControlCodebase = ConfigFile.ActivexGalleryCLSIDs[OleControlClassId];
-
 				if (OleControlVersion != null && Version.TryParse(OleControlVersion, out Version ReportedVersion))
 				{
 					// If version is specified, also look up it in the database
@@ -2269,17 +2280,16 @@ namespace WebOne
 					// Latest version is unknown or later than installed one, give the component codebase
 				}
 
+				if (ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlClassId + "," + OleControlLanguage))
+					OleControlClassId += "," + OleControlLanguage; // Localized version exists
+
 				// Return found object codebase
-				Dump("--OCGET Emulation: " + OleControlClassId + " is " + OleControlCodebase + ".--");
-				Log.WriteLine("OCGET Emulation: found codebase for {0}, return 302.", OleControlClassId);
-				return OleControlCodebase;
+				OleControlCodebase = ConfigFile.ActivexGalleryCLSIDs[OleControlClassId];
 			}
 
-			// Look up in database (MIME type & version)
+			// ...by MIME type & version
 			if (OleControlMimeType != null && ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlMimeType))
 			{
-				string OleControlCodebase = ConfigFile.ActivexGalleryCLSIDs[OleControlMimeType];
-
 				if (OleControlVersion != null && Version.TryParse(OleControlVersion, out Version ReportedVersion))
 				{
 					// If version is specified, also look up it in the database
@@ -2293,31 +2303,43 @@ namespace WebOne
 					// Latest version is unknown or later than installed one, give the component codebase
 				}
 
+				if (ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlMimeType + "," + OleControlLanguage))
+					OleControlMimeType += "," + OleControlLanguage; // Localized version exists
+
 				// Return found object codebase
-				Dump("--OCGET Emulation: " + OleControlMimeType + " is " + OleControlCodebase + ".--");
-				Log.WriteLine("OCGET Emulation: found codebase for {0}, return 302.", OleControlMimeType);
-				return OleControlCodebase;
+				OleControlCodebase = ConfigFile.ActivexGalleryCLSIDs[OleControlMimeType];
 			}
 
-			// Not found
+			// Prepare string for log message
 			string ReportMessage = "something";
 			if (OleControlClassId != null) ReportMessage = OleControlClassId;
 			if (OleControlMimeType != null) ReportMessage = OleControlMimeType;
 			if (OleControlVersion != null) ReportMessage += ";version=" + OleControlVersion;
+			if (OleControlLanguage != "") ReportMessage += ";language=" + OleControlLanguage;
+
+			// Search is successful
+			if (OleControlCodebase != null)
+			{
+				Dump("--OCGET Emulation: " + ReportMessage + " is " + OleControlCodebase + ".--");
+				Log.WriteLine("OCGET Emulation: found codebase for {0}, return 302.", ReportMessage);
+				return OleControlCodebase;
+			}
+
+			// Search is not successful
 			Dump("--OCGET Emulation: using real Microsoft service for " + ReportMessage + ".--");
 			Log.WriteLine("OCGET Emulation: using real Microsoft service for {0}.", ReportMessage);
 			return string.Empty;
 
-			/* Unimplemented in current OCGET emulator:
+			/* Unimplemented in current OCGET emulator: OS detection.
 			 * 
-			 * Language and OS detection.
 			 * MSDN says: "queries to object stores will also include HTTP headers for Accept (MIME type) and Accept-Language, thus 
 			specifying the desired platforms."
-			 * MSIE at Windows NT4 sends: 
+			 * WMP at Windows NT4 sends: 
 			 * "Accept: application/x-cabinet-win32-x86, application/x-pe-win32-x86, application/x-oleobject, application/octet-stream, text/html, text/plain, application/x-setupscript, *\/*"
 			 * "Accept-Language: ru,en-us;q=0.5"
 			 * 
-			 * So, need to do this.
+			 * ICD was not so much popular outside Win32, but documentation recommends to support NT-Alpha, UNIX and Macintosh components.
+			 * If you know any examples, please tell at GitHub/VOGONS/Phantom.Sannata.org/etc.
 			 */
 		}
 

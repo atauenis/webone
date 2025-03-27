@@ -614,19 +614,31 @@ namespace WebOne
 									//Component information
 									string CLSIDString = Line.Key.Replace("{", "").Replace("}", "").ToUpperInvariant();
 
+									if (!System.Text.RegularExpressions.Regex.IsMatch(CLSIDString.ToLowerInvariant(), "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"))
+									{
+										if (!System.Text.RegularExpressions.Regex.IsMatch(CLSIDString.ToLowerInvariant(), @"[a-z0-9.\-_]*/[a-z0-9.\-_]"))
+										{
+											Log.WriteLine(true, false, "Warning: Incorrect Internet Component GUID or type at {0}.", Line.Location);
+											continue;
+										}
+									}
+
 									if (Line.Key.EndsWith(",latest"))
 									{
 										//CLSID,latest (latest version of corresponding component)
 										string VersionString = Line.Value.Replace(',', '.');
 										if (!Version.TryParse(VersionString, out Version Ver))
 										{
-											Log.WriteLine(true, false, "Warning: Incorrect component latest version at {0}.", Line.Location);
+											Log.WriteLine(true, false, "Warning: Incorrect Internet Component latest version at {0}.", Line.Location);
 											continue;
 										}
+
+										if (ConfigFile.ActivexGalleryCLSIDs.ContainsKey(CLSIDString)) ConfigFile.ActivexGalleryCLSIDs.Remove(CLSIDString); // allow overwrite it
 										ConfigFile.ActivexGalleryCLSIDs.Add(CLSIDString, VersionString);
 										continue;
 									}
 									//CLSID or CLSID,language (path to corresponding MSICD CAB file)
+									if (ConfigFile.ActivexGalleryCLSIDs.ContainsKey(CLSIDString)) ConfigFile.ActivexGalleryCLSIDs.Remove(CLSIDString); // allow overwrite it
 									ConfigFile.ActivexGalleryCLSIDs.Add(CLSIDString, Line.Value);
 								}
 							}
