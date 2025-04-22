@@ -229,6 +229,13 @@ namespace WebOne
 		public static bool OpenForLocalIPs = false;
 
 		/// <summary>
+		/// Do not prefer HTTPS protocol even for HTTPS connections
+		/// </summary>
+		public static bool DontPreferHTTPS = false;
+
+
+
+		/// <summary>
 		/// Enable emulation of Microsoft ActiveX components search engine (MSICD)
 		/// </summary>
 		public static bool ActivexGalleryEmulation = true;

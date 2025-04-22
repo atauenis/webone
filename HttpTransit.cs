@@ -540,6 +540,7 @@ namespace WebOne
 					operation.Method = ClientRequest.HttpMethod;
 					operation.RequestHeaders = whc;
 					operation.URL = RequestURL;
+					if(!ConfigFile.DontPreferHTTPS) operation.SecureConnection = ClientRequest.IsSecureConnection;
 					SendRequest(operation);
 				}
 				catch (System.Net.Http.HttpRequestException httpex)
@@ -1613,8 +1614,6 @@ namespace WebOne
 							string SecureHost = RequestURL.Host;
 							if (!ConfigFile.ForceHttps.Contains(SecureHost))
 								ConfigFile.ForceHttps.Add(SecureHost);
-
-							//return;
 						}
 					}
 				}

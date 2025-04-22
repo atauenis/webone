@@ -24,6 +24,11 @@ namespace WebOne
 		internal string Method { get; set; }
 
 		/// <summary>
+		/// Use HTTPS protocol for this operation
+		/// </summary>
+		internal bool SecureConnection { get; set; }
+
+		/// <summary>
 		/// Full HTTP client request
 		/// </summary>
 		internal HttpRequestMessage Request { get; set; }
@@ -57,6 +62,7 @@ namespace WebOne
 		internal HttpOperation(LogWriter Log)
 		{
 			this.Log = Log;
+			this.SecureConnection = false;
 		}
 
 		/// <summary>
@@ -124,7 +130,7 @@ namespace WebOne
 
 			foreach (string SslHost in ConfigFile.ForceHttps)
 			{
-				if (Request.RequestUri.Host.StartsWith(SslHost))
+				if (Request.RequestUri.Host.StartsWith(SslHost) || SecureConnection)
 				{
 					UriBuilder ub = new(Request.RequestUri);
 					ub.Scheme = "https";
@@ -134,6 +140,7 @@ namespace WebOne
 #if DEBUG
 					Log.WriteLine(" Willfully secure request.");
 #endif
+					break;
 				}
 			}
 
