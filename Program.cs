@@ -122,11 +122,15 @@ namespace WebOne
 				if (ConfigFile.UpperProxy == "no" || ConfigFile.UpperProxy == "off" || ConfigFile.UpperProxy == "disable" || ConfigFile.UpperProxy == "false" || ConfigFile.UpperProxy == "direct")
 				{
 					HTTPHandler.UseProxy = false;
+#pragma warning disable CS0618
+					System.Net.Http.HttpClient.DefaultProxy = GlobalProxySelection.GetEmptyWebProxy();
+#pragma warning restore CS061
 				}
 				else
 				{
 					WebProxy UpperProxy = new(ConfigFile.UpperProxy);
 					HTTPHandler.Proxy = UpperProxy;
+					System.Net.Http.HttpClient.DefaultProxy = UpperProxy;
 				}
 			}
 			HTTPHandler.EnableMultipleHttp2Connections = ConfigFile.MultipleHttp2Connections;

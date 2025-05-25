@@ -291,6 +291,9 @@ namespace WebOne
 								case "EnableWebFtp":
 									ConfigFile.EnableWebFtp = ToBoolean(Option.Value);
 									break;
+								case "ShowFileIcons":
+									ConfigFile.ShowFileIcons = ToBoolean(Option.Value);
+									break;
 								case "UseMsHttpApi":
 									ConfigFile.UseMsHttpApi = ToBoolean(Option.Value);
 									break;
@@ -306,6 +309,9 @@ namespace WebOne
 										ConfigFile.ContentDirectory = AltContentDirName;
 									else
 										Log.WriteLine(true, false, "Warning: Incorrect ContentDirectory '{0}'.", ContentDirName);
+									break;
+								case "DontPreferHTTPS":
+									ConfigFile.DontPreferHTTPS = ToBoolean(Option.Value);
 									break;
 								default:
 									Log.WriteLine(true, false, "Warning: Unknown server option {0} in {1}.", Option.Key, Option.Location);
@@ -593,6 +599,61 @@ namespace WebOne
 						{
 							CheckRegExp(Line.RawString, Line.Location);
 							ConfigFile.Http10Only.Add(Line.RawString);
+						}
+						break;
+					case "ActivexGallery":
+					case "ActiveXGallery":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							if (Line.HaveKeyValue)
+							{
+								if (Line.Key.ToLowerInvariant() == "ActiveXGalleryEmulation".ToLowerInvariant())
+								{
+									//Enable/Disable
+									ConfigFile.ActivexGalleryEmulation = ToBoolean(Line.Value);
+								}
+								else
+								{
+									//Component information
+									string CLSIDString = Line.Key.Replace("{", "").Replace("}", "").ToUpperInvariant();
+
+									if (!System.Text.RegularExpressions.Regex.IsMatch(CLSIDString.ToLowerInvariant(), "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"))
+									{
+										if (!System.Text.RegularExpressions.Regex.IsMatch(CLSIDString.ToLowerInvariant(), @"[a-z0-9.\-_]*/[a-z0-9.\-_]"))
+										{
+											Log.WriteLine(true, false, "Warning: Incorrect Internet Component GUID or type at {0}.", Line.Location);
+											continue;
+										}
+									}
+
+									if (Line.Key.EndsWith(",latest"))
+									{
+										//CLSID,latest (latest version of corresponding component)
+										string VersionString = Line.Value.Replace(',', '.');
+										if (!Version.TryParse(VersionString, out Version Ver))
+										{
+											Log.WriteLine(true, false, "Warning: Incorrect Internet Component latest version at {0}.", Line.Location);
+											continue;
+										}
+
+										if (ConfigFile.ActivexGalleryCLSIDs.ContainsKey(CLSIDString)) ConfigFile.ActivexGalleryCLSIDs.Remove(CLSIDString); // allow overwrite it
+										ConfigFile.ActivexGalleryCLSIDs.Add(CLSIDString, VersionString);
+										continue;
+									}
+									//CLSID or CLSID,language (path to corresponding MSICD CAB file)
+									if (ConfigFile.ActivexGalleryCLSIDs.ContainsKey(CLSIDString)) ConfigFile.ActivexGalleryCLSIDs.Remove(CLSIDString); // allow overwrite it
+									ConfigFile.ActivexGalleryCLSIDs.Add(CLSIDString, Line.Value);
+								}
+							}
+							else if (System.Text.RegularExpressions.Regex.IsMatch(Line.RawString, "^http://"))
+							{
+								//Codebase search engine URL
+								ConfigFile.ActivexGalleryUrls.Add(Line.RawString);
+							}
+							else
+							{
+								Log.WriteLine(true, false, "Warning: Incorrect Microsoft codebase search engine option at {0}.", Line.Location);
+							}
 						}
 						break;
 					case "FixableURL":
