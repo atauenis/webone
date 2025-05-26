@@ -111,26 +111,12 @@
 	<PropertyGroup>
 		<PostInstallScript>
 			<![CDATA[
-WOOldConfDir=/etc/WebOne/
-WOOldConfFile=/etc/WebOne/webone.conf
-WONewConfFile=/etc/webone.conf.d/migrated.conf
-if [ -f "$WOOldConfFile" ]
-then
-	echo "$WOOldConfFile -> $WONewConfFile"
-	mv $WOOldConfFile $WONewConfFile
-fi
-
-if [ -d "$WOOldConfDir" ]
-then
-	echo "Consider remove /etc/WebOne/ directory. It is no longer used by WebOne."
-fi
-
 WOLog=/var/log/webone.log
 touch $WOLog
 chmod 666 $WOLog
 
-WOCACert=/etc/webone.conf.d/ssl.crt
-WOCAKey=/etc/webone.conf.d/ssl.key
+WOCACert=/etc/webone/ssl.crt
+WOCAKey=/etc/webone/ssl.key
 
 if [ ! -f "$WOCACert" ]
 then
@@ -221,7 +207,7 @@ fi
 			<LinuxPath>/etc/logrotate.d/webone</LinuxPath>
 		</Content>
 		<Content Include="openssl_webone.cnf" CopyToPublishDirectory="Always" LinuxFileMode="644">
-			<LinuxPath>/etc/webone.conf.d/openssl_webone.cnf</LinuxPath>
+			<LinuxPath>/etc/webone/openssl_webone.cnf</LinuxPath>
 		</Content>
 	</ItemGroup>
 
@@ -232,12 +218,12 @@ fi
 		</Content>
 
 		<Content Include="codepage.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
-			<LinuxPath Condition="$(RuntimeIdentifier.Contains('linux'))">/etc/webone.conf.d/codepage.conf</LinuxPath>
+			<LinuxPath Condition="$(RuntimeIdentifier.Contains('linux'))">/etc/webone/codepage.conf</LinuxPath>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 
 		<Content Include="escargot.conf" CopyToPublishDirectory="Always" LinuxFileMode="644">
-			<LinuxPath Condition="$(RuntimeIdentifier.Contains('linux'))">/etc/webone.conf.d/escargot.conf</LinuxPath>
+			<LinuxPath Condition="$(RuntimeIdentifier.Contains('linux'))">/etc/webone/escargot.conf</LinuxPath>
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>

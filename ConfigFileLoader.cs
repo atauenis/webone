@@ -75,7 +75,7 @@ namespace WebOne
 					if (Directory.Exists(WinUserDefaultConfigDir)) DefaultConfigDir = WinUserDefaultConfigDir;
 					break;
 				case PlatformID.Unix:
-					string LinuxDefaultConfigDir = "/etc/webone.conf.d/";
+					string LinuxDefaultConfigDir = "/etc/webone/";
 					string LinuxUserDefaultConfigDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.config/webone/";
 					string MacOSDefaultConfigDir = "/Library/Application Support/WebOne/";
 					string MacOSUserDefaultConfigDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/Library/Application Support/WebOne/";
@@ -94,7 +94,7 @@ namespace WebOne
 			{
 				int MaskStart = Includable.LastIndexOf(Path.DirectorySeparatorChar);
 				if (MaskStart < 0) MaskStart = Includable.LastIndexOf(Path.AltDirectorySeparatorChar);
-				if (MaskStart > 0) // "/etc/webone.conf.d/*.conf" or even "C:/program files/webone/myconf/*.conf"
+				if (MaskStart > 0) // "/etc/webone/*.conf" or even "C:/program files/webone/myconf/*.conf"
 					LoadDirectory(Includable.Substring(0, MaskStart), Includable.Substring(MaskStart + 1));
 				else // simply "*.conf"
 					LoadDirectory(".", Includable);

@@ -31,7 +31,7 @@ Manuals about how to set up a WebOne proxy on [Windows](https://github.com/ataue
 	$ sudo systemctl start webone
 	```
 	Other service commands, such as `start`/`stop`/`restart`/`status`/`enable`/`disable`, also work.
-	
+
 *   On macOS launch `webone` from Terminal, as the application is not signed for developer verification.
 	```
 	$ ./webone				(simply)
@@ -42,7 +42,7 @@ Manuals about how to set up a WebOne proxy on [Windows](https://github.com/ataue
 	```
 	These commands also can be used on Linux when systemd service is disabled.
 
-*	*Tip:* you may store your own configuration in `/etc/webone.conf.d/` directory. It will override `webone.conf` settings and will not be overwritten on package updates.
+*	*Tip:* you may store your own configuration in `/etc/webone/` directory. It will override `webone.conf` settings and will not be overwritten on package updates.
 
 
 
@@ -89,7 +89,7 @@ __WebOne__ - прокси-сервер HTTP (HTTPS), позволяющий от
 Настройки прокси-сервера хранятся в файле __webone.conf__ или любом другом в одном из следующих мест:
 
 * _Каталог программы._
-* `/etc/webone.conf` (`/etc/webone.conf.d/*.conf`)
+* `/etc/webone.conf` (`/etc/webone/*.conf`)
 * `~/.config/webone/webone.conf`
 * `~/Library/Application Support/WebOne/webone.conf`
 * `/Library/Application Support/WebOne/webone.conf`

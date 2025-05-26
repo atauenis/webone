@@ -1,7 +1,7 @@
 # OpenSSL configuration for WebOne.
 # It's allows SSL 3.0, weak ciphers, and weak certificates.
-# use (bash/sh): export OPENSSL_CONF=/etc/webone.conf.d/openssl_webone.cnf
-# use (systemd): Environment="OPENSSL_CONF=/etc/webone.conf.d/openssl_webone.cnf"
+# use (bash/sh): export OPENSSL_CONF=/etc/webone/openssl_webone.cnf
+# use (systemd): Environment="OPENSSL_CONF=/etc/webone/openssl_webone.cnf"
 
 # Try this configuration in case of error "Using SSL certificate failed with OpenSSL error - ca md too weak."
 
