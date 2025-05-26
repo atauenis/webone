@@ -21,22 +21,6 @@ Windows 7 (2008 R2) SP1+ / Linux / macOS and .NET 6.0 Runtime are required on se
 ## Install
 Manuals about how to set up a WebOne proxy on [Windows](https://github.com/atauenis/webone/wiki/Windows-installation) / [Linux](https://github.com/atauenis/webone/wiki/Linux-installation) / [macOS](https://github.com/atauenis/webone/wiki/MacOS-X-installation) servers are in the Wiki.
 
-### Automation scripts
-
-<p align="center">
-    <img src="https://skillicons.dev/icons?i=bash" />
-</p>
-
-Before to continue with building and installation, please check the [./autoinstall](./autoinstall/) directory, there maybe a faster and more convenient way of doing so.
-
-### Docker
-
-<p align="center">
-    <img src="https://skillicons.dev/icons?i=docker" />
-</p>
-
-Please follow the guidelines available at [docker-webone](https://github.com/way5/docker-webone).
-
 ## Run
 *	On Windows simply run `webone.exe`. Then open port 8080 in Windows Firewall settings.
 
@@ -47,7 +31,7 @@ Please follow the guidelines available at [docker-webone](https://github.com/way
 	$ sudo systemctl start webone
 	```
 	Other service commands, such as `start`/`stop`/`restart`/`status`/`enable`/`disable`, also work.
-	
+
 *   On macOS launch `webone` from Terminal, as the application is not signed for developer verification.
 	```
 	$ ./webone				(simply)
@@ -58,7 +42,7 @@ Please follow the guidelines available at [docker-webone](https://github.com/way
 	```
 	These commands also can be used on Linux when systemd service is disabled.
 
-*	*Tip:* you may store your own configuration in `/etc/webone.conf.d/` directory. It will override `webone.conf` settings and will not be overwritten on package updates.
+*	*Tip:* you may store your own configuration in `/etc/webone/` directory. It will override `webone.conf` settings and will not be overwritten on package updates.
 
 
 
@@ -105,7 +89,7 @@ __WebOne__ - прокси-сервер HTTP (HTTPS), позволяющий от
 Настройки прокси-сервера хранятся в файле __webone.conf__ или любом другом в одном из следующих мест:
 
 * _Каталог программы._
-* `/etc/webone.conf` (`/etc/webone.conf.d/*.conf`)
+* `/etc/webone.conf` (`/etc/webone/*.conf`)
 * `~/.config/webone/webone.conf`
 * `~/Library/Application Support/WebOne/webone.conf`
 * `/Library/Application Support/WebOne/webone.conf`
