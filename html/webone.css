@@ -1,4 +1,4 @@
-; WebOne default stylesheet
+/* WebOne default stylesheet */
 h1, h2, h3, h4
 {
 	font-family: sans-serif;
@@ -47,8 +47,23 @@ tr:hover
 {
 	background-color:#FFFCDB;
 }
-table.nostyle, th.nostyle, tr.nostyle, td.nostyle, tr.nostyle:hover, tr.nostyle:nth-of-type(even) {
-	border: 0px none;
-	background-color: transparent;
-	padding: unset;
+table.nostyle, th.nostyle, tr.nostyle, td.nostyle, tr.nostyle:hover
+{
+	border-style: none !important;
+	background-color: transparent !important;
+	padding: unset !important;
+}
+tr.nostyle:nth-of-type(even)
+{
+	/* Separate for Firefox 2 */
+	border-style: none !important;
+	background-color: transparent !important;
+	padding: unset !important;
+}
+img.fileicon 
+{
+	vertical-align: bottom;
+	border-style: none;
+	width: 16px;
+	height: 16px;
 }

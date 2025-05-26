@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29926.136
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "webone", "webone.csproj", "{96497861-931F-4470-8E01-A23AB88EFB8A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "webone", "WebOne.csproj", "{96497861-931F-4470-8E01-A23AB88EFB8A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

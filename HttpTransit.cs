@@ -224,8 +224,15 @@ namespace WebOne
 				{
 					// Internal URIs
 					string InternalPage = "/";
-					if (RequestURL.Segments.Length > 1) InternalPage = RequestURL.Segments[1].ToLower();
-					InternalPage = "/" + InternalPage.TrimEnd('/');
+					if (RequestURL.Segments.Length > 1)
+					{
+						for (int s = 1; s < RequestURL.Segments.Length; s++)
+						{
+							InternalPage += RequestURL.Segments[s];
+						}
+					}
+					//InternalPage = RequestURL.Segments[1].ToLower();
+					InternalPage = InternalPage.TrimEnd('/').ToLowerInvariant();
 
 					SendInternalPage(InternalPage, RequestURL.Query);
 					return;
@@ -516,11 +523,24 @@ namespace WebOne
 					}
 					Dump();
 
+					//check for Microsoft Internet Component Gallery emulation
+					if (ConfigFile.ActivexGalleryEmulation && CheckString(RequestURL.OriginalString, ConfigFile.ActivexGalleryUrls))
+					{
+						string ActivexGalleryLookupResult = GetActiveXCabUrl();
+						if (!string.IsNullOrWhiteSpace(ActivexGalleryLookupResult))
+						{
+							if (ActivexGalleryLookupResult == "404") SendError(404, "The specified Internet Component is known and is up to date.");
+							else SendRedirect(ActivexGalleryLookupResult, "Nate entu vashu codebase, zhrite.");
+							return;
+						}
+					}
+
 					//send the request
 					operation = new HttpOperation(Log);
 					operation.Method = ClientRequest.HttpMethod;
 					operation.RequestHeaders = whc;
 					operation.URL = RequestURL;
+					if(!ConfigFile.DontPreferHTTPS) operation.SecureConnection = ClientRequest.IsSecureConnection;
 					SendRequest(operation);
 				}
 				catch (System.Net.Http.HttpRequestException httpex)
@@ -845,6 +865,7 @@ namespace WebOne
 				Log.WriteLine(" Internal page: {0} ", InternalPageId);
 				switch (InternalPageId)
 				{
+					case "":
 					case "/":
 					case "/!":
 					case "/!/":
@@ -1314,6 +1335,13 @@ namespace WebOne
 		/// <returns>True if file exists, False if there's no such content.</returns>
 		public bool SendInternalContent(string ContentId, string Arguments, int StatusCode = 200)
 		{
+			if (ContentId.Contains("../"))
+			{
+				// Prevent access local files outside /html/ directory.
+				SendError(403, "Please specify an absoulte path.");
+				return true;
+			}
+
 			if (!ContentId.StartsWith("!")) ContentId = "/" + ContentId;
 			string ContentFilePath = ConfigFile.ContentDirectory + ContentId;
 
@@ -1346,9 +1374,13 @@ namespace WebOne
 					ClientResponse.ContentType = MimeType;
 					if (string.IsNullOrWhiteSpace(Arguments)) ClientResponse.AddHeader("Expires", DateTime.Now.AddDays(30).ToUniversalTime()
 	 .ToString("ddd, dd MMM yyyy HH:mm:ss 'GMT'", DateTimeFormatInfo.InvariantInfo));
-					ClientResponse.SendHeaders();
-					ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
-					ClientResponse.Close();
+					try
+					{
+						ClientResponse.SendHeaders();
+						ClientResponse.OutputStream.Write(Buffer, 0, Buffer.Length);
+						ClientResponse.Close();
+					}
+					catch (IOException) { if (!ConfigFile.HideClientErrors) throw; }
 					return true;
 				}
 				else
@@ -1360,9 +1392,14 @@ namespace WebOne
 					ClientResponse.ContentLength64 = ContentBinary.Length;
 					if (string.IsNullOrWhiteSpace(Arguments)) ClientResponse.AddHeader("Expires", DateTime.Now.AddDays(30).ToUniversalTime()
 .ToString("ddd, dd MMM yyyy HH:mm:ss 'GMT'", new CultureInfo("en-US")));
-					ClientResponse.SendHeaders();
-					ClientResponse.OutputStream.Write(ContentBinary, 0, ContentBinary.Length);
-					ClientResponse.Close();
+
+					try
+					{
+						ClientResponse.SendHeaders();
+						ClientResponse.OutputStream.Write(ContentBinary, 0, ContentBinary.Length);
+						ClientResponse.Close();
+					}
+					catch (IOException) { if (!ConfigFile.HideClientErrors) throw; }
 					return true;
 				}
 			}
@@ -1420,7 +1457,7 @@ namespace WebOne
 			foreach (string segment in querySegments)
 			{
 				string[] parts = segment.Split('=');
-				if (parts.Length > 0)
+				if (parts.Length > 1)
 				{
 					string key = parts[0].Trim(new char[] { '?', ' ' });
 					string val = HttpUtility.UrlDecode(parts[1]).Trim();
@@ -1577,8 +1614,6 @@ namespace WebOne
 							string SecureHost = RequestURL.Host;
 							if (!ConfigFile.ForceHttps.Contains(SecureHost))
 								ConfigFile.ForceHttps.Add(SecureHost);
-
-							//return;
 						}
 					}
 				}
@@ -1716,7 +1751,7 @@ namespace WebOne
 				{
 					LocalPathDirectory += RequestURL.Segments[i];
 				}
-				
+
 				Body = Body.Replace(".replace(/\"/g", ".replace(/\"WEBONEGOOGLEFIX1/g");
 				Body = Body.Replace(".replace(/'/g", ".replace(/'WEBONEGOOGLEFIX2/g");
 
@@ -1972,6 +2007,7 @@ namespace WebOne
 					Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 					string FoundEncoding = HeaderCharset.Groups[1].Value.ToLower() == "utf8" ? "utf-8" : HeaderCharset.Groups[1].Value;
 					FoundEncoding = FoundEncoding.Replace("\"", "").Replace("'", "");
+					if (FoundEncoding.Contains(';')) FoundEncoding = FoundEncoding.Substring(0, FoundEncoding.IndexOf(';'));
 					return Encoding.GetEncoding(FoundEncoding);
 				}
 			}
@@ -2149,6 +2185,170 @@ namespace WebOne
 				DumpWriter.WriteLine(str);
 				DumpWriter.Close();
 			}
+		}
+
+		/// <summary>
+		/// Emulate http://activex.microsoft.com/objects/ocget.dll object codebase search server
+		/// </summary>
+		/// <returns>Path to an ActiveX Control, an DirectShow Codec or an something else by specified CLSID; empty string if real service should be used; &quot;404&quot; if need to reply with 404 error.</returns>
+		public string GetActiveXCabUrl()
+		{
+			// Reverse-engineered "Microsoft Internet Component Download ISAPI Dll" v3.0.0.3433
+
+			/*
+			 * Documentation:
+			 * https://web.archive.org/web/20000415045606/http://www.msdn.microsoft.com/workshop/delivery/download/overview/implementation.asp - the API
+			 * https://web.archive.org/web/20051215070627/http://support.microsoft.com/kb/323207/ - case of use
+			 * https://www.betaarchive.com/wiki/index.php?title=Microsoft_KB_Archive/323207
+			 * https://web.archive.org/web/20070116235508/http://support.microsoft.com/kb/262380/
+			 * https://web.archive.org/web/20010609131648if_/http://activex.microsoft.com:80/objects/ocget.dll - original DLL file
+			 */
+
+			string OleControlClassId = null;
+			string OleControlVersion = null;
+			string OleControlMimeType = null;
+			string OleControlLanguage = null;
+
+			// Read request
+			int Content_Length = 0;
+			if (ClientRequest.Headers["Content-Length"] != null) Content_Length = Int32.Parse(ClientRequest.Headers["Content-Length"]);
+			if (Content_Length != 0)
+			{
+				// Read from POST request body
+				MemoryStream POSTRequestBodyStream = new();
+				ClientRequest.InputStream.CopyTo(POSTRequestBodyStream);
+				POSTRequestBodyStream.Position = 0;
+				string POSTRequestBody = new StreamReader(POSTRequestBodyStream).ReadToEnd().ToUpperInvariant();
+				POSTRequestBodyStream.Position = 0;
+				ClientRequest.InputStream = POSTRequestBodyStream;
+
+				Match POSTRequestMatchCLSID = Regex.Match(POSTRequestBody, @"CLSID=\{(.*)\}");
+				if (POSTRequestMatchCLSID.Success)
+				{ OleControlClassId = POSTRequestMatchCLSID.Groups[1].Value; }
+
+				Match POSTRequestMatchVer = Regex.Match(POSTRequestBody, @"VERSION=(.*)");
+				if (POSTRequestMatchVer.Success)
+				{ OleControlVersion = POSTRequestMatchVer.Groups[1].Value; }
+
+				Match POSTRequestMatchMime = Regex.Match(POSTRequestBody, @"MIMETYPE=(.*)");
+				if (POSTRequestMatchMime.Success)
+				{ OleControlMimeType = POSTRequestMatchMime.Groups[1].Value; }
+			}
+			else
+			{
+				// Read from GET query
+				string GETRequestQuery = ClientRequest.Url.Query.ToUpperInvariant();
+
+				Match GETRequestMatchCLSID = Regex.Match(GETRequestQuery, @"CLSID=%7(.*)%7");
+				if (GETRequestMatchCLSID.Success)
+				{ OleControlClassId = GETRequestMatchCLSID.Groups[1].Value; }
+
+				Match GETRequestMatchVer = Regex.Match(GETRequestQuery, @"VERSION=(.*)");
+				if (GETRequestMatchVer.Success)
+				{ OleControlVersion = GETRequestMatchVer.Groups[1].Value; }
+
+				Match GETRequestMatchMime = Regex.Match(GETRequestQuery, @"MIMETYPE=(.*)");
+				if (GETRequestMatchMime.Success)
+				{ OleControlMimeType = GETRequestMatchMime.Groups[1].Value; }
+			}
+
+			if (ClientRequest.Headers["Accept-Language"] != null)
+			{
+				// Read Accept-Language header if any
+				Match RequestMatchAcceptLanguage = Regex.Match(ClientRequest.Headers["Accept-Language"], "[a-zA-Z]*");
+				if (RequestMatchAcceptLanguage.Success) OleControlLanguage = RequestMatchAcceptLanguage.Value.ToUpperInvariant();
+			}
+
+			// Check presence of required and optional parameters
+			if (OleControlClassId == null && OleControlMimeType == null)
+			{
+				Dump("--OCGET Emulation: Request not understood, unknown syntax.--");
+				Log.WriteLine("OCGET Emulation: missing search terms.");
+				return string.Empty;
+			}
+			if (OleControlVersion != null) { OleControlVersion = OleControlVersion.Replace(',', '.'); }
+			if (OleControlLanguage == null) OleControlLanguage = string.Empty;
+
+			// Look up in database
+			string OleControlCodebase = null;
+
+			// ...by CLSID & version
+			if (OleControlClassId != null && ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlClassId))
+			{
+				if (OleControlVersion != null && Version.TryParse(OleControlVersion, out Version ReportedVersion))
+				{
+					// If version is specified, also look up it in the database
+					string OleControlLatestVersionKey = OleControlClassId + ",LATEST";
+					if (ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlLatestVersionKey))
+					{
+						// Latest version is known, compare
+						Version LatestVersion = Version.Parse(ConfigFile.ActivexGalleryCLSIDs[OleControlLatestVersionKey]);
+						if (ReportedVersion >= LatestVersion) return "404"; // "do not update existing component"
+					}
+					// Latest version is unknown or later than installed one, give the component codebase
+				}
+
+				if (ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlClassId + "," + OleControlLanguage))
+					OleControlClassId += "," + OleControlLanguage; // Localized version exists
+
+				// Return found object codebase
+				OleControlCodebase = ConfigFile.ActivexGalleryCLSIDs[OleControlClassId];
+			}
+
+			// ...by MIME type & version
+			if (OleControlMimeType != null && ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlMimeType))
+			{
+				if (OleControlVersion != null && Version.TryParse(OleControlVersion, out Version ReportedVersion))
+				{
+					// If version is specified, also look up it in the database
+					string OleControlLatestVersionKey = OleControlMimeType + ",LATEST";
+					if (ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlLatestVersionKey))
+					{
+						// Latest version is known, compare
+						Version LatestVersion = Version.Parse(ConfigFile.ActivexGalleryCLSIDs[OleControlLatestVersionKey]);
+						if (ReportedVersion >= LatestVersion) return "404"; // "do not update existing component"
+					}
+					// Latest version is unknown or later than installed one, give the component codebase
+				}
+
+				if (ConfigFile.ActivexGalleryCLSIDs.ContainsKey(OleControlMimeType + "," + OleControlLanguage))
+					OleControlMimeType += "," + OleControlLanguage; // Localized version exists
+
+				// Return found object codebase
+				OleControlCodebase = ConfigFile.ActivexGalleryCLSIDs[OleControlMimeType];
+			}
+
+			// Prepare string for log message
+			string ReportMessage = "something";
+			if (OleControlClassId != null) ReportMessage = OleControlClassId;
+			if (OleControlMimeType != null) ReportMessage = OleControlMimeType;
+			if (OleControlVersion != null) ReportMessage += ";version=" + OleControlVersion;
+			if (OleControlLanguage != "") ReportMessage += ";language=" + OleControlLanguage;
+
+			// Search is successful
+			if (OleControlCodebase != null)
+			{
+				Dump("--OCGET Emulation: " + ReportMessage + " is " + OleControlCodebase + ".--");
+				Log.WriteLine("OCGET Emulation: found codebase for {0}, return 302.", ReportMessage);
+				return OleControlCodebase;
+			}
+
+			// Search is not successful
+			Dump("--OCGET Emulation: using real Microsoft service for " + ReportMessage + ".--");
+			Log.WriteLine("OCGET Emulation: using real Microsoft service for {0}.", ReportMessage);
+			return string.Empty;
+
+			/* Unimplemented in current OCGET emulator: OS detection.
+			 * 
+			 * MSDN says: "queries to object stores will also include HTTP headers for Accept (MIME type) and Accept-Language, thus 
+			specifying the desired platforms."
+			 * WMP at Windows NT4 sends: 
+			 * "Accept: application/x-cabinet-win32-x86, application/x-pe-win32-x86, application/x-oleobject, application/octet-stream, text/html, text/plain, application/x-setupscript, *\/*"
+			 * "Accept-Language: ru,en-us;q=0.5"
+			 * 
+			 * ICD was not so much popular outside Win32, but documentation recommends to support NT-Alpha, UNIX and Macintosh components.
+			 * If you know any examples, please tell at GitHub/VOGONS/Phantom.Sannata.org/etc.
+			 */
 		}
 
 		/// <summary>

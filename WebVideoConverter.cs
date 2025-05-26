@@ -347,7 +347,12 @@ namespace WebOne
 							//assuming, it's succcessfull & have 2 groups
 
 							string ETA = (Regex.IsMatch(match.Groups[1].Value, @"\d\d:\d\d:\d\d")) ? match.Groups[1].Value : "00:" + match.Groups[1].Value;
-							EndTime = DateTime.Now.Add(TimeSpan.Parse(ETA));
+							try
+							{ EndTime = DateTime.Now.Add(TimeSpan.Parse(ETA)); }
+							catch (OverflowException)
+							{
+								//"The TimeSpan string '25:34:39' could not be parsed because at least one of the numeric components is out of range or contains too many digits."
+							}
 						}
 					};
 					YoutubeDl.BeginErrorReadLine();

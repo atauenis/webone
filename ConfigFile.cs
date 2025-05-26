@@ -199,6 +199,11 @@ namespace WebOne
 		public static bool EnableWebFtp = true;
 
 		/// <summary>
+		/// Enable or disable file type icons in Web-FTP client
+		/// </summary>
+		public static bool ShowFileIcons = true;
+
+		/// <summary>
 		/// Use Microsoft HTTPAPI (HttpListener) for processing incoming traffic
 		/// </summary>
 		public static bool UseMsHttpApi = false;
@@ -222,6 +227,28 @@ namespace WebOne
 		/// Bypass client authentication for local IPs
 		/// </summary>
 		public static bool OpenForLocalIPs = false;
+
+		/// <summary>
+		/// Do not prefer HTTPS protocol even for HTTPS connections
+		/// </summary>
+		public static bool DontPreferHTTPS = false;
+
+
+
+		/// <summary>
+		/// Enable emulation of Microsoft ActiveX components search engine (MSICD)
+		/// </summary>
+		public static bool ActivexGalleryEmulation = true;
+
+		/// <summary>
+		/// Emulate Microsoft ActiveX components search engine (MSICD) at URLs
+		/// </summary>
+		public static List<string> ActivexGalleryUrls = new();
+
+		/// <summary>
+		/// Database of OLE Controls, DirectShow Codecs, etc, servicing by http://activex.microsoft.com/objects/ocget.dll (MSICD)
+		/// </summary>
+		public static Dictionary<string, string> ActivexGalleryCLSIDs = new();
 
 
 

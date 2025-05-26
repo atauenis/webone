@@ -188,6 +188,7 @@ Formats:
  D   laf             LAF (Limitless Audio Format)
   E  latm            LOAS/LATM
  D d lavfi           Libavfilter virtual input device
+ DE  lc3             LC3 (Low Complexity Communication Codec)
  D   libgme          Game Music Emu demuxer
  D   libopenmpt      Tracker formats (libopenmpt)
  D   live_flv        live RTMP FLV (Flash Video)
@@ -286,7 +287,7 @@ Formats:
  D   qoi_pipe        piped qoi sequence
  D   r3d             REDCODE R3D
  DE  rawvideo        raw video
-  E  rcwt            RCWT (Raw Captions With Time)
+ DE  rcwt            RCWT (Raw Captions With Time)
  D   realtext        RealText subtitle format
  D   redspark        RedSpark
  D   rka             RKA (RK Audio)

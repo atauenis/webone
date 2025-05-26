@@ -49,12 +49,16 @@ Encoders:
  V....D h264_nvenc           NVIDIA NVENC H.264 encoder (codec h264)
  V..... h264_qsv             H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (Intel Quick Sync Video acceleration) (codec h264)
  V....D h264_vaapi           H.264/AVC (VAAPI) (codec h264)
+ V....D h264_vulkan          H.264/AVC (Vulkan) (codec h264)
+ V.S..D hap                  Vidvox Hap
  VF...D hdr                  HDR (Radiance RGBE format) image
  V....D hevc_amf             AMD AMF HEVC encoder (codec hevc)
+ V....D hevc_d3d12va         D3D12VA hevc encoder (codec hevc)
  V....D hevc_mf              HEVC via MediaFoundation (codec hevc)
  V....D hevc_nvenc           NVIDIA NVENC hevc encoder (codec hevc)
  V..... hevc_qsv             HEVC (Intel Quick Sync Video acceleration) (codec hevc)
  V....D hevc_vaapi           H.265/HEVC (VAAPI) (codec hevc)
+ V....D hevc_vulkan          H.265/HEVC (Vulkan) (codec hevc)
  V....D libkvazaar           libkvazaar H.265 / HEVC (codec hevc)
  VF...D huffyuv              Huffyuv / HuffYUV
  VF...D jpeg2000             JPEG 2000

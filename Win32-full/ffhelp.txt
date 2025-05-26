@@ -1,4 +1,4 @@
-ffmpeg version n7.0.2-20-gf5f590b1e7-20241007 Copyright (c) 2000-2024 the FFmpeg developers
+ffmpeg version n7.1.1-4-gdca3b4760f-20250320 Copyright (c) 2000-2025 the FFmpeg developers
 
 Universal media converter
 usage: ffmpeg [options] [[infile options] -i infile]... {[outfile options] outfile}...
@@ -68,4 +68,4 @@ Subtitle options:
 -scodec <codec>     alias for -c:s (select encoder/decoder for subtitle streams)
 
 
-https://github.com/defisym/FFmpeg-Builds-Win32/releases/tag/autobuild-2024-10-07-12-41
+https://github.com/defisym/FFmpeg-Builds-Win32/releases/tag/autobuild-2025-03-20-12-42
