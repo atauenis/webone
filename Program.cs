@@ -33,6 +33,11 @@ namespace WebOne
 
 		public static string Protocols = "HTTP 1.1";
 		public static bool DaemonMode = false;
+		public static bool SnapshotViewerMode = false;
+		public static bool SnapshotViewerHeaded = false;
+		public static int JpegQuality = 85;
+		public static int StripHeight = 100;
+		public static int MinThreads = 1000;
 		static bool ShutdownInitiated = false;
 		static bool RebuildCA = false;
 
@@ -253,6 +258,13 @@ namespace WebOne
 				return;
 			}
 
+			//allow up to MinThreads concurrent requests without thread pool starvation
+			System.Threading.ThreadPool.SetMinThreads(MinThreads, MinThreads);
+
+			//pre-warm the browser driver so the first snapshot request doesn't wait for it
+			if (SnapshotViewerMode)
+				WebOne.SnapshotViewer.ScreenshotEngine.EnsureContextAsync().GetAwaiter().GetResult();
+
 			//start the server from 1 or 2 attempts
 			for (int StartAttempts = 0; StartAttempts < 2; StartAttempts++)
 			{
@@ -340,6 +352,7 @@ namespace WebOne
 			ShutdownInitiated = true;
 
 			if (Server != null && Server.Working) Server.Stop();
+			if (SnapshotViewerMode) WebOne.SnapshotViewer.ScreenshotEngine.ShutdownAsync().GetAwaiter().GetResult();
 
 			if (!DaemonMode && !Environment.HasShutdownStarted && !ShutdownInitiated) try
 				{
@@ -437,6 +450,47 @@ namespace WebOne
 						break;
 					case "--daemon":
 						DaemonMode = true;
+						break;
+					case "--web-snapshot-viewer":
+						SnapshotViewerMode = true;
+						Console.WriteLine("Web Snapshot Viewer mode enabled.");
+						break;
+					case "--snapshot-headed":
+						SnapshotViewerHeaded = true;
+						Console.WriteLine("Snapshot Viewer: browser will run in headed (visible) mode.");
+						break;
+					case "--quality":
+						if (int.TryParse(kvp.Value, out int q) && q >= 1 && q <= 100)
+						{
+							JpegQuality = q;
+							Console.WriteLine("JPEG quality set to {0}.", JpegQuality);
+						}
+						else
+						{
+							Console.WriteLine("Invalid --quality value: {0}. Expected a number between 1 and 100.", kvp.Value);
+						}
+						break;
+					case "--strip-size":
+						if (int.TryParse(kvp.Value, out int sh) && sh > 0)
+						{
+							StripHeight = sh;
+							Console.WriteLine("Strip height set to {0}px.", StripHeight);
+						}
+						else
+						{
+							Console.WriteLine("Invalid --strip-size value: {0}. Expected a positive number.", kvp.Value);
+						}
+						break;
+					case "--set-min-threads":
+						if (int.TryParse(kvp.Value, out int mt) && mt > 0)
+						{
+							MinThreads = mt;
+							Console.WriteLine("Min threads set to {0}.", MinThreads);
+						}
+						else
+						{
+							Console.WriteLine("Invalid --set-min-threads value: {0}. Expected a positive number.", kvp.Value);
+						}
 						break;
 					case "--help":
 					case "-?":

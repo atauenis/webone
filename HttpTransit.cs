@@ -188,6 +188,13 @@ namespace WebOne
 				string RefererUri = ClientRequest.Headers["Referer"];
 				if (RefererUri == "") RefererUri = null;
 
+				//check for web snapshot viewer mode
+				if (Program.SnapshotViewerMode)
+				{
+					new WebOne.SnapshotViewer.WebSnapshotViewer(ClientRequest, ClientResponse, Log).Handle(RequestURL);
+					return;
+				}
+
 				//check for blacklisted URL
 				if (CheckString(RequestURL.ToString(), ConfigFile.UrlBlackList))
 				{
