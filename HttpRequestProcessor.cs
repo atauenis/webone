@@ -68,7 +68,7 @@ namespace WebOne
 			}
 
 			// Read text part of HTTP request (until double line feed).
-			BinaryReader br = new(ClientStream);
+			BinaryReader br = new(ClientStream, System.Text.Encoding.ASCII);
 			List<char> rqChars = new();
 			while (true)
 			{

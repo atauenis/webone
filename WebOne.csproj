@@ -5,8 +5,8 @@
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net8.0</TargetFramework>
 		<Authors>Alexander Tauenis</Authors>
-		<Version>0.18.2</Version>
-		<VersionSuffix></VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
+		<Version>0.18.3</Version>
+		<VersionSuffix>-pre</VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
 		<PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
 		<InformationalVersion>$(PackageVersion)</InformationalVersion>
 		<Company>World</Company>
