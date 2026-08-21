@@ -195,6 +195,11 @@ namespace WebOne
 				case RequestKind.AlternateProxy:
 					string url = Request.RawUrl[1..];
 					if (url.Contains(":/") && !url.Contains("://")) url = url.Replace(":/", "://");
+					if (url.StartsWith("ttp://"))
+					{ // Access via alternate proxy mode when proxy is enabled
+						url = url[(url.IndexOf("/http") + 1)..];
+						Request.RawUrl = Request.RawUrl.Substring(Request.RawUrl.IndexOf("http", 1) - 1);
+					}
 					Request.Url = new Uri(url);
 					break;
 				case RequestKind.StandardSslProxy:
