@@ -166,10 +166,9 @@ namespace WebOne
 					return RequestKind.StandardRemote;
 				}
 			}
-			else if (RawUrl.StartsWith("http://" + Host + ":" + Port + "/http:")
-			|| RawUrl.StartsWith("http://" + Host + ":" + Port + "/https:")
-			|| RawUrl.StartsWith("http://" + Host + ":" + Port + "/ftp:"))
-			{
+			else if (RawUrl.StartsWith("http://" + Host + ":" + Port + "/")
+			&& RawUrl[("http://" + Host + ":" + Port + "/").Length..].Contains(':'))
+					{
 				return RequestKind.AlternateProxy;
 			}
 			else
