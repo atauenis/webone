@@ -288,10 +288,13 @@ namespace WebOne
 					if (!RequestURL.Scheme.StartsWith("http")) Log.WriteLine(" CERN Proxy request to {0} detected.", RequestURL.Scheme.ToUpper());
 
 					string[] KnownProtocols = { "http", "https", "ftp" };
+					string scheme = RequestURL.Scheme;
+					if (ClientRequest.Kind == HttpUtil.RequestKind.AlternateProxy) scheme = ClientRequest.RawUrl.Substring(1, ClientRequest.RawUrl.IndexOf("://"));
+
 					if (!CheckString(RequestURL.Scheme, KnownProtocols))
 					{
 						string ErrorPageId = "Err-UnknownProtocol.htm";
-						string ErrorPageArguments = "?Scheme=" + RequestURL.Scheme.ToUpper() + "&URL=" + ClientRequest.RawUrl;
+						string ErrorPageArguments = "?Scheme=" + scheme.ToUpper() + "&URL=" + ClientRequest.RawUrl;
 						if (SendInternalContent(ErrorPageId, ErrorPageArguments)) return;
 
 						string BadProtocolMessage =
@@ -333,6 +336,16 @@ namespace WebOne
 					WebFtpRedirect.Title = "CERN Proxy Emulation Redirect (IE)";
 					WebFtpRedirect.HttpStatusCode = 302;
 					WebFtpRedirect.HttpHeaders.Add("Location", "http://" + GetServerName() + "/!ftp/?client=-1&uri=" + Uri.EscapeDataString("ftp://" + ClientRequest.RawUrl.Substring(12)));
+					SendInfoPage(WebFtpRedirect);
+					return;
+				}
+				if (ClientRequest.RawUrl.ToLower().StartsWith("/ftp://"))
+				{
+					//HTTP->FTP mode (CERN-compatible, via Alternate access mode)
+					InfoPage WebFtpRedirect = new();
+					WebFtpRedirect.Title = "CERN Proxy Emulation Redirect (Alt)";
+					WebFtpRedirect.HttpStatusCode = 302;
+					WebFtpRedirect.HttpHeaders.Add("Location", "http://" + GetServerName() + "/!ftp/?client=-1&uri=" + Uri.EscapeDataString(ClientRequest.RawUrl.Substring(1)));
 					SendInfoPage(WebFtpRedirect);
 					return;
 				}

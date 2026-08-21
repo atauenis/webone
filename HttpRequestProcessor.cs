@@ -197,8 +197,17 @@ namespace WebOne
 					if (url.Contains(":/") && !url.Contains("://")) url = url.Replace(":/", "://");
 					if (url.StartsWith("ttp://"))
 					{ // Access via alternate proxy mode when proxy is enabled
-						url = url[(url.IndexOf("/http") + 1)..];
-						Request.RawUrl = Request.RawUrl.Substring(Request.RawUrl.IndexOf("http", 1) - 1);
+						if (url.Contains("/http"))
+						{
+							url = url[(url.IndexOf("/http") + 1)..];
+							Request.RawUrl = Request.RawUrl.Substring(Request.RawUrl.IndexOf("http", 1) - 1);
+							// HTTPS URLs are also processed here
+						}
+						if (url.Contains("/ftp"))
+						{
+							url = url[(url.IndexOf("/ftp") + 1)..];
+							Request.RawUrl = Request.RawUrl.Substring(Request.RawUrl.IndexOf("ftp", 1) - 1);
+						}
 					}
 					Request.Url = new Uri(url);
 					break;
