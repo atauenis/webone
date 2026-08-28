@@ -17,8 +17,12 @@
 		<StartupObject>WebOne.Program</StartupObject>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<Configurations>Debug;Release;ReleaseSC</Configurations>
-		<NoWarn>$(NoWarn);NETSDK1179;NETSDK1182</NoWarn>
+		<NoWarn>$(NoWarn);NETSDK1179;NETSDK1182;CS8981</NoWarn>
 		<!-- https://github.com/dotnet/sdk/issues/24269, https://stackoverflow.com/questions/69773547/visual-studio-2019-not-showing-net-6-framework/ -->
+		<!-- CS8981: wolfSSL's own upstream C# wrapper (WolfSSL/wolfSSL.cs, wolfCrypt.cs) uses
+		     all-lowercase class names (wolfssl, wolfcrypt) that could collide with a future C#
+		     reserved keyword. Harmless today; suppressed rather than renamed to keep the vendored
+		     wrapper identical to wolfSSL's upstream source for easier future syncing. -->
 	</PropertyGroup>
 
 	<PropertyGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
