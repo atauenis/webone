@@ -44,10 +44,23 @@ namespace WebOne
 			{
 				if (!Initialized)
 				{
-					wolfssl.Init();
+					// Without this, wolfssl.log() (used throughout the wrapper on native
+					// call failure) silently no-ops and every error collapses into an
+					// uninformative "failed to create CTX"-style message with no real
+					// cause. Route it into WebOne's own log instead.
+					wolfssl.SetLogging(new wolfssl.loggingCb(WolfSslLog));
+
+					if (wolfssl.Init() != wolfssl.SUCCESS)
+						throw new AuthenticationException("wolfSSL: library Init() failed");
+
 					Initialized = true;
 				}
 			}
+		}
+
+		private static void WolfSslLog(int level, System.Text.StringBuilder message)
+		{
+			Console.Error.WriteLine("[wolfSSL] {0}", message);
 		}
 
 		/// <summary>
