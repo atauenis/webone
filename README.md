@@ -7,7 +7,7 @@ This is a HTTP 1.x proxy server that makes old web browsers, media players and m
 > licensing consideration this introduces** (the wolfSSL C# wrapper is GPLv3-licensed, unlike
 > upstream WebOne's BSD-style license) before you redistribute this fork.
 
-![](https://raw.githubusercontent.com/atauenis/webone/master/docs/Demo.png)
+![](https://raw.githubusercontent.com/airi-kozume/webone/master/docs/Demo.png)
 
 The proxy is an adapter between the modern Web and old software. It is designed to run on an modern PC in same network with older computers.
 
@@ -68,14 +68,14 @@ Note that this app is not intended for daily use, as removing any encryption fro
 The server can be started even on public hosts. But don't forget to enable password protection in config file to make the proxy non-public.
 
 ## Build
-Latest source code can be always found in the __master__ (![](https://img.shields.io/github/v/tag/atauenis/webone?include_prereleases&label=)) and the __dev__ branches of the [Git repository](https://github.com/atauenis/webone).
+Latest source code for this fork is on the __master__ branch of [this Git repository](https://github.com/airi-kozume/webone). Upstream WebOne (without the wolfSSL changes) is tracked separately at [atauenis/webone](https://github.com/atauenis/webone) (![](https://img.shields.io/github/v/tag/atauenis/webone?include_prereleases&label=)), which also has a __dev__ branch this fork does not currently mirror.
 
 The program is built using Microsoft .NET 8.0 SDK and [dotnet-packaging](https://github.com/qmfrederik/dotnet-packaging/) add-on. With them the building is easy on all platforms: use `dotnet publish` & `dotnet deb || dotnet rpm || dotnet zip` tools.
 
 Windows developers can utilize `build.bat` script for cross-platform building. And there is similar `build.sh` script for Linux and macOS environments.
 
 ## Feedback
-Any questions can be written on official [VOGONS thread](https://www.vogons.org/viewtopic.php?f=24&t=67165), [phantom.sannata.ru thread](https://phantom.sannata.org/viewtopic.php?f=16&t=33291), and GitHub [Issues](https://github.com/atauenis/webone/issues) and [Discussions](https://github.com/atauenis/webone/discussions) tabs.
+For issues specific to this fork's wolfSSL changes, use this repository's own [Issues](https://github.com/airi-kozume/webone/issues) tab. For general WebOne questions, the official [VOGONS thread](https://www.vogons.org/viewtopic.php?f=24&t=67165), [phantom.sannata.ru thread](https://phantom.sannata.org/viewtopic.php?f=16&t=33291), and upstream's GitHub [Discussions](https://github.com/atauenis/webone/discussions) tab are the right places.
 
 ## Who are the author(s)?
 Currently the project is maintained mostly by a single person, Alexander Tauenis (ATauenis). Also thanks to [contributors](https://github.com/atauenis/webone/graphs/contributors) who made pull requests and bug reports.
