@@ -173,7 +173,10 @@ fi
 
 	<ItemGroup>
 		<Compile Remove="EXE\**" />
+		<Compile Remove="tests\**" />
 		<EmbeddedResource Remove="EXE\**" />
+		<EmbeddedResource Remove="tests\**" />
+		<None Remove="tests\**" />
 		<None Remove="docs/**" />
 		<None Remove="EXE/**" />
 		<None Remove="EXE\**" />
@@ -194,6 +197,8 @@ fi
 	<ItemGroup>
 		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.7.0" />
 		<PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.0" />
+		<PackageReference Include="Microsoft.Playwright" Version="1.*" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="3.*" />
 	</ItemGroup>
 
 	<ItemGroup>
