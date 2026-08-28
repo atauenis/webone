@@ -1,6 +1,12 @@
 ﻿# WebOne
 This is a HTTP 1.x proxy server that makes old web browsers, media players and messengers usable again in the Web 2.0 world.
 
+> **This fork** ports the TLS layer from OpenSSL to [wolfSSL](https://www.wolfssl.com/), for
+> better legacy protocol/cipher support (SSLv3, RC4, static RSA, etc.) via an actively-maintained,
+> CVE-patched library. See `WolfSSL/README.md` for how it's wired in, and **`NOTICE.md` for a
+> licensing consideration this introduces** (the wolfSSL C# wrapper is GPLv3-licensed, unlike
+> upstream WebOne's BSD-style license) before you redistribute this fork.
+
 ![](https://raw.githubusercontent.com/atauenis/webone/master/docs/Demo.png)
 
 The proxy is an adapter between the modern Web and old software. It is designed to run on an modern PC in same network with older computers.

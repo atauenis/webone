@@ -235,9 +235,10 @@ namespace WebOne
 		public TcpClient TcpclientBackend { get; set; }
 
 		/// <summary>
-		/// SslSltream, used to send this HTTP Response (or null if another backend is used).
+		/// Encrypted stream (SslStream or WolfSslServerStream), used to send this
+		/// HTTP Response (or null if another backend is used).
 		/// </summary>
-		public SslStream SslBackend { get; set; }
+		public Stream SslBackend { get; set; }
 
 		/// <summary>
 		/// Specifies value that indicates whether the client connection can be persistent after this response.
@@ -274,10 +275,11 @@ namespace WebOne
 		}
 
 		/// <summary>
-		/// Initialize an instance of an response to a HTTPS request, used with a SslStream instance.
+		/// Initialize an instance of an response to a HTTPS request, used with an
+		/// encrypted Stream instance (SslStream or WolfSslServerStream).
 		/// </summary>
-		/// <param name="Backend">SslStream which will be used to communicate with client.</param>
-		public HttpResponse(SslStream Backend)
+		/// <param name="Backend">Encrypted stream which will be used to communicate with client.</param>
+		public HttpResponse(Stream Backend)
 		{
 			SslBackend = Backend;
 			OutputStream = Backend;

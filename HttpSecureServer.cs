@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using static WebOne.Program;
 
@@ -12,7 +11,7 @@ namespace WebOne
 	class HttpSecureServer
 	{
 		Stream ClientStreamReal;
-		SslStream ClientStreamTunnel;
+		WolfSslServerStream ClientStreamTunnel;
 		X509Certificate2 Certificate;
 		HttpRequest RequestReal;
 		HttpResponse ResponseReal;
@@ -88,24 +87,13 @@ namespace WebOne
 
 			try
 			{
-				// Perform SSL handshake and establish a inner tunnel
-				SslServerAuthenticationOptions ClientStreamTunnelOptions = new();
-				ClientStreamTunnelOptions.ServerCertificate = Certificate;
-				ClientStreamTunnelOptions.ClientCertificateRequired = false;
-				ClientStreamTunnelOptions.CertificateRevocationCheckMode = X509RevocationMode.NoCheck;
-				ClientStreamTunnelOptions.EnabledSslProtocols = ConfigFile.SslProtocols;
-				ClientStreamTunnelOptions.CipherSuitesPolicy = ConfigFile.SslCipherSuitesPolicy;
+				// Perform SSL handshake (via wolfSSL, not .NET's OpenSSL-backed SslStream --
+				// see WolfSslServerStream for why) and establish an inner tunnel
+				byte[] certDer = Certificate.Export(X509ContentType.Cert);
+				byte[] keyDer = Certificate.GetRSAPrivateKey().ExportRSAPrivateKey();
 
-				ClientStreamTunnel = new SslStream(ClientStreamReal, false);
-				ClientStreamTunnel.AuthenticateAsServer(ClientStreamTunnelOptions);
-
-
-				/* Result:
-				 * Ssl2 with Rc4 128-bit, Md5 128-bit
-				 * Ssl3 with TripleDes 168-bit, Sha1 160-bit
-				 * Tls with Aes256 256-bit, Sha1 160-bit
-				 * Tls12 with Aes256 256-bit, Sha1 160-bit
-				 */
+				ClientStreamTunnel = new WolfSslServerStream(ClientStreamReal, false);
+				ClientStreamTunnel.AuthenticateAsServer(certDer, keyDer);
 			}
 			catch (Exception HandshakeEx)
 			{
@@ -125,12 +113,10 @@ namespace WebOne
 				sslc.LocalEndPoint = RequestReal.LocalEndPoint;
 				sslc.RemoteEndPoint = RequestReal.RemoteEndPoint;
 				sslc.TargetServer = RequestReal.RawUrl;
-				sslc.Encrypting = string.Format("{0} with {1} {2}-bit, {3} {4}-bit",
-				ClientStreamTunnel.SslProtocol,
-				ClientStreamTunnel.CipherAlgorithm.ToString(),
-				ClientStreamTunnel.CipherStrength,
-				ClientStreamTunnel.HashAlgorithm.ToString(),
-				ClientStreamTunnel.HashStrength);
+				sslc.Encrypting = string.Format("{0} with {1}",
+				ClientStreamTunnel.SslProtocolName,
+				ClientStreamTunnel.CipherName);
+				Logger.WriteLine(" SSL: {0}", sslc.Encrypting);
 				new HttpRequestProcessor().ProcessClientRequest(sslc, Logger, RequestReal.RawUrl.Split(':')[0]);
 			}
 			catch (IOException)

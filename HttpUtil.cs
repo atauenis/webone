@@ -20,9 +20,11 @@ namespace WebOne
 		public struct SslClient
 		{
 			/// <summary>
-			/// The stream of content transferred through SSL/TLS layer.
+			/// The stream of content transferred through SSL/TLS layer. Usually a
+			/// <see cref="SslStream"/> (outbound connections to real servers) or a
+			/// <see cref="WolfSslServerStream"/> (client-facing legacy TLS accept).
 			/// </summary>
-			public SslStream Stream;
+			public System.IO.Stream Stream;
 			/// <summary>
 			/// Specifies local end point (Client IP).
 			/// </summary>

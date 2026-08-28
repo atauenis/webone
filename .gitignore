@@ -338,3 +338,8 @@ ImageMagic/
 EXE/NotForGit/
 viewtube/
 WebFixes/
+
+# Auto-generated CA root cert/key (created on first run in the working directory --
+# secrets, and specific to whatever machine generated them, never for commit)
+ssl.crt
+ssl.key

@@ -109,17 +109,16 @@ namespace WebOne
 					return;
 				}
 
-				SslStream ClientStreamTunnel = new(RequestReal.InputStream, true);
+				// Perform the client-facing handshake via wolfSSL, not .NET's OpenSSL-backed
+				// SslStream -- see WolfSslServerStream for why (outbound connections below,
+				// to real remote servers, keep using regular SslStream since they only ever
+				// need modern TLS, not legacy client compatibility).
+				WolfSslServerStream ClientStreamTunnel = new(RequestReal.InputStream, true);
 				try
 				{
-					SslServerAuthenticationOptions ClientStreamTunnelOptions = new();
-					ClientStreamTunnelOptions.ServerCertificate = Certificate;
-					ClientStreamTunnelOptions.ClientCertificateRequired = false;
-					ClientStreamTunnelOptions.CertificateRevocationCheckMode = X509RevocationMode.NoCheck;
-					ClientStreamTunnelOptions.EnabledSslProtocols = ConfigFile.SslProtocols;
-					ClientStreamTunnelOptions.CipherSuitesPolicy = ConfigFile.SslCipherSuitesPolicy;
-
-					ClientStreamTunnel.AuthenticateAsServer(ClientStreamTunnelOptions);
+					byte[] certDer = Certificate.Export(X509ContentType.Cert);
+					byte[] keyDer = Certificate.GetRSAPrivateKey().ExportRSAPrivateKey();
+					ClientStreamTunnel.AuthenticateAsServer(certDer, keyDer);
 					ClientStream = ClientStreamTunnel;
 				}
 				catch (Exception HandshakeEx)
