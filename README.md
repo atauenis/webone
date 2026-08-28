@@ -20,6 +20,15 @@ See **[WebOne wiki](https://github.com/atauenis/webone/wiki)** for complete list
 ## Server prerequisites
 Windows 8+ (or Windows Server 2012+) / Linux / macOS and .NET 8.0 Runtime are required on server PC. See [.NET 8.0 System Requirements](https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md).
 
+**This fork additionally requires wolfSSL's native library** (`libwolfssl.so` on Linux,
+`wolfssl.dylib` on macOS, `wolfssl.dll` on Windows) to be present and loadable wherever WebOne
+runs -- it's how the client-facing TLS layer works now (see `WolfSSL/README.md`), and it is
+**not** built or bundled automatically by `build.sh`/`build.bat`. Only **Linux has actually been
+built and tested** with this fork's wolfSSL changes (see `WolfSSL/README.md` for the exact
+configure flags used); the Windows/macOS platform claim above is inherited from upstream WebOne
+and has **not** been re-verified for this fork's wolfSSL-backed TLS layer specifically. If you get
+it working on Windows or macOS, a PR documenting the steps would help everyone.
+
 ## Image and video converting
 * Picture format converting is performing via `convert` utility from ImageMagick (bundled with WebOne).
 * To watch YouTube.com videos through proxy, install `ffmpeg` together with `yt-dlp` (included in `win-x64.full` zips, and can be installed manually on Linux/macOS).
