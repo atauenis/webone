@@ -7,7 +7,8 @@ This fork ports WebOne's TLS layer from OpenSSL to [wolfSSL](https://www.wolfssl
 doing so incorporates wolfSSL's official C# wrapper (`wolfSSL_CSharp`, under `WolfSSL/` --
 see `WolfSSL/README.md` for exactly what was copied and modified) directly into the source tree.
 That wrapper is **GPLv3-licensed** by wolfSSL Inc. (dual-licensed: GPLv3, or a commercial license
-available from wolfSSL Inc. -- there is no permissive option).
+available from wolfSSL Inc. -- there is no permissive option). The full GPLv3 text is included at
+`WolfSSL/COPYING`.
 
 **Practical effect:** because this fork statically incorporates GPLv3-licensed source rather than
 merely linking against a separately-distributed wolfSSL library at runtime, GPLv3's copyleft

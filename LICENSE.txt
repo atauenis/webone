@@ -1,6 +1,13 @@
 ﻿License agreement for WebOne Proxy Server
 =========================================
 
+>>> NOTICE FOR THIS FORK: this repository incorporates GPLv3-licensed code
+>>> (wolfSSL's C# wrapper, under WolfSSL/), which changes the effective license
+>>> of this fork as a whole to GPLv3. The BSD-3-Clause-style text below still
+>>> accurately describes the license of WebOne's own original code, but does NOT
+>>> by itself describe the terms under which this fork, as a combined work, may
+>>> be redistributed. See NOTICE.md and WolfSSL/COPYING before redistributing.
+
 Copyright (C) 2019+, WebOne Development Team. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without 
