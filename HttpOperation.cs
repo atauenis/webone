@@ -74,7 +74,7 @@ namespace WebOne
 			Request.RequestUri = URL;
 			Request.Method = new HttpMethod(Method);
 
-			if(ConfigFile.RemoteHttpVersion == "auto")
+			if (ConfigFile.RemoteHttpVersion == "auto")
 			{
 				if (Environment.OSVersion.Platform == PlatformID.Win32NT && Environment.OSVersion.Version.Major < 10)
 				{
@@ -91,8 +91,17 @@ namespace WebOne
 			}
 			else
 			{
-				Request.Version = new Version(ConfigFile.RemoteHttpVersion[1..]);
-				switch(ConfigFile.RemoteHttpVersion[0])
+				switch (ConfigFile.RemoteHttpVersion.Length)
+				{
+					case 4:
+						Request.Version = new Version(ConfigFile.RemoteHttpVersion[1..]);
+						break;
+					case 5:
+						Request.Version = new Version(ConfigFile.RemoteHttpVersion[2..]);
+						break;
+				}
+
+				switch (ConfigFile.RemoteHttpVersion[0])
 				{
 					case '=':
 						Request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
@@ -107,10 +116,10 @@ namespace WebOne
 						throw new ArgumentException("Bad RemoteHttpVersion option in configuration file");
 				}
 			}
-			
+
 			foreach (var rqhdr in RequestHeaders.AllKeys)
 			{
-				if(rqhdr.EndsWith("-Encoding") && RequestHeaders[rqhdr].Contains("xpress") && ConfigFile.AllowHttpCompression)
+				if (rqhdr.EndsWith("-Encoding") && RequestHeaders[rqhdr].Contains("xpress") && ConfigFile.AllowHttpCompression)
 				{ Log.WriteLine(" Warning: This connection to server may use unsupported 'xpress' compression algorithm. Consider set AllowHttpCompression=false to get out some possible errors."); }
 
 				if (!rqhdr.StartsWith("Proxy-") &&

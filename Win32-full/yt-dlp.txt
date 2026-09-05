@@ -1,4 +1,4 @@
-2026.03.17
+2026.08.19
 Usage: yt-dlp [OPTIONS] URL [URL...]
 
 Options:
@@ -103,7 +103,7 @@ Options:
                                     (default)
     --live-from-start               Download livestreams from the start.
                                     Currently experimental and only supported
-                                    for YouTube, Twitch, and TVer
+                                    for YouTube, Twitch, TVer, and mellow-fan
     --no-live-from-start            Download livestreams from the current time
                                     (default)
     --wait-for-video MIN[-MAX]      Wait for scheduled streams to become
@@ -328,16 +328,16 @@ Options:
                                     "*10:15-inf" --download-sections "intro"
     --downloader [PROTO:]NAME       Name or path of the external downloader to
                                     use (optionally) prefixed by the protocols
-                                    (http, ftp, m3u8, dash, rstp, rtmp, mms) to
-                                    use it for. Currently supports native,
-                                    aria2c, axel, curl, ffmpeg, httpie, wget.
-                                    You can use this option multiple times to
-                                    set different downloaders for different
-                                    protocols. E.g. --downloader aria2c
-                                    --downloader "dash,m3u8:native" will use
-                                    aria2c for http/ftp downloads, and the
-                                    native downloader for dash/m3u8 downloads
-                                    (Alias: --external-downloader)
+                                    (http, ftp, m3u8, dash, rtmp) to use it for.
+                                    Currently supports native, aria2c, axel,
+                                    curl, ffmpeg, httpie, wget. You can use this
+                                    option multiple times to set different
+                                    downloaders for different protocols. E.g.
+                                    --downloader aria2c --downloader
+                                    "dash,m3u8:native" will use aria2c for
+                                    http/ftp downloads, and the native
+                                    downloader for dash/m3u8 downloads (Alias:
+                                    --external-downloader)
     --downloader-args NAME:ARGS     Give these arguments to the external
                                     downloader. Specify the downloader name and
                                     the arguments separated by a colon ":". For
@@ -538,8 +538,7 @@ Options:
                                     renegotiation
     --no-check-certificates         Suppress HTTPS certificate validation
     --prefer-insecure               Use an unencrypted connection to retrieve
-                                    information about the video (Currently
-                                    supported only for YouTube)
+                                    information about the video
     --add-headers FIELD:VALUE       Specify a custom HTTP header and its value,
                                     separated by a colon ":". You can use this
                                     option multiple times
@@ -759,10 +758,14 @@ Options:
                                     that of --use-postprocessor (default:
                                     after_move). The same syntax as the output
                                     template can be used to pass any field as
-                                    arguments to the command. If no fields are
-                                    passed, %(filepath,_filename|)q is appended
-                                    to the end of the command. This option can
-                                    be used multiple times
+                                    arguments to the command; however, for
+                                    security reasons the only allowed
+                                    conversions are: "i"/"d" (signed integer
+                                    decimal), "f" (floating-point decimal) and
+                                    "q" (shell-quoted). If no fields are passed,
+                                    %(filepath,_filename|)q is appended to the
+                                    end of the command. This option can be used
+                                    multiple times
     --no-exec                       Remove any previously defined --exec
     --convert-subs FORMAT           Convert the subtitles to another format
                                     (currently supported: ass, lrc, srt, vtt).

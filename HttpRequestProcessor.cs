@@ -68,7 +68,7 @@ namespace WebOne
 			}
 
 			// Read text part of HTTP request (until double line feed).
-			BinaryReader br = new(ClientStream);
+			BinaryReader br = new(ClientStream, System.Text.Encoding.ASCII);
 			List<char> rqChars = new();
 			while (true)
 			{
@@ -195,6 +195,11 @@ namespace WebOne
 				case RequestKind.AlternateProxy:
 					string url = Request.RawUrl[1..];
 					if (url.Contains(":/") && !url.Contains("://")) url = url.Replace(":/", "://");
+					if (url.StartsWith("ttp://"))
+					{ // Access via alternate proxy mode when proxy is enabled
+						url = url[(url.IndexOf("/", 7) + 1)..];
+						Request.RawUrl = Request.RawUrl[Request.RawUrl.IndexOf("/", 8)..];
+					}
 					Request.Url = new Uri(url);
 					break;
 				case RequestKind.StandardSslProxy:

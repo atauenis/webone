@@ -146,7 +146,9 @@ namespace WebOne
 				if (IsLocalhost(Host, Port)) //check Host name and Port number
 				{
 					// Target is this server, so StandardHttp or AlternateProxy or DirtyAlternateProxy
-					if (RawUrl.ToLower().StartsWith("/http:") || RawUrl.ToLower().StartsWith("/https:") || RawUrl.ToLower().StartsWith("/ftp:"))
+					if (RawUrl.ToLower().StartsWith("/http:")
+					|| RawUrl.ToLower().StartsWith("/https:")
+					|| RawUrl.ToLower().StartsWith("/ftp:"))
 						return RequestKind.AlternateProxy;
 
 					if (RefererHeader != null)
@@ -163,6 +165,11 @@ namespace WebOne
 					// Target is other server, so StandardRemote
 					return RequestKind.StandardRemote;
 				}
+			}
+			else if (RawUrl.StartsWith("http://" + Host + ":" + Port + "/")
+			&& RawUrl[("http://" + Host + ":" + Port + "/").Length..].Contains(':'))
+					{
+				return RequestKind.AlternateProxy;
 			}
 			else
 			{

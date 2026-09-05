@@ -235,7 +235,7 @@ namespace WebOne
 				foreach (var entry in Program.Variables) { DefaultVars.TryAdd(entry.Key, entry.Value); }
 
 				//check for internal URL
-				if (ClientRequest.Kind == HttpUtil.RequestKind.StandardHttp)
+				if (ClientRequest.Kind == HttpUtil.RequestKind.StandardHttp && !RequestURL.LocalPath.Contains(':'))
 				{
 					// Internal URIs
 					string InternalPage = "/";
@@ -283,15 +283,20 @@ namespace WebOne
 
 				//check for FTP/GOPHER/WAIS-over-HTTP requests (a.k.a. CERN Proxy Mode)
 				//https://support.microsoft.com/en-us/help/166961/how-to-ftp-with-cern-based-proxy-using-wininet-api
-				if (RequestURL.ToString().Contains("://"))
+				if (RequestURL.OriginalString.Contains(':'))
+				//if (RequestURL.ToString().Contains("://"))
 				{
 					if (!RequestURL.Scheme.StartsWith("http")) Log.WriteLine(" CERN Proxy request to {0} detected.", RequestURL.Scheme.ToUpper());
 
 					string[] KnownProtocols = { "http", "https", "ftp" };
-					if (!CheckString(RequestURL.Scheme, KnownProtocols))
+					string scheme = RequestURL.Scheme;
+					if (ClientRequest.Kind != HttpUtil.RequestKind.StandardProxy && ClientRequest.RawUrl.Contains("://"))
+						scheme = ClientRequest.RawUrl.Substring(1, ClientRequest.RawUrl.IndexOf("://"));
+
+					if (!CheckString(scheme, KnownProtocols))
 					{
 						string ErrorPageId = "Err-UnknownProtocol.htm";
-						string ErrorPageArguments = "?Scheme=" + RequestURL.Scheme.ToUpper() + "&URL=" + ClientRequest.RawUrl;
+						string ErrorPageArguments = "?Scheme=" + scheme.ToUpper().TrimEnd(':') + "&URL=" + ClientRequest.RawUrl.TrimStart('/');
 						if (SendInternalContent(ErrorPageId, ErrorPageArguments)) return;
 
 						string BadProtocolMessage =
@@ -333,6 +338,16 @@ namespace WebOne
 					WebFtpRedirect.Title = "CERN Proxy Emulation Redirect (IE)";
 					WebFtpRedirect.HttpStatusCode = 302;
 					WebFtpRedirect.HttpHeaders.Add("Location", "http://" + GetServerName() + "/!ftp/?client=-1&uri=" + Uri.EscapeDataString("ftp://" + ClientRequest.RawUrl.Substring(12)));
+					SendInfoPage(WebFtpRedirect);
+					return;
+				}
+				if (ClientRequest.RawUrl.ToLower().StartsWith("/ftp://"))
+				{
+					//HTTP->FTP mode (CERN-compatible, via Alternate access mode)
+					InfoPage WebFtpRedirect = new();
+					WebFtpRedirect.Title = "CERN Proxy Emulation Redirect (Alt)";
+					WebFtpRedirect.HttpStatusCode = 302;
+					WebFtpRedirect.HttpHeaders.Add("Location", "http://" + GetServerName() + "/!ftp/?client=-1&uri=" + Uri.EscapeDataString(ClientRequest.RawUrl.Substring(1)));
 					SendInfoPage(WebFtpRedirect);
 					return;
 				}
@@ -746,7 +761,7 @@ namespace WebOne
 				{
 					try { Dump("!Guru meditation: " + ex.Message); } catch { }
 					Log.WriteLine(" ============GURU MEDITATION:\n{1}\nOn URL '{2}', Method '{3}'. Returning 500.============", null, ex.ToString(), RequestURL.AbsoluteUri, ClientRequest.HttpMethod);
-					SendError(500, "Guru meditaion at URL " + RequestURL.AbsoluteUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace.Replace("\n", "\n<br>") + "</i>");
+					SendError(500, "Guru mediation at URL " + RequestURL.AbsoluteUri + ":<br><b>" + ex.Message + "</b><br><i>" + ex.StackTrace.Replace("\n", "\n<br>") + "</i>");
 					return;
 				}
 

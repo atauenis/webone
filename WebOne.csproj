@@ -5,7 +5,7 @@
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net8.0</TargetFramework>
 		<Authors>Alexander Tauenis</Authors>
-		<Version>0.18.2</Version>
+		<Version>0.18.3</Version>
 		<VersionSuffix></VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
 		<PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
 		<InformationalVersion>$(PackageVersion)</InformationalVersion>
@@ -19,6 +19,7 @@
 		<Configurations>Debug;Release;ReleaseSC</Configurations>
 		<NoWarn>$(NoWarn);NETSDK1179;NETSDK1182</NoWarn>
 		<!-- https://github.com/dotnet/sdk/issues/24269, https://stackoverflow.com/questions/69773547/visual-studio-2019-not-showing-net-6-framework/ -->
+		<ApplicationIcon>ApplicationIcon.ico</ApplicationIcon>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="$(RuntimeIdentifier.Contains('linux'))">
