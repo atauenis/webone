@@ -29,7 +29,6 @@ namespace WebOne
 		public static string ConfigFileName = ConfigFileAutoName;
 		public static string OverrideLogFile = "";
 		public static int Port = -1;
-		public static int Load = 0; //todo: remove this in future
 
 		public static int OpenedConnections = 0;
 		public static int OpenedConnectionsBusy = 0;

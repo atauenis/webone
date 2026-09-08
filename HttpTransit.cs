@@ -1401,7 +1401,8 @@ namespace WebOne
 				{
 					Dictionary<string, string> Subcontent = ParseQueryString(Arguments);
 					Subcontent.Add("ServerName", GetServerName());
-					Subcontent.Add("PendingRequests", Load.ToString());
+					Subcontent.Add("OpenedConnections", OpenedConnections.ToString());
+					Subcontent.Add("BusyConnections", OpenedConnectionsBusy.ToString());
 					Subcontent.Add("UsedMemory", ((int)Environment.WorkingSet / 1024 / 1024).ToString());
 					Subcontent.Add("ClientIP", ClientRequest.RemoteEndPoint.ToString());
 
@@ -2407,9 +2408,9 @@ namespace WebOne
 			{
 				HelpString += "<p>This is <b>" + GetServerName() + "</b>.<br>";
 				if (ConfigFile.UseMsHttpApi)
-				{ HelpString += "Pending requests: <b>" + (Load - 1) + "</b>.<br>"; }
+				{ HelpString += "Connections open: <b>" + (OpenedConnections - 1) + "</b>.<br>"; }
 				else
-				{ HelpString += "Open connections: <b>" + (Load) + "</b>.<br>"; }
+				{ HelpString += "Connections open: <b>" + (OpenedConnections) + "</b> (<b>" + OpenedConnectionsBusy + "</b> active).<br>"; }
 				HelpString += "Used memory: <b>" + (int)Environment.WorkingSet / 1024 / 1024 + "</b> MB.<br>";
 				HelpString += "About: <a href=\"https://github.com/atauenis/webone/\">https://github.com/atauenis/webone/</a></p>";
 				HelpString += "<p>Client IP: <b>" + ClientRequest.RemoteEndPoint + "</b>.</p>";
@@ -2426,9 +2427,9 @@ namespace WebOne
 				HelpString += "This is <b>" + Environment.MachineName + ":" + ConfigFile.Port + "</b>.<br>";
 				HelpString += "Used memory: <b>" + (double)Environment.WorkingSet / 1024 / 1024 + "</b> MB.<br>";
 				if (ConfigFile.UseMsHttpApi)
-				{ HelpString += "Pending requests: <b>" + (Load - 1) + "</b>.<br>"; }
+				{ HelpString += "Connections open: <b>" + (OpenedConnections - 1) + "</b>.<br>"; }
 				else
-				{ HelpString += "Open connections: <b>" + (Load) + "</b>.<br>"; }
+				{ HelpString += "Connections open: <b>" + (OpenedConnections) + "</b> (<b>" + OpenedConnectionsBusy + "</b> active).<br>"; }
 				HelpString += "Available security: <b>" + ServicePointManager.SecurityProtocol + "</b> (" + (int)ServicePointManager.SecurityProtocol + ").<br>";
 
 				HelpString += "<h2>Aliases:</h2><ul>";
