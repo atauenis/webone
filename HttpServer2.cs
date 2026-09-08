@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using static WebOne.Program;
 
 namespace WebOne
@@ -46,6 +47,15 @@ namespace WebOne
 			Working = true;
 			Log.WriteLine(true, false, "Supported protocols: HTTP{0}, FTP via Web browser.", (ConfigFile.SslEnable ? ", HTTPS" : " (plain)"));
 			UpdateStatistics();
+
+			new Task(() =>
+			{
+				while (Working)
+				{
+					System.Threading.Thread.Sleep(1000);
+					UpdateStatistics();
+				}
+			}).Start();
 		}
 
 		/// <summary>
@@ -69,8 +79,7 @@ namespace WebOne
 		private void ProcessConnection(IAsyncResult ar)
 		{
 			if (!Working) return;
-			Load++;
-			UpdateStatistics();
+			OpenedConnections++;
 			LogWriter Logger = new();
 #if DEBUG
 			Logger.WriteLine("Got a connection.");
@@ -84,8 +93,7 @@ namespace WebOne
 			catch
 			{
 				Logger.WriteLine("Connection unexpectedly lost.");
-				Load--;
-				UpdateStatistics();
+				OpenedConnections--;
 				return;
 			}
 
@@ -106,8 +114,7 @@ namespace WebOne
 				try { Client.Close(); } catch { }
 			}
 
-			Load--;
-			UpdateStatistics();
+			OpenedConnections--;
 		}
 
 		/// <summary>
@@ -116,9 +123,9 @@ namespace WebOne
 		private void UpdateStatistics()
 		{
 			if (DaemonMode)
-				Console.Title = string.Format("WebOne (silent) @ {0}:{1} [{2}]", ConfigFile.DefaultHostName, Port, Load);
+				Console.Title = string.Format("WebOne (silent) @ {0}:{1} [{2}/{3}]", ConfigFile.DefaultHostName, Port, OpenedConnections, OpenedConnectionsBusy);
 			else
-				Console.Title = string.Format("WebOne @ {0}:{1} [{2}]", ConfigFile.DefaultHostName, Port, Load);
+				Console.Title = string.Format("WebOne @ {0}:{1} [{2}/{3}]", ConfigFile.DefaultHostName, Port, OpenedConnections, OpenedConnectionsBusy);
 		}
 	}
 }

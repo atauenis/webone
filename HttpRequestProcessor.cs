@@ -245,12 +245,14 @@ namespace WebOne
 			else if (Backend is SslClient) Response = new(((SslClient)Backend).Stream);
 			else throw new ArgumentException("Incorrect backend.", nameof(Backend));
 
+			OpenedConnectionsBusy++;
 			HttpTransit Transit = new(Request, Response, Logger);
 			if (Backend is SslClient)
 				Logger.WriteLine(">[{3}] {0} {1} ({2})", Request.HttpMethod, Request.RawUrl, Transit.GetClientIdString(), SslLogPrefix);
 			else
 				Logger.WriteLine(">{0} {1} ({2})", Request.HttpMethod, Request.RawUrl, Transit.GetClientIdString());
 			Transit.ProcessTransit();
+			OpenedConnectionsBusy--;
 
 			// Restart processing if the connection is persistent. Or exit if not.
 			if (Request.KeepAlive && Response.KeepAlive)
