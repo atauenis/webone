@@ -685,6 +685,13 @@ namespace WebOne
 							}
 						}
 						break;
+					case "Variables":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							if (Variables.ContainsKey(Line.Key)) Variables.Remove(Line.Key);
+							Variables.Add(Line.Key, Line.Value);
+						}
+						break;
 					case "FixableURL":
 					case "FixableType":
 					case "ContentPatch":
