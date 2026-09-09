@@ -122,6 +122,7 @@ namespace WebOne
 		/// </summary>
 		private void UpdateStatistics()
 		{
+			if (OpenedConnectionsBusy < 0) OpenedConnectionsBusy = 0; //fix for some strange bug
 			if (DaemonMode)
 				Console.Title = string.Format("WebOne (silent) @ {0}:{1} [{2}/{3}]", ConfigFile.DefaultHostName, Port, OpenedConnections, OpenedConnectionsBusy);
 			else
