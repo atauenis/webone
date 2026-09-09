@@ -483,6 +483,9 @@ namespace WebOne
 							{
 								switch (Edit.Action)
 								{
+									case "AddVariable":
+										AddVariable(Edit.Parameters);
+										break;
 									case "AddHeaderDumping":
 									case "AddRequestDumping":
 									case "AddDumping":
@@ -1768,6 +1771,9 @@ namespace WebOne
 						{
 							switch (Edit.Action)
 							{
+								case "AddVariable":
+									AddVariable(Edit.Parameters);
+									break;
 								case "AddFindReplace":
 									FindReplaceEditSetRule frpair = Edit as FindReplaceEditSetRule;
 									Body = GetCachedRegex(frpair.Find, RegexOptions.Singleline).Replace(Body, frpair.Replace);
@@ -1881,6 +1887,9 @@ namespace WebOne
 						{
 							switch (Edit.Action)
 							{
+								case "AddVariable":
+									AddVariable(Edit.Parameters);
+									break;
 								case "AddConverting":
 									ConvertEditSetRule rule = (ConvertEditSetRule)Edit;
 									Converter = rule.Converter;
@@ -2097,6 +2106,53 @@ namespace WebOne
 			}
 
 			return CodePagesEncodingProvider.Instance.GetEncoding(Charset) ?? Encoding.UTF8;
+		}
+
+		/// <summary>
+		/// Add an internal variable string
+		/// </summary>
+		/// <param name="Parameters">Parameters as specified in <c>AddVariable</c> Edit Rule in config file.</param>
+		private void AddVariable(params string[] Parameters)
+		{
+			switch (Parameters.Length)
+			{
+				case 2: //AddVariable="Name","Value"
+					if (Variables.ContainsKey(Parameters[0])) Variables.Remove(Parameters[0]);
+					Variables.Add(Parameters[0], Parameters[1]);
+					break;
+				case 3: //AddVariable="Name","Source","Mask"
+				case 4: //AddVariable="Name","Source","Mask","Group No"
+					Match match = Regex.Match(ProcessUriMasks(Parameters[1]), Parameters[2]);
+					if (match.Success)
+					{
+						if (Parameters.Length == 3)
+						{
+							if (Variables.ContainsKey(Parameters[0])) Variables.Remove(Parameters[0]);
+							Variables.Add(Parameters[0], match.Value);
+						}
+						else
+						{
+							int groupNo = int.Parse(Parameters[3]);
+							if (groupNo <= match.Groups.Count && match.Groups[groupNo].Success)
+							{
+								if (Variables.ContainsKey(Parameters[0])) Variables.Remove(Parameters[0]);
+								Variables.Add(Parameters[0], match.Groups[groupNo].Value);
+							}
+							else
+							{
+								Log.WriteLine(" Group number {0} in {1} is not success.", Parameters[3], Parameters[1]);
+							}
+						}
+					}
+					else
+					{
+						Log.WriteLine(" No match for {0} in {1} found.", Parameters[2], Parameters[1]);
+					}
+					break;
+				default:
+					throw new ArgumentException("Incorrect argument count. Why not checked in EditSet.cs before?", nameof(Parameters));
+			}
+
 		}
 
 		/// <summary>
@@ -2720,7 +2776,7 @@ namespace WebOne
 				}
 				else { /*not implemented yet, use old code*/ }
 
-				
+
 				string title = "<title>WebOne: untitled</title>"; if (Page.Title != null) title = "<title>" + Page.Title + "</title>\n";
 				string header1 = ""; if (Page.Header != null) header1 = "<h1>" + Page.Header + "</h1>\n";
 

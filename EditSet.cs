@@ -131,6 +131,9 @@ namespace WebOne
 					case "OnHttpsOnly":
 						HttpsOnly = ToBoolean(Line.Value);
 						continue;
+					/*case "OnVariable":
+					case "OnVariableNot":
+						continue;*/
 					//editing rules (can contain regular expressions)
 					case "AddRedirect":
 					case "AddInternalRedirect":
@@ -156,13 +159,32 @@ namespace WebOne
 					case "AddOutputEncoding":
 					case "AddTranslit":
 					case "AddDebugPrint":
-						Edits.Add(new EditSetRule(Line.Key, Line.Value));
+						Edits.Add(new EditSetRule(Line.Key, Line.Values ?? new string[1] { Line.Value }));
+						break;
+					case "AddVariable":
+						switch (Line.Values.Length)
+						{
+							//see HttpTransit.AddVariable(string[]) for details
+							case 2:
+							case 3:
+								Edits.Add(new EditSetRule(Line.Key, Line.Values));
+								break;
+							case 4:
+								if (int.TryParse(Line.Values[3], out int i) && i >= 0)
+									Edits.Add(new EditSetRule(Line.Key, Line.Values));
+								else
+									new LogWriter().WriteLine(true, false, "Warning: invalid group number [4th argument] at {0}. Line ignored.", Line.Location);
+								break;
+							default:
+								new LogWriter().WriteLine(true, false, "Warning: bad count of arguments of AddVariable at {0}. Line ignored.", Line.Location);
+								break;
+						}
 						break;
 					default:
 						if (Line.Key.StartsWith("Add"))
-							new LogWriter().WriteLine(true, false, "Warning: unknown editing rule \"{0}\".", Line.Key);
+							new LogWriter().WriteLine(true, false, "Warning: unknown editing rule \"{0}\" at {1}. Line ignored.", Line.Key, Line.Location);
 						else
-							new LogWriter().WriteLine(true, false, "Warning: unknown detection rule \"{0}\".", Line.Key);
+							new LogWriter().WriteLine(true, false, "Warning: unknown detection rule \"{0}\" at {1}. Line ignored.", Line.Key, Line.Location);
 						break;
 				}
 				if (Line.Key.StartsWith("AddConvert")) MayBeForResponse = true;
