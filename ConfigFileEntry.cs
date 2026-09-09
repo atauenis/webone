@@ -4,7 +4,6 @@ using System.Text;
 
 namespace WebOne
 {
-
 	/// <summary>
 	/// Configuration file section's option (list entry).
 	/// </summary>
@@ -40,10 +39,51 @@ namespace WebOne
 			this.RawString = RawString;
 			this.Location = Location;
 
-			if(RawString.Contains("=")){
+			if (RawString.Contains("="))
+			{
 				int SplitPosition = RawString.IndexOf('=');
 				Key = RawString.Substring(0, SplitPosition);
 				Value = RawString.Substring(SplitPosition + 1);
+
+				//if the value uses character escaping
+				if (Value.StartsWith('\"') || Value.StartsWith('\\'))
+				{
+					StringBuilder sb = new();
+					bool Escape = false;
+					bool StringStarted = (Value[0] == '\"');
+					for (int i = 1; i < Value.Length; i++)
+					{
+						if (!Escape && Value[i] == '\\') { Escape = true; continue; }
+						if (Escape)
+						{
+							//process escaped characters
+							Escape = false;
+							switch (Value[i])
+							{
+								case '\'': sb.Append('\''); continue;
+								case '\"': sb.Append('\"'); continue;
+								case '\\': sb.Append('\\'); continue;
+								case '0': sb.Append('\0'); continue;
+								case 'a': sb.Append('\a'); continue;
+								case 'b': sb.Append('\b'); continue;
+								case 'f': sb.Append('\f'); continue;
+								case 'n': sb.Append('\n'); continue;
+								case 'r': sb.Append('\r'); continue;
+								case 't': sb.Append('\t'); continue;
+								case 'v': sb.Append('\v'); continue;
+								//default: sb.Append(Value[i]); continue;
+							}
+						}
+						else
+						{
+							//process regular characters & string end mark
+							if (Value[i] == '\"' && StringStarted) { break; }
+							sb.Append(Value[i]);
+						}
+					}
+					//Console.WriteLine(sb);
+					Value = sb.ToString();
+				}
 			}
 			else { Key = null; Value = RawString; }
 		}
@@ -81,13 +121,14 @@ namespace WebOne
 		/// </summary>
 		/// <param name="RawString">Section header.</param>
 		/// <param name="Location">Section header location (file name, line number).</param>
-		public ConfigFileSection(string RawString, string Location){
+		public ConfigFileSection(string RawString, string Location)
+		{
 			if (!(RawString.StartsWith('[') && RawString.EndsWith(']'))) throw new Exception("Invalid section title.");
 			Title = RawString.Substring(1, RawString.Length - 2);
 			this.Location = Location;
 			Options = new List<ConfigFileOption>();
 
-			if(Title.Contains(":"))
+			if (Title.Contains(":"))
 			{
 				Kind = Title.Substring(0, Title.IndexOf(':'));
 				Mask = Title.Substring(Title.IndexOf(':') + 1);
