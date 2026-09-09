@@ -547,6 +547,10 @@ namespace WebOne
 										EnableTransliteration = ToBoolean(Edit.Value);
 										Dump("~Enable transliteration");
 										break;
+									case "AddDebugPrint":
+										Dump("~" + Edit.Value + " (at request processing)");
+										Log.WriteLine(" [Request processing] {0}", ProcessUriMasks(Edit.Value));
+										break;
 								}
 							}
 						}
@@ -1769,6 +1773,10 @@ namespace WebOne
 									Body = GetCachedRegex(frpair.Find, RegexOptions.Singleline).Replace(Body, frpair.Replace);
 									Dump("~~Find & replace (RegEx): " + frpair.Find + " -> " + frpair.Replace);
 									break;
+								case "AddDebugPrint":
+									Dump("~" + Edit.Value + " (at response body processing)");
+									Log.WriteLine("[Response body processing] {0}", ProcessUriMasks(Edit.Value));
+									break;
 							}
 						}
 					}
@@ -1901,6 +1909,10 @@ namespace WebOne
 									Log.WriteLine(" Add redirect: {0}", ProcessUriMasks(Edit.Value));
 									Redirect = ProcessUriMasks(Edit.Value);
 									Dump("~~Redirect to: " + Redirect);
+									break;
+								case "AddDebugPrint":
+									Dump("~" + Edit.Value + " (at response headers processing)");
+									Log.WriteLine("[Response headers processing] {0}", ProcessUriMasks(Edit.Value));
 									break;
 							}
 						}

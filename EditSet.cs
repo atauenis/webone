@@ -155,6 +155,7 @@ namespace WebOne
 					case "AddDumping":
 					case "AddOutputEncoding":
 					case "AddTranslit":
+					case "AddDebugPrint":
 						Edits.Add(new EditSetRule(Line.Key, Line.Value));
 						break;
 					default:
