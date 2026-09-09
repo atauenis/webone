@@ -30,6 +30,11 @@ namespace WebOne
 		public bool HaveKeyValue => !(String.IsNullOrEmpty(Key));
 
 		/// <summary>
+		/// The option's all values
+		/// </summary>
+		public string[] Values { get; private set; }
+
+		/// <summary>
 		/// Construct this section's option
 		/// </summary>
 		/// <param name="RawString">The line raw string.</param>
@@ -45,44 +50,92 @@ namespace WebOne
 				Key = RawString.Substring(0, SplitPosition);
 				Value = RawString.Substring(SplitPosition + 1);
 
+				List<string> values = new();
+
 				//if the value uses character escaping
 				if (Value.StartsWith('\"') || Value.StartsWith('\\'))
 				{
 					StringBuilder sb = new();
 					bool Escape = false;
 					bool StringStarted = (Value[0] == '\"');
+					bool PartsGapStarted = false;
 					for (int i = 1; i < Value.Length; i++)
 					{
-						if (!Escape && Value[i] == '\\') { Escape = true; continue; }
-						if (Escape)
+						if (!PartsGapStarted)
 						{
-							//process escaped characters
-							Escape = false;
-							switch (Value[i])
+							//value
+							if (!Escape && Value[i] == '\\') { Escape = true; continue; }
+							if (Escape)
 							{
-								case '\'': sb.Append('\''); continue;
-								case '\"': sb.Append('\"'); continue;
-								case '\\': sb.Append('\\'); continue;
-								case '0': sb.Append('\0'); continue;
-								case 'a': sb.Append('\a'); continue;
-								case 'b': sb.Append('\b'); continue;
-								case 'f': sb.Append('\f'); continue;
-								case 'n': sb.Append('\n'); continue;
-								case 'r': sb.Append('\r'); continue;
-								case 't': sb.Append('\t'); continue;
-								case 'v': sb.Append('\v'); continue;
-								//default: sb.Append(Value[i]); continue;
+								//process escaped characters
+								Escape = false;
+								switch (Value[i])
+								{
+									case '\'': sb.Append('\''); continue;
+									case '\"': sb.Append('\"'); continue;
+									case '\\': sb.Append('\\'); continue;
+									case '0': sb.Append('\0'); continue;
+									case 'a': sb.Append('\a'); continue;
+									case 'b': sb.Append('\b'); continue;
+									case 'f': sb.Append('\f'); continue;
+									case 'n': sb.Append('\n'); continue;
+									case 'r': sb.Append('\r'); continue;
+									case 't': sb.Append('\t'); continue;
+									case 'v': sb.Append('\v'); continue;
+									default: throw new Exception("Unknown escape sequence: " + Value[i]);
+										// Unicode is not supported at this moment
+								}
+							}
+							else
+							{
+								//process regular characters or end mark
+								if (Value[i] == '\"' && StringStarted)
+								{
+									//process string end mark
+									values.Add(sb.ToString());
+
+									sb.Clear();
+									PartsGapStarted = true;
+									StringStarted = false;
+								}
+								else
+								{
+									//process regular characters 
+									sb.Append(Value[i]);
+								}
 							}
 						}
 						else
 						{
-							//process regular characters & string end mark
-							if (Value[i] == '\"' && StringStarted) { break; }
-							sb.Append(Value[i]);
+							//gap between multiple values
+							bool EndReached = false;
+							switch (Value[i])
+							{
+								case ' ':
+								case '\t':
+								case ',':
+									continue;
+								case '\"':
+									PartsGapStarted = false;
+									StringStarted = true;
+									break;
+								case ';':
+									EndReached = true;
+									break;
+								default: throw new Exception("Garbage in the middle gap: " + Value[i]);
+							}
+							if (EndReached) break;
 						}
 					}
-					//Console.WriteLine(sb);
-					Value = sb.ToString();
+
+					if (values.Count == 0)
+					{
+						values.Add(sb.ToString());
+					}
+					Values = values.ToArray();
+
+					Value = "";
+					foreach (string val in values) { Value += val; }
 				}
 			}
 			else { Key = null; Value = RawString; }
