@@ -273,9 +273,6 @@ namespace WebOne
 								case "UpperProxy":
 									ConfigFile.UpperProxy = ExpandMaskedVariables(Option.Value);
 									break;
-								case "PageStyleHtml":
-									ConfigFile.PageStyleHtml = Option.Value;
-									break;
 								case "MultipleHttp2Connections":
 									ConfigFile.MultipleHttp2Connections = ToBoolean(Option.Value);
 									break;
@@ -440,13 +437,6 @@ namespace WebOne
 						foreach (ConfigFileOption Line in Section.Options)
 						{
 							ConfigFile.PAC += Line.RawString + "\n";
-						}
-						break;
-					case "PageStyleCss":
-						ConfigFile.PageStyleCss = "";
-						foreach (ConfigFileOption Line in Section.Options)
-						{
-							ConfigFile.PageStyleCss += Line.RawString + "\n";
 						}
 						break;
 					case "WebVideoOptions":

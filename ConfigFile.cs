@@ -159,16 +159,6 @@ namespace WebOne
 		public static string PAC = "";
 
 		/// <summary>
-		/// Internal pages style in HTML format (TEXT="#000000" BGCOLOR="#C0C0C0" LINK="#0000EE" VLINK="#551A8B" ALINK="#FF0000")
-		/// </summary>
-		public static string PageStyleHtml = "";
-
-		/// <summary>
-		/// Internal pages style in CSS format (body { background-color: #C0C0C0; color: #000000; })
-		/// </summary>
-		public static string PageStyleCss = "";
-
-		/// <summary>
 		/// Allow multiple HTTP/2.0 connections to servers (faster, but may overload remote servers)
 		/// </summary>
 		public static bool MultipleHttp2Connections = true;
