@@ -124,6 +124,7 @@ namespace WebOne
 									SendError(407, ConfigFile.AuthenticateMessage + "<p>Your login or password is not correct. Please try again.</p>");
 									return;
 								}
+								Variables.Add("ProxyUserName", auth.Substring(0, auth.IndexOf(':')));
 							}
 							break;
 					}
@@ -397,7 +398,18 @@ namespace WebOne
 				//check for available edit sets
 				foreach (EditSet set in ConfigFile.EditRules)
 				{
+					if (ConfigFile.Authenticate.Count > 0 && set.Users.Count > 0)
+					{
+						bool userValid = false;
+						foreach (string user in set.Users)
+						{
+							if (Variables["ProxyUserName"] == user) userValid = true;
+						}
+						if (!userValid) continue;
+					}
+
 					if (!set.CorrectHostOS) continue;
+
 					if (CheckStringRegExp(RequestURL.AbsoluteUri, set.UrlMasks.ToArray()) &&
 						!CheckStringRegExp(RequestURL.AbsoluteUri, set.UrlIgnoreMasks.ToArray()))
 					{

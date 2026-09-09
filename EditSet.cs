@@ -45,6 +45,11 @@ namespace WebOne
 		public List<string> HeaderMasks { get; set; }
 
 		/// <summary>
+		/// List of users for which the Set would be used
+		/// </summary>
+		public List<string> Users { get; set; }
+
+		/// <summary>
 		/// Flag that indicates that the edits can be performed at time of HTTP Request (before get of response)
 		/// </summary>
 		public bool IsForRequest { get; private set; }
@@ -70,6 +75,7 @@ namespace WebOne
 			UrlIgnoreMasks = new List<string>();
 			ContentTypeMasks = new List<string>();
 			HeaderMasks = new List<string>();
+			Users = new List<string>();
 			CorrectHostOS = true;
 			Edits = new List<EditSetRule>();
 			IsForRequest = false;
@@ -130,6 +136,18 @@ namespace WebOne
 						continue;
 					case "OnHttpsOnly":
 						HttpsOnly = ToBoolean(Line.Value);
+						continue;
+					case "OnUser":
+						foreach (string user in (Line.Values ?? new string[1] { Line.Value }))
+						{
+							Users.Add(user);
+							bool userFound = false;
+							foreach (string registeredUser in ConfigFile.Authenticate)
+							{
+								if (registeredUser.StartsWith(user + ":")) userFound = true;
+							}
+							if(!userFound) new LogWriter().WriteLine(true, false, "Warning: unknown user \"{1}\" at {0}.", Line.Location, user);
+						}
 						continue;
 					/*case "OnVariable":
 					case "OnVariableNot":
