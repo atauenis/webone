@@ -1,0 +1,68 @@
+<HTML>
+<HEAD><TITLE>Scroll Test</TITLE></HEAD>
+<BODY>
+<DIV STYLE="position:fixed;top:10px;left:10px;background:yellow;padding:8px;font-size:16px;font-family:monospace" ID="out">
+y = 0
+</DIV>
+<DIV STYLE="position:fixed;top:40px;left:10px;background:yellow;padding:8px;font-size:16px;font-family:monospace" ID="counter">
+Times of scroll event triggered = 0
+</DIV>
+<DIV STYLE="position:fixed;top:80px;left:10px;background:yellow;padding:8px;font-size:16px;font-family:monospace;cursor:pointer" ONCLICK="checkScroll()">
+Press me to get the y position manually
+</DIV>
+<DIV STYLE="height:5000px">&nbsp;</DIV>
+<SCRIPT LANGUAGE="JavaScript">
+function getScrollY() {
+  if (window.pageYOffset != null) return window.pageYOffset;
+  if (document.documentElement && document.documentElement.scrollTop) return document.documentElement.scrollTop;
+  if (document.body && document.body.scrollTop) return document.body.scrollTop;
+  return 0;
+}
+var timesScroll = 0;
+var lastScrollY = 0;
+
+function updateDisplay(sy) {
+  document.getElementById("counter").innerHTML = "Times of scroll event triggered = " + timesScroll;
+  document.getElementById("out").innerHTML = "y = " + sy;
+}
+
+function checkScroll() {
+  var sy = getScrollY();
+  if (sy != lastScrollY) {
+    lastScrollY = sy;
+    timesScroll++;
+    updateDisplay(sy);
+  }
+}
+
+var usingEvents = false;
+function onScroll() {
+  usingEvents = true;
+  timesScroll++;
+  var sy = getScrollY();
+  lastScrollY = sy;
+  updateDisplay(sy);
+}
+
+if (window.addEventListener) {
+  window.addEventListener("scroll", onScroll, false);
+} else if (window.attachEvent) {
+  window.attachEvent("onscroll", onScroll);
+} else {
+  window.onscroll = onScroll;
+}
+
+// Necesario para Safari 1.0
+setInterval("checkScroll()", 50);
+</SCRIPT>
+</BODY>
+</HTML>
+
+<!-- 
+---------------------------- CONCLUSION ----------------------------
+
+SCROLL EVENT DOESNT WORK, SO IT'S NECESARRY TO USE SETINTERVAL
+SAFARI 1 JUST SUPPORTS USING SETINTERVAL WITH STRING CODE 
+
+-------------------------------------------------------------------
+-->
