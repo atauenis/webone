@@ -34,6 +34,8 @@ namespace WebOne
 		bool Stop = false;
 
 		HttpOperation operation;
+		string RequestHttpVersion = ConfigFile.RemoteHttpVersion;
+		Version ResponseHttpVersion = new("1.1");
 		int ResponseCode = 502;
 		string ResponseBody = ":(";
 		Stream TransitStream = null;
@@ -64,6 +66,7 @@ namespace WebOne
 #if DEBUG
 			Log.WriteLine(" Begin process.");
 #endif
+			ResponseHttpVersion = ClientRequest.ProtocolVersion;
 			try
 			{
 				//check IP black list
@@ -207,7 +210,7 @@ namespace WebOne
 				{ ClientResponse.SimpleContentType = true; }
 
 				//set protocol version
-				ClientResponse.ProtocolVersion = ClientRequest.ProtocolVersion;
+				ClientResponse.ProtocolVersion = ResponseHttpVersion;
 
 				//get proxy's IP address
 				if (ClientRequest.LocalEndPoint.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
@@ -554,6 +557,14 @@ namespace WebOne
 											Dump("~Request header find&replace: '" + hdr_rule.Find + "' / '" + hdr_rule.Replace + "'");
 										}
 										break;
+									case "AddRequestHttpVersion":
+										Dump("~Using HTTP(S) " + Edit.Value + " for remote connection");
+										RequestHttpVersion = Edit.Value;
+										break;
+									case "AddResponseHttpVersion":
+										Dump("~Reply as HTTP/" + Edit.Value);
+										ResponseHttpVersion = new Version(Edit.Value);
+										break;
 									case "AddOutputEncoding":
 										OutputContentEncoding = GetCodePage(Edit.Value);
 										Dump("~Output encoding set to: " + OutputContentEncoding.BodyName);
@@ -595,6 +606,7 @@ namespace WebOne
 					operation.Method = ClientRequest.HttpMethod;
 					operation.RequestHeaders = whc;
 					operation.URL = RequestURL;
+					operation.HttpVersion = RequestHttpVersion;
 					if (!ConfigFile.DontPreferHTTPS) operation.SecureConnection = ClientRequest.IsSecureConnection;
 					SendRequest(operation);
 				}
@@ -831,6 +843,7 @@ namespace WebOne
 					if (true)
 					{
 						//ClientResponse.ProtocolVersion = new Version(1, 1);
+						ClientResponse.ProtocolVersion = ResponseHttpVersion;
 						ClientResponse.StatusCode = ResponseCode;
 						ClientResponse.AddHeader("Via", "HTTP/1.0 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
 						if (string.IsNullOrEmpty(ClientResponse.Headers["Content-Type"]) && !string.IsNullOrEmpty(ContentType))
@@ -1791,6 +1804,10 @@ namespace WebOne
 									Body = GetCachedRegex(frpair.Find, RegexOptions.Singleline).Replace(Body, frpair.Replace);
 									Dump("~~Find & replace (RegEx): " + frpair.Find + " -> " + frpair.Replace);
 									break;
+								case "AddResponseHttpVersion":
+									Dump("~Reply as HTTP/" + Edit.Value);
+									ResponseHttpVersion = new Version(Edit.Value);
+									break;
 								case "AddDebugPrint":
 									Dump("~" + Edit.Value + " (at response body processing)");
 									Log.WriteLine("[Response body processing] {0}", ProcessUriMasks(Edit.Value));
@@ -1930,6 +1947,10 @@ namespace WebOne
 									Log.WriteLine(" Add redirect: {0}", ProcessUriMasks(Edit.Value));
 									Redirect = ProcessUriMasks(Edit.Value);
 									Dump("~~Redirect to: " + Redirect);
+									break;
+								case "AddResponseHttpVersion":
+									Dump("~Reply as HTTP/" + Edit.Value);
+									ResponseHttpVersion = new Version(Edit.Value);
 									break;
 								case "AddDebugPrint":
 									Dump("~" + Edit.Value + " (at response headers processing)");

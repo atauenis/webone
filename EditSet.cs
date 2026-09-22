@@ -163,6 +163,8 @@ namespace WebOne
 					//editing rules (cannot contain regular expressions)
 					case "AddHeader":
 					case "AddResponseHeader":
+					case "AddRequestHttpVersion":
+					case "AddResponseHttpVersion":
 					case "AddConvert":
 					case "AddConvertDest":
 					case "AddConvertArg1":
@@ -179,6 +181,7 @@ namespace WebOne
 					case "AddDebugPrint":
 						Edits.Add(new EditSetRule(Line.Key, Line.Values ?? new string[1] { Line.Value }));
 						break;
+						//TODO: add verify of Line.Value for each case!
 					case "AddVariable":
 						switch (Line.Values.Length)
 						{

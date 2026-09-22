@@ -40,6 +40,10 @@ namespace WebOne
 		/// HTTP request body (if any)
 		/// </summary>
 		internal Stream RequestStream { get; set; }
+		/// <summary>
+		/// HTTP version, used on this operation
+		/// </summary>
+		internal string HttpVersion { get; set; }
 
 		/// <summary>
 		/// Full HTTP server response
@@ -74,7 +78,9 @@ namespace WebOne
 			Request.RequestUri = URL;
 			Request.Method = new HttpMethod(Method);
 
-			if (ConfigFile.RemoteHttpVersion == "auto")
+			if (string.IsNullOrWhiteSpace(HttpVersion)) HttpVersion = ConfigFile.RemoteHttpVersion;
+
+			if (HttpVersion == "auto")
 			{
 				if (Environment.OSVersion.Platform == PlatformID.Win32NT && Environment.OSVersion.Version.Major < 10)
 				{
@@ -91,17 +97,17 @@ namespace WebOne
 			}
 			else
 			{
-				switch (ConfigFile.RemoteHttpVersion.Length)
+				switch (HttpVersion.Length)
 				{
 					case 4:
-						Request.Version = new Version(ConfigFile.RemoteHttpVersion[1..]);
+						Request.Version = new Version(HttpVersion[1..]);
 						break;
 					case 5:
-						Request.Version = new Version(ConfigFile.RemoteHttpVersion[2..]);
+						Request.Version = new Version(HttpVersion[2..]);
 						break;
 				}
 
-				switch (ConfigFile.RemoteHttpVersion[0])
+				switch (HttpVersion[0])
 				{
 					case '=':
 						Request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
@@ -113,7 +119,7 @@ namespace WebOne
 						Request.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
 						break;
 					default:
-						throw new ArgumentException("Bad RemoteHttpVersion option in configuration file");
+						throw new ArgumentException("Bad remote HTTP version specified");
 				}
 			}
 
