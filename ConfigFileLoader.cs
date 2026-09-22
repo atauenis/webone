@@ -164,6 +164,11 @@ namespace WebOne
 				switch (Section.Kind)
 				{
 					case "Server":
+						if (!string.IsNullOrEmpty(Section.Mask))
+						{
+							Log.WriteLine(true, false, "Warning: Instead of condition-based setup use Edit Sets. Section ignored. ({0}).", Section.Location);
+							break;
+						}
 						foreach (ConfigFileOption Option in Section.Options)
 						{
 							switch (Option.Key)
