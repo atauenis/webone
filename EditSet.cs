@@ -94,7 +94,7 @@ namespace WebOne
 				if (!Line.HaveKeyValue) continue;
 				switch (Line.Key)
 				{
-					//detection rules
+					// Condition rules
 					case "OnUrl":
 						CheckRegExp(Line);
 						UrlMasks.Add(Line.Value);
@@ -146,13 +146,13 @@ namespace WebOne
 							{
 								if (registeredUser.StartsWith(user + ":")) userFound = true;
 							}
-							if(!userFound) new LogWriter().WriteLine(true, false, "Warning: unknown user \"{1}\" at {0}.", Line.Location, user);
+							if (!userFound) new LogWriter().WriteLine(true, false, "Warning: unknown user \"{1}\" at {0}.", Line.Location, user);
 						}
 						continue;
 					/*case "OnVariable":
 					case "OnVariableNot":
 						continue;*/
-					//editing rules (can contain regular expressions)
+					// Action rules (can contain regular expressions)
 					case "AddRedirect":
 					case "AddInternalRedirect":
 					case "AddFind":
@@ -160,11 +160,7 @@ namespace WebOne
 						CheckRegExp(Line);
 						Edits.Add(new EditSetRule(Line.Key, Line.Value));
 						break;
-					//editing rules (cannot contain regular expressions)
-					case "AddHeader":
-					case "AddResponseHeader":
-					case "AddRequestHttpVersion":
-					case "AddResponseHttpVersion":
+					// Action rules (no value verification)
 					case "AddConvert":
 					case "AddConvertDest":
 					case "AddConvertArg1":
@@ -181,7 +177,30 @@ namespace WebOne
 					case "AddDebugPrint":
 						Edits.Add(new EditSetRule(Line.Key, Line.Values ?? new string[1] { Line.Value }));
 						break;
-						//TODO: add verify of Line.Value for each case!
+					// Action rules (with value verification)
+					case "AddHeader":
+					case "AddRequestHeader":
+					case "AddResponseHeader":
+						if (Line.Value.Contains(": "))
+							Edits.Add(new EditSetRule(Line.Key, Line.Values ?? new string[1] { Line.Value }));
+						else
+							new LogWriter().WriteLine(true, false, "Warning: Incorrect HTTP header at {0}. Line ignored.", Line.Location);
+						break;
+					case "AddRequestHttpVersion":
+						//same as [Server]/RemoteHttpVersion option
+						if (System.Text.RegularExpressions.Regex.IsMatch(Line.Value, @"[\d][\.][\d]"))
+						{ Edits.Add(new EditSetRule("AddRequestHttpVersion", "=" + Line.Value)); }
+						else if (System.Text.RegularExpressions.Regex.IsMatch(Line.Value, @"([=><a])[u0-3][t\.][o0-9]"))
+						{ Edits.Add(new EditSetRule("AddRequestHttpVersion", Line.Value)); }
+						else
+						{ new LogWriter().WriteLine(true, false, "Warning: Incorrect HTTP version at {0}. Line ignored.", Line.Location); }
+						break;
+					case "AddResponseHttpVersion":
+						if (Version.TryParse(Line.Value, out Version ver))
+							Edits.Add(new EditSetRule(Line.Key, Line.Value));
+						else
+							new LogWriter().WriteLine(true, false, "Warning: Incorrect HTTP version at {0}. Line ignored.", Line.Location);
+						break;
 					case "AddVariable":
 						switch (Line.Values.Length)
 						{
@@ -203,9 +222,9 @@ namespace WebOne
 						break;
 					default:
 						if (Line.Key.StartsWith("Add"))
-							new LogWriter().WriteLine(true, false, "Warning: unknown editing rule \"{0}\" at {1}. Line ignored.", Line.Key, Line.Location);
+							new LogWriter().WriteLine(true, false, "Warning: unknown edit action \"{0}\" at {1}. Line ignored.", Line.Key, Line.Location);
 						else
-							new LogWriter().WriteLine(true, false, "Warning: unknown detection rule \"{0}\" at {1}. Line ignored.", Line.Key, Line.Location);
+							new LogWriter().WriteLine(true, false, "Warning: unknown edit set condition \"{0}\" at {1}. Line ignored.", Line.Key, Line.Location);
 						break;
 				}
 				if (Line.Key.StartsWith("AddConvert")) MayBeForResponse = true;
