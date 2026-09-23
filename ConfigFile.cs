@@ -39,6 +39,31 @@ namespace WebOne
 		public static Encoding OutputEncoding = Encoding.Default;
 
 		/// <summary>
+		/// Default ANSI (Windows) single-byte code page
+		/// </summary>
+		public static Encoding CodepageANSI = null;
+
+		/// <summary>
+		/// Default ASCII (DOS) single-byte code page
+		/// </summary>
+		public static Encoding CodepageASCII = null;
+
+		/// <summary>
+		/// Default Apple Macintosh single-byte code page
+		/// </summary>
+		public static Encoding CodepageMac = null;
+
+		/// <summary>
+		/// Default EBCDIC (IBM) single-byte code page
+		/// </summary>
+		public static Encoding CodepageEBCDIC = null;
+
+		/// <summary>
+		/// Single-byte code pages culture used on this proxy server
+		/// </summary>
+		public static System.Globalization.CultureInfo CodepageCulture = System.Globalization.CultureInfo.CurrentCulture;
+
+		/// <summary>
 		/// Credentials for proxy authentication
 		/// </summary>
 		public static List<string> Authenticate = new List<string>();

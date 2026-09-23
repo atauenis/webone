@@ -479,75 +479,87 @@ namespace WebOne
 				case "windows":
 				case "win":
 				case "ansi":
-					return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ANSICodePage);
-				/* Microsoft Windows code pages:
-				 * windows-1250	Czech, Polish, Slovak, Hungarian, Slovene, Serbo-Croatian, Montenegrian, Romanian (<1993), Gagauz, Rotokas, Albanian, English, German, Luxembourgish
-				 * windows-1251	Russian, Ukrainian, Belarusian, Bulgarian, Serbian Cyrillic, Bosnian Cyrillic, Macedonian, Rusyn
-				 * windows-1252	(All of ISO-8859-1 plus full support for French and Finnish)
-				 * windows-1253 Greek
-				 * windows-1254	Turkish
-				 * windows-1255	Hebrew
-				 * windows-1256	Arabic
-				 * windows-1257	Estonian, Latvian, Lithuanian, Latgalian
-				 * windows-1258 Vietnamese
-				 * windows-874	Thai
-				 */
+					/* Microsoft Windows code pages:
+					 * windows-1250	Czech, Polish, Slovak, Hungarian, Slovene, Serbo-Croatian, Montenegrian, Romanian (<1993), Gagauz, Rotokas, Albanian, English, German, Luxembourgish
+					 * windows-1251	Russian, Ukrainian, Belarusian, Bulgarian, Serbian Cyrillic, Bosnian Cyrillic, Macedonian, Rusyn
+					 * windows-1252	(All of ISO-8859-1 plus full support for French and Finnish)
+					 * windows-1253 Greek
+					 * windows-1254	Turkish
+					 * windows-1255	Hebrew
+					 * windows-1256	Arabic
+					 * windows-1257	Estonian, Latvian, Lithuanian, Latgalian
+					 * windows-1258 Vietnamese
+					 * windows-874	Thai
+					 */
+					if (ConfigFile.CodepageANSI != null)
+						return ConfigFile.CodepageANSI;
+					else
+						return CodePagesEncodingProvider.Instance.GetEncoding(ConfigFile.CodepageCulture.TextInfo.ANSICodePage);
 				case "dos":
 				case "oem":
 				case "ascii":
-					return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
-				/* MS-DOS, IBM OS/2 code pages:
-				 * 437	Default: English, German, Swedish
-				 * 720	Arabic in Egypt, Iraq, Jordan, Saudi Arabia, and Syria
-				 * 737	Greek
-				 * 775	Estonian, Lithuanian and Latvian
-				 * 850	West European: at least Spanish, Italian, French
-				 * 852	Bosnian, Croatian, Czech, Hungarian, Polish, Romanian, Moldavian, Serbian, Slovak or Slovene
-				 * 855	Serbian, Macedonian and Bulgarian
-				 * 857	Turkish
-				 * 860	Portuguese (mostly - Brasilian)
-				 * 861	Icelandic
-				 * 862	Hebrew
-				 * 863	French in Canada (mainly in Quebec province)
-				 * 864	Arabic in Egypt, Iraq, Jordan, Saudi Arabia, and Syria (?)
-				 * 865	Danish and Norwegian
-				 * 866	Russian, Ukrainian, Byelarussian
-				 * 874	Thai
-				 * 932	Japan
-				 * 936	Chinese simplified (PRC)
-				 * 949	Korean
-				 * 950	Chinese traditional (Taiwan island)
-				 */
+					/* MS-DOS, IBM OS/2 code pages:
+					 * 437	Default: English, German, Swedish
+					 * 720	Arabic in Egypt, Iraq, Jordan, Saudi Arabia, and Syria
+					 * 737	Greek
+					 * 775	Estonian, Lithuanian and Latvian
+					 * 850	West European: at least Spanish, Italian, French
+					 * 852	Bosnian, Croatian, Czech, Hungarian, Polish, Romanian, Moldavian, Serbian, Slovak or Slovene
+					 * 855	Serbian, Macedonian and Bulgarian
+					 * 857	Turkish
+					 * 860	Portuguese (mostly - Brasilian)
+					 * 861	Icelandic
+					 * 862	Hebrew
+					 * 863	French in Canada (mainly in Quebec province)
+					 * 864	Arabic in Egypt, Iraq, Jordan, Saudi Arabia, and Syria (?)
+					 * 865	Danish and Norwegian
+					 * 866	Russian, Ukrainian, Byelarussian
+					 * 874	Thai
+					 * 932	Japan
+					 * 936	Chinese simplified (PRC)
+					 * 949	Korean
+					 * 950	Chinese traditional (Taiwan island)
+					 */
+					if (ConfigFile.CodepageASCII != null)
+						return ConfigFile.CodepageASCII;
+					else
+						return CodePagesEncodingProvider.Instance.GetEncoding(ConfigFile.CodepageCulture.TextInfo.OEMCodePage);
 				case "mac":
 				case "apple":
-					return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.MacCodePage);
-				/* Apple MacOS (Classic) code pages:
-				 * macintosh				(Latin default)
-				 * x-mac-arabic
-				 * x-mac-ce					(Czech, Slovak, Polish, Estonian, Latvian, Lithuanian)
-				 * x-mac-chinesetrad		(Taiwan island)
-				 * x-mac-croatian
-				 * x-mac-cyrillic			(Russian, Bulgarian, Belarusian, Macedonian, Serbian)
-				 * x-mac-greek
-				 * x-mac-hebrew
-				 * x-mac-icelandic
-				 * x-mac-japanese
-				 * x-mac-romanian			(Romanian & Moldavian)
-				 * x-mac-thai
-				 * x-mac-turkish
-				 * x-mac-ukrainian
-				 */
+					/* Apple MacOS (Classic) code pages:
+					 * macintosh				(Latin default)
+					 * x-mac-arabic
+					 * x-mac-ce					(Czech, Slovak, Polish, Estonian, Latvian, Lithuanian)
+					 * x-mac-chinesetrad		(Taiwan island)
+					 * x-mac-croatian
+					 * x-mac-cyrillic			(Russian, Bulgarian, Belarusian, Macedonian, Serbian)
+					 * x-mac-greek
+					 * x-mac-hebrew
+					 * x-mac-icelandic
+					 * x-mac-japanese
+					 * x-mac-romanian			(Romanian & Moldavian)
+					 * x-mac-thai
+					 * x-mac-turkish
+					 * x-mac-ukrainian
+					 */
+					if (ConfigFile.CodepageMac != null)
+						return ConfigFile.CodepageMac;
+					else
+						return CodePagesEncodingProvider.Instance.GetEncoding(ConfigFile.CodepageCulture.TextInfo.MacCodePage);
 				case "ebcdic":
 				case "ibm":
 					/* Old IBM mainframes (EBCDIC) code pages:
 					 * ---== To be written ==---
 					 */
-					return CodePagesEncodingProvider.Instance.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.EBCDICCodePage);
+					if (ConfigFile.CodepageEBCDIC != null)
+						return ConfigFile.CodepageEBCDIC;
+					else
+						return CodePagesEncodingProvider.Instance.GetEncoding(ConfigFile.CodepageCulture.TextInfo.EBCDICCodePage);
 				case "iso":
 				case "iso-8859":
 				case "iso8859":
-					CultureInfo ci = CultureInfo.CurrentCulture;
-					switch (ci.TwoLetterISOLanguageName.ToLower())
+					/* ISO-8859 standartized code pages */
+					switch (ConfigFile.CodepageCulture.TwoLetterISOLanguageName.ToLower())
 					{
 						default:
 							/*

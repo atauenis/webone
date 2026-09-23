@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
+using System.Text;
 using static WebOne.Program;
 
 namespace WebOne
@@ -320,6 +321,21 @@ namespace WebOne
 								case "ConnectionTimeout":
 									if (!int.TryParse(Option.Value, out ConfigFile.ConnectionTimeout))
 										Log.WriteLine(true, false, "Warning: Incorrect ConnectionTimeout '{0}'.", Option.Value);
+									break;
+								case "CodepageCulture":
+									ConfigFile.CodepageCulture = System.Globalization.CultureInfo.GetCultureInfo(Option.Value, Option.Value);
+									break;
+								case "CodepageANSI":
+									ConfigFile.CodepageANSI = CodePagesEncodingProvider.Instance.GetEncoding(Option.Value);
+									break;
+								case "CodepageASCII":
+									ConfigFile.CodepageASCII = CodePagesEncodingProvider.Instance.GetEncoding(Option.Value);
+									break;
+								case "CodepageMac":
+									ConfigFile.CodepageMac = CodePagesEncodingProvider.Instance.GetEncoding(Option.Value);
+									break;
+								case "CodepageEBCDIC":
+									ConfigFile.CodepageEBCDIC = CodePagesEncodingProvider.Instance.GetEncoding(Option.Value);
 									break;
 								default:
 									Log.WriteLine(true, false, "Warning: Unknown server option {0} in {1}.", Option.Key, Option.Location);
