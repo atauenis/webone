@@ -188,6 +188,9 @@ namespace WebOne
 								case "FtpPort":
 									Log.WriteLine(true, false, "Warning: Use of '{0}' is deprecated, use 'Port' at {1}.", Option.Key, Option.Location);
 									break;
+								case "IP":
+									ConfigFile.IP = IPAddress.Parse(Option.Value);
+									break;
 								case "OutputEncoding":
 									ConfigFile.OutputEncoding = GetCodePage(ExpandMaskedVariables(Option.Value));
 									break;

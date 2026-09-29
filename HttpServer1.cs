@@ -17,6 +17,7 @@ namespace WebOne
 		 * In v0.16.0 and up, kept for troubleshooting purposes.
 		 */
 
+		private IPAddress IP;
 		private int Port;
 		private static HttpListener _listener = new();
 		private LogWriter Log = new();
@@ -29,9 +30,11 @@ namespace WebOne
 		/// <summary>
 		/// Initizlize a HTTP Listener &amp; Server (HttpListener-based).
 		/// </summary>
+		/// <param name="ip">Network interface to listen on</param>
 		/// <param name="port">TCP Port to listen on</param>
-		public HttpServer1(int port) : base(port)
+		public HttpServer1(IPAddress ip, int port) : base(ip, port)
 		{
+			IP = ip;
 			Port = port;
 			Working = false;
 		}
@@ -44,7 +47,9 @@ namespace WebOne
 			//if (_listener == null) _listener = new HttpListener();
 			try { int test = _listener.Prefixes.Count; }
 			catch { _listener = new HttpListener(); /*initialize HttpListener if it is not ready*/ }
-			_listener.Prefixes.Add("http://*:" + Port + "/");
+			string IpPrefix = (IP == IPAddress.Any) ? "*" : IP.ToString();
+			if (IP.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6) IpPrefix = "[" + IpPrefix + "]";
+			_listener.Prefixes.Add("http://" + IpPrefix + ":" + Port + "/");
 			_listener.Start();
 			_listener.BeginGetContext(ProcessRequest, null);
 			Working = true;

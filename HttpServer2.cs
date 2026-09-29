@@ -29,12 +29,13 @@ namespace WebOne
 		/// <summary>
 		/// Initizlize a HTTP Listener &amp; Server (TcpClient-based).
 		/// </summary>
+		/// <param name="ip">Network interface to listen on</param>
 		/// <param name="port">TCP Port to listen on.</param>
-		public HttpServer2(int port) : base(port)
+		public HttpServer2(System.Net.IPAddress ip, int port) : base(ip, port)
 		{
 			Port = port;
 			Working = false;
-			Listener = new(System.Net.IPAddress.Any, Port);
+			Listener = new(ip, Port);
 		}
 
 		/// <summary>

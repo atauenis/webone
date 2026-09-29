@@ -19,6 +19,11 @@ namespace WebOne
 		public static int Port = 80;
 
 		/// <summary>
+		/// IP address on where the Proxy Server should run
+		/// </summary>
+		public static System.Net.IPAddress IP = System.Net.IPAddress.Any;
+
+		/// <summary>
 		/// List of domains that should be open only using HTTPS
 		/// </summary>
 		public static List<string> ForceHttps = new List<string>();

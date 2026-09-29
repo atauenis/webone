@@ -13,8 +13,9 @@
 		/// <summary>
 		/// Initizlize a HTTP Listener &amp; Server
 		/// </summary>
+		/// <param name="ip">Network interface to listen on</param>
 		/// <param name="port">TCP Port to listen on</param>
-		public HttpServer(int port) { }
+		public HttpServer(System.Net.IPAddress ip, int port) { }
 
 		/// <summary>
 		/// Start this HTTP Listener &amp; Server

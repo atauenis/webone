@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -244,9 +243,9 @@ namespace WebOne
 			try
 			{
 				if (ConfigFile.UseMsHttpApi)
-					Server = new HttpServer1(ConfigFile.Port);
+					Server = new HttpServer1(ConfigFile.IP, ConfigFile.Port);
 				else
-					Server = new HttpServer2(ConfigFile.Port);
+					Server = new HttpServer2(ConfigFile.IP, ConfigFile.Port);
 			}
 			catch (Exception ex)
 			{
