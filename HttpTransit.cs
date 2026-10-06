@@ -498,12 +498,12 @@ namespace WebOne
 							{
 								switch (Edit.Action)
 								{
-									case "AddVariable":
+									case EditSetActionRules.AddVariable:
 										AddVariable(Edit.Parameters);
 										break;
-									case "AddHeaderDumping":
-									case "AddRequestDumping":
-									case "AddDumping":
+									case EditSetActionRules.AddHeaderDumping:
+									case EditSetActionRules.AddRequestDumping:
+									case EditSetActionRules.AddDumping:
 										//dump initializing must be first
 										DumpFile = ProcessUriMasks(Edit.Value)
 										.Replace(":", "-")
@@ -514,14 +514,14 @@ namespace WebOne
 										if (DumpFile.Length > 128) { DumpFile = DumpFile.Substring(0, 128) + "-CUT.log"; } //about half of Windows path limitation
 										Dump(ClientRequest.HttpMethod + " " + ClientRequest.RawUrl + " HTTP/" + ClientRequest.ProtocolVersion.ToString());
 										break;
-									case "AddInternalRedirect":
+									case EditSetActionRules.AddInternalRedirect:
 										string NewUrlInternal = UseRegEx ? ProcessUriMasks(GetCachedRegex(Set.UrlMasks[0]).Replace(RequestURL.AbsoluteUri, Edit.Value))
 																		 : ProcessUriMasks(Edit.Value);
 										Log.WriteLine(" Fix to {0} internally", NewUrlInternal);
 										Dump("~Internal redirect to: " + NewUrlInternal);
 										RequestURL = new Uri(NewUrlInternal);
 										break;
-									case "AddRedirect":
+									case EditSetActionRules.AddRedirect:
 										string NewUrl302 = "";
 										if (UseRegEx)
 										{
@@ -537,8 +537,8 @@ namespace WebOne
 										Dump("~Redirect using 302 to: " + NewUrl302);
 										SendRedirect(NewUrl302, "Брось каку!");
 										return;
-									case "AddRequestHeader":
-									case "AddHeader":
+									case EditSetActionRules.AddRequestHeader:
+									case EditSetActionRules.AddHeader:
 										string Header = ProcessUriMasks(Edit.Value);
 										Dump("~Add request header: " + Header);
 										if (whc[Edit.Value.Substring(0, Edit.Value.IndexOf(": "))] == null)
@@ -549,7 +549,7 @@ namespace WebOne
 											whc.Add(Header);
 										}
 										break;
-									case "AddRequestHeaderFindReplace":
+									case EditSetActionRules.AddRequestHeaderFindReplace:
 										FindReplaceEditSetRule hdr_rule = (FindReplaceEditSetRule)Edit;
 										foreach (var hdr in whc.AllKeys)
 										{
@@ -557,23 +557,23 @@ namespace WebOne
 											Dump("~Request header find&replace: '" + hdr_rule.Find + "' / '" + hdr_rule.Replace + "'");
 										}
 										break;
-									case "AddRequestHttpVersion":
+									case EditSetActionRules.AddRequestHttpVersion:
 										Dump("~Using HTTP(S) " + Edit.Value + " for remote connection");
 										RequestHttpVersion = Edit.Value;
 										break;
-									case "AddResponseHttpVersion":
+									case EditSetActionRules.AddResponseHttpVersion:
 										Dump("~Reply as HTTP/" + Edit.Value);
 										ResponseHttpVersion = new Version(Edit.Value);
 										break;
-									case "AddOutputEncoding":
+									case EditSetActionRules.AddOutputEncoding:
 										OutputContentEncoding = GetCodePage(Edit.Value);
 										Dump("~Output encoding set to: " + OutputContentEncoding.BodyName);
 										break;
-									case "AddTranslit":
+									case EditSetActionRules.AddTranslit:
 										EnableTransliteration = ToBoolean(Edit.Value);
 										Dump("~Enable transliteration");
 										break;
-									case "AddDebugPrint":
+									case EditSetActionRules.AddDebugPrint:
 										Dump("~" + Edit.Value + " (at request processing)");
 										Log.WriteLine(" [Request processing] {0}", ProcessUriMasks(Edit.Value));
 										break;
@@ -1796,19 +1796,19 @@ namespace WebOne
 						{
 							switch (Edit.Action)
 							{
-								case "AddVariable":
+								case EditSetActionRules.AddVariable:
 									AddVariable(Edit.Parameters);
 									break;
-								case "AddFindReplace":
+								case EditSetActionRules.AddFindReplace:
 									FindReplaceEditSetRule frpair = Edit as FindReplaceEditSetRule;
 									Body = GetCachedRegex(frpair.Find, RegexOptions.Singleline).Replace(Body, frpair.Replace);
 									Dump("~~Find & replace (RegEx): " + frpair.Find + " -> " + frpair.Replace);
 									break;
-								case "AddResponseHttpVersion":
+								case EditSetActionRules.AddResponseHttpVersion:
 									Dump("~Reply as HTTP/" + Edit.Value);
 									ResponseHttpVersion = new Version(Edit.Value);
 									break;
-								case "AddDebugPrint":
+								case EditSetActionRules.AddDebugPrint:
 									Dump("~" + Edit.Value + " (at response body processing)");
 									Log.WriteLine("[Response body processing] {0}", ProcessUriMasks(Edit.Value));
 									break;
@@ -1916,10 +1916,10 @@ namespace WebOne
 						{
 							switch (Edit.Action)
 							{
-								case "AddVariable":
+								case EditSetActionRules.AddVariable:
 									AddVariable(Edit.Parameters);
 									break;
-								case "AddConverting":
+								case EditSetActionRules.AddConverting:
 									ConvertEditSetRule rule = (ConvertEditSetRule)Edit;
 									Converter = rule.Converter;
 									ConvertDest = rule.ConvertDest;
@@ -1928,14 +1928,14 @@ namespace WebOne
 									Stop = true;
 									Dump("~~Convert using: " + Converter);
 									break;
-								case "AddResponseHeader":
+								case EditSetActionRules.AddResponseHeader:
 									string RespHdr = ProcessUriMasks(Edit.Value);
 									Log.WriteLine(" Add response header: {0}", RespHdr);
 									operation.ResponseHeaders.Add(RespHdr);
 									if (Edit.Value.StartsWith("Content-Type: ")) ContentType = Edit.Value.Substring("Content-Type: ".Length);
 									Dump("~~Add response header: " + RespHdr);
 									break;
-								case "AddResponseHeaderFindReplace":
+								case EditSetActionRules.AddResponseHeaderFindReplace:
 									FindReplaceEditSetRule resp_rule = (FindReplaceEditSetRule)Edit;
 									foreach (var hdr in operation.ResponseHeaders.AllKeys)
 									{
@@ -1943,16 +1943,16 @@ namespace WebOne
 									}
 									Dump("~~Response header find&replace: " + resp_rule.Find + " -> " + resp_rule.Replace);
 									break;
-								case "AddRedirect":
+								case EditSetActionRules.AddRedirect:
 									Log.WriteLine(" Add redirect: {0}", ProcessUriMasks(Edit.Value));
 									Redirect = ProcessUriMasks(Edit.Value);
 									Dump("~~Redirect to: " + Redirect);
 									break;
-								case "AddResponseHttpVersion":
+								case EditSetActionRules.AddResponseHttpVersion:
 									Dump("~Reply as HTTP/" + Edit.Value);
 									ResponseHttpVersion = new Version(Edit.Value);
 									break;
-								case "AddDebugPrint":
+								case EditSetActionRules.AddDebugPrint:
 									Dump("~" + Edit.Value + " (at response headers processing)");
 									Log.WriteLine("[Response headers processing] {0}", ProcessUriMasks(Edit.Value));
 									break;
