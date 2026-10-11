@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<AssemblyName>webone</AssemblyName>
 		<OutputType>Exe</OutputType>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<Authors>Alexander Tauenis</Authors>
 		<Version>0.19.0</Version>
 		<VersionSuffix>-pre</VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
@@ -75,9 +75,9 @@
 
 	<ItemGroup Condition="$(SelfContained)==false">
 		<DebDotNetDependencies Remove="@(DebDotNetDependencies)" />
-		<DebDotNetDependencies Include="dotnet-runtime-8.0" />
+		<DebDotNetDependencies Include="dotnet-runtime-10.0" />
 		<RpmDotNetDependency Remove="@(RpmDotNetDependency)" />
-		<RpmDotNetDependency Include="dotnet-runtime-8.0" />
+		<RpmDotNetDependency Include="dotnet-runtime-10.0" />
 	</ItemGroup>
 
 	<ItemGroup>

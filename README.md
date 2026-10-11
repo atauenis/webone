@@ -12,7 +12,9 @@ The program's settings are in the __webone.conf__ file (but any other file name 
 See **[WebOne wiki](https://github.com/atauenis/webone/wiki)** for complete list of features and full documentation.
 
 ## Server prerequisites
-Windows 8+ (or Windows Server 2012+) / Linux / macOS and .NET 8.0 Runtime are required on server PC. See [.NET 8.0 System Requirements](https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md).
+Windows 8+ (or Windows Server 2012+)* / Linux / macOS and .NET 10 Runtime are required on server PC. See [.NET 10 System Requirements](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md).
+
+\* - Windows 10 or newer is required for YouTube playback feature.
 
 ## Image and video converting
 * Picture format converting is performing via `convert` utility from ImageMagick (bundled with WebOne).
@@ -55,7 +57,7 @@ The server can be started even on public hosts. But don't forget to enable passw
 ## Build
 Latest source code can be always found in the __master__ (![](https://img.shields.io/github/v/tag/atauenis/webone?include_prereleases&label=)) and the __dev__ branches of the [Git repository](https://github.com/atauenis/webone).
 
-The program is built using Microsoft .NET 8.0 SDK and [dotnet-packaging](https://github.com/qmfrederik/dotnet-packaging/) add-on. With them the building is easy on all platforms: use `dotnet publish` & `dotnet deb || dotnet rpm || dotnet zip` tools.
+The program is built using Microsoft .NET 10 SDK and [dotnet-packaging](https://github.com/qmfrederik/dotnet-packaging/) add-on. With them the building is easy on all platforms: use `dotnet publish` & `dotnet deb || dotnet rpm || dotnet zip` tools.
 
 Windows developers can utilize `build.bat` script for cross-platform building. And there is similar `build.sh` script for Linux and macOS environments.
 
@@ -84,7 +86,7 @@ __WebOne__ - прокси-сервер HTTP (HTTPS), позволяющий от
 * Скачивание и конвертация видео с YouTube для воспроизведения на старых ПК в браузере.
 * Клиент FTP для обращения к таким серверам через браузер.
 
-Этот прокси-сервер необходимо запускать на любом современном ПК с Microsoft .NET 8.0 Runtime, IP адрес которого указывается в настройках устаревшего веб-обозревателя. Порт по умолчанию 8080, тип прокси HTTP 1.0. Доступен файл автоматической настройки: http://proxyhost:port/auto.pac .
+Этот прокси-сервер необходимо запускать на любом современном ПК с Microsoft .NET 10 Runtime, IP адрес которого указывается в настройках устаревшего веб-обозревателя. Порт по умолчанию 8080, тип прокси HTTP 1.0. Доступен файл автоматической настройки: http://proxyhost:port/auto.pac .
 
 Настройки прокси-сервера хранятся в файле __webone.conf__ или любом другом в одном из следующих мест:
 
