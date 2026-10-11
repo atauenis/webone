@@ -511,7 +511,9 @@ namespace WebOne
 
 									try
 									{
-										ConfigFile.SslCipherSuitesPolicy = new CipherSuitesPolicy(ConfigFile.SslCipherSuites);
+										if (!OperatingSystem.IsWindows())
+											ConfigFile.SslCipherSuitesPolicy = new CipherSuitesPolicy(ConfigFile.SslCipherSuites);
+										else throw new PlatformNotSupportedException();
 									}
 									catch (PlatformNotSupportedException)
 									{
