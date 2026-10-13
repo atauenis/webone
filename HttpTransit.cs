@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Globalization;
@@ -943,12 +944,22 @@ namespace WebOne
 					case "/!codepages":
 					case "/!codepages/":
 						// Code page list
+
+						// Prepare encodings list
+						Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+						bool IsOutputEncodingListed = false;
+						// Get all encodings known on this server
+						EncodingInfo[] AllEncodings = Encoding.GetEncodings();
+						// Sort the array by full names
+						Array.Sort(AllEncodings, new CaseInsensitiveEncodingInfoNameComparer());
+
+						// Prepare page content with table
 						string codepages = "<p>The following code pages are available: <br>\n" +
 										   "<table><tr><td><b>Name</b></td><td><b>#</b></td><td><b>Description</b></td></tr>\n";
 						codepages += "<tr><td><b>AsIs</b></td><td>0</td><td>Keep original encoding (code page)</td></tr>\n";
-						Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-						bool IsOutputEncodingListed = false;
-						foreach (EncodingInfo cp in Encoding.GetEncodings())
+
+						// Show rest of table with all encodings
+						foreach (EncodingInfo cp in AllEncodings)
 						{
 							codepages += "<tr><td>";
 							codepages += "<b>" + cp.Name + "</b></td><td>" + cp.CodePage + "</td><td>" + cp.DisplayName;
@@ -2854,6 +2865,26 @@ namespace WebOne
 			{
 				SendStream(Page.Attachment, Page.AttachmentContentType);
 			}
+		}
+	}
+
+	/// <summary>
+	/// Enable IComparer for EncodingInfo
+	/// </summary>
+	public class CaseInsensitiveEncodingInfoNameComparer : IComparer
+	{
+		//https://www.roelvanlisdonk.nl/2009/09/25/show-all-encodings-an-a-windows-server-in-c/
+		// Compare 2 EncodingInfo objects, by doing a case insensitive compare on their names
+		int IComparer.Compare(Object x, Object y)
+		{
+			int result = 0;
+			if (x is EncodingInfo && y is EncodingInfo)
+			{
+				var xEncodingInfo = x as EncodingInfo;
+				var yEncodingInfo = y as EncodingInfo;
+				result = ((new CaseInsensitiveComparer()).Compare(xEncodingInfo.DisplayName, yEncodingInfo.DisplayName));
+			}
+			return result;
 		}
 	}
 }
