@@ -178,16 +178,24 @@ namespace WebOne
 						Console.WriteLine();
 						Log.WriteLine(true, false, "CA Certificate will be new, so import it to browser(s) after build succeeds.");
 						CreateRootCertificate();
+#if NET6_0
+						RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));
+#else
 						byte[] pkcs12Bytes = X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12);
 						RootCertificate = X509CertificateLoader.LoadPkcs12(pkcs12Bytes, null);
+#endif
 						Log.WriteLine(true, false, "The new certificate is called \"" + RootCertificate.GetNameInfo(X509NameType.SimpleName, false) + "\".");
 						Log.WriteLine(true, false, "WebOne will now exit.");
 						Environment.Exit(0);
 					}
 					try
 					{
+#if NET6_0
+						RootCertificate = new X509Certificate2(X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12));
+#else
 						byte[] pkcs12Bytes = X509Certificate2.CreateFromPemFile(ConfigFile.SslCertificate, ConfigFile.SslPrivateKey).Export(X509ContentType.Pkcs12);
 						RootCertificate = X509CertificateLoader.LoadPkcs12(pkcs12Bytes, null);
+#endif
 						Protocols += ", HTTPS 1.1";
 						if (!DefaultPACoverriden) DefaultPAC += DefaultPAChttps;
 
