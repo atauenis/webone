@@ -1788,7 +1788,7 @@ namespace WebOne
 			//perform edits on the response body
 			foreach (EditSet Set in EditSets)
 			{
-				if (Set.ContentTypeMasks.Count == 0 || CheckStringRegExp(ContentType, Set.ContentTypeMasks.ToArray()))
+				if (Set.ContentTypeMasks.Count == 0 || CheckStringRegExp(Set.ContentTypeMasks.ToArray(), ContentType))
 				{
 					if (CheckHttpStatusCode(Set.OnCode, operation.Response.StatusCode))
 					{
@@ -1908,7 +1908,7 @@ namespace WebOne
 			//perform edits on the response
 			foreach (EditSet Set in EditSets)
 			{
-				if (Set.ContentTypeMasks.Count == 0 || CheckStringRegExp(Set.ContentTypeMasks.ToArray(), ContentType))
+				if (Set.ContentTypeMasks.Count == 0 || CheckStringRegExp(ContentType, Set.ContentTypeMasks.ToArray()))
 				{
 					if (CheckHttpStatusCode(Set.OnCode, operation.Response.StatusCode))
 					{
