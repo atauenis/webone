@@ -2531,7 +2531,6 @@ namespace WebOne
 				{ HelpString += "Connections open: <b>" + (OpenedConnections - 1) + "</b>.<br>"; }
 				else
 				{ HelpString += "Connections open: <b>" + (OpenedConnections) + "</b> (<b>" + OpenedConnectionsBusy + "</b> active).<br>"; }
-				HelpString += "Available security: <b>" + ServicePointManager.SecurityProtocol + "</b> (" + (int)ServicePointManager.SecurityProtocol + ").<br>";
 
 				HelpString += "<h2>Aliases:</h2><ul>";
 				bool EvidentAlias = false;

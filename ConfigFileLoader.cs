@@ -218,14 +218,6 @@ namespace WebOne
 								case "ArchiveUrlSuffix":
 									ConfigFile.ArchiveUrlSuffix = Option.Value;
 									break;
-								case "SecurityProtocols":
-									SecurityProtocolType spt = SecurityProtocolType.SystemDefault;
-									if (!Enum.TryParse(Option.Value, out spt))
-									{
-										Log.WriteLine(true, false, "Warning: Bad TLS version {1} ({0}), using {2} ({2:D}).", Option.Value, spt, ServicePointManager.SecurityProtocol);
-									}
-									ServicePointManager.SecurityProtocol = spt;
-									break;
 								case "UserAgent":
 									ConfigFile.UserAgent = Option.Value;
 									break;

@@ -209,7 +209,9 @@ namespace WebOne
 			*/
 
 			// Export the issued certificate with private key.
-			X509Certificate2 certificateWithKey = new(certificate.CopyWithPrivateKey(rsa).Export(X509ContentType.Pkcs12));
+			//X509Certificate2 certificateWithKey = new(certificate.CopyWithPrivateKey(rsa).Export(X509ContentType.Pkcs12));
+			byte[] pkcs12Bytes = certificate.CopyWithPrivateKey(rsa).Export(X509ContentType.Pkcs12);
+			X509Certificate2 certificateWithKey = X509CertificateLoader.LoadPkcs12(pkcs12Bytes, null);
 			/*
 			//save to file for debug purposes
 			const string CRT_HEADER = "-----BEGIN CERTIFICATE-----\n";
