@@ -202,6 +202,11 @@ namespace WebOne
 		/// Options for online video converting
 		/// </summary>
 		public static Dictionary<string, string> WebVideoOptions = new();
+		
+		/// <summary>
+		/// Profiles for online video converting
+		/// </summary>
+		public static Dictionary<string, string[]> WebVideoProfiles = new();
 
 		/// <summary>
 		/// Allow gz/deflate/br compression of remote HTTP connections

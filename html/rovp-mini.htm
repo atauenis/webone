@@ -1,0 +1,36 @@
+﻿<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=utf-8">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>Retro online video player (mini)</title>
+<style type="text/css">h1, h2, h3, h4 { font-family: sans-serif; } html {
+font-family: Cambria, sans-serif; } body { padding: 0em; } li {
+margin: 0px; } ul { list-style: square; } iframe { border-style: none;
+height: 95%; width: 100%; } input, select { height: 20px; }</style>
+<link rel="shortcut icon" href="rovpfav.ico" type="image/x-icon">
+<script language="JavaScript" type="text/javascript" src="rovp.js"></script>
+</head>
+
+<body><iframe name="player_frame" src="rovp-intro-mini.htm" border="0" style="border-style: none;">
+	<p>Use the toolbar below to watch a video.</p></iframe>
+<form action="/!player/" method="GET" target="player_frame"
+align="center">
+<img src="rovpfav.ico" alt="Retro Online Video Player" width="16" height="16">&nbsp;
+<input type="text" name="url" value="%VideoUrl%" readonly>
+<select name="profile"
+            title="Profile">
+                <option value="flash480">Flash, 480p</option>
+                <option value="flash144">Flash, 144p</option>
+                <option value="wmvwma480">WMV 7, 480p</option>
+                <option value="wmvwma144">WMV 7, 144p</option>
+                <option value="html5720" selected>HTML5, 720p</option>
+                <option value="html5480">HTML5, 480p</option>
+                <option value="html5144">HTML5, 144p</option>
+                <option value="dynimg240">DynImg, 240p</option>
+</select>
+<input type="submit" value="Play">
+</form>
+</body>
+</html>

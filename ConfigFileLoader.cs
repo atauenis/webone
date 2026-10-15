@@ -462,6 +462,13 @@ namespace WebOne
 							else Log.WriteLine(true, false, "Warning: Incorrect online video convert option at {0}.", Line.Location);
 						}
 						break;
+					case "WebVideoProfiles":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							if (Line.HaveKeyValue && Line.Values.Count() == 2) ConfigFile.WebVideoProfiles[Line.Key] = Line.Values;
+							else Log.WriteLine(true, false, "Warning: Incorrect online video convert profile at {0}.", Line.Location);
+						}
+						break;
 					case "SecureProxy":
 						if (ConfigFile.UseMsHttpApi)
 						{
