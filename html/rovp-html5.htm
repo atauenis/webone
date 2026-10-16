@@ -2,10 +2,11 @@
 <head>
 <title>Video player - HTML5</title>
 <meta charset="utf-8"/>
-<style type='text/css'>html, body { border-style: none; } </style>
+<style type='text/css'>html, body { border-style: none; background-image: url('rovp-background.png'); }
+#MediaPlayer { width: 70%; min-height: 70%; }</style>
 </head>
 <body>
-<center><video id='MediaPlayer' src='%VideoUrl%' controls='yes' autoplay='yes' style='width: 70%;'>Try another player type, as HTML5 is not supported.</video></center>
+<center><video id='MediaPlayer' src='%VideoUrl%' controls autoplay>Try another player type, as HTML5 is not supported.</video></center>
 <center id="InfoBar"></center>
 
 <script>
