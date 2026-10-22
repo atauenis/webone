@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using static WebOne.Program;
 
 namespace WebOne
@@ -28,12 +29,13 @@ namespace WebOne
 		/// <summary>
 		/// Initizlize a HTTP Listener &amp; Server (TcpClient-based).
 		/// </summary>
+		/// <param name="ip">Network interface to listen on</param>
 		/// <param name="port">TCP Port to listen on.</param>
-		public HttpServer2(int port) : base(port)
+		public HttpServer2(System.Net.IPAddress ip, int port) : base(ip, port)
 		{
 			Port = port;
 			Working = false;
-			Listener = new(System.Net.IPAddress.Any, Port);
+			Listener = new(ip, Port);
 		}
 
 		/// <summary>
@@ -46,6 +48,15 @@ namespace WebOne
 			Working = true;
 			Log.WriteLine(true, false, "Supported protocols: HTTP{0}, FTP via Web browser.", (ConfigFile.SslEnable ? ", HTTPS" : " (plain)"));
 			UpdateStatistics();
+
+			new Task(() =>
+			{
+				while (Working)
+				{
+					System.Threading.Thread.Sleep(1000);
+					UpdateStatistics();
+				}
+			}).Start();
 		}
 
 		/// <summary>
@@ -69,8 +80,7 @@ namespace WebOne
 		private void ProcessConnection(IAsyncResult ar)
 		{
 			if (!Working) return;
-			Load++;
-			UpdateStatistics();
+			OpenedConnections++;
 			LogWriter Logger = new();
 #if DEBUG
 			Logger.WriteLine("Got a connection.");
@@ -84,8 +94,7 @@ namespace WebOne
 			catch
 			{
 				Logger.WriteLine("Connection unexpectedly lost.");
-				Load--;
-				UpdateStatistics();
+				OpenedConnections--;
 				return;
 			}
 
@@ -106,8 +115,7 @@ namespace WebOne
 				try { Client.Close(); } catch { }
 			}
 
-			Load--;
-			UpdateStatistics();
+			OpenedConnections--;
 		}
 
 		/// <summary>
@@ -115,10 +123,11 @@ namespace WebOne
 		/// </summary>
 		private void UpdateStatistics()
 		{
+			if (OpenedConnectionsBusy < 0) OpenedConnectionsBusy = 0; //fix for some strange bug
 			if (DaemonMode)
-				Console.Title = string.Format("WebOne (silent) @ {0}:{1} [{2}]", ConfigFile.DefaultHostName, Port, Load);
+				Console.Title = string.Format("WebOne (silent) @ {0}:{1} [{2}/{3}]", ConfigFile.DefaultHostName, Port, OpenedConnections, OpenedConnectionsBusy);
 			else
-				Console.Title = string.Format("WebOne @ {0}:{1} [{2}]", ConfigFile.DefaultHostName, Port, Load);
+				Console.Title = string.Format("WebOne @ {0}:{1} [{2}/{3}]", ConfigFile.DefaultHostName, Port, OpenedConnections, OpenedConnectionsBusy);
 		}
 	}
 }

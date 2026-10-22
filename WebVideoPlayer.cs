@@ -21,6 +21,24 @@ namespace WebOne
 			foreach (string Par in Parameters.AllKeys)
 			{ if (Par != "type") VideoUrl += Par + "=" + HttpUtility.UrlEncode(Parameters[Par]) + "&"; }
 
+			string ProfileName = Parameters["profile"];
+
+			//if profile is specified instead of parameters, use profile
+			if (string.IsNullOrWhiteSpace(Parameters["type"]) && !string.IsNullOrWhiteSpace(ProfileName) && ConfigFile.WebVideoProfiles.ContainsKey(ProfileName))
+			{
+				string Redir = "/!player/?";
+				foreach (string Par in Parameters.AllKeys)
+				{ if (Par != "type") Redir += Par + "=" + HttpUtility.UrlEncode(Parameters[Par]) + "&"; }
+				string ProfileString = ConfigFile.WebVideoProfiles[ProfileName][1];
+
+				Redir += ProfileString;
+				Page.Content = "Loading the profile...";
+				Page.HttpStatusCode = 302;
+				Page.HttpHeaders.Add("Location", Redir);
+				return;
+			}
+
+			//check if ROVP is not disabled
 			if (!ConfigFile.WebVideoOptions.ContainsKey("Enable") || !Program.ToBoolean(ConfigFile.WebVideoOptions["Enable"] ?? "yes"))
 			{
 				Page.Content = "It's disabled.";
@@ -29,6 +47,7 @@ namespace WebOne
 				return;
 			}
 
+			//open requested player type
 			string PlayerType = Parameters["type"];
 			if (string.IsNullOrWhiteSpace(Parameters["type"])) PlayerType = "splash";
 
@@ -48,12 +67,14 @@ namespace WebOne
 					Page.AddCss = false;
 					Page.Title = "Video player - FILE REDIRECT";
 					break;
+				default:
+					// Any HTML-based video player
+					Page.HttpStatusCode = 302;
+					Page.HttpHeaders.Add("Location", "/rovp-" + PlayerType + ".htm");
+					if (VideoUrl != "/!webvideo/?") Page.HttpHeaders["Location"] += "?VideoUrl=" + HttpUtility.UrlEncode(VideoUrl);
+					if (PlayerType == "html5") Page.HttpHeaders["Location"] += "&JsonUrl=" + HttpUtility.UrlEncode("/!webvideo/?&dump-json=&url=" + Parameters["url"] + "&no-warnings=&quiet=");
+					break;
 			}
-
-			Page.HttpStatusCode = 302;
-			Page.HttpHeaders.Add("Location", "/rovp-" + PlayerType + ".htm");
-			if (VideoUrl != "/!webvideo/?") Page.HttpHeaders["Location"] += "?VideoUrl=" + HttpUtility.UrlEncode(VideoUrl);
-			if (PlayerType == "html5") Page.HttpHeaders["Location"] += "&JsonUrl=" + HttpUtility.UrlEncode("/!webvideo/?&dump-json=&url=" + Parameters["url"] + "&no-warnings=&quiet=");
 			return;
 
 			/* Notes about HTML-based players.

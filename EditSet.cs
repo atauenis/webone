@@ -45,6 +45,11 @@ namespace WebOne
 		public List<string> HeaderMasks { get; set; }
 
 		/// <summary>
+		/// List of users for which the Set would be used
+		/// </summary>
+		public List<string> Users { get; set; }
+
+		/// <summary>
 		/// Flag that indicates that the edits can be performed at time of HTTP Request (before get of response)
 		/// </summary>
 		public bool IsForRequest { get; private set; }
@@ -70,6 +75,7 @@ namespace WebOne
 			UrlIgnoreMasks = new List<string>();
 			ContentTypeMasks = new List<string>();
 			HeaderMasks = new List<string>();
+			Users = new List<string>();
 			CorrectHostOS = true;
 			Edits = new List<EditSetRule>();
 			IsForRequest = false;
@@ -88,27 +94,27 @@ namespace WebOne
 				if (!Line.HaveKeyValue) continue;
 				switch (Line.Key)
 				{
-					//detection rules
-					case "OnUrl":
+					// Condition rules
+					case EditSetConditionRules.OnUrl:
 						CheckRegExp(Line);
 						UrlMasks.Add(Line.Value);
 						continue;
-					case "OnCode":
+					case EditSetConditionRules.OnCode:
 						OnCode = int.Parse(Line.Value);
 						continue;
-					case "IgnoreUrl":
+					case EditSetConditionRules.IgnoreUrl:
 						CheckRegExp(Line);
 						UrlIgnoreMasks.Add(Line.Value);
 						continue;
-					case "OnContentType":
+					case EditSetConditionRules.OnContentType:
 						CheckRegExp(Line);
 						ContentTypeMasks.Add(Line.Value);
 						continue;
-					case "OnHeader":
+					case EditSetConditionRules.OnHeader:
 						CheckRegExp(Line);
 						HeaderMasks.Add(Line.Value);
 						continue;
-					case "OnHostOS":
+					case EditSetConditionRules.OnHostOS:
 						switch (Line.Value.ToLower())
 						{
 							case "windows":
@@ -125,50 +131,106 @@ namespace WebOne
 								CorrectHostOS = false;
 								continue;
 						}
-					case "OnHttpOnly":
+					case EditSetConditionRules.OnHttpOnly:
 						HttpOnly = ToBoolean(Line.Value);
 						continue;
-					case "OnHttpsOnly":
+					case EditSetConditionRules.OnHttpsOnly:
 						HttpsOnly = ToBoolean(Line.Value);
 						continue;
-					//editing rules (can contain regular expressions)
-					case "AddRedirect":
-					case "AddInternalRedirect":
-					case "AddFind":
-					case "AddReplace":
+					case EditSetConditionRules.OnUser:
+						foreach (string user in (Line.Values ?? new string[1] { Line.Value }))
+						{
+							Users.Add(user);
+							bool userFound = false;
+							foreach (string registeredUser in ConfigFile.Authenticate)
+							{
+								if (registeredUser.StartsWith(user + ":")) userFound = true;
+							}
+							if (!userFound) new LogWriter().WriteLine(true, false, "Warning: unknown user \"{1}\" at {0}.", Line.Location, user);
+						}
+						continue;
+					/*case EditSetConditionRules.OnVariable:
+					case EditSetConditionRules.OnVariableNot:
+						continue;*/
+					// Action rules (can contain regular expressions)
+					case EditSetActionRules.AddRedirect:
+					case EditSetActionRules.AddInternalRedirect:
+					case EditSetActionRules.AddFind:
+					case EditSetActionRules.AddReplace:
 						CheckRegExp(Line);
 						Edits.Add(new EditSetRule(Line.Key, Line.Value));
 						break;
-					//editing rules (cannot contain regular expressions)
-					case "AddHeader":
-					case "AddResponseHeader":
-					case "AddConvert":
-					case "AddConvertDest":
-					case "AddConvertArg1":
-					case "AddConvertArg2":
-					case "AddRequestHeaderFind":
-					case "AddRequestHeaderReplace":
-					case "AddResponseHeaderFind":
-					case "AddResponseHeaderReplace":
-					case "AddHeaderDumping":
-					case "AddRequestDumping":
-					case "AddDumping":
-					case "AddOutputEncoding":
-					case "AddTranslit":
-						Edits.Add(new EditSetRule(Line.Key, Line.Value));
+					// Action rules (no value verification)
+					case EditSetActionRules.AddConvert:
+					case EditSetActionRules.AddConvertDest:
+					case EditSetActionRules.AddConvertArg1:
+					case EditSetActionRules.AddConvertArg2:
+					case EditSetActionRules.AddRequestHeaderFind:
+					case EditSetActionRules.AddRequestHeaderReplace:
+					case EditSetActionRules.AddResponseHeaderFind:
+					case EditSetActionRules.AddResponseHeaderReplace:
+					case EditSetActionRules.AddHeaderDumping:
+					case EditSetActionRules.AddRequestDumping:
+					case EditSetActionRules.AddDumping:
+					case EditSetActionRules.AddOutputEncoding:
+					case EditSetActionRules.AddTranslit:
+					case EditSetActionRules.AddDebugPrint:
+						Edits.Add(new EditSetRule(Line.Key, Line.Values ?? new string[1] { Line.Value }));
+						break;
+					// Action rules (with value verification)
+					case EditSetActionRules.AddHeader:
+					case EditSetActionRules.AddRequestHeader:
+					case EditSetActionRules.AddResponseHeader:
+						if (Line.Value.Contains(": "))
+							Edits.Add(new EditSetRule(Line.Key, Line.Values ?? new string[1] { Line.Value }));
+						else
+							new LogWriter().WriteLine(true, false, "Warning: Incorrect HTTP header at {0}. Line ignored.", Line.Location);
+						break;
+					case EditSetActionRules.AddRequestHttpVersion:
+						//same as [Server]/RemoteHttpVersion option
+						if (System.Text.RegularExpressions.Regex.IsMatch(Line.Value, @"[\d][\.][\d]"))
+						{ Edits.Add(new EditSetRule("AddRequestHttpVersion", "=" + Line.Value)); }
+						else if (System.Text.RegularExpressions.Regex.IsMatch(Line.Value, @"([=><a])[u0-3][t\.][o0-9]"))
+						{ Edits.Add(new EditSetRule("AddRequestHttpVersion", Line.Value)); }
+						else
+						{ new LogWriter().WriteLine(true, false, "Warning: Incorrect HTTP version at {0}. Line ignored.", Line.Location); }
+						break;
+					case EditSetActionRules.AddResponseHttpVersion:
+						if (Version.TryParse(Line.Value, out Version ver))
+							Edits.Add(new EditSetRule(Line.Key, Line.Value));
+						else
+							new LogWriter().WriteLine(true, false, "Warning: Incorrect HTTP version at {0}. Line ignored.", Line.Location);
+						break;
+					case EditSetActionRules.AddVariable:
+						switch (Line.Values.Length)
+						{
+							//see HttpTransit.AddVariable(string[]) for details
+							case 2:
+							case 3:
+								Edits.Add(new EditSetRule(Line.Key, Line.Values));
+								break;
+							case 4:
+								if (int.TryParse(Line.Values[3], out int i) && i >= 0)
+									Edits.Add(new EditSetRule(Line.Key, Line.Values));
+								else
+									new LogWriter().WriteLine(true, false, "Warning: invalid group number [4th argument] at {0}. Line ignored.", Line.Location);
+								break;
+							default:
+								new LogWriter().WriteLine(true, false, "Warning: bad count of arguments of AddVariable at {0}. Line ignored.", Line.Location);
+								break;
+						}
 						break;
 					default:
 						if (Line.Key.StartsWith("Add"))
-							new LogWriter().WriteLine(true, false, "Warning: unknown editing rule \"{0}\".", Line.Key);
+							new LogWriter().WriteLine(true, false, "Warning: unknown edit action \"{0}\" at {1}. Line ignored.", Line.Key, Line.Location);
 						else
-							new LogWriter().WriteLine(true, false, "Warning: unknown detection rule \"{0}\".", Line.Key);
+							new LogWriter().WriteLine(true, false, "Warning: unknown edit set condition \"{0}\" at {1}. Line ignored.", Line.Key, Line.Location);
 						break;
 				}
 				if (Line.Key.StartsWith("AddConvert")) MayBeForResponse = true;
-				if (Line.Key == "AddContentType") MayBeForResponse = true;
-				if (Line.Key == "AddFind") MayBeForResponse = true;
-				if (Line.Key == "AddReplace") MayBeForResponse = true;
-				if (Line.Key == "AddInternalRedirect") MayBeForResponse = false;
+				if (Line.Key == EditSetActionRules.AddFind) MayBeForResponse = true;
+				if (Line.Key == EditSetActionRules.AddReplace) MayBeForResponse = true;
+				if (Line.Key == EditSetActionRules.AddInternalRedirect) MayBeForResponse = false;
 			}
 
 			ProcessComplexRules(Section.Location);
@@ -208,34 +270,34 @@ namespace WebOne
 			{
 				switch (Rule.Action)
 				{
-					case "AddFind":
+					case EditSetActionRules.AddFind:
 						Finds.Add(Rule.Value);
 						break;
-					case "AddReplace":
+					case EditSetActionRules.AddReplace:
 						Replacions.Add(Rule.Value);
 						break;
-					case "AddRequestHeaderFind":
+					case EditSetActionRules.AddRequestHeaderFind:
 						RequestHeaderFinds.Add(Rule.Value);
 						break;
-					case "AddRequestHeaderReplace":
+					case EditSetActionRules.AddRequestHeaderReplace:
 						RequestHeaderReplacions.Add(Rule.Value);
 						break;
-					case "AddResponseHeaderFind":
+					case EditSetActionRules.AddResponseHeaderFind:
 						ResponseHeaderFinds.Add(Rule.Value);
 						break;
-					case "AddResponseHeaderReplace":
+					case EditSetActionRules.AddResponseHeaderReplace:
 						ResponseHeaderReplacions.Add(Rule.Value);
 						break;
-					case "AddConvert":
+					case EditSetActionRules.AddConvert:
 						Converter = Rule.Value;
 						break;
-					case "AddConvertDest":
+					case EditSetActionRules.AddConvertDest:
 						ConvertDest = Rule.Value;
 						break;
-					case "AddConvertArg1":
+					case EditSetActionRules.AddConvertArg1:
 						ConvertArg1 = Rule.Value;
 						break;
-					case "AddConvertArg2":
+					case EditSetActionRules.AddConvertArg2:
 						ConvertArg2 = Rule.Value;
 						break;
 				}
@@ -247,7 +309,7 @@ namespace WebOne
 			else if (Finds.Count > 0)
 				for (int i = 0; i < Finds.Count; i++)
 				{
-					Edits.Add(new FindReplaceEditSetRule("AddFindReplace", Finds[i], Replacions[i]));
+					Edits.Add(new FindReplaceEditSetRule(EditSetActionRules.AddFindReplace, Finds[i], Replacions[i]));
 				}
 
 			//process AddHeaderFind, AddHeaderReplace -> AddRequestHeaderFindReplace
@@ -256,7 +318,7 @@ namespace WebOne
 			else if (RequestHeaderFinds.Count > 0)
 				for (int i = 0; i < RequestHeaderFinds.Count; i++)
 				{
-					Edits.Add(new FindReplaceEditSetRule("AddRequestHeaderFindReplace", RequestHeaderFinds[i], RequestHeaderReplacions[i]));
+					Edits.Add(new FindReplaceEditSetRule(EditSetActionRules.AddRequestHeaderFindReplace, RequestHeaderFinds[i], RequestHeaderReplacions[i]));
 				}
 
 			//process AddResponseHeaderFind, AddResponseHeaderReplace -> AddResponseHeaderFindReplace
@@ -265,7 +327,7 @@ namespace WebOne
 			else if (ResponseHeaderFinds.Count > 0)
 				for (int i = 0; i < ResponseHeaderFinds.Count; i++)
 				{
-					Edits.Add(new FindReplaceEditSetRule("AddResponseHeaderFindReplace", ResponseHeaderFinds[i], ResponseHeaderReplacions[i]));
+					Edits.Add(new FindReplaceEditSetRule(EditSetActionRules.AddResponseHeaderFindReplace, ResponseHeaderFinds[i], ResponseHeaderReplacions[i]));
 				}
 
 			//process AddConvert, AddConvertDest, AddConvertArg1, AddConvertArg2 -> AddConverting
@@ -277,7 +339,7 @@ namespace WebOne
 				{
 					if (conv.Executable == Converter)
 					{
-						Edits.Add(new ConvertEditSetRule("AddConverting", Converter, ConvertDest, ConvertArg1, ConvertArg2));
+						Edits.Add(new ConvertEditSetRule(EditSetActionRules.AddConverting, Converter, ConvertDest, ConvertArg1, ConvertArg2));
 						CorrectConverter = true;
 						break;
 					}
@@ -311,4 +373,57 @@ namespace WebOne
 		}
 	}
 
+	// Condition and action rules of edit sets
+	// See https://github.com/atauenis/webone/wiki/Sets-of-edits
+
+	/// <summary>
+	/// Names of condition rules for traffic edit sets
+	/// </summary>
+	static class EditSetConditionRules
+	{
+		public const string OnUrl = "OnUrl";
+		public const string OnCode = "OnCode";
+		public const string IgnoreUrl = "IgnoreUrl";
+		public const string OnContentType = "OnContentType";
+		public const string OnHeader = "OnHeader";
+		public const string OnHostOS = "OnHostOS";
+		public const string OnHttpOnly = "OnHttpOnly";
+		public const string OnHttpsOnly = "OnHttpsOnly";
+		public const string OnUser = "OnUser";
+	}
+
+	/// <summary>
+	/// Names of action rules for traffic edit sets
+	/// </summary>
+	static class EditSetActionRules
+	{
+		public const string AddRedirect = "AddRedirect";
+		public const string AddInternalRedirect = "AddInternalRedirect";
+		public const string AddFind = "AddFind"; //configfile only
+		public const string AddReplace = "AddReplace"; //configfile only
+		public const string AddFindReplace = "AddFindReplace";
+		public const string AddConvert = "AddConvert"; //configfile only
+		public const string AddConvertDest = "AddConvertDest"; //configfile only
+		public const string AddConvertArg1 = "AddConvertArg1"; //configfile only
+		public const string AddConvertArg2 = "AddConvertArg2"; //configfile only
+		public const string AddConverting = "AddConverting";
+		public const string AddRequestHeaderFind = "AddRequestHeaderFind"; //configfile only
+		public const string AddRequestHeaderReplace = "AddRequestHeaderReplace"; //configfile only
+		public const string AddRequestHeaderFindReplace = "AddRequestHeaderFindReplace";
+		public const string AddResponseHeaderFind = "AddResponseHeaderFind"; //configfile only
+		public const string AddResponseHeaderReplace = "AddResponseHeaderReplace"; //configfile only
+		public const string AddResponseHeaderFindReplace = "AddResponseHeaderFindReplace";
+		public const string AddHeaderDumping = "AddHeaderDumping"; //equal to AddDumping
+		public const string AddRequestDumping = "AddRequestDumping"; //equal to AddDumping
+		public const string AddDumping = "AddDumping";
+		public const string AddOutputEncoding = "AddOutputEncoding";
+		public const string AddTranslit = "AddTranslit";
+		public const string AddDebugPrint = "AddDebugPrint";
+		public const string AddHeader = "AddHeader";
+		public const string AddRequestHeader = "AddRequestHeader";
+		public const string AddResponseHeader = "AddResponseHeader";
+		public const string AddRequestHttpVersion = "AddRequestHttpVersion";
+		public const string AddResponseHttpVersion = "AddResponseHttpVersion";
+		public const string AddVariable = "AddVariable";
+	}
 }

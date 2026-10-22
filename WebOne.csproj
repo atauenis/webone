@@ -3,9 +3,9 @@
 	<PropertyGroup>
 		<AssemblyName>webone</AssemblyName>
 		<OutputType>Exe</OutputType>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<Authors>Alexander Tauenis</Authors>
-		<Version>0.18.3</Version>
+		<Version>0.19.0</Version>
 		<VersionSuffix></VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
 		<PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
 		<InformationalVersion>$(PackageVersion)</InformationalVersion>
@@ -17,8 +17,9 @@
 		<StartupObject>WebOne.Program</StartupObject>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<Configurations>Debug;Release;ReleaseSC</Configurations>
-		<NoWarn>$(NoWarn);NETSDK1179;NETSDK1182</NoWarn>
+		<NoWarn>$(NoWarn);NETSDK1179;NETSDK1182;CA1416</NoWarn>
 		<!-- https://github.com/dotnet/sdk/issues/24269, https://stackoverflow.com/questions/69773547/visual-studio-2019-not-showing-net-6-framework/ -->
+		<!-- CA1416: Current idle converter process detection is using Performance Counter which have problems on Linux & macOS -->
 		<ApplicationIcon>ApplicationIcon.ico</ApplicationIcon>
 	</PropertyGroup>
 
@@ -75,9 +76,9 @@
 
 	<ItemGroup Condition="$(SelfContained)==false">
 		<DebDotNetDependencies Remove="@(DebDotNetDependencies)" />
-		<DebDotNetDependencies Include="dotnet-runtime-8.0" />
+		<DebDotNetDependencies Include="dotnet-runtime-10.0" />
 		<RpmDotNetDependency Remove="@(RpmDotNetDependency)" />
-		<RpmDotNetDependency Include="dotnet-runtime-8.0" />
+		<RpmDotNetDependency Include="dotnet-runtime-10.0" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -192,8 +193,7 @@ fi
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.7.0" />
-		<PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.0" />
+		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.*" />
 	</ItemGroup>
 
 	<ItemGroup>

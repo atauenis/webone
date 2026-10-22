@@ -1,0 +1,89 @@
+/* WebOne ROVP style sheet */
+
+body {
+	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body.dark {
+	border-style: none;
+	background-image: url('rovp-background.png');
+	background-size: cover;
+	color: #CCCCCC;
+}
+
+body.light {
+	border-style: none;
+	color: #3B3B3B;
+	background-color: #FFFFFF;
+}
+
+body.container {
+	padding: 1em;
+}
+
+#MediaPlayer {
+	width: 70%;
+	min-height: 70%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover, a:focus {
+	text-decoration: underline;
+}
+
+.light a {
+	color: #4daafc;
+}
+
+.dark a {
+	color: #4daafc;
+}
+
+.title {
+	font-size: 28px;
+	font-weight: 300;
+	margin: 0 0 12px 0;
+}
+
+.subtitle {
+	font-size: 18px;
+	font-weight: 300;
+	margin: 0 0 36px 0;
+}
+
+.light .subtitle {
+	color: #4d4d4d ;
+}
+
+.dark .subtitle {
+	color: #929194;
+}
+
+.detail {
+	font-size: 14px;
+	opacity: 0.7;
+	margin: 0;
+}
+
+.error {
+	color: #F85149;
+}
+
+h1, h2, h3, h4 {
+	font-family: sans-serif;
+}
+
+li {
+	margin: 0px;
+}
+
+ul {
+	list-style: square;
+}
+
+iframe {
+	border-style: none;
+} 

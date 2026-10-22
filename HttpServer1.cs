@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 using static WebOne.Program;
 
 namespace WebOne
@@ -15,6 +17,7 @@ namespace WebOne
 		 * In v0.16.0 and up, kept for troubleshooting purposes.
 		 */
 
+		private IPAddress IP;
 		private int Port;
 		private static HttpListener _listener = new();
 		private LogWriter Log = new();
@@ -27,9 +30,11 @@ namespace WebOne
 		/// <summary>
 		/// Initizlize a HTTP Listener &amp; Server (HttpListener-based).
 		/// </summary>
+		/// <param name="ip">Network interface to listen on</param>
 		/// <param name="port">TCP Port to listen on</param>
-		public HttpServer1(int port) : base(port)
+		public HttpServer1(IPAddress ip, int port) : base(ip, port)
 		{
+			IP = ip;
 			Port = port;
 			Working = false;
 		}
@@ -42,12 +47,22 @@ namespace WebOne
 			//if (_listener == null) _listener = new HttpListener();
 			try { int test = _listener.Prefixes.Count; }
 			catch { _listener = new HttpListener(); /*initialize HttpListener if it is not ready*/ }
-			_listener.Prefixes.Add("http://*:" + Port + "/");
+			string IpPrefix = (IP == IPAddress.Any) ? "*" : IP.ToString();
+			if (IP.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6) IpPrefix = "[" + IpPrefix + "]";
+			_listener.Prefixes.Add("http://" + IpPrefix + ":" + Port + "/");
 			_listener.Start();
 			_listener.BeginGetContext(ProcessRequest, null);
 			Working = true;
 			Log.WriteLine(true, false, "The proxy is running in HTTP-only mode.");
-			UpdateStatistics();
+
+			new Task(() =>
+			{
+				while (Working)
+				{
+					Thread.Sleep(1000);
+					UpdateStatistics();
+				}
+			}).Start();
 		}
 
 		/// <summary>
@@ -73,8 +88,8 @@ namespace WebOne
 		private void ProcessRequest(IAsyncResult ar)
 		{
 			if (!Working) return;
-			Load++;
-			UpdateStatistics();
+			OpenedConnections++;
+			OpenedConnectionsBusy = OpenedConnections; //MS HTTPAPI do not shows keep-alive connections
 			LogWriter Logger = new();
 #if DEBUG
 			Logger.WriteLine("Got a request.");
@@ -115,8 +130,8 @@ namespace WebOne
 				Logger.WriteLine("Broken request ({0}): {1}. Aborted.", RawUrl ?? "unknown URL", ex.Message);
 			}
 
-			Load--;
-			UpdateStatistics();
+			OpenedConnections--;
+			OpenedConnectionsBusy = OpenedConnections;
 		}
 
 
@@ -126,9 +141,9 @@ namespace WebOne
 		private void UpdateStatistics()
 		{
 			if (DaemonMode)
-				Console.Title = string.Format("WebOne (silent) @ {0}:{1} [{2}]", ConfigFile.DefaultHostName, Port, Load);
+				Console.Title = string.Format("WebOne (silent) @ {0}:{1} [{2}]", ConfigFile.DefaultHostName, Port, OpenedConnections);
 			else
-				Console.Title = string.Format("WebOne @ {0}:{1} [{2}]", ConfigFile.DefaultHostName, Port, Load);
+				Console.Title = string.Format("WebOne @ {0}:{1} [{2}]", ConfigFile.DefaultHostName, Port, OpenedConnections);
 		}
 	}
 }

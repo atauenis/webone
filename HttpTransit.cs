@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Globalization;
@@ -34,6 +35,8 @@ namespace WebOne
 		bool Stop = false;
 
 		HttpOperation operation;
+		string RequestHttpVersion = ConfigFile.RemoteHttpVersion;
+		Version ResponseHttpVersion = new("1.1");
 		int ResponseCode = 502;
 		string ResponseBody = ":(";
 		Stream TransitStream = null;
@@ -64,6 +67,7 @@ namespace WebOne
 #if DEBUG
 			Log.WriteLine(" Begin process.");
 #endif
+			ResponseHttpVersion = ClientRequest.ProtocolVersion;
 			try
 			{
 				//check IP black list
@@ -124,6 +128,7 @@ namespace WebOne
 									SendError(407, ConfigFile.AuthenticateMessage + "<p>Your login or password is not correct. Please try again.</p>");
 									return;
 								}
+								Variables.Add("ProxyUserName", auth.Substring(0, auth.IndexOf(':')));
 							}
 							break;
 					}
@@ -206,7 +211,7 @@ namespace WebOne
 				{ ClientResponse.SimpleContentType = true; }
 
 				//set protocol version
-				ClientResponse.ProtocolVersion = ClientRequest.ProtocolVersion;
+				ClientResponse.ProtocolVersion = ResponseHttpVersion;
 
 				//get proxy's IP address
 				if (ClientRequest.LocalEndPoint.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
@@ -397,7 +402,18 @@ namespace WebOne
 				//check for available edit sets
 				foreach (EditSet set in ConfigFile.EditRules)
 				{
+					if (ConfigFile.Authenticate.Count > 0 && set.Users.Count > 0)
+					{
+						bool userValid = false;
+						foreach (string user in set.Users)
+						{
+							if (Variables["ProxyUserName"] == user) userValid = true;
+						}
+						if (!userValid) continue;
+					}
+
 					if (!set.CorrectHostOS) continue;
+
 					if (CheckStringRegExp(RequestURL.AbsoluteUri, set.UrlMasks.ToArray()) &&
 						!CheckStringRegExp(RequestURL.AbsoluteUri, set.UrlIgnoreMasks.ToArray()))
 					{
@@ -483,9 +499,12 @@ namespace WebOne
 							{
 								switch (Edit.Action)
 								{
-									case "AddHeaderDumping":
-									case "AddRequestDumping":
-									case "AddDumping":
+									case EditSetActionRules.AddVariable:
+										AddVariable(Edit.Parameters);
+										break;
+									case EditSetActionRules.AddHeaderDumping:
+									case EditSetActionRules.AddRequestDumping:
+									case EditSetActionRules.AddDumping:
 										//dump initializing must be first
 										DumpFile = ProcessUriMasks(Edit.Value)
 										.Replace(":", "-")
@@ -496,14 +515,14 @@ namespace WebOne
 										if (DumpFile.Length > 128) { DumpFile = DumpFile.Substring(0, 128) + "-CUT.log"; } //about half of Windows path limitation
 										Dump(ClientRequest.HttpMethod + " " + ClientRequest.RawUrl + " HTTP/" + ClientRequest.ProtocolVersion.ToString());
 										break;
-									case "AddInternalRedirect":
+									case EditSetActionRules.AddInternalRedirect:
 										string NewUrlInternal = UseRegEx ? ProcessUriMasks(GetCachedRegex(Set.UrlMasks[0]).Replace(RequestURL.AbsoluteUri, Edit.Value))
 																		 : ProcessUriMasks(Edit.Value);
 										Log.WriteLine(" Fix to {0} internally", NewUrlInternal);
 										Dump("~Internal redirect to: " + NewUrlInternal);
 										RequestURL = new Uri(NewUrlInternal);
 										break;
-									case "AddRedirect":
+									case EditSetActionRules.AddRedirect:
 										string NewUrl302 = "";
 										if (UseRegEx)
 										{
@@ -519,8 +538,8 @@ namespace WebOne
 										Dump("~Redirect using 302 to: " + NewUrl302);
 										SendRedirect(NewUrl302, "Брось каку!");
 										return;
-									case "AddRequestHeader":
-									case "AddHeader":
+									case EditSetActionRules.AddRequestHeader:
+									case EditSetActionRules.AddHeader:
 										string Header = ProcessUriMasks(Edit.Value);
 										Dump("~Add request header: " + Header);
 										if (whc[Edit.Value.Substring(0, Edit.Value.IndexOf(": "))] == null)
@@ -531,7 +550,7 @@ namespace WebOne
 											whc.Add(Header);
 										}
 										break;
-									case "AddRequestHeaderFindReplace":
+									case EditSetActionRules.AddRequestHeaderFindReplace:
 										FindReplaceEditSetRule hdr_rule = (FindReplaceEditSetRule)Edit;
 										foreach (var hdr in whc.AllKeys)
 										{
@@ -539,13 +558,25 @@ namespace WebOne
 											Dump("~Request header find&replace: '" + hdr_rule.Find + "' / '" + hdr_rule.Replace + "'");
 										}
 										break;
-									case "AddOutputEncoding":
+									case EditSetActionRules.AddRequestHttpVersion:
+										Dump("~Using HTTP(S) " + Edit.Value + " for remote connection");
+										RequestHttpVersion = Edit.Value;
+										break;
+									case EditSetActionRules.AddResponseHttpVersion:
+										Dump("~Reply as HTTP/" + Edit.Value);
+										ResponseHttpVersion = new Version(Edit.Value);
+										break;
+									case EditSetActionRules.AddOutputEncoding:
 										OutputContentEncoding = GetCodePage(Edit.Value);
 										Dump("~Output encoding set to: " + OutputContentEncoding.BodyName);
 										break;
-									case "AddTranslit":
+									case EditSetActionRules.AddTranslit:
 										EnableTransliteration = ToBoolean(Edit.Value);
 										Dump("~Enable transliteration");
+										break;
+									case EditSetActionRules.AddDebugPrint:
+										Dump("~" + Edit.Value + " (at request processing)");
+										Log.WriteLine(" [Request processing] {0}", ProcessUriMasks(Edit.Value));
 										break;
 								}
 							}
@@ -576,6 +607,7 @@ namespace WebOne
 					operation.Method = ClientRequest.HttpMethod;
 					operation.RequestHeaders = whc;
 					operation.URL = RequestURL;
+					operation.HttpVersion = RequestHttpVersion;
 					if (!ConfigFile.DontPreferHTTPS) operation.SecureConnection = ClientRequest.IsSecureConnection;
 					SendRequest(operation);
 				}
@@ -812,6 +844,7 @@ namespace WebOne
 					if (true)
 					{
 						//ClientResponse.ProtocolVersion = new Version(1, 1);
+						ClientResponse.ProtocolVersion = ResponseHttpVersion;
 						ClientResponse.StatusCode = ResponseCode;
 						ClientResponse.AddHeader("Via", "HTTP/1.0 WebOne/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
 						if (string.IsNullOrEmpty(ClientResponse.Headers["Content-Type"]) && !string.IsNullOrEmpty(ContentType))
@@ -911,12 +944,22 @@ namespace WebOne
 					case "/!codepages":
 					case "/!codepages/":
 						// Code page list
+
+						// Prepare encodings list
+						Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+						bool IsOutputEncodingListed = false;
+						// Get all encodings known on this server
+						EncodingInfo[] AllEncodings = Encoding.GetEncodings();
+						// Sort the array by full names
+						Array.Sort(AllEncodings, new CaseInsensitiveEncodingInfoNameComparer());
+
+						// Prepare page content with table
 						string codepages = "<p>The following code pages are available: <br>\n" +
 										   "<table><tr><td><b>Name</b></td><td><b>#</b></td><td><b>Description</b></td></tr>\n";
 						codepages += "<tr><td><b>AsIs</b></td><td>0</td><td>Keep original encoding (code page)</td></tr>\n";
-						Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-						bool IsOutputEncodingListed = false;
-						foreach (EncodingInfo cp in Encoding.GetEncodings())
+
+						// Show rest of table with all encodings
+						foreach (EncodingInfo cp in AllEncodings)
 						{
 							codepages += "<tr><td>";
 							codepages += "<b>" + cp.Name + "</b></td><td>" + cp.CodePage + "</td><td>" + cp.DisplayName;
@@ -1401,7 +1444,8 @@ namespace WebOne
 				{
 					Dictionary<string, string> Subcontent = ParseQueryString(Arguments);
 					Subcontent.Add("ServerName", GetServerName());
-					Subcontent.Add("PendingRequests", Load.ToString());
+					Subcontent.Add("OpenedConnections", OpenedConnections.ToString());
+					Subcontent.Add("BusyConnections", OpenedConnectionsBusy.ToString());
 					Subcontent.Add("UsedMemory", ((int)Environment.WorkingSet / 1024 / 1024).ToString());
 					Subcontent.Add("ClientIP", ClientRequest.RemoteEndPoint.ToString());
 
@@ -1755,7 +1799,7 @@ namespace WebOne
 			//perform edits on the response body
 			foreach (EditSet Set in EditSets)
 			{
-				if (Set.ContentTypeMasks.Count == 0 || CheckStringRegExp(ContentType, Set.ContentTypeMasks.ToArray()))
+				if (Set.ContentTypeMasks.Count == 0 || CheckStringRegExp(Set.ContentTypeMasks.ToArray(), ContentType))
 				{
 					if (CheckHttpStatusCode(Set.OnCode, operation.Response.StatusCode))
 					{
@@ -1763,10 +1807,21 @@ namespace WebOne
 						{
 							switch (Edit.Action)
 							{
-								case "AddFindReplace":
+								case EditSetActionRules.AddVariable:
+									AddVariable(Edit.Parameters);
+									break;
+								case EditSetActionRules.AddFindReplace:
 									FindReplaceEditSetRule frpair = Edit as FindReplaceEditSetRule;
 									Body = GetCachedRegex(frpair.Find, RegexOptions.Singleline).Replace(Body, frpair.Replace);
 									Dump("~~Find & replace (RegEx): " + frpair.Find + " -> " + frpair.Replace);
+									break;
+								case EditSetActionRules.AddResponseHttpVersion:
+									Dump("~Reply as HTTP/" + Edit.Value);
+									ResponseHttpVersion = new Version(Edit.Value);
+									break;
+								case EditSetActionRules.AddDebugPrint:
+									Dump("~" + Edit.Value + " (at response body processing)");
+									Log.WriteLine("[Response body processing] {0}", ProcessUriMasks(Edit.Value));
 									break;
 							}
 						}
@@ -1864,7 +1919,7 @@ namespace WebOne
 			//perform edits on the response
 			foreach (EditSet Set in EditSets)
 			{
-				if (Set.ContentTypeMasks.Count == 0 || CheckStringRegExp(Set.ContentTypeMasks.ToArray(), ContentType))
+				if (Set.ContentTypeMasks.Count == 0 || CheckStringRegExp(ContentType, Set.ContentTypeMasks.ToArray()))
 				{
 					if (CheckHttpStatusCode(Set.OnCode, operation.Response.StatusCode))
 					{
@@ -1872,7 +1927,10 @@ namespace WebOne
 						{
 							switch (Edit.Action)
 							{
-								case "AddConverting":
+								case EditSetActionRules.AddVariable:
+									AddVariable(Edit.Parameters);
+									break;
+								case EditSetActionRules.AddConverting:
 									ConvertEditSetRule rule = (ConvertEditSetRule)Edit;
 									Converter = rule.Converter;
 									ConvertDest = rule.ConvertDest;
@@ -1881,14 +1939,14 @@ namespace WebOne
 									Stop = true;
 									Dump("~~Convert using: " + Converter);
 									break;
-								case "AddResponseHeader":
+								case EditSetActionRules.AddResponseHeader:
 									string RespHdr = ProcessUriMasks(Edit.Value);
 									Log.WriteLine(" Add response header: {0}", RespHdr);
 									operation.ResponseHeaders.Add(RespHdr);
 									if (Edit.Value.StartsWith("Content-Type: ")) ContentType = Edit.Value.Substring("Content-Type: ".Length);
 									Dump("~~Add response header: " + RespHdr);
 									break;
-								case "AddResponseHeaderFindReplace":
+								case EditSetActionRules.AddResponseHeaderFindReplace:
 									FindReplaceEditSetRule resp_rule = (FindReplaceEditSetRule)Edit;
 									foreach (var hdr in operation.ResponseHeaders.AllKeys)
 									{
@@ -1896,10 +1954,18 @@ namespace WebOne
 									}
 									Dump("~~Response header find&replace: " + resp_rule.Find + " -> " + resp_rule.Replace);
 									break;
-								case "AddRedirect":
+								case EditSetActionRules.AddRedirect:
 									Log.WriteLine(" Add redirect: {0}", ProcessUriMasks(Edit.Value));
 									Redirect = ProcessUriMasks(Edit.Value);
 									Dump("~~Redirect to: " + Redirect);
+									break;
+								case EditSetActionRules.AddResponseHttpVersion:
+									Dump("~Reply as HTTP/" + Edit.Value);
+									ResponseHttpVersion = new Version(Edit.Value);
+									break;
+								case EditSetActionRules.AddDebugPrint:
+									Dump("~" + Edit.Value + " (at response headers processing)");
+									Log.WriteLine("[Response headers processing] {0}", ProcessUriMasks(Edit.Value));
 									break;
 							}
 						}
@@ -2084,6 +2150,53 @@ namespace WebOne
 			}
 
 			return CodePagesEncodingProvider.Instance.GetEncoding(Charset) ?? Encoding.UTF8;
+		}
+
+		/// <summary>
+		/// Add an internal variable string
+		/// </summary>
+		/// <param name="Parameters">Parameters as specified in <c>AddVariable</c> Edit Rule in config file.</param>
+		private void AddVariable(params string[] Parameters)
+		{
+			switch (Parameters.Length)
+			{
+				case 2: //AddVariable="Name","Value"
+					if (Variables.ContainsKey(Parameters[0])) Variables.Remove(Parameters[0]);
+					Variables.Add(Parameters[0], Parameters[1]);
+					break;
+				case 3: //AddVariable="Name","Source","Mask"
+				case 4: //AddVariable="Name","Source","Mask","Group No"
+					Match match = Regex.Match(ProcessUriMasks(Parameters[1]), Parameters[2]);
+					if (match.Success)
+					{
+						if (Parameters.Length == 3)
+						{
+							if (Variables.ContainsKey(Parameters[0])) Variables.Remove(Parameters[0]);
+							Variables.Add(Parameters[0], match.Value);
+						}
+						else
+						{
+							int groupNo = int.Parse(Parameters[3]);
+							if (groupNo <= match.Groups.Count && match.Groups[groupNo].Success)
+							{
+								if (Variables.ContainsKey(Parameters[0])) Variables.Remove(Parameters[0]);
+								Variables.Add(Parameters[0], match.Groups[groupNo].Value);
+							}
+							else
+							{
+								Log.WriteLine(" Group number {0} in {1} is not success.", Parameters[3], Parameters[1]);
+							}
+						}
+					}
+					else
+					{
+						Log.WriteLine(" No match for {0} in {1} found.", Parameters[2], Parameters[1]);
+					}
+					break;
+				default:
+					throw new ArgumentException("Incorrect argument count. Why not checked in EditSet.cs before?", nameof(Parameters));
+			}
+
 		}
 
 		/// <summary>
@@ -2407,9 +2520,9 @@ namespace WebOne
 			{
 				HelpString += "<p>This is <b>" + GetServerName() + "</b>.<br>";
 				if (ConfigFile.UseMsHttpApi)
-				{ HelpString += "Pending requests: <b>" + (Load - 1) + "</b>.<br>"; }
+				{ HelpString += "Connections open: <b>" + (OpenedConnections - 1) + "</b>.<br>"; }
 				else
-				{ HelpString += "Open connections: <b>" + (Load) + "</b>.<br>"; }
+				{ HelpString += "Connections open: <b>" + (OpenedConnections) + "</b> (<b>" + OpenedConnectionsBusy + "</b> active).<br>"; }
 				HelpString += "Used memory: <b>" + (int)Environment.WorkingSet / 1024 / 1024 + "</b> MB.<br>";
 				HelpString += "About: <a href=\"https://github.com/atauenis/webone/\">https://github.com/atauenis/webone/</a></p>";
 				HelpString += "<p>Client IP: <b>" + ClientRequest.RemoteEndPoint + "</b>.</p>";
@@ -2426,10 +2539,9 @@ namespace WebOne
 				HelpString += "This is <b>" + Environment.MachineName + ":" + ConfigFile.Port + "</b>.<br>";
 				HelpString += "Used memory: <b>" + (double)Environment.WorkingSet / 1024 / 1024 + "</b> MB.<br>";
 				if (ConfigFile.UseMsHttpApi)
-				{ HelpString += "Pending requests: <b>" + (Load - 1) + "</b>.<br>"; }
+				{ HelpString += "Connections open: <b>" + (OpenedConnections - 1) + "</b>.<br>"; }
 				else
-				{ HelpString += "Open connections: <b>" + (Load) + "</b>.<br>"; }
-				HelpString += "Available security: <b>" + ServicePointManager.SecurityProtocol + "</b> (" + (int)ServicePointManager.SecurityProtocol + ").<br>";
+				{ HelpString += "Connections open: <b>" + (OpenedConnections) + "</b> (<b>" + OpenedConnectionsBusy + "</b> active).<br>"; }
 
 				HelpString += "<h2>Aliases:</h2><ul>";
 				bool EvidentAlias = false;
@@ -2493,12 +2605,10 @@ namespace WebOne
 			Log.WriteLine("<Return code {0}.", Code);
 			Text += GetInfoString();
 			string CodeStr = Code.ToString() + " " + ((HttpStatusCode)Code).ToString();
-			string BodyStyleHtml = ConfigFile.PageStyleHtml == "" ? "" : " " + ConfigFile.PageStyleHtml;
 			string HtmlHead = "";
 			if (ClientResponse.Headers["Refresh"] != null) HtmlHead = "<META HTTP-EQUIV=\"REFRESH\" CONTENT=\"" + ClientResponse.Headers["Refresh"] + "\">";
 			HtmlHead += "<META CHARSET=\"" + (OutputContentEncoding ?? Encoding.Default).WebName + "\">";
-			HtmlHead += ConfigFile.PageStyleCss == "" ? "" : "<style type='text/css'>" + ConfigFile.PageStyleCss + "</style>";
-			string Html = "<HTML>" + HtmlHead + "<BODY" + BodyStyleHtml + "><H1>" + CodeStr + "</H1>" + Text + "</BODY></HTML>";
+			string Html = "<HTML>" + HtmlHead + "<BODY><H1>" + CodeStr + "</H1>" + Text + "</BODY></HTML>";
 
 			byte[] Buffer = (OutputContentEncoding ?? Encoding.Default).GetBytes(Html);
 			try
@@ -2709,17 +2819,15 @@ namespace WebOne
 				}
 				else { /*not implemented yet, use old code*/ }
 
-				string BodyStyleHtml = ConfigFile.PageStyleHtml == "" ? "" : " " + ConfigFile.PageStyleHtml;
-				string BodyStyleCss = ConfigFile.PageStyleCss == "" ? "" : "<style type='text/css'>" + ConfigFile.PageStyleCss + "</style>";
+
 				string title = "<title>WebOne: untitled</title>"; if (Page.Title != null) title = "<title>" + Page.Title + "</title>\n";
 				string header1 = ""; if (Page.Header != null) header1 = "<h1>" + Page.Header + "</h1>\n";
 
 				string Html = "<html>\n" +
 				title +
 				string.Format("<meta charset=\"{0}\"/>", OutputContentEncoding == null ? "utf-8" : OutputContentEncoding.WebName) + "\n" +
-				(Page.AddCss ? BodyStyleCss : "") +
 				Page.HtmlHeaders +
-				"<body" + BodyStyleHtml + ">\n" +
+				"<body>\n" +
 				header1 + "\n" +
 				Page.Content + "\n" +
 				(Page.ShowFooter ? GetInfoString() + "\n" : "") +
@@ -2757,6 +2865,26 @@ namespace WebOne
 			{
 				SendStream(Page.Attachment, Page.AttachmentContentType);
 			}
+		}
+	}
+
+	/// <summary>
+	/// Enable IComparer for EncodingInfo
+	/// </summary>
+	public class CaseInsensitiveEncodingInfoNameComparer : IComparer
+	{
+		//https://www.roelvanlisdonk.nl/2009/09/25/show-all-encodings-an-a-windows-server-in-c/
+		// Compare 2 EncodingInfo objects, by doing a case insensitive compare on their names
+		int IComparer.Compare(Object x, Object y)
+		{
+			int result = 0;
+			if (x is EncodingInfo && y is EncodingInfo)
+			{
+				var xEncodingInfo = x as EncodingInfo;
+				var yEncodingInfo = y as EncodingInfo;
+				result = ((new CaseInsensitiveComparer()).Compare(xEncodingInfo.DisplayName, yEncodingInfo.DisplayName));
+			}
+			return result;
 		}
 	}
 }

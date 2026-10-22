@@ -19,6 +19,11 @@ namespace WebOne
 		public static int Port = 80;
 
 		/// <summary>
+		/// IP address on where the Proxy Server should run
+		/// </summary>
+		public static System.Net.IPAddress IP = System.Net.IPAddress.Any;
+
+		/// <summary>
 		/// List of domains that should be open only using HTTPS
 		/// </summary>
 		public static List<string> ForceHttps = new List<string>();
@@ -37,6 +42,31 @@ namespace WebOne
 		/// Encoding to be used in output content
 		/// </summary>
 		public static Encoding OutputEncoding = Encoding.Default;
+
+		/// <summary>
+		/// Default ANSI (Windows) single-byte code page
+		/// </summary>
+		public static Encoding CodepageANSI = null;
+
+		/// <summary>
+		/// Default ASCII (DOS) single-byte code page
+		/// </summary>
+		public static Encoding CodepageASCII = null;
+
+		/// <summary>
+		/// Default Apple Macintosh single-byte code page
+		/// </summary>
+		public static Encoding CodepageMac = null;
+
+		/// <summary>
+		/// Default EBCDIC (IBM) single-byte code page
+		/// </summary>
+		public static Encoding CodepageEBCDIC = null;
+
+		/// <summary>
+		/// Single-byte code pages culture used on this proxy server
+		/// </summary>
+		public static System.Globalization.CultureInfo CodepageCulture = System.Globalization.CultureInfo.CurrentCulture;
 
 		/// <summary>
 		/// Credentials for proxy authentication
@@ -159,16 +189,6 @@ namespace WebOne
 		public static string PAC = "";
 
 		/// <summary>
-		/// Internal pages style in HTML format (TEXT="#000000" BGCOLOR="#C0C0C0" LINK="#0000EE" VLINK="#551A8B" ALINK="#FF0000")
-		/// </summary>
-		public static string PageStyleHtml = "";
-
-		/// <summary>
-		/// Internal pages style in CSS format (body { background-color: #C0C0C0; color: #000000; })
-		/// </summary>
-		public static string PageStyleCss = "";
-
-		/// <summary>
 		/// Allow multiple HTTP/2.0 connections to servers (faster, but may overload remote servers)
 		/// </summary>
 		public static bool MultipleHttp2Connections = true;
@@ -182,6 +202,11 @@ namespace WebOne
 		/// Options for online video converting
 		/// </summary>
 		public static Dictionary<string, string> WebVideoOptions = new();
+		
+		/// <summary>
+		/// Profiles for online video converting
+		/// </summary>
+		public static Dictionary<string, string[]> WebVideoProfiles = new();
 
 		/// <summary>
 		/// Allow gz/deflate/br compression of remote HTTP connections

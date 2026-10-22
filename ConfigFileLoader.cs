@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
+using System.Text;
 using static WebOne.Program;
 
 namespace WebOne
@@ -164,6 +165,11 @@ namespace WebOne
 				switch (Section.Kind)
 				{
 					case "Server":
+						if (!string.IsNullOrEmpty(Section.Mask))
+						{
+							Log.WriteLine(true, false, "Warning: Instead of condition-based setup use Edit Sets. Section ignored. ({0}).", Section.Location);
+							break;
+						}
 						foreach (ConfigFileOption Option in Section.Options)
 						{
 							switch (Option.Key)
@@ -181,6 +187,9 @@ namespace WebOne
 								case "HttpsPort":
 								case "FtpPort":
 									Log.WriteLine(true, false, "Warning: Use of '{0}' is deprecated, use 'Port' at {1}.", Option.Key, Option.Location);
+									break;
+								case "IP":
+									ConfigFile.IP = IPAddress.Parse(Option.Value);
 									break;
 								case "OutputEncoding":
 									ConfigFile.OutputEncoding = GetCodePage(ExpandMaskedVariables(Option.Value));
@@ -208,14 +217,6 @@ namespace WebOne
 									break;
 								case "ArchiveUrlSuffix":
 									ConfigFile.ArchiveUrlSuffix = Option.Value;
-									break;
-								case "SecurityProtocols":
-									SecurityProtocolType spt = SecurityProtocolType.SystemDefault;
-									if (!Enum.TryParse(Option.Value, out spt))
-									{
-										Log.WriteLine(true, false, "Warning: Bad TLS version {1} ({0}), using {2} ({2:D}).", Option.Value, spt, ServicePointManager.SecurityProtocol);
-									}
-									ServicePointManager.SecurityProtocol = spt;
 									break;
 								case "UserAgent":
 									ConfigFile.UserAgent = Option.Value;
@@ -273,9 +274,6 @@ namespace WebOne
 								case "UpperProxy":
 									ConfigFile.UpperProxy = ExpandMaskedVariables(Option.Value);
 									break;
-								case "PageStyleHtml":
-									ConfigFile.PageStyleHtml = Option.Value;
-									break;
 								case "MultipleHttp2Connections":
 									ConfigFile.MultipleHttp2Connections = ToBoolean(Option.Value);
 									break;
@@ -318,6 +316,21 @@ namespace WebOne
 								case "ConnectionTimeout":
 									if (!int.TryParse(Option.Value, out ConfigFile.ConnectionTimeout))
 										Log.WriteLine(true, false, "Warning: Incorrect ConnectionTimeout '{0}'.", Option.Value);
+									break;
+								case "CodepageCulture":
+									ConfigFile.CodepageCulture = System.Globalization.CultureInfo.GetCultureInfo(Option.Value, Option.Value);
+									break;
+								case "CodepageANSI":
+									ConfigFile.CodepageANSI = CodePagesEncodingProvider.Instance.GetEncoding(Option.Value);
+									break;
+								case "CodepageASCII":
+									ConfigFile.CodepageASCII = CodePagesEncodingProvider.Instance.GetEncoding(Option.Value);
+									break;
+								case "CodepageMac":
+									ConfigFile.CodepageMac = CodePagesEncodingProvider.Instance.GetEncoding(Option.Value);
+									break;
+								case "CodepageEBCDIC":
+									ConfigFile.CodepageEBCDIC = CodePagesEncodingProvider.Instance.GetEncoding(Option.Value);
 									break;
 								default:
 									Log.WriteLine(true, false, "Warning: Unknown server option {0} in {1}.", Option.Key, Option.Location);
@@ -442,18 +455,18 @@ namespace WebOne
 							ConfigFile.PAC += Line.RawString + "\n";
 						}
 						break;
-					case "PageStyleCss":
-						ConfigFile.PageStyleCss = "";
-						foreach (ConfigFileOption Line in Section.Options)
-						{
-							ConfigFile.PageStyleCss += Line.RawString + "\n";
-						}
-						break;
 					case "WebVideoOptions":
 						foreach (ConfigFileOption Line in Section.Options)
 						{
 							if (Line.HaveKeyValue) ConfigFile.WebVideoOptions[Line.Key] = Line.Value;
 							else Log.WriteLine(true, false, "Warning: Incorrect online video convert option at {0}.", Line.Location);
+						}
+						break;
+					case "WebVideoProfiles":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							if (Line.HaveKeyValue && Line.Values.Count() == 2) ConfigFile.WebVideoProfiles[Line.Key] = Line.Values;
+							else Log.WriteLine(true, false, "Warning: Incorrect online video convert profile at {0}.", Line.Location);
 						}
 						break;
 					case "SecureProxy":
@@ -497,7 +510,9 @@ namespace WebOne
 
 									try
 									{
-										ConfigFile.SslCipherSuitesPolicy = new CipherSuitesPolicy(ConfigFile.SslCipherSuites);
+										if (!OperatingSystem.IsWindows())
+											ConfigFile.SslCipherSuitesPolicy = new CipherSuitesPolicy(ConfigFile.SslCipherSuites);
+										else throw new PlatformNotSupportedException();
 									}
 									catch (PlatformNotSupportedException)
 									{
@@ -683,6 +698,13 @@ namespace WebOne
 							{
 								Log.WriteLine(true, false, "Warning: Incorrect Microsoft codebase search engine option at {0}.", Line.Location);
 							}
+						}
+						break;
+					case "Variables":
+						foreach (ConfigFileOption Line in Section.Options)
+						{
+							if (Variables.ContainsKey(Line.Key)) Variables.Remove(Line.Key);
+							Variables.Add(Line.Key, Line.Value);
 						}
 						break;
 					case "FixableURL":

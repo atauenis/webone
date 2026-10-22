@@ -551,7 +551,7 @@ namespace WebOne
 				// Configure YT-DLP and FFmpeg processes and prepare data stream
 				ProcessStartInfo YoutubeDlStart = new();
 				YoutubeDlStart.FileName = ConfigFile.WebVideoOptions["YouTubeDlApp"] ?? "yt-dlp";
-				YoutubeDlStart.Arguments = string.Format("\"{0}\"{1} -o -", Arguments["url"], YoutubeDlArgs);
+				YoutubeDlStart.Arguments = string.Format("\"{0}\" {1} -o -", Arguments["url"], YoutubeDlArgs);
 				YoutubeDlStart.RedirectStandardOutput = true;
 				YoutubeDlStart.RedirectStandardError = true;
 
