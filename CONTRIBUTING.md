@@ -26,7 +26,7 @@ Microsoft .NET is a cross-platform framework, which primary programming language
 The current version of WebOne is built using latest LTS version of .NET SDK (and runs via corresponding .NET Runtime environment). But as long at it is possible the main developer wants to keep ability to build WebOne for older systems like Windows 7 (32-bit), Raspbian 10 (ARMv6), macOS 10.14 (Intel). They supports .NET 6 or .NET 8 maximum. So please test the code on both .NET LTS (dotnet-sdk-10.0, as of this article write time) and .NET 6.0 @ win7/8/10.
 
 ## Language for speak
-The public talk language is English. Although @atauenis is also speaking Russian, please have respect for the all community. Any questions in Russian can be asked via bulltin boards where it is allowed (or private messages).
+The public talk language is English. Although @atauenis is also speaking Russian, please have respect for the all community. Any questions in Russian can be asked via support websites where it is allowed.
 
 ## Remind please, where is main code repository?
 The project currently hosts on GitHub ecosystem: 
