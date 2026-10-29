@@ -2,3 +2,4 @@
 *.service text eol=lf
 *.logrotate text eol=lf
 *.sh text eol=lf
+openssl_webone.cnf text eol=lf
