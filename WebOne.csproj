@@ -5,7 +5,7 @@
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net10.0</TargetFramework>
 		<Authors>Alexander Tauenis</Authors>
-		<Version>0.19.0</Version>
+		<Version>0.19.1</Version>
 		<VersionSuffix></VersionSuffix> <!--<VersionSuffix>-pre</VersionSuffix>-->
 		<PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
 		<InformationalVersion>$(PackageVersion)</InformationalVersion>
@@ -86,6 +86,7 @@
 		<DebRecommends Include="ffmpeg" />
 		<DebRecommends Include="yt-dlp" />
 		<DebRecommends Include="deno | nodejs | quickjs" />
+		<DebDependency Include="openssl-provider-legacy" />
 	</ItemGroup>
 
 	<ItemGroup>
