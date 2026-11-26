@@ -237,6 +237,7 @@ namespace WebOne
 
 			//check if the edit set can be runned on HTTP-request time
 			if (ContentTypeMasks.Count == 0 && !MayBeForResponse) IsForRequest = true;
+			if (OnCode is not null) IsForRequest = false;
 
 			if (UrlMasks.Count == 0) UrlMasks.Add(".*");
 		}

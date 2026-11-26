@@ -1582,10 +1582,11 @@ namespace WebOne
 		/// <param name="HTTPO">HTTPS operation client with request data</param>
 		private void SendRequest(HttpOperation HTTPO)
 		{
-			if (operation is null) throw new NullReferenceException("Initialize `operation` first! Also don't forget to put headers, method, log agent in Operation.");
-			//in future probably need to merge operation.URL with RequestURL.AbsoluteUri too. Seems that they does not differ at SendRequest time, but currently I am not 100% sure - atauenis.
+			if (HTTPO is null) throw new NullReferenceException("Initialize `HTTPO` first! Also don't forget to put headers, method, log agent in HTTPO.");
+			//in future probably need to merge HTTPO.URL with RequestURL.AbsoluteUri too. Seems that they does not differ at SendRequest time, but currently I am not 100% sure - atauenis.
 
-			switch (operation.Method)
+			//send the request
+			switch (HTTPO.Method)
 			{
 				default:
 					int Content_Length = 0;
@@ -1598,28 +1599,28 @@ namespace WebOne
 #else
 						Log.WriteLine(">Downloading content...");
 #endif
-						operation.URL = RequestURL;
-						operation.SendRequest();
+						HTTPO.URL = RequestURL;
+						HTTPO.SendRequest();
 #if DEBUG
 						Log.WriteLine(">Downloading content (receiving)...");
 #endif
-						operation.GetResponse();
-						MakeOutput(operation);
+						HTTPO.GetResponse();
+						MakeOutput(HTTPO);
 						break;
 					}
 					else
 					{
 						//try to upload (POST, PUT, WebDAV, etc)
 #if DEBUG
-						Log.WriteLine(">Uploading {0}K of {1} (connecting)...", Convert.ToInt32((operation.RequestHeaders["Content-Length"])) / 1024, operation.RequestHeaders["Content-Type"]);
+						Log.WriteLine(">Uploading {0}K of {1} (connecting)...", Convert.ToInt32((HTTPO.RequestHeaders["Content-Length"])) / 1024, HTTPO.RequestHeaders["Content-Type"]);
 #else
-						Log.WriteLine(">Uploading {0}K of {1}...", Convert.ToInt32((operation.RequestHeaders["Content-Length"])) / 1024, operation.RequestHeaders["Content-Type"]);
+						Log.WriteLine(">Uploading {0}K of {1}...", Convert.ToInt32((HTTPO.RequestHeaders["Content-Length"])) / 1024, HTTPO.RequestHeaders["Content-Type"]);
 #endif
-						operation.URL = RequestURL;
+						HTTPO.URL = RequestURL;
 
 						if (DumpFile == null)
 						{ //if normal operation
-							operation.RequestStream = ClientRequest.InputStream;
+							HTTPO.RequestStream = ClientRequest.InputStream;
 						}
 						else
 						{ //if need to save request dump
@@ -1628,7 +1629,7 @@ namespace WebOne
 							RequestDumpStream.Position = 0;
 							string DumpOfRequestBody = new StreamReader(RequestDumpStream).ReadToEnd();
 							RequestDumpStream.Position = 0;
-							operation.RequestStream = RequestDumpStream;
+							HTTPO.RequestStream = RequestDumpStream;
 							if (DumpOfRequestBody.Length > 0)
 							{
 								if (DumpOfRequestBody.Length < 1024) Dump("\nCAUTION: Request body may contain private data!\n" + DumpOfRequestBody);
@@ -1636,27 +1637,27 @@ namespace WebOne
 							}
 							else Dump("\n");
 						}
-						operation.SendRequest();
+						HTTPO.SendRequest();
 #if DEBUG
 						Log.WriteLine(">Uploading content (receiving)...");
 #endif
-						operation.GetResponse();
-						MakeOutput(operation);
+						HTTPO.GetResponse();
+						MakeOutput(HTTPO);
 						break;
 					}
 			}
 
 			if (Stop) return; //if converting has occur and the request should not be processed next
 
-			//todo: rewrite and move to MakeOutput or operation.SendRequest!
-			ResponseCode = (int)operation.Response.StatusCode;
+			//process request result
+			ResponseCode = (int)HTTPO.Response.StatusCode;
 
 			//check for security upgrade
 			if (ResponseCode >= 301 && ResponseCode <= 399)
 			{
-				if (operation.ResponseHeaders != null)
+				if (HTTPO.ResponseHeaders != null)
 				{
-					string NewLocation = operation.ResponseHeaders["Location"];
+					string NewLocation = HTTPO.ResponseHeaders["Location"];
 
 					if (NewLocation != null)
 					{
@@ -1668,17 +1669,17 @@ namespace WebOne
 							RequestURL = new Uri(RequestURL.AbsoluteUri.Replace("http://", "https://"));
 							TransitStream = null;
 
-							string RequestMethod = operation.Method;
+							string RequestMethod = HTTPO.Method;
 							WebHeaderCollection RequestHeaderCollection = new WebHeaderCollection();
 							foreach (var hdr in ClientRequest.Headers.AllKeys)
 							{
 								RequestHeaderCollection.Add(hdr, ClientRequest.Headers[hdr]);
 							}
 							//WebHeaderCollection RequestHeaderCollection = (WebHeaderCollection)ClientRequest.Headers;
-							operation = new HttpOperation(Log);
-							operation.Method = RequestMethod;
-							operation.RequestHeaders = RequestHeaderCollection;
-							SendRequest(operation);
+							HTTPO = new HttpOperation(Log);
+							HTTPO.Method = RequestMethod;
+							HTTPO.RequestHeaders = RequestHeaderCollection;
+							SendRequest(HTTPO);
 
 							//add to ForceHttp list
 							string SecureHost = RequestURL.Host;
@@ -1704,11 +1705,11 @@ namespace WebOne
 			}
 
 			//process response headers
-			if (operation.ResponseHeaders != null)
-				for (int i = 0; i < operation.ResponseHeaders.Count; ++i)
+			if (HTTPO.ResponseHeaders != null)
+				for (int i = 0; i < HTTPO.ResponseHeaders.Count; ++i)
 				{
-					string header = operation.ResponseHeaders.GetKey(i);
-					foreach (string value in operation.ResponseHeaders.GetValues(i))
+					string header = HTTPO.ResponseHeaders.GetKey(i);
+					foreach (string value in HTTPO.ResponseHeaders.GetValues(i))
 					{
 						string corrvalue = value;
 						if (!ClientRequest.IsSecureConnection)
@@ -1915,6 +1916,7 @@ namespace WebOne
 			string ConvertArg1 = "";
 			string ConvertArg2 = "";
 			string Redirect = null;
+			bool InternalRedirect = false;
 
 			//perform edits on the response
 			foreach (EditSet Set in EditSets)
@@ -1963,6 +1965,12 @@ namespace WebOne
 									Dump("~Reply as HTTP/" + Edit.Value);
 									ResponseHttpVersion = new Version(Edit.Value);
 									break;
+								case EditSetActionRules.AddInternalRedirect:
+									Log.WriteLine(" Add internal redirect: {0}", ProcessUriMasks(Edit.Value));
+									Redirect = ProcessUriMasks(Edit.Value);
+									InternalRedirect = true;
+									Dump("~~Internal redirect to: " + Redirect);
+									break;
 								case EditSetActionRules.AddDebugPrint:
 									Dump("~" + Edit.Value + " (at response headers processing)");
 									Log.WriteLine("[Response headers processing] {0}", ProcessUriMasks(Edit.Value));
@@ -1974,10 +1982,19 @@ namespace WebOne
 			}
 
 			//check for edit: AddRedirect
-			if (Redirect != null)
+			if (Redirect != null && !InternalRedirect)
 			{
 				Log.WriteLine(" {1} {2}. Body {3}K of {4} [Need to redirect].", null, (int)StatusCode, StatusCode, ContentLengthKB, SrcContentType);
 				SendRedirect(Redirect, "Traffic has been edited.");
+				return;
+			}
+
+			//check for edit: AddInternalRedirect
+			if (Redirect != null && InternalRedirect)
+			{
+				Log.WriteLine(" {1} {2}. Body {3}K of {4} [Needs internal redirect].", null, (int)StatusCode, StatusCode, ContentLengthKB, SrcContentType);
+				RequestURL = new(Redirect);
+				SendRequest(operation);
 				return;
 			}
 
