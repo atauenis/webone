@@ -1984,7 +1984,8 @@ namespace WebOne
 																	 : ProcessUriMasks(Edit.Value);
 									Log.WriteLine(" Fix to {0} internally", NewUrlInternal);
 									Dump("~Internal redirect to: " + NewUrlInternal);
-									RequestURL = new Uri(NewUrlInternal);
+									Redirect = NewUrlInternal;
+									InternalRedirect = true;
 									break;
 								case EditSetActionRules.AddPreventKeepAlive:
 									NoKeepAlive = ((BooleanEditSetRule)Edit).Value;
