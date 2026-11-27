@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace WebOne
 {
@@ -36,7 +34,7 @@ namespace WebOne
 			Value = value;
 			Parameters = Array.Empty<string>();
 		}
-		
+
 		/// <summary>
 		/// Create Rule
 		/// </summary>
@@ -50,20 +48,18 @@ namespace WebOne
 		}
 	}
 
-	//virtual editing rules (generated from multiple webone.conf lines)
-
-	//since v0.19 need to rewrite these
+	//virtual editing rules (generated from multiple or difficult webone.conf lines)
 
 	/// <summary>
 	/// Content Find&amp;Replace virtual editing rule
 	/// </summary>
-	class FindReplaceEditSetRule : EditSetRule 
+	class FindReplaceEditSetRule : EditSetRule
 	{
 		public string Find { get; internal set; }
 
 		public string Replace { get; internal set; }
 
-		public FindReplaceEditSetRule(string action, string find, string replace) : base (action, (string)null)
+		public FindReplaceEditSetRule(string action, string find, string replace) : base(action, (string)null)
 		{
 			Action = action;
 			Find = find;
@@ -92,6 +88,18 @@ namespace WebOne
 			ConvertArg1 = arg1;
 			ConvertArg2 = arg2;
 		}
+	}
 
+	/// <summary>
+	/// An editing rule that use boolean value
+	/// </summary>
+	class BooleanEditSetRule : EditSetRule
+	{
+		public new bool Value { get; internal set; }
+		public BooleanEditSetRule(string option, string value) : base(option, value)
+		{
+			Value = Program.ToBoolean(value);
+			base.Value = Value.ToString();
+		}
 	}
 }
