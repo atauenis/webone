@@ -44,6 +44,7 @@ namespace WebOne
 		Encoding SourceContentEncoding = Encoding.Default;
 		Encoding OutputContentEncoding = ConfigFile.OutputEncoding;
 		bool EnableTransliteration = false;
+		bool NoKeepAlive = false;
 
 		string DumpFile = null;
 
@@ -571,8 +572,12 @@ namespace WebOne
 										Dump("~Output encoding set to: " + OutputContentEncoding.BodyName);
 										break;
 									case EditSetActionRules.AddTranslit:
-										EnableTransliteration = ToBoolean(Edit.Value);
-										Dump("~Enable transliteration");
+										EnableTransliteration = ((BooleanEditSetRule)Edit).Value;
+										Dump("~Enable transliteration: " + EnableTransliteration);
+										break;
+									case EditSetActionRules.AddPreventKeepAlive:
+										NoKeepAlive = ((BooleanEditSetRule)Edit).Value;
+										Dump("~Don't keep connection alive: " + NoKeepAlive);
 										break;
 									case EditSetActionRules.AddDebugPrint:
 										Dump("~" + Edit.Value + " (at request processing)");
@@ -894,7 +899,8 @@ namespace WebOne
 								Dump("\nBody is binary stream");
 							}
 						}
-						ClientResponse.KeepAlive = true;
+						ClientResponse.KeepAlive = ClientRequest.KeepAlive;
+						if (NoKeepAlive) ClientResponse.KeepAlive = false;
 						ClientResponse.Close();
 #if DEBUG
 						Log.WriteLine(" Document sent.");
@@ -1820,6 +1826,10 @@ namespace WebOne
 									Dump("~Reply as HTTP/" + Edit.Value);
 									ResponseHttpVersion = new Version(Edit.Value);
 									break;
+								case EditSetActionRules.AddPreventKeepAlive:
+									NoKeepAlive = ((BooleanEditSetRule)Edit).Value;
+									Dump("~Don't keep connection alive: " + NoKeepAlive);
+									break;
 								case EditSetActionRules.AddDebugPrint:
 									Dump("~" + Edit.Value + " (at response body processing)");
 									Log.WriteLine("[Response body processing] {0}", ProcessUriMasks(Edit.Value));
@@ -1970,6 +1980,10 @@ namespace WebOne
 									Redirect = ProcessUriMasks(Edit.Value);
 									InternalRedirect = true;
 									Dump("~~Internal redirect to: " + Redirect);
+									break;
+								case EditSetActionRules.AddPreventKeepAlive:
+									NoKeepAlive = ((BooleanEditSetRule)Edit).Value;
+									Dump("~Don't keep connection alive: " + NoKeepAlive);
 									break;
 								case EditSetActionRules.AddDebugPrint:
 									Dump("~" + Edit.Value + " (at response headers processing)");

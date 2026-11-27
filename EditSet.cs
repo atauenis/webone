@@ -173,11 +173,23 @@ namespace WebOne
 					case EditSetActionRules.AddRequestDumping:
 					case EditSetActionRules.AddDumping:
 					case EditSetActionRules.AddOutputEncoding:
-					case EditSetActionRules.AddTranslit:
 					case EditSetActionRules.AddDebugPrint:
 						Edits.Add(new EditSetRule(Line.Key, Line.Values ?? new string[1] { Line.Value }));
 						break;
 					// Action rules (with value verification)
+					// - boolean
+					case EditSetActionRules.AddTranslit:
+					case EditSetActionRules.AddPreventKeepAlive:
+						try
+						{
+							Edits.Add(new BooleanEditSetRule(Line.Key, Line.Value));
+						}
+						catch (Exception ex)
+						{
+							new LogWriter().WriteLine(true, false, "Warning: {1} at {0}. Line ignored.", Line.Location, ex.Message);
+						}
+						break;
+					// - other types
 					case EditSetActionRules.AddHeader:
 					case EditSetActionRules.AddRequestHeader:
 					case EditSetActionRules.AddResponseHeader:
@@ -426,5 +438,6 @@ namespace WebOne
 		public const string AddRequestHttpVersion = "AddRequestHttpVersion";
 		public const string AddResponseHttpVersion = "AddResponseHttpVersion";
 		public const string AddVariable = "AddVariable";
+		public const string AddPreventKeepAlive = "AddPreventKeepAlive";
 	}
 }
