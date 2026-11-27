@@ -1976,10 +1976,15 @@ namespace WebOne
 									ResponseHttpVersion = new Version(Edit.Value);
 									break;
 								case EditSetActionRules.AddInternalRedirect:
-									Log.WriteLine(" Add internal redirect: {0}", ProcessUriMasks(Edit.Value));
-									Redirect = ProcessUriMasks(Edit.Value);
-									InternalRedirect = true;
-									Dump("~~Internal redirect to: " + Redirect);
+									bool UseRegEx = (Set.UrlMasks.Count == 1 && GetCachedRegex(Set.UrlMasks[0]).GetGroupNames().Count() > 1);
+#if DEBUG
+									if (UseRegEx) Log.WriteLine(" RegExp groups are available on {0}.", Set.UrlMasks[0]);
+#endif
+									string NewUrlInternal = UseRegEx ? ProcessUriMasks(GetCachedRegex(Set.UrlMasks[0]).Replace(RequestURL.AbsoluteUri, Edit.Value))
+																	 : ProcessUriMasks(Edit.Value);
+									Log.WriteLine(" Fix to {0} internally", NewUrlInternal);
+									Dump("~Internal redirect to: " + NewUrlInternal);
+									RequestURL = new Uri(NewUrlInternal);
 									break;
 								case EditSetActionRules.AddPreventKeepAlive:
 									NoKeepAlive = ((BooleanEditSetRule)Edit).Value;
